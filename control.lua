@@ -472,9 +472,15 @@ script.on_nth_tick(1, function(event)
 end)
 
 function robots_inactive(constructron)
+    local starttime = gettime()
+    local timer = 0
     if constructron.logistic_network and constructron.logistic_network.all_construction_robots ==
         constructron.logistic_network.cells[1].stationed_construction_robot_count then
         for i, equipment in ipairs(constructron.grid.equipment) do
+            timer = gettime() - starttime
+            if timer > (whatever) then
+                return (timeout or whatever)  
+            end
             if equipment.type == 'roboport-equipment' then
                 if (equipment.energy / equipment.max_energy) < 0.95 then
                     return false
