@@ -7,4 +7,11 @@ data:extend({
 		minimum_value = 1,
         maximum_value = 10,
 	},
+	{
+		type = "bool-setting",
+		name = "Consructron-debug-enabled",
+		setting_type = "runtime-global",
+		order = "a1",
+		default_value = true,
+	},
 })
