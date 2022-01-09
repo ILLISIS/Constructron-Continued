@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Date: 2022-01-09
+  Fixes:
+    - Crash on mining a constructron whilst there are active jobs.
