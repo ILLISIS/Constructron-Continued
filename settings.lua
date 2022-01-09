@@ -9,7 +9,7 @@ data:extend({
 	},
 	{
 		type = "bool-setting",
-		name = "Consructron-debug-enabled",
+		name = "constructron-debug-enabled",
 		setting_type = "runtime-global",
 		order = "a1",
 		default_value = true,
