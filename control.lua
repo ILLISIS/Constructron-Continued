@@ -1,3 +1,5 @@
+local DebugEnabled = settings.global["constructron-debug-enabled"].value
+
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
     --     name = "service_station"
@@ -506,6 +508,8 @@ end
 
 actions = {
     go_to_position = function(constructrons, position, find_path)
+        if DebugEnabled then
+            game.print('action: go_to_position')
         if find_path then
             request_path(constructrons, position)
         else
