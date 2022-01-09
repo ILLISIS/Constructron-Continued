@@ -5,6 +5,7 @@ local constructron_item = table.deepcopy(data.raw["item-with-entity-data"]["spid
 constructron_item.name = "constructron"
 constructron_item.place_result = "constructron"
 constructron_item.order = constructron_item.order .. "b"
+constructron.minable = {hardness = 0.5, mining_time = 1, result = "constructron"}
 
 constructron_recipe = table.deepcopy(data.raw["recipe"]["spidertron"])
 constructron_recipe.name = "constructron"
