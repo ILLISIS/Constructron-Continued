@@ -1,4 +1,7 @@
-local DebugEnabled = settings.global["constructron-debug-enabled"].value
+local DebugEnabled = true
+if settings.global["constructron-debug-enabled"] and settings.global["constructron-debug-enabled"].value == false then
+    DebugEnabled = false
+end
 
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
@@ -11,6 +14,7 @@ function get_constructrons()
     -- return game.surfaces['nauvis'].find_entities_filtered {
     --     name = "constructron"
     -- }
+    game.print("Constrictions: " .. serpent.block(#global.constructrons))
     return global.constructrons or {}
 end
 
