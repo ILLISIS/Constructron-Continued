@@ -620,9 +620,9 @@ actions = {
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
         for c, constructron in ipairs(constructrons) do
-			if (constructron.valid == false) then 
-				return false
-			end
+            if (constructron.valid == false) then 
+                return false
+            end
             if (distance_between(constructron.position, position) > 5) or not robots_inactive(constructron) then
                 return false
             end
