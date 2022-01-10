@@ -1,4 +1,8 @@
-local DebugEnabled = settings.global["constructron-debug-enabled"].value
+function DebugLog(message)
+    if settings.global["constructron-debug-enabled"].value then
+        game.print(message)
+    end
+end
 
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
@@ -508,9 +512,7 @@ end
 
 actions = {
     go_to_position = function(constructrons, position, find_path)
-        if DebugEnabled then
-            game.print('ACTION: go_to_position')
-        end
+        DebugLog('ACTION: go_to_position')
         if find_path then
             request_path(constructrons, position)
         else
@@ -523,9 +525,7 @@ actions = {
         end
     end,
     build = function(constructrons)
-        if DebugEnabled then
-            game.print('ACTION: build')
-        end
+        DebugLog('ACTION: build')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -538,9 +538,7 @@ actions = {
         -- enable construct 
     end,
     deconstruct = function(constructrons)
-        if DebugEnabled then
-            game.print('ACTION: deconstruct')
-        end
+        DebugLog('ACTION: deconstruct')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -553,9 +551,7 @@ actions = {
         -- enable construct 
     end,
     request_items = function(constructrons, items)
-        if DebugEnabled then
-            game.print('ACTION: request_items')
-        end
+        DebugLog('ACTION: request_items')
         local closest_station = get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
         for c, constructron in ipairs(constructrons) do
             request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
@@ -580,9 +576,7 @@ actions = {
         end
     end,
     clear_items = function(constructrons)
-        if DebugEnabled then
-            game.print('ACTION: clear_items')
-        end
+        DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
         for c, constructron in ipairs(constructrons) do
@@ -607,18 +601,14 @@ actions = {
         end
     end,
     retire = function(constructrons)
-        if DebugEnabled then
-            game.print('ACTION: retire')
-        end
+        DebugLog('ACTION: retire')
         for c, constructron in ipairs(constructrons) do
             set_constructron_status(constructron, 'busy', false)
             paint_constructron(constructron, 'idle')
         end
     end,
     add_to_check_chunk_done_queue = function(constructrons, chunk)
-        if DebugEnabled then
-            game.print('ACTION: add_to_check_chunk_done_queue')
-        end
+        DebugLog('ACTION: add_to_check_chunk_done_queue')
         local entity_names = {}
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
@@ -642,9 +632,7 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        if DebugEnabled then
-            game.print('CONDITION: position_done')
-        end
+        DebugLog('CONDITION: position_done')
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 return false
@@ -656,9 +644,7 @@ conditions = {
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
-        if DebugEnabled then
-            game.print('CONDITION: build_done')
-        end
+        DebugLog('CONDITION: build_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 return false
@@ -692,9 +678,7 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        if DebugEnabled then
-            game.print('CONDITION: deconstruction_done')
-        end
+        DebugLog('CONDITION: deconstruction_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 return false
@@ -706,9 +690,7 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
-        if DebugEnabled then
-            game.print('CONDITION: request_done')
-        end
+        DebugLog('CONDITION: request_done')
         if constructrons_need_reload(constructrons) then
             return false
         else
