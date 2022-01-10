@@ -12,6 +12,6 @@ data:extend({
 		name = "constructron-debug-enabled",
 		setting_type = "runtime-global",
 		order = "a1",
-		default_value = true,
+		default_value = false,
 	},
 })
