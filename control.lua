@@ -637,7 +637,7 @@ conditions = {
             if (constructron.valid == false) then 
                 return false
             end
-            if (distance_between(constructron.position, position) > 5) or not robots_inactive(constructron) then
+            if (distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
                 return false
             end
         end
@@ -681,7 +681,11 @@ conditions = {
         DebugLog('CONDITION: deconstruction_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
-                return false
+                if (constructron.can_insert{name="artillery-shell", count =1} == false) then
+                    return true
+                else
+                    return false
+                end
             end
         end
         if game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
