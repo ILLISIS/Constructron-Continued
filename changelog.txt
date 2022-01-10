@@ -1,8 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.2
-Date: 2022-01-09
+Date: 2022-01-10
   Fixes:
     - Mining a Constructron gives the player a Spidertron instead.
+    - Partially fixed deconstruction process when Constructron inventory fills. Constructrons will not get stuck any more eliminating manual intervention.
+  Known issues:
+    - Constructrons will attempt to finish the deconstruction queue when the inventory is full.
+    - Missed deconstructions will no long be considered by Contructrons until the entity is deconstructed again.
+    - Placing Constructrons whilst there are active jobs may cause a crash.
+  Other:
+    - Inception of debug mode.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 2022-01-09

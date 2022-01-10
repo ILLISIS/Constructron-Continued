@@ -1,3 +1,9 @@
+function DebugLog(message)
+    if settings.global["constructron-debug-enabled"].value then
+        game.print(message)
+    end
+end
+
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
     --     name = "service_station"
@@ -506,6 +512,7 @@ end
 
 actions = {
     go_to_position = function(constructrons, position, find_path)
+        DebugLog('ACTION: go_to_position')
         if find_path then
             request_path(constructrons, position)
         else
@@ -518,6 +525,7 @@ actions = {
         end
     end,
     build = function(constructrons)
+        DebugLog('ACTION: build')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -530,6 +538,7 @@ actions = {
         -- enable construct 
     end,
     deconstruct = function(constructrons)
+        DebugLog('ACTION: deconstruct')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -542,6 +551,7 @@ actions = {
         -- enable construct 
     end,
     request_items = function(constructrons, items)
+        DebugLog('ACTION: request_items')
         local closest_station = get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
         for c, constructron in ipairs(constructrons) do
             request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
@@ -566,6 +576,7 @@ actions = {
         end
     end,
     clear_items = function(constructrons)
+        DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
         for c, constructron in ipairs(constructrons) do
@@ -590,12 +601,14 @@ actions = {
         end
     end,
     retire = function(constructrons)
+        DebugLog('ACTION: retire')
         for c, constructron in ipairs(constructrons) do
             set_constructron_status(constructron, 'busy', false)
             paint_constructron(constructron, 'idle')
         end
     end,
     add_to_check_chunk_done_queue = function(constructrons, chunk)
+        DebugLog('ACTION: add_to_check_chunk_done_queue')
         local entity_names = {}
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
@@ -619,17 +632,19 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
+        DebugLog('CONDITION: position_done')
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 return false
             end
-            if (distance_between(constructron.position, position) > 5) or not robots_inactive(constructron) then
+            if (distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
                 return false
             end
         end
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
+        DebugLog('CONDITION: build_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 return false
@@ -663,9 +678,14 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
+        DebugLog('CONDITION: deconstruction_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
-                return false
+                if (constructron.can_insert{name="artillery-shell", count =1} == false) then
+                    return true
+                else
+                    return false
+                end
             end
         end
         if game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
@@ -674,6 +694,7 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
+        DebugLog('CONDITION: request_done')
         if constructrons_need_reload(constructrons) then
             return false
         else
@@ -1128,4 +1149,3 @@ function paint_constructron(constructron, color_state)
     end
     constructron.color = color
 end
-
