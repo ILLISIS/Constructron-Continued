@@ -1,0 +1,15 @@
+{
+    "Lua.diagnostics.globals": [
+        "game",
+        "settings",
+        "script",
+        "global",
+        "entity",
+        "defines",
+        "max_jobtime",
+        "data"
+    ],
+    "Lua.diagnostics.disable": [
+        "lowercase-global"
+    ]
+}

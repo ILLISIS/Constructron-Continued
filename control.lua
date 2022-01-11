@@ -323,9 +323,13 @@ function calculate_construct_positions(area, radius)
 end
 
 function add_ghosts_to_chunks()
-    if #global.ghost_entities > 0 and (game.tick - global.ghost_tick) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
+    if global.ghost_entities[1] and (game.tick - global.ghost_tick) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
-            local entity = table.remove(global.ghost_entities)
+            -- local entity = table.remove(global.ghost_entities)
+            local entity = global.ghost_entities[count]
+            local count = global.ghost_entities_count
+            global.ghost_entities[count] = nil
+            global.ghost_entities_count = count - 1
             if entity and entity.valid then
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
@@ -389,7 +393,7 @@ function add_ghosts_to_chunks()
 end
 
 function add_deconstruction_entities_to_chunks()
-    if #global.deconstruction_entities > 0 and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
+    if not global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             local entity = table.remove(global.deconstruction_entities)
             if entity and entity.valid then
@@ -458,7 +462,7 @@ function add_deconstruction_entities_to_chunks()
 end
 
 function add_upgrade_entities_to_chunks()
-    if #global.upgrade_entities > 0 then
+    if global.upgrade_entities[1] then
         for i = 1, entity_per_tick do
             local obj = table.remove(global.upgrade_entities)
             if not obj then break end
@@ -675,7 +679,11 @@ actions = {
             for i, entity in ipairs(ghosts) do
                 -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
                 --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
-                table.insert(global.ghost_entities, entity)
+                -- table.insert(global.ghost_entities, entity)
+                local count = global.ghost_entities_count
+                count = count + 1
+                global.ghost_entities_count = count
+                global.ghost_entities[count] = entity
                 -- end
             end
         end
@@ -913,7 +921,7 @@ function get_job(constructrons)
 
     -----------------------
 
-    if #global.ghost_entities == 0 and #global.deconstruction_entities == 0 then -- this means they are processed as chunks or it's empty.
+    if global.ghost_entities[1] and global.deconstruction_entities[1] then -- this means they are processed as chunks or it's empty.
 
         local chunks = {}
         local job_type
@@ -1123,7 +1131,12 @@ end
 script.on_event(defines.events.on_built_entity, function(event)
     local entity = event.created_entity
     if entity.type == 'entity-ghost' then
-        table.insert(global.ghost_entities, event.created_entity)
+        -- JanSharp 12/1/22 12:49am
+        -- table.insert(global.ghost_entities, event.created_entity)
+        local count = global.ghost_entities_count
+        count = count + 1
+        global.ghost_entities_count = count
+        global.ghost_entities[count] = entity
         global.ghost_tick = event.tick
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
