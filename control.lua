@@ -4,6 +4,8 @@ function DebugLog(message)
     end
 end
 
+max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
+
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
     --     name = "service_station"
@@ -329,18 +331,34 @@ function add_ghosts_to_chunks()
                 local key = chunk.y .. ',' .. chunk.x
                 local entity_key = entity.position.y .. ',' .. entity.position.x
                 if not global.construct_queue[key] then -- initialize queued_chunk
-                    global.construct_queue[key] = {key = key, entity_key=entity}
-                    global.construct_queue[key]['position'] = position_from_chunk(chunk)
-                    global.construct_queue[key]['area'] = get_area_from_chunk(chunk)
-                    global.construct_queue[key]['minimum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
+                    global.construct_queue[key] = {
+                        key = key,
+                        entity_key = entity,
+                        position = position_from_chunk(chunk),
+                        area = get_area_from_chunk(chunk),
+                        minimum = {
+                            x = entity.position.x,
+                            y = entity.position.y
+                        },
+                        maximum = {
+                            x = entity.position.x,
+                            y = entity.position.y
+
+                        },
+                        required_items = {},
                     }
-                    global.construct_queue[key]['maximum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    }
-                    global.construct_queue[key]['required_items'] = {}
+                    -- global.construct_queue[key] = {key = key, entity_key=entity}
+                    -- global.construct_queue[key]['position'] = position_from_chunk(chunk)
+                    -- global.construct_queue[key]['area'] = get_area_from_chunk(chunk)
+                    -- global.construct_queue[key]['minimum'] = {
+                    --     x = entity.position.x,
+                    --     y = entity.position.y
+                    -- }
+                    -- global.construct_queue[key]['maximum'] = {
+                    --     x = entity.position.x,
+                    --     y = entity.position.y
+                    -- }
+                    -- global.construct_queue[key]['required_items'] = {}
                 else -- add to existing queued_chunk
                     global.construct_queue[key][entity_key] = entity
                     if entity.position.x < global.construct_queue[key]['minimum'].x then
@@ -378,7 +396,27 @@ function add_deconstruction_entities_to_chunks()
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
                 local entity_key = entity.position.y .. ',' .. entity.position.x
+                game.print(game.tick)
+                game.print('that')
                 if not global.deconstruct_queue[key] then -- initialize queued_chunk
+                    -- global.deconstruct_queue[key] = {
+                    --     key = key,
+                    --     entity_key = entity,
+                    --     position = position_from_chunk(chunk),
+                    --     area = get_area_from_chunk(chunk),
+                    --     minimum = {
+                    --         x = entity.position.x,
+                    --         y = entity.position.y
+                    --     },
+                    --     maximum = {
+                    --         x = entity.position.x,
+                    --         y = entity.position.y
+
+                    --     },
+                    --     required_items = {},
+                    --     trash_items = {}
+                    -- }
+                    -- Honktown doesn't like the below because it looks up values through tables
                     global.deconstruct_queue[key] = {key = key, entity_key=entity}
                     global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
                     global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
@@ -405,6 +443,8 @@ function add_deconstruction_entities_to_chunks()
                         global.deconstruct_queue[key]['maximum'].y = entity.position.y
                     end
                 end
+                game.print(game.tick)
+                game.print('this')
                 if entity.type == "cliff" then
                     global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
                 end
@@ -432,18 +472,34 @@ function add_upgrade_entities_to_chunks()
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
                 if not global.upgrade_queue[key] then -- initialize queued_chunk
-                    global.upgrade_queue[key] = {key = key}
-                    global.upgrade_queue[key]['position'] = position_from_chunk(chunk)
-                    global.upgrade_queue[key]['area'] = get_area_from_chunk(chunk)
-                    global.upgrade_queue[key]['minimum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
+                    global.upgrade_queue[key] = {
+                        key = key,
+                        entity_key = entity,
+                        position = position_from_chunk(chunk),
+                        area = get_area_from_chunk(chunk),
+                        minimum = {
+                            x = entity.position.x,
+                            y = entity.position.y
+                        },
+                        maximum = {
+                            x = entity.position.x,
+                            y = entity.position.y
+
+                        },
+                        required_items = {},
                     }
-                    global.upgrade_queue[key]['maximum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    }
-                    global.upgrade_queue[key]['required_items'] = {}
+                    -- global.upgrade_queue[key] = {key = key}
+                    -- global.upgrade_queue[key]['position'] = position_from_chunk(chunk)
+                    -- global.upgrade_queue[key]['area'] = get_area_from_chunk(chunk)
+                    -- global.upgrade_queue[key]['minimum'] = {
+                    --     x = entity.position.x,
+                    --     y = entity.position.y
+                    -- }
+                    -- global.upgrade_queue[key]['maximum'] = {
+                    --     x = entity.position.x,
+                    --     y = entity.position.y
+                    -- }
+                    -- global.upgrade_queue[key]['required_items'] = {}
                 else -- add to existing queued_chunk
                     if entity.position.x < global.upgrade_queue[key]['minimum'].x then
                         global.upgrade_queue[key]['minimum'].x = entity.position.x
@@ -647,7 +703,12 @@ conditions = {
         DebugLog('CONDITION: build_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
-                return false
+                if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) >= max_jobtime then
+                    DebugLog('Constructron: construction job took too long!')
+                    return true
+                else
+                    return false
+                end
             end
         end
         if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) > 120 then
@@ -681,7 +742,8 @@ conditions = {
         DebugLog('CONDITION: deconstruction_done')
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
-                if (constructron.can_insert{name="artillery-shell", count =1} == false) then
+                if (game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick')) >= max_jobtime then
+                    DebugLog('Constructron: deconstruction job took too long!')
                     return true
                 else
                     return false
@@ -1075,6 +1137,7 @@ script.on_event(defines.events.on_built_entity, function(event)
         remove_entity_from_queue(global.construct_queue, entity)
     end
 end)
+
 script.on_event(defines.events.on_robot_built_entity, function(event)
     local entity = event.created_entity
     local stack = event.stack
