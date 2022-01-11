@@ -65,6 +65,7 @@ script.on_init(function()
     global.ghost_entities = {}
     global.ghost_entities_count = 0
     global.deconstruction_entities = {}
+    global.deconstruction_entities_count = 0
     global.upgrade_entities = {}
     global.constructron_statuses = {}
     global.construct_queue = {}  
@@ -79,6 +80,7 @@ script.on_configuration_changed(function()
     global.constructron_pathfinder_requests = global.constructron_pathfinder_requests or {}
     global.constructron_statuses = global.constructron_statuses or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
+    global.deconstruction_entities_count = global.deconstruction_entities_count or 0
     global.upgrade_entities = global.upgrade_entities or {}
     global.construct_queue = global.construct_queue or {}
     global.deconstruct_queue = global.deconstruct_queue or {}
@@ -397,7 +399,11 @@ end
 function add_deconstruction_entities_to_chunks()
     if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
-            local entity = table.remove(global.deconstruction_entities)
+            -- local entity = table.remove(global.deconstruction_entities)
+            local entity = global.deconstruction_entities[count]
+            local count = global.deconstruction_entities_count
+            global.deconstruction_entities[count] = nil
+            global.deconstruction_entities_count = count - 1
             if entity and entity.valid then
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
@@ -1181,7 +1187,11 @@ end)
 
 script.on_event(defines.events.on_marked_for_deconstruction, function(event)
     -- global.deconstruct_marked_tick = event.tick
-    table.insert(global.deconstruction_entities, event.entity)
+    -- table.insert(global.deconstruction_entities, event.entity)
+    local count = global.deconstruction_entities_count
+    count = count + 1
+    global.deconstruction_entities_count = count
+    global.deconstruction_entities[count] = entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 
 
