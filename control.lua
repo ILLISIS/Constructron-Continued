@@ -396,8 +396,6 @@ function add_deconstruction_entities_to_chunks()
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
                 local entity_key = entity.position.y .. ',' .. entity.position.x
-                game.print(game.tick)
-                game.print('that')
                 if not global.deconstruct_queue[key] then -- initialize queued_chunk
                     -- global.deconstruct_queue[key] = {
                     --     key = key,
@@ -443,8 +441,6 @@ function add_deconstruction_entities_to_chunks()
                         global.deconstruct_queue[key]['maximum'].y = entity.position.y
                     end
                 end
-                game.print(game.tick)
-                game.print('this')
                 if entity.type == "cliff" then
                     global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
                 end
