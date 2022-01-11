@@ -63,6 +63,7 @@ end
 script.on_init(function()
     global.constructron_pathfinder_requests = {}
     global.ghost_entities = {}
+    global.ghost_entities_count = 0
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
     global.constructron_statuses = {}
@@ -83,6 +84,7 @@ script.on_configuration_changed(function()
     global.deconstruct_queue = global.deconstruct_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
     global.ghost_entities = global.ghost_entities or {}
+    global.ghost_entities_count = global.ghost_entities_count or 0
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
@@ -393,7 +395,7 @@ function add_ghosts_to_chunks()
 end
 
 function add_deconstruction_entities_to_chunks()
-    if not global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
+    if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             local entity = table.remove(global.deconstruction_entities)
             if entity and entity.valid then
@@ -921,7 +923,7 @@ function get_job(constructrons)
 
     -----------------------
 
-    if global.ghost_entities[1] and global.deconstruction_entities[1] then -- this means they are processed as chunks or it's empty.
+    if not (global.ghost_entities[1] or global.deconstruction_entities[1]) then -- this means they are processed as chunks or it's empty.
 
         local chunks = {}
         local job_type
