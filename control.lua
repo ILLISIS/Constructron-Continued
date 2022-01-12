@@ -172,32 +172,33 @@ function get_area_from_chunk(chunk)
     return area
 end
 
-function find_ghosts(chunk, position, radius)
-    -- both chunk and position are optional
-    -- if given chunk, it will look in that chunk
-    -- if given position, it will find the corresponding chunk and look in that chunk
-    -- if not given any of it, it will find a single ghost
-    local area = nil
-    if chunk then
-        area = get_area_from_chunk(chunk)
-    elseif position then
-        return game.surfaces['nauvis'].find_entities_filtered {
-            position = position,
-            radius = radius,
-            type = "entity-ghost"
-        }
-    else
-        return game.surfaces['nauvis'].find_entities_filtered {
-            type = "entity-ghost",
-            limit = 1
-        }
-    end
-    local ghosts = game.surfaces['nauvis'].find_entities_filtered {
-        type = "entity-ghost",
-        area = area
-    }
-    return ghosts
-end
+-- This section is unused.
+-- function find_ghosts(chunk, position, radius)
+--     -- both chunk and position are optional
+--     -- if given chunk, it will look in that chunk
+--     -- if given position, it will find the corresponding chunk and look in that chunk
+--     -- if not given any of it, it will find a single ghost
+--     local area = nil
+--     if chunk then
+--         area = get_area_from_chunk(chunk)
+--     elseif position then
+--         return game.surfaces['nauvis'].find_entities_filtered {
+--             position = position,
+--             radius = radius,
+--             type = "entity-ghost"
+--         }
+--     else
+--         return game.surfaces['nauvis'].find_entities_filtered {
+--             type = "entity-ghost",
+--             limit = 1
+--         }
+--     end
+--     local ghosts = game.surfaces['nauvis'].find_entities_filtered {
+--         type = "entity-ghost",
+--         area = area
+--     }
+--     return ghosts
+-- end
 
 entity_per_tick = 100
 
@@ -332,65 +333,67 @@ function add_ghosts_to_chunks()
             -- local entity = table.remove(global.ghost_entities)
             local count = global.ghost_entities_count
             local entity = global.ghost_entities[count]
-            global.ghost_entities[count] = nil
-            global.ghost_entities_count = count - 1
-            if entity and entity.valid then
-                local chunk = chunk_from_position(entity.position)
-                local key = chunk.y .. ',' .. chunk.x
-                local entity_key = entity.position.y .. ',' .. entity.position.x
-                if not global.construct_queue[key] then -- initialize queued_chunk
-                    global.construct_queue[key] = {
-                        key = key,
-                        entity_key = entity,
-                        position = position_from_chunk(chunk),
-                        area = get_area_from_chunk(chunk),
-                        minimum = {
-                            x = entity.position.x,
-                            y = entity.position.y
-                        },
-                        maximum = {
-                            x = entity.position.x,
-                            y = entity.position.y
+            if count > 0 then
+                global.ghost_entities[count] = nil
+                global.ghost_entities_count = count - 1
+                if entity.valid then
+                    local chunk = chunk_from_position(entity.position)
+                    local key = chunk.y .. ',' .. chunk.x
+                    local entity_key = entity.position.y .. ',' .. entity.position.x
+                    if not global.construct_queue[key] then -- initialize queued_chunk
+                        global.construct_queue[key] = {
+                            key = key,
+                            entity_key = entity,
+                            position = position_from_chunk(chunk),
+                            area = get_area_from_chunk(chunk),
+                            minimum = {
+                                x = entity.position.x,
+                                y = entity.position.y
+                            },
+                            maximum = {
+                                x = entity.position.x,
+                                y = entity.position.y
 
-                        },
-                        required_items = {},
-                    }
-                    -- global.construct_queue[key] = {key = key, entity_key=entity}
-                    -- global.construct_queue[key]['position'] = position_from_chunk(chunk)
-                    -- global.construct_queue[key]['area'] = get_area_from_chunk(chunk)
-                    -- global.construct_queue[key]['minimum'] = {
-                    --     x = entity.position.x,
-                    --     y = entity.position.y
-                    -- }
-                    -- global.construct_queue[key]['maximum'] = {
-                    --     x = entity.position.x,
-                    --     y = entity.position.y
-                    -- }
-                    -- global.construct_queue[key]['required_items'] = {}
-                else -- add to existing queued_chunk
-                    global.construct_queue[key][entity_key] = entity
-                    if entity.position.x < global.construct_queue[key]['minimum'].x then
-                        global.construct_queue[key]['minimum'].x = entity.position.x
-                    elseif entity.position.x > global.construct_queue[key]['maximum'].x then
-                        global.construct_queue[key]['maximum'].x = entity.position.x
+                            },
+                            required_items = {},
+                        }
+                        -- global.construct_queue[key] = {key = key, entity_key=entity}
+                        -- global.construct_queue[key]['position'] = position_from_chunk(chunk)
+                        -- global.construct_queue[key]['area'] = get_area_from_chunk(chunk)
+                        -- global.construct_queue[key]['minimum'] = {
+                        --     x = entity.position.x,
+                        --     y = entity.position.y
+                        -- }
+                        -- global.construct_queue[key]['maximum'] = {
+                        --     x = entity.position.x,
+                        --     y = entity.position.y
+                        -- }
+                        -- global.construct_queue[key]['required_items'] = {}
+                    else -- add to existing queued_chunk
+                        global.construct_queue[key][entity_key] = entity
+                        if entity.position.x < global.construct_queue[key]['minimum'].x then
+                            global.construct_queue[key]['minimum'].x = entity.position.x
+                        elseif entity.position.x > global.construct_queue[key]['maximum'].x then
+                            global.construct_queue[key]['maximum'].x = entity.position.x
+                        end
+                        if entity.position.y < global.construct_queue[key]['minimum'].y then
+                            global.construct_queue[key]['minimum'].y = entity.position.y
+                        elseif entity.position.y > global.construct_queue[key]['maximum'].y then
+                            global.construct_queue[key]['maximum'].y = entity.position.y
+                        end
                     end
-                    if entity.position.y < global.construct_queue[key]['minimum'].y then
-                        global.construct_queue[key]['minimum'].y = entity.position.y
-                    elseif entity.position.y > global.construct_queue[key]['maximum'].y then
-                        global.construct_queue[key]['maximum'].y = entity.position.y
+                    -- to use for requesting stuff to constructron
+                    for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
+                        global.construct_queue[key]['required_items'][item.name] =
+                            (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
                     end
+                    for name, count in pairs(entity.item_requests) do
+                        global.construct_queue[key]['required_items'][name] =
+                            (global.construct_queue[key]['required_items'][name] or 0) + count
+                    end
+                else
+                    break
                 end
-                -- to use for requesting stuff to constructron
-                for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                    global.construct_queue[key]['required_items'][item.name] =
-                        (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
-                end
-                for name, count in pairs(entity.item_requests) do
-                    global.construct_queue[key]['required_items'][name] =
-                        (global.construct_queue[key]['required_items'][name] or 0) + count
-                end
-            else
-                break
             end
         end
     end
@@ -402,68 +405,70 @@ function add_deconstruction_entities_to_chunks()
             -- local entity = table.remove(global.deconstruction_entities)
             local count = global.deconstruction_entities_count
             local entity = global.deconstruction_entities[count]
-            global.deconstruction_entities[count] = nil
-            global.deconstruction_entities_count = count - 1
-            if entity and entity.valid then
-                local chunk = chunk_from_position(entity.position)
-                local key = chunk.y .. ',' .. chunk.x
-                local entity_key = entity.position.y .. ',' .. entity.position.x
-                if not global.deconstruct_queue[key] then -- initialize queued_chunk
-                    -- global.deconstruct_queue[key] = {
-                    --     key = key,
-                    --     entity_key = entity,
-                    --     position = position_from_chunk(chunk),
-                    --     area = get_area_from_chunk(chunk),
-                    --     minimum = {
-                    --         x = entity.position.x,
-                    --         y = entity.position.y
-                    --     },
-                    --     maximum = {
-                    --         x = entity.position.x,
-                    --         y = entity.position.y
+            if count > 0 then
+                global.deconstruction_entities[count] = nil
+                global.deconstruction_entities_count = count - 1
+                if entity.valid then
+                    local chunk = chunk_from_position(entity.position)
+                    local key = chunk.y .. ',' .. chunk.x
+                    local entity_key = entity.position.y .. ',' .. entity.position.x
+                    if not global.deconstruct_queue[key] then -- initialize queued_chunk
+                        -- global.deconstruct_queue[key] = {
+                        --     key = key,
+                        --     entity_key = entity,
+                        --     position = position_from_chunk(chunk),
+                        --     area = get_area_from_chunk(chunk),
+                        --     minimum = {
+                        --         x = entity.position.x,
+                        --         y = entity.position.y
+                        --     },
+                        --     maximum = {
+                        --         x = entity.position.x,
+                        --         y = entity.position.y
 
-                    --     },
-                    --     required_items = {},
-                    --     trash_items = {}
-                    -- }
-                    -- Honktown doesn't like the below because it looks up values through tables
-                    global.deconstruct_queue[key] = {key = key, entity_key=entity}
-                    global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
-                    global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
-                    global.deconstruct_queue[key]['minimum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    }
-                    global.deconstruct_queue[key]['maximum'] = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    }
-                    global.deconstruct_queue[key]['required_items'] = {}
-                    global.deconstruct_queue[key]['trash_items'] = {}
-                else -- add to existing queued_chunk
-                    global.deconstruct_queue[key][entity_key] = entity
-                    if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
-                        global.deconstruct_queue[key]['minimum'].x = entity.position.x
-                    elseif entity.position.x > global.deconstruct_queue[key]['maximum'].x then
-                        global.deconstruct_queue[key]['maximum'].x = entity.position.x
+                        --     },
+                        --     required_items = {},
+                        --     trash_items = {}
+                        -- }
+                        -- Honktown doesn't like the below because it looks up values through tables
+                        global.deconstruct_queue[key] = {key = key, entity_key=entity}
+                        global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
+                        global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
+                        global.deconstruct_queue[key]['minimum'] = {
+                            x = entity.position.x,
+                            y = entity.position.y
+                        }
+                        global.deconstruct_queue[key]['maximum'] = {
+                            x = entity.position.x,
+                            y = entity.position.y
+                        }
+                        global.deconstruct_queue[key]['required_items'] = {}
+                        global.deconstruct_queue[key]['trash_items'] = {}
+                    else -- add to existing queued_chunk
+                        global.deconstruct_queue[key][entity_key] = entity
+                        if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
+                            global.deconstruct_queue[key]['minimum'].x = entity.position.x
+                        elseif entity.position.x > global.deconstruct_queue[key]['maximum'].x then
+                            global.deconstruct_queue[key]['maximum'].x = entity.position.x
+                        end
+                        if entity.position.y < global.deconstruct_queue[key]['minimum'].y then
+                            global.deconstruct_queue[key]['minimum'].y = entity.position.y
+                        elseif entity.position.y > global.deconstruct_queue[key]['maximum'].y then
+                            global.deconstruct_queue[key]['maximum'].y = entity.position.y
+                        end
                     end
-                    if entity.position.y < global.deconstruct_queue[key]['minimum'].y then
-                        global.deconstruct_queue[key]['minimum'].y = entity.position.y
-                    elseif entity.position.y > global.deconstruct_queue[key]['maximum'].y then
-                        global.deconstruct_queue[key]['maximum'].y = entity.position.y
+                    if entity.type == "cliff" then
+                        global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
                     end
-                end
-                if entity.type == "cliff" then
-                    global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
-                end
-                if entity.prototype.mineable_properties.products then
-                    for index, item in ipairs(entity.prototype.mineable_properties.products) do
-                        local amount = item.amount or item.amount_max
-                        global.deconstruct_queue[key]['trash_items'][item.name] = (global.deconstruct_queue[key]['trash_items'][item.name] or 0) + amount
+                    if entity.prototype.mineable_properties.products then
+                        for index, item in ipairs(entity.prototype.mineable_properties.products) do
+                            local amount = item.amount or item.amount_max
+                            global.deconstruct_queue[key]['trash_items'][item.name] = (global.deconstruct_queue[key]['trash_items'][item.name] or 0) + amount
+                        end
                     end
+                else
+                    break
                 end
-            else
-                break
             end
         end
     end
@@ -991,7 +996,7 @@ function get_job(constructrons)
         for i, chunk in ipairs(combined_chunks) do
             -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
             -- local chunk = table.remove(combined_chunks, chunk_index)
-            chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.95) -- 5% tolerance
+            chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
             local find_path = false
             for p, position in ipairs(chunk.positions) do
                 if p == 1 then find_path = true end
