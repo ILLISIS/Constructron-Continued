@@ -330,8 +330,8 @@ function add_ghosts_to_chunks()
     if global.ghost_entities[1] and (game.tick - global.ghost_tick) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.ghost_entities)
-            local entity = global.ghost_entities[count]
             local count = global.ghost_entities_count
+            local entity = global.ghost_entities[count]
             global.ghost_entities[count] = nil
             global.ghost_entities_count = count - 1
             if entity and entity.valid then
@@ -400,8 +400,8 @@ function add_deconstruction_entities_to_chunks()
     if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.deconstruction_entities)
-            local entity = global.deconstruction_entities[count]
             local count = global.deconstruction_entities_count
+            local entity = global.deconstruction_entities[count]
             global.deconstruction_entities[count] = nil
             global.deconstruction_entities_count = count - 1
             if entity and entity.valid then
@@ -1191,7 +1191,7 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event)
     local count = global.deconstruction_entities_count
     count = count + 1
     global.deconstruction_entities_count = count
-    global.deconstruction_entities[count] = entity
+    global.deconstruction_entities[count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 
 
