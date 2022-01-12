@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.3
+Date: 2022-01-12
+  Fixes:
+    - Crash on Constructron placement
+  Improvements:
+    - Major performance improvements to ghost and deconstruction entity processing.
+    - Ability to set maximum amount of time a job can take before timing out and returning home in the mod settings. Default is 2 minutes.
+    - Code refactoring.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue when the inventory is full.
+    - Missed ghosts and deconstructions will no longer be considered by Contructrons until the entity is deconstructed again.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Date: 2022-01-10
   Fixes:
@@ -6,7 +18,7 @@ Date: 2022-01-10
     - Partially fixed deconstruction process when Constructron inventory fills. Constructrons will not get stuck any more eliminating manual intervention.
   Known issues:
     - Constructrons will attempt to finish the deconstruction queue when the inventory is full.
-    - Missed deconstructions will no long be considered by Contructrons until the entity is deconstructed again.
+    - Missed deconstructions will no longer be considered by Contructrons until the entity is deconstructed again.
     - Placing Constructrons whilst there are active jobs may cause a crash.
   Other:
     - Inception of debug mode.
