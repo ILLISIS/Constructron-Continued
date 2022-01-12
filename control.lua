@@ -829,6 +829,8 @@ end
 function get_job(constructrons)
     local available_constructrons = {}
     for c, constructron in pairs(constructrons) do
+        if constructron.logistic_cell == nil then
+        return end
         if not get_constructron_status(constructron, 'busy') then
             table.insert(available_constructrons, constructron)
         end
