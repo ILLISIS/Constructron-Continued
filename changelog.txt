@@ -1,8 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 2022-01-13
+  Fixes:
+    - Linear constructron job assignment.
+  Improvements:
+    - Contructrons no longer will start a job without a roboport and at least one bot allowing time to place and fit equipment.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 2022-01-12
   Fixes:
-    - Crash on Constructron placement
+    - Crash on Constructron placement.
   Improvements:
     - Major performance improvements to ghost and deconstruction entity processing.
     - Ability to set maximum amount of time a job can take before timing out and returning home in the mod settings. Default is 2 minutes.
