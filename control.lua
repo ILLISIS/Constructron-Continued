@@ -331,11 +331,11 @@ function add_ghosts_to_chunks()
     if global.ghost_entities[1] and (game.tick - global.ghost_tick) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.ghost_entities)
-            local ghost_index = global.ghost_entities_count
-            local entity = global.ghost_entities[ghost_index]
-            if ghost_index > 0 then
-                global.ghost_entities[ghost_index] = nil
-                global.ghost_entities_count = ghost_index - 1
+            local ghost_count = global.ghost_entities_count
+            local entity = global.ghost_entities[ghost_count]
+            if ghost_count > 0 then
+                global.ghost_entities[ghost_count] = nil
+                global.ghost_entities_count = ghost_count - 1
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
@@ -403,11 +403,11 @@ function add_deconstruction_entities_to_chunks()
     if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.deconstruction_entities)
-            local ghost_index = global.deconstruction_entities_count
-            local entity = global.deconstruction_entities[ghost_index]
-            if ghost_index > 0 then
-                global.deconstruction_entities[ghost_index] = nil
-                global.deconstruction_entities_count = ghost_index - 1
+            local ghost_count = global.deconstruction_entities_count
+            local entity = global.deconstruction_entities[ghost_count]
+            if ghost_count > 0 then
+                global.deconstruction_entities[ghost_count] = nil
+                global.deconstruction_entities_count = ghost_count - 1
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
@@ -693,10 +693,10 @@ actions = {
                 -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
                 --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
                 -- table.insert(global.ghost_entities, entity)
-                local ghost_index = global.ghost_entities_count
-                ghost_index = ghost_index + 1
-                global.ghost_entities_count = ghost_index
-                global.ghost_entities[ghost_index] = entity
+                local ghost_count = global.ghost_entities_count
+                ghost_count = ghost_count + 1
+                global.ghost_entities_count = ghost_count
+                global.ghost_entities[ghost_count] = entity
                 -- end
             end
         end
@@ -1146,10 +1146,10 @@ script.on_event(defines.events.on_built_entity, function(event)
     if entity.type == 'entity-ghost' then
         -- JanSharp 12/1/22 12:49am
         -- table.insert(global.ghost_entities, event.created_entity)
-        local ghost_index = global.ghost_entities_count
-        ghost_index = ghost_index + 1
-        global.ghost_entities_count = ghost_index
-        global.ghost_entities[ghost_index] = entity
+        local ghost_count = global.ghost_entities_count
+        ghost_count = ghost_count + 1
+        global.ghost_entities_count = ghost_count
+        global.ghost_entities[ghost_count] = entity
         global.ghost_tick = event.tick
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
@@ -1193,10 +1193,10 @@ end)
 script.on_event(defines.events.on_marked_for_deconstruction, function(event)
     -- global.deconstruct_marked_tick = event.tick
     -- table.insert(global.deconstruction_entities, event.entity)
-    local ghost_index = global.deconstruction_entities_count
-    ghost_index = ghost_index + 1
-    global.deconstruction_entities_count = ghost_index
-    global.deconstruction_entities[ghost_index] = event.entity
+    local ghost_count = global.deconstruction_entities_count
+    ghost_count = ghost_count + 1
+    global.deconstruction_entities_count = ghost_count
+    global.deconstruction_entities[ghost_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 
 
