@@ -700,6 +700,31 @@ actions = {
                 -- end
             end
         end
+    end,
+    check_decon_chunk = function(constructrons, chunk)
+        DebugLog('ACTION: check_decon_chunk')
+        local entity_names = {}
+        for name, count in pairs(chunk.required_items) do
+            table.insert(entity_names, name)
+        end
+        local decons = constructrons[1].surface.find_entities_filtered{
+            area = {chunk.minimum, chunk.maximum},
+            to_be_deconstructed = true,
+            ghost_name = entity_names,
+        }
+        if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+            game.print('added '..#decons .. ' to be deconstructed.')
+            for i, entity in ipairs(decons) do
+                -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
+                --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
+                -- table.insert(global.ghost_entities, entity)
+                local decon_count = global.deconstruction_entities_count
+                decon_count = decon_count + 1
+                global.deconstruction_entities_count = decon_count
+                global.deconstruction_entities[decon_count] = entity
+                -- end
+            end
+        end
     end
 }
 
@@ -1038,6 +1063,15 @@ function get_job(constructrons)
                 }
                 create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
             end
+            if job_type == 'deconstruct' then
+                local check_decon_chunk_job = {
+                    action = 'check_decon_chunk',
+                    action_args = {chunk},
+                    leave_condition = 'pass', -- there is no leave condition 
+                    constructrons = selected_constructrons,
+                }
+                create_job(global.job_bundle_index, check_decon_chunk_job)
+            end
         end
         -- go back to a service_station when job is done.
         local closest_station = get_closest_service_station(selected_constructrons[1])
@@ -1160,6 +1194,17 @@ script.on_event(defines.events.on_built_entity, function(event)
     end
 end)
 
+script.on_event(defines.events.on_post_entity_died, function(event)
+    local entity = event.ghost
+    if entity and entity.type == 'entity-ghost' then
+        local ghost_count = global.ghost_entities_count
+        ghost_count = ghost_count + 1
+        global.ghost_entities_count = ghost_count
+        global.ghost_entities[ghost_count] = entity
+        global.ghost_tick = event.tick
+    end
+end)
+
 script.on_event(defines.events.on_robot_built_entity, function(event)
     local entity = event.created_entity
     local stack = event.stack
@@ -1193,10 +1238,10 @@ end)
 script.on_event(defines.events.on_marked_for_deconstruction, function(event)
     -- global.deconstruct_marked_tick = event.tick
     -- table.insert(global.deconstruction_entities, event.entity)
-    local ghost_count = global.deconstruction_entities_count
-    ghost_count = ghost_count + 1
-    global.deconstruction_entities_count = ghost_count
-    global.deconstruction_entities[ghost_count] = event.entity
+    local decon_count = global.deconstruction_entities_count
+    decon_count = decon_count + 1
+    global.deconstruction_entities_count = decon_count
+    global.deconstruction_entities[decon_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 
 
