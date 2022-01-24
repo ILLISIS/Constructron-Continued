@@ -549,7 +549,7 @@ end)
 function robots_inactive(constructron)
     if constructron.logistic_network and constructron.logistic_network.all_construction_robots ==
         constructron.logistic_network.cells[1].stationed_construction_robot_count then
-            for i, equipment in ipairs(constructron.grid.equipment) do
+        for i, equipment in ipairs(constructron.grid.equipment) do
             if equipment.type == 'roboport-equipment' then
                 if (equipment.energy / equipment.max_energy) < 0.95 then
                     return false
@@ -736,7 +736,7 @@ conditions = {
                 return false
             end
             if (distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
-                    return false
+                return false
             end
         end
         return true
@@ -1247,11 +1247,11 @@ end, {{filter='name', name="item-on-ground", invert=true}})
 
 
 function set_constructron_status(constructron, state, value)
-        if global.constructron_statuses[constructron.unit_number] then
-            global.constructron_statuses[constructron.unit_number][state] = value
-        else
-            global.constructron_statuses[constructron.unit_number] = {}
-            global.constructron_statuses[constructron.unit_number][state] = value
+    if global.constructron_statuses[constructron.unit_number] then
+        global.constructron_statuses[constructron.unit_number][state] = value
+    else
+        global.constructron_statuses[constructron.unit_number] = {}
+        global.constructron_statuses[constructron.unit_number][state] = value
     end
 end
 
