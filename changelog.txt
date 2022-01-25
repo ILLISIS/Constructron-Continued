@@ -4,6 +4,7 @@ Date: 2022-01-25
   Improvements:
     - Contructrons will now rebuild entities that die. I.e are destroyed by biters or players.
     - Constructrons will now go back for items missed during a deconstruction job.
+    - Alternate recipes. An easy mode and normal mode. Toggle this from the game menu > settings > mod settings > startup.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 2022-01-13
