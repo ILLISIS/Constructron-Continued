@@ -15,6 +15,12 @@ data:extend({
 		default_value = false,
 	},
 	{
+		type = "bool-setting",
+		name = "constructron-easy-recipe-toggle",
+		setting_type = "startup",
+		default_value = true,
+	},
+	{
 		type = "int-setting",
 		name = "max-jobtime-per-job",
 		setting_type = "runtime-global",
