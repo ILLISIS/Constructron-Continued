@@ -28,4 +28,12 @@ data:extend({
 		minimum_value = 1,
         maximum_value = 10,
 	},
+	{
+		type = "int-setting",
+		name = "job-start-delay",
+		setting_type = "runtime-global",
+		default_value = 5,
+		minimum_value = 0,
+        maximum_value = 600,
+	},
 })

@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.6
+Date: 2022-01-30
+  Improvements:
+    - Deconstruction jobs now adhere to the same 5 second(default) delay to allow for robots to deconstruct the entities.
+    - Upgrade jobs now adhere to the same 5 second(default) delay to allow for robots to upgrade the entities.
+    - Job start delay is now configurable. Allow more or less time for robots to finish building before a job is queued.
+    - Ghosts created by other mods (such as Recursive Blueprints) will now be built.
+    - Entities created by other mods that are not buildable by the player, like those found in Logistic Train Network(LTN) will now be skipped from logistic requests.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 2022-01-25
   Improvements:
