@@ -5,6 +5,7 @@ function DebugLog(message)
 end
 
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
+job_start_delay = (settings.global["job-start-delay"].value * 60)
 
 function get_service_stations()
     -- return game.surfaces['nauvis'].find_entities_filtered {
@@ -328,7 +329,7 @@ function calculate_construct_positions(area, radius)
 end
 
 function add_ghosts_to_chunks()
-    if global.ghost_entities[1] and (game.tick - global.ghost_tick) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
+    if global.ghost_entities[1] and (game.tick - global.ghost_tick) > job_start_delay then -- if the ghost isn't built in 5 seconds or 300 ticks(default setting).
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.ghost_entities)
             local ghost_count = global.ghost_entities_count
@@ -400,7 +401,7 @@ function add_ghosts_to_chunks()
 end
 
 function add_deconstruction_entities_to_chunks()
-    if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > 300 then -- if the ghost isn't built in 5 seconds or 300 ticks...
+    if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > job_start_delay then -- if the entity isn't deconstructed in 5 seconds or 300 ticks(default setting).
         for i = 1, entity_per_tick do
             -- local entity = table.remove(global.deconstruction_entities)
             local ghost_count = global.deconstruction_entities_count
@@ -413,37 +414,37 @@ function add_deconstruction_entities_to_chunks()
                     local key = chunk.y .. ',' .. chunk.x
                     local entity_key = entity.position.y .. ',' .. entity.position.x
                     if not global.deconstruct_queue[key] then -- initialize queued_chunk
-                        -- global.deconstruct_queue[key] = {
-                        --     key = key,
-                        --     entity_key = entity,
-                        --     position = position_from_chunk(chunk),
-                        --     area = get_area_from_chunk(chunk),
-                        --     minimum = {
-                        --         x = entity.position.x,
-                        --         y = entity.position.y
-                        --     },
-                        --     maximum = {
-                        --         x = entity.position.x,
-                        --         y = entity.position.y
+                        global.deconstruct_queue[key] = {
+                            key = key,
+                            entity_key = entity,
+                            position = position_from_chunk(chunk),
+                            area = get_area_from_chunk(chunk),
+                            minimum = {
+                                x = entity.position.x,
+                                y = entity.position.y
+                            },
+                            maximum = {
+                                x = entity.position.x,
+                                y = entity.position.y
 
-                        --     },
-                        --     required_items = {},
-                        --     trash_items = {}
-                        -- }
+                            },
+                            required_items = {},
+                            trash_items = {}
+                        }
                         -- Honktown doesn't like the below because it looks up values through tables
-                        global.deconstruct_queue[key] = {key = key, entity_key=entity}
-                        global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
-                        global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
-                        global.deconstruct_queue[key]['minimum'] = {
-                            x = entity.position.x,
-                            y = entity.position.y
-                        }
-                        global.deconstruct_queue[key]['maximum'] = {
-                            x = entity.position.x,
-                            y = entity.position.y
-                        }
-                        global.deconstruct_queue[key]['required_items'] = {}
-                        global.deconstruct_queue[key]['trash_items'] = {}
+                        -- global.deconstruct_queue[key] = {key = key, entity_key=entity}
+                        -- global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
+                        -- global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
+                        -- global.deconstruct_queue[key]['minimum'] = {
+                        --     x = entity.position.x,
+                        --     y = entity.position.y
+                        -- }
+                        -- global.deconstruct_queue[key]['maximum'] = {
+                        --     x = entity.position.x,
+                        --     y = entity.position.y
+                        -- }
+                        -- global.deconstruct_queue[key]['required_items'] = {}
+                        -- global.deconstruct_queue[key]['trash_items'] = {}
                     else -- add to existing queued_chunk
                         global.deconstruct_queue[key][entity_key] = entity
                         if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
@@ -475,7 +476,7 @@ function add_deconstruction_entities_to_chunks()
 end
 
 function add_upgrade_entities_to_chunks()
-    if global.upgrade_entities[1] then
+    if global.upgrade_entities[1] and (game.tick - (global.upgrade_marked_tick or 0)) > job_start_delay then -- if the entity isn't upgraded in 5 seconds or 300 ticks(default setting).
         for i = 1, entity_per_tick do
             local obj = table.remove(global.upgrade_entities)
             if not obj then break end
@@ -1178,8 +1179,26 @@ end
 script.on_event(defines.events.on_built_entity, function(event)
     local entity = event.created_entity
     if entity.type == 'entity-ghost' then
-        -- JanSharp 12/1/22 12:49am
-        -- table.insert(global.ghost_entities, event.created_entity)
+        local items_to_place_this = entity.ghost_prototype.items_to_place_this
+        if not game.item_prototypes[items_to_place_this[1].name].has_flag('hidden') then
+            local ghost_count = global.ghost_entities_count
+            ghost_count = ghost_count + 1
+            global.ghost_entities_count = ghost_count
+            global.ghost_entities[ghost_count] = entity
+            global.ghost_tick = event.tick
+        end
+    elseif entity.name == 'constructron' then
+        global.constructrons[entity.unit_number] = entity
+    elseif entity.name == "service_station" then
+        global.service_stations[entity.unit_number] = entity
+    else
+        remove_entity_from_queue(global.construct_queue, entity)
+    end
+end)
+
+script.on_event(defines.events.script_raised_built, function(event)
+    local entity = event.entity
+    if entity.type == 'entity-ghost' then
         local ghost_count = global.ghost_entities_count
         ghost_count = ghost_count + 1
         global.ghost_entities_count = ghost_count
@@ -1232,11 +1251,12 @@ script.on_event(defines.events.on_player_mined_entity, function(event)
 end)
 
 script.on_event(defines.events.on_marked_for_upgrade, function(event)
+    global.upgrade_marked_tick = event.tick
     table.insert(global.upgrade_entities, {entity=event.entity, target=event.target})
 end)
 
 script.on_event(defines.events.on_marked_for_deconstruction, function(event)
-    -- global.deconstruct_marked_tick = event.tick
+    global.deconstruct_marked_tick = event.tick
     -- table.insert(global.deconstruction_entities, event.entity)
     local decon_count = global.deconstruction_entities_count
     decon_count = decon_count + 1
