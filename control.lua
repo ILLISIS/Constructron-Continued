@@ -63,6 +63,7 @@ end
 
 script.on_init(function()
     global.constructron_pathfinder_requests = {}
+    global.ignored_entities = {}
     global.ghost_entities = {}
     global.ghost_entities_count = 0
     global.deconstruction_entities = {}
@@ -86,12 +87,12 @@ script.on_configuration_changed(function()
     global.construct_queue = global.construct_queue or {}
     global.deconstruct_queue = global.deconstruct_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
+    global.ignored_entities = global.ignored_entities or {}
     global.ghost_entities = global.ghost_entities or {}
     global.ghost_entities_count = global.ghost_entities_count or 0
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
-
 end)
 
 function clean_linear_path(path)
@@ -114,22 +115,27 @@ function clean_linear_path(path)
 end
 
 function request_path(constructrons, goal)
-    local request_id = constructrons[1].surface.request_path {
-        bounding_box = {{-3, -3}, {3, 3}},
-        collision_mask = {"water-tile", "colliding-with-tiles-only", "consider-tile-transitions"},
-        start = constructrons[1].position,
-        goal = goal,
-        force = constructrons[1].force,
-        pathfinding_flags = {
-            cache = false,
-            low_priority = true
+    if constructrons[1].valid then
+        local request_id = constructrons[1].surface.request_path {
+            bounding_box = {{-3, -3}, {3, 3}},
+            collision_mask = {"water-tile", "colliding-with-tiles-only", "consider-tile-transitions"},
+            start = constructrons[1].position,
+            goal = goal,
+            force = constructrons[1].force,
+            pathfinding_flags = {
+                cache = false,
+                low_priority = true
+            }
         }
-    }
-    global.constructron_pathfinder_requests[request_id] = {
-        constructrons = constructrons
-    }
-    for c, constructron in ipairs(constructrons) do
-        constructron.autopilot_destination = nil
+        global.constructron_pathfinder_requests[request_id] = {
+            constructrons = constructrons
+        }
+        for c, constructron in ipairs(constructrons) do
+            constructron.autopilot_destination = nil
+        end
+    else
+        invalid = true
+        return invalid
     end
 end
 
@@ -328,6 +334,12 @@ function calculate_construct_positions(area, radius)
     return points
 end
 
+-- idea
+-- local entity_per_tick = #entities
+-- if entity_per_tick > 100 then
+--     entity_per_tick = 100
+-- end
+
 function add_ghosts_to_chunks()
     if global.ghost_entities[1] and (game.tick - global.ghost_tick) > job_start_delay then -- if the ghost isn't built in 5 seconds or 300 ticks(default setting).
         for i = 1, entity_per_tick do
@@ -388,13 +400,17 @@ function add_ghosts_to_chunks()
                         global.construct_queue[key]['required_items'][item.name] =
                             (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
                     end
-                    for name, count in pairs(entity.item_requests) do
-                        global.construct_queue[key]['required_items'][name] =
-                            (global.construct_queue[key]['required_items'][name] or 0) + count
+                    if entity.type == 'entity-ghost' then
+                        for name, count in pairs(entity.item_requests) do
+                            global.construct_queue[key]['required_items'][name] =
+                                (global.construct_queue[key]['required_items'][name] or 0) + count
+                        end
                     end
                 else
                     break
                 end
+            else
+                break
             end
         end
     end
@@ -470,6 +486,8 @@ function add_deconstruction_entities_to_chunks()
                 else
                     break
                 end
+            else
+                break
             end
         end
     end
@@ -548,18 +566,23 @@ script.on_nth_tick(1, function(event)
 end)
 
 function robots_inactive(constructron)
-    if constructron.logistic_network and constructron.logistic_network.all_construction_robots ==
-        constructron.logistic_network.cells[1].stationed_construction_robot_count then
-        for i, equipment in ipairs(constructron.grid.equipment) do
-            if equipment.type == 'roboport-equipment' then
-                if (equipment.energy / equipment.max_energy) < 0.95 then
-                    return false
+    if constructron.valid then
+        if constructron.logistic_network and constructron.logistic_network.all_construction_robots ==
+            constructron.logistic_network.cells[1].stationed_construction_robot_count then
+            for i, equipment in ipairs(constructron.grid.equipment) do
+                if equipment.type == 'roboport-equipment' then
+                    if (equipment.energy / equipment.max_energy) < 0.95 then
+                        return false
+                    end
                 end
             end
+            return true
         end
-        return true
+        return false
+    else
+        invalid = true
+        return invalid
     end
-    return false
 end
 
 function do_until_leave(job)
@@ -567,16 +590,20 @@ function do_until_leave(job)
     -- action_args is going to be unpacked to action function. first argument of action must be constructron.
     -- leave_condition is a function, leave_args is a table to unpack to leave_condition as arguments
     -- leave_condition should have constructron as first argument
-
-    if not job.active then
-        actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-    end
-    if conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {})) then
-        table.remove(global.job_bundles[job.bundle_index], 1)
-        -- for c, constructron in ipairs(constructrons) do
-        --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
-        -- end
-        return true -- returning true means you can remove this job from job list
+    if job.constructrons[1] then
+        if not job.active then
+            actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+        end
+        if conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {})) then
+            table.remove(global.job_bundles[job.bundle_index], 1)
+            -- for c, constructron in ipairs(constructrons) do
+            --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
+            -- end
+            return true -- returning true means you can remove this job from job list
+        end
+    else
+        invalid = true
+        return invalid
     end
 end
 
@@ -601,9 +628,14 @@ actions = {
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
         -- whether or not logistics was enabled. there doesn't seem to be a way.
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
-        for c, constructron in ipairs(constructrons) do
-            constructron.enable_logistics_while_moving = false
-            set_constructron_status(constructron, 'build_tick', game.tick)
+        if constructrons[1].valid then
+            for c, constructron in ipairs(constructrons) do
+                constructron.enable_logistics_while_moving = false
+                set_constructron_status(constructron, 'build_tick', game.tick)
+            end
+        else
+            invalid = true
+            return invalid
         end
         -- enable construct 
     end,
@@ -734,7 +766,8 @@ conditions = {
         DebugLog('CONDITION: position_done')
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
-                return false
+                invalid = true
+                return invalid
             end
             if (distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
                 return false
@@ -804,8 +837,13 @@ conditions = {
             return false
         else
             for c, constructron in ipairs(constructrons) do
-                for i = 1, constructron.request_slot_count do
-                    constructron.clear_vehicle_logistic_slot(i)
+                if constructron.valid then
+                    for i = 1, constructron.request_slot_count do
+                        constructron.clear_vehicle_logistic_slot(i)
+                    end
+                else
+                    invalid = true
+                    return invalid
                 end
             end
         end
@@ -1110,14 +1148,17 @@ function do_job(job_bundles)
     for i, job_bundle in pairs(job_bundles) do
         local job = job_bundle[1]
         if job then
-            if job then
-                for c, constructron in ipairs(job.constructrons) do
-                    if not job.active then
-                        set_constructron_status(constructron, 'busy', true)
-                    end
+            for c, constructron in ipairs(job.constructrons) do
+                if not job.active then
+                    set_constructron_status(constructron, 'busy', true)
                 end
+            end
+            if job.constructrons[1] then
                 do_until_leave(job)
                 job.active = true
+            else
+                invalid = true
+                return invalid
             end
         else
             job_bundles[i] = nil
@@ -1178,21 +1219,29 @@ end
 -- remove from construct queue if it's built
 script.on_event(defines.events.on_built_entity, function(event)
     local entity = event.created_entity
-    if entity.type == 'entity-ghost' then
-        local items_to_place_this = entity.ghost_prototype.items_to_place_this
-        if not game.item_prototypes[items_to_place_this[1].name].has_flag('hidden') then
+    local entity_type = entity.type
+    if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
+        local entity_name = entity.ghost_name
+        if global.ignored_entities[entity_name] == nil then
+            local items_to_place_this = entity.ghost_prototype.items_to_place_this
+            global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
+            if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+                global.ignored_entities[entity_name] = true
+            end
+        end
+        if not global.ignored_entities[entity_name] == true then
             local ghost_count = global.ghost_entities_count
             ghost_count = ghost_count + 1
             global.ghost_entities_count = ghost_count
             global.ghost_entities[ghost_count] = entity
-            global.ghost_tick = event.tick
+            global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
         end
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
     else
-        remove_entity_from_queue(global.construct_queue, entity)
+        remove_entity_from_queue(global.construct_queue, entity) -- to look at later, why is this here?
     end
 end)
 
@@ -1257,7 +1306,6 @@ end)
 
 script.on_event(defines.events.on_marked_for_deconstruction, function(event)
     global.deconstruct_marked_tick = event.tick
-    -- table.insert(global.deconstruction_entities, event.entity)
     local decon_count = global.deconstruction_entities_count
     decon_count = decon_count + 1
     global.deconstruction_entities_count = decon_count
@@ -1267,19 +1315,29 @@ end, {{filter='name', name="item-on-ground", invert=true}})
 
 
 function set_constructron_status(constructron, state, value)
-    if global.constructron_statuses[constructron.unit_number] then
-        global.constructron_statuses[constructron.unit_number][state] = value
+    if constructron.valid then
+        if global.constructron_statuses[constructron.unit_number] then
+            global.constructron_statuses[constructron.unit_number][state] = value
+        else
+            global.constructron_statuses[constructron.unit_number] = {}
+            global.constructron_statuses[constructron.unit_number][state] = value
+        end
     else
-        global.constructron_statuses[constructron.unit_number] = {}
-        global.constructron_statuses[constructron.unit_number][state] = value
+        invalid = true
+        return invalid
     end
 end
 
 function get_constructron_status(constructron, state)
-    if global.constructron_statuses[constructron.unit_number] then
-        return global.constructron_statuses[constructron.unit_number][state]
+    if constructron.valid then
+        if global.constructron_statuses[constructron.unit_number] then
+            return global.constructron_statuses[constructron.unit_number][state]
+        end
+        return nil
+    else
+        invalid = true
+        return invalid
     end
-    return nil
 end
 
 function get_closest_service_station(constructron)
