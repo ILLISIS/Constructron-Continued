@@ -1313,7 +1313,7 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
     decon_count = decon_count + 1
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
-end, {{filter='name', name="item-on-ground", invert=true}}) 
+end, {{filter='name', name="item-on-ground", invert=true}})
 
 
 
