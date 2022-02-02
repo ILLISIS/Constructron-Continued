@@ -1216,8 +1216,7 @@ function remove_entity_from_queue(queue, entity)
     end
 end
 
--- remove from construct queue if it's built
-script.on_event(defines.events.on_built_entity, function(event)
+script.on_event(defines.events.on_built_entity, function(event) -- for entity creation
     local entity = event.created_entity
     local entity_type = entity.type
     if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
@@ -1245,7 +1244,7 @@ script.on_event(defines.events.on_built_entity, function(event)
     end
 end)
 
-script.on_event(defines.events.script_raised_built, function(event)
+script.on_event(defines.events.script_raised_built, function(event) -- for mods
     local entity = event.entity
     if entity.type == 'entity-ghost' then
         local ghost_count = global.ghost_entities_count
@@ -1262,7 +1261,7 @@ script.on_event(defines.events.script_raised_built, function(event)
     end
 end)
 
-script.on_event(defines.events.on_post_entity_died, function(event)
+script.on_event(defines.events.on_post_entity_died, function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
     if entity and entity.type == 'entity-ghost' then
         local ghost_count = global.ghost_entities_count
@@ -1273,9 +1272,8 @@ script.on_event(defines.events.on_post_entity_died, function(event)
     end
 end)
 
-script.on_event(defines.events.on_robot_built_entity, function(event)
+script.on_event(defines.events.on_robot_built_entity, function(event) -- add service_stations to global when built by robots
     local entity = event.created_entity
-    local stack = event.stack
     if entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
     end
@@ -1284,13 +1282,16 @@ end)
 ---
 
 -- remove from deconstruct queue if it's mined/deconstructed
-script.on_event(defines.events.on_robot_mined_entity, function(event)
+script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove service_stations from global when mined by robots
     local entity = event.entity
+    if entity.name == "service_station" then
+        global.service_stations[entity.unit_number] = nil
+    end
     remove_entity_from_queue(global.deconstruct_queue, entity)
 end)
 ---
 
-script.on_event(defines.events.on_player_mined_entity, function(event)
+script.on_event(defines.events.on_player_mined_entity, function(event) -- remove service_stations and constructrons from global when mined by player
     local entity = event.entity
     if entity.name == "constructron" then
         global.constructrons[entity.unit_number] = nil
@@ -1298,19 +1299,21 @@ script.on_event(defines.events.on_player_mined_entity, function(event)
         global.service_stations[entity.unit_number] = nil
     end
 end)
+---
 
-script.on_event(defines.events.on_marked_for_upgrade, function(event)
+script.on_event(defines.events.on_marked_for_upgrade, function(event) -- for entity upgrade
     global.upgrade_marked_tick = event.tick
     table.insert(global.upgrade_entities, {entity=event.entity, target=event.target})
 end)
+---
 
-script.on_event(defines.events.on_marked_for_deconstruction, function(event)
+script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- for entity deconstruction
     global.deconstruct_marked_tick = event.tick
     local decon_count = global.deconstruction_entities_count
     decon_count = decon_count + 1
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
-end, {{filter='name', name="item-on-ground", invert=true}})
+end, {{filter='name', name="item-on-ground", invert=true}}) 
 
 
 
