@@ -370,18 +370,6 @@ function add_ghosts_to_chunks()
                             },
                             required_items = {},
                         }
-                        -- global.construct_queue[key] = {key = key, entity_key=entity}
-                        -- global.construct_queue[key]['position'] = position_from_chunk(chunk)
-                        -- global.construct_queue[key]['area'] = get_area_from_chunk(chunk)
-                        -- global.construct_queue[key]['minimum'] = {
-                        --     x = entity.position.x,
-                        --     y = entity.position.y
-                        -- }
-                        -- global.construct_queue[key]['maximum'] = {
-                        --     x = entity.position.x,
-                        --     y = entity.position.y
-                        -- }
-                        -- global.construct_queue[key]['required_items'] = {}
                     else -- add to existing queued_chunk
                         global.construct_queue[key][entity_key] = entity
                         if entity.position.x < global.construct_queue[key]['minimum'].x then
@@ -396,11 +384,14 @@ function add_ghosts_to_chunks()
                         end
                     end
                     -- to use for requesting stuff to constructron
-                    for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                        global.construct_queue[key]['required_items'][item.name] =
-                            (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
+                    if not (entity.type == 'item-request-proxy') then
+                        for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
+                            global.construct_queue[key]['required_items'][item.name] =
+                                (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
+                        end
                     end
-                    if entity.type == 'entity-ghost' then
+                    -- for modules
+                    if entity.type == 'entity-ghost' or entity.type == 'item-request-proxy' then
                         for name, count in pairs(entity.item_requests) do
                             global.construct_queue[key]['required_items'][name] =
                                 (global.construct_queue[key]['required_items'][name] or 0) + count
@@ -447,20 +438,6 @@ function add_deconstruction_entities_to_chunks()
                             required_items = {},
                             trash_items = {}
                         }
-                        -- Honktown doesn't like the below because it looks up values through tables
-                        -- global.deconstruct_queue[key] = {key = key, entity_key=entity}
-                        -- global.deconstruct_queue[key]['position'] = position_from_chunk(chunk)
-                        -- global.deconstruct_queue[key]['area'] = get_area_from_chunk(chunk)
-                        -- global.deconstruct_queue[key]['minimum'] = {
-                        --     x = entity.position.x,
-                        --     y = entity.position.y
-                        -- }
-                        -- global.deconstruct_queue[key]['maximum'] = {
-                        --     x = entity.position.x,
-                        --     y = entity.position.y
-                        -- }
-                        -- global.deconstruct_queue[key]['required_items'] = {}
-                        -- global.deconstruct_queue[key]['trash_items'] = {}
                     else -- add to existing queued_chunk
                         global.deconstruct_queue[key][entity_key] = entity
                         if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
@@ -681,32 +658,42 @@ actions = {
         DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
-        for c, constructron in ipairs(constructrons) do
-            local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
-            local filtered_items = {}
-            for i = 1, #inventory do
-                local item = inventory[i]
-                if item.valid_for_read then
-                    if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
-                        if not filtered_items[item.name] then 
-                            constructron.set_vehicle_logistic_slot(slot, {
-                                name=item.name,
-                                min = 0,
-                                max = 0
-                            })
-                            slot = slot + 1
-                            filtered_items[item.name] = true
+            for c, constructron in ipairs(constructrons) do
+                if constructron.valid then
+                    local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
+                    local filtered_items = {}
+                    for i = 1, #inventory do
+                        local item = inventory[i]
+                        if item.valid_for_read then
+                            if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
+                                if not filtered_items[item.name] then 
+                                    constructron.set_vehicle_logistic_slot(slot, {
+                                        name=item.name,
+                                        min = 0,
+                                        max = 0
+                                    })
+                                    slot = slot + 1
+                                    filtered_items[item.name] = true
+                                end
+                            end
                         end
                     end
+                else
+                    invalid = true
+                    return invalid
                 end
             end
-        end
     end,
     retire = function(constructrons)
         DebugLog('ACTION: retire')
         for c, constructron in ipairs(constructrons) do
-            set_constructron_status(constructron, 'busy', false)
-            paint_constructron(constructron, 'idle')
+            if constructron.valid then
+                set_constructron_status(constructron, 'busy', false)
+                paint_constructron(constructron, 'idle')
+            else
+                invalid = true
+                return invalid
+            end
         end
     end,
     add_to_check_chunk_done_queue = function(constructrons, chunk)
@@ -715,10 +702,10 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        local ghosts = constructrons[1].surface.find_entities_filtered{
+        local ghosts = chunk.surface.find_entities_filtered{
             area = {chunk.minimum, chunk.maximum},
             type = "entity-ghost",
-            ghost_name = entity_names,
+            -- ghost_name = entity_names,
         }
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added '..#ghosts .. ' unbuilt ghosts.')
@@ -740,23 +727,28 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        local decons = constructrons[1].surface.find_entities_filtered{
-            area = {chunk.minimum, chunk.maximum},
-            to_be_deconstructed = true,
-            ghost_name = entity_names,
-        }
-        if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-            game.print('added '..#decons .. ' to be deconstructed.')
-            for i, entity in ipairs(decons) do
-                -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
-                --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
-                -- table.insert(global.ghost_entities, entity)
-                local decon_count = global.deconstruction_entities_count
-                decon_count = decon_count + 1
-                global.deconstruction_entities_count = decon_count
-                global.deconstruction_entities[decon_count] = entity
-                -- end
+        if constructrons[1].valid then
+            local decons = constructrons[1].surface.find_entities_filtered{
+                area = {chunk.minimum, chunk.maximum},
+                to_be_deconstructed = true,
+                ghost_name = entity_names,
+            }
+            if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+                game.print('added '..#decons .. ' to be deconstructed.')
+                for i, entity in ipairs(decons) do
+                    -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
+                    --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
+                    -- table.insert(global.ghost_entities, entity)
+                    local decon_count = global.deconstruction_entities_count
+                    decon_count = decon_count + 1
+                    global.deconstruction_entities_count = decon_count
+                    global.deconstruction_entities[decon_count] = entity
+                    -- end
+                end
             end
+        else
+            invalid = true
+            return invalid
         end
     end
 }
@@ -787,7 +779,7 @@ conditions = {
                 end
             end
         end
-        if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) > 120 then
+        if constructrons.valid and (game.tick - get_constructron_status(constructrons[1], 'build_tick')) > 120 then
             -- local entity_names = {}
             -- for name, count in pairs(items) do
             --     table.insert(entity_names, name)
@@ -812,6 +804,9 @@ conditions = {
             --     end
             -- end
             return true
+        else
+            invalid = true
+            return invalid
         end
     end,
     deconstruction_done = function(constructrons)
@@ -989,7 +984,7 @@ function get_job(constructrons)
                     table.insert(unused_chunks, chunk)
                 end
             end
-            
+
             used_chunks.requested_items = requested_items
             return used_chunks, constructrons, unused_chunks
         end
@@ -998,7 +993,7 @@ function get_job(constructrons)
 
     -----------------------
 
-    if not (global.ghost_entities[1] or global.deconstruction_entities[1]) then -- this means they are processed as chunks or it's empty.
+    if (next(global.construct_queue) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
 
         local chunks = {}
         local job_type
@@ -1059,6 +1054,7 @@ function get_job(constructrons)
             -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
             -- local chunk = table.remove(combined_chunks, chunk_index)
             chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
+            chunk['surface'] = chunk.entity_key.surface
             local find_path = false
             for p, position in ipairs(chunk.positions) do
                 if p == 1 then find_path = true end
@@ -1197,10 +1193,6 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
     end
 end)
 
--- script.on_event(defines.events.on_built_entity, function(event)
---     table.insert(global.ghost_entities, event.created_entity)
--- end, {{filter="ghost"}})
-
 function remove_entity_from_queue(queue, entity)
     local chunk = chunk_from_position(entity.position)
     local chunk_key = chunk.y .. ',' .. chunk.x
@@ -1221,6 +1213,7 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
     local entity_type = entity.type
     if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
         local entity_name = entity.ghost_name
+        -- Need to separate ghosts and tiles in different tables
         if global.ignored_entities[entity_name] == nil then
             local items_to_place_this = entity.ghost_prototype.items_to_place_this
             global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
@@ -1239,25 +1232,42 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         global.constructrons[entity.unit_number] = entity
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
-    else
-        remove_entity_from_queue(global.construct_queue, entity) -- to look at later, why is this here?
     end
 end)
 
 script.on_event(defines.events.script_raised_built, function(event) -- for mods
-    local entity = event.entity
-    if entity.type == 'entity-ghost' then
+    if not event.entity.name == 'item-request-proxy' then
+        local entity = event.created_entity
+        local entity_type = entity.type or {}
+        if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
+            local entity_name = entity.ghost_name
+            -- Need to separate ghosts and tiles in different tables
+            if global.ignored_entities[entity_name] == nil then
+                local items_to_place_this = entity.ghost_prototype.items_to_place_this
+                global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
+                if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+                    global.ignored_entities[entity_name] = true
+                end
+            end
+            if not global.ignored_entities[entity_name] == true then
+                local ghost_count = global.ghost_entities_count
+                ghost_count = ghost_count + 1
+                global.ghost_entities_count = ghost_count
+                global.ghost_entities[ghost_count] = entity
+                global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
+            end
+        elseif entity.name == 'constructron' then
+            global.constructrons[entity.unit_number] = entity
+        elseif entity.name == "service_station" then
+            global.service_stations[entity.unit_number] = entity
+        end
+    elseif event.entity.type == 'item-request-proxy' then
+        local entity = event.entity
         local ghost_count = global.ghost_entities_count
         ghost_count = ghost_count + 1
         global.ghost_entities_count = ghost_count
         global.ghost_entities[ghost_count] = entity
-        global.ghost_tick = event.tick
-    elseif entity.name == 'constructron' then
-        global.constructrons[entity.unit_number] = entity
-    elseif entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = entity
-    else
-        remove_entity_from_queue(global.construct_queue, entity)
+        global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     end
 end)
 
@@ -1270,6 +1280,11 @@ script.on_event(defines.events.on_post_entity_died, function(event) -- for entit
         global.ghost_entities[ghost_count] = entity
         global.ghost_tick = event.tick
     end
+    if event.prototype.name == 'constructron' then
+        global.constructrons[event.unit_number] = nil
+    elseif event.prototype.name == 'service_station' then
+        global.service_stations[event.unit_number] = nil
+    end
 end)
 
 script.on_event(defines.events.on_robot_built_entity, function(event) -- add service_stations to global when built by robots
@@ -1277,7 +1292,6 @@ script.on_event(defines.events.on_robot_built_entity, function(event) -- add ser
     if entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
     end
-    remove_entity_from_queue(global.construct_queue, entity)
 end)
 ---
 
@@ -1287,7 +1301,6 @@ script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove 
     if entity.name == "service_station" then
         global.service_stations[entity.unit_number] = nil
     end
-    remove_entity_from_queue(global.deconstruct_queue, entity)
 end)
 ---
 
