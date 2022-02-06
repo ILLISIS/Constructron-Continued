@@ -7,6 +7,9 @@ Date: 2022-01-30
   Fixes:
     - Clean up service stations and constructrons that are destroyed which will prevent crashes at various stages.
     - Clean up service stations that are removed by bots which will prevent crashes at various stages.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue when the inventory is full.
+    - The Landfill tile is not constructed as this requires changes to the pathing calculation.
 
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.6
