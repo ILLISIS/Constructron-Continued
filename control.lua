@@ -571,12 +571,19 @@ function do_until_leave(job)
         if not job.active then
             actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
         end
+        if job.start_tick == nil then
+            job.start_tick = 2
+        end
         if conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {})) then
             table.remove(global.job_bundles[job.bundle_index], 1)
             -- for c, constructron in ipairs(constructrons) do
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
+        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 900 then -- max_jobtime then
+            actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+            job.start_tick = game.tick
+            DebugLog('Retrying go_to_position action')
         end
     else
         invalid = true
@@ -624,8 +631,13 @@ actions = {
         -- whether or not logistics was enabled. there doesn't seem to be a way.
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
         for c, constructron in ipairs(constructrons) do
-            constructron.enable_logistics_while_moving = false
-            set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+            if constructron.valid then
+                constructron.enable_logistics_while_moving = false
+                set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+            else
+                invalid = true
+                return invalid
+            end
         end
         -- enable construct 
     end,
@@ -702,11 +714,16 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        local ghosts = chunk.surface.find_entities_filtered{
-            area = {chunk.minimum, chunk.maximum},
-            type = "entity-ghost",
-            -- ghost_name = entity_names,
-        }
+        if constructrons[1].valid then
+            local ghosts = constructrons[1].surface.find_entities_filtered{
+                area = {chunk.minimum, chunk.maximum},
+                type = "entity-ghost",
+                ghost_name = entity_names,
+            }
+        else
+            invalid = true
+            return invalid
+        end
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added '..#ghosts .. ' unbuilt ghosts.')
             for i, entity in ipairs(ghosts) do
@@ -821,9 +838,14 @@ conditions = {
                 end
             end
         end
-        if game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
-            --unlike build, I'm not going to search for entities to be deconstructed.
-            return true
+        if constructrons[1].valid then
+            if game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
+                --unlike build, I'm not going to search for entities to be deconstructed.
+                return true
+            end
+        else
+            invalid = true
+            return invalid
         end
     end,
     request_done = function(constructrons)
@@ -1040,12 +1062,13 @@ function get_job(constructrons)
                 global.upgrade_queue[chunk.key] = chunk
             end
         end
-            
+
         local request_items_job = {
             action = 'request_items',
             action_args = {combined_chunks.requested_items},
             leave_condition = 'request_done',
-            constructrons = selected_constructrons
+            constructrons = selected_constructrons,
+            start_tick = game.tick
         }
 
         global.job_bundle_index = (global.job_bundle_index or 0) + 1
@@ -1054,7 +1077,6 @@ function get_job(constructrons)
             -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
             -- local chunk = table.remove(combined_chunks, chunk_index)
             chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
-            chunk['surface'] = chunk.entity_key.surface
             local find_path = false
             for p, position in ipairs(chunk.positions) do
                 if p == 1 then find_path = true end
@@ -1063,7 +1085,8 @@ function get_job(constructrons)
                     action_args = {position, find_path},
                     leave_condition = 'position_done',
                     leave_args = {position},
-                    constructrons = selected_constructrons
+                    constructrons = selected_constructrons,
+                    start_tick = game.tick
                 }
                 create_job(global.job_bundle_index, go_to_position_job)
                 if not (job_type == 'deconstruct') then
@@ -1116,7 +1139,8 @@ function get_job(constructrons)
             action_args = {home_position, true},
             leave_condition = 'position_done',
             leave_args = {home_position},
-            constructrons = selected_constructrons
+            constructrons = selected_constructrons,
+            start_tick = game.tick
         }
         create_job(global.job_bundle_index, go_to_home_job)
         local empty_inventory_job = {
