@@ -2,7 +2,7 @@
 Version: 1.0.7
 Date: 2022-02-07
   Improvements:
-    - Added the ability to construct tiles! Landfill(and others like Landfill) is unfortunately stil not possible at this stage. Landfill is specifically ignored.
+    - Added the ability to construct tiles! Landfill (and others like Landfill) is unfortunately still not possible at this stage. Landfill is specifically ignored.
     - Added event listening for when mods add modules to an entity (i.e Module Inerter) so Constructrons will now build modules even if a ghost is not created.
   Fixes:
     - Clean up service stations and constructrons that are destroyed which will prevent crashes at various stages.
