@@ -725,7 +725,8 @@ actions = {
             return invalid
         end
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-            game.print('added '..#ghosts .. ' unbuilt ghosts.')
+            game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
+
             for i, entity in ipairs(ghosts) do
                 -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
                 --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
