@@ -751,7 +751,8 @@ actions = {
                 ghost_name = entity_names,
             }
             if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-                game.print('added '..#decons .. ' to be deconstructed.')
+                game.print('added ' .. #decons .. ' to be deconstructed.')
+
                 for i, entity in ipairs(decons) do
                     -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
                     --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
