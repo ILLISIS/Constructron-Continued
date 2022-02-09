@@ -1,4 +1,23 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.7
+Date: 2022-02-09
+  Improvements:
+    - Added the ability to construct tiles! Landfill (and others like Landfill) is unfortunately still not possible at this stage. Landfill is specifically ignored.
+    - Significantly more validation is performed at all job stages to prevent crashes.
+    - Added event listening for when mods add modules to an entity (i.e Module Inerter) so Constructrons will now build modules even if a ghost is not created.
+    - Constructrons will now move to other service stations in hope of fulfilling their logistic request at the new station after max_jobtime is reached. More logic to be added to make this smarter later.
+    - Added Krastorio 2 support with equipment grids in Constructrons.
+  Fixes:
+    - Clean up service stations and constructrons that are destroyed which will prevent crashes at various stages.
+    - Clean up service stations that are removed by bots which will prevent crashes at various stages.
+    - Constructrons will now retry to move into position after overshooting its destination due to moving too fast after max_jobtime is reached.
+    - Constructrons will now retry to move into position after max_jobtime if a player interferes with the Contructron either by driving the Constructron or using a connected Spidertron Remote to it.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue when the inventory is full.
+    - If something happens to the Constructron during an active job it is assigned to the job 
+    - The Landfill tile is not constructed as this requires changes to the pathing calculation.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.0.6
 Date: 2022-01-30
   Improvements:
