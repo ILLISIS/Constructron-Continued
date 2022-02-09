@@ -734,7 +734,7 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1] then
+        if constructrons[1].valid then
             ghosts = constructrons[1].surface.find_entities_filtered{
                 area = {chunk.minimum, chunk.maximum},
                 type = "entity-ghost",
@@ -765,7 +765,7 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1] then
+        if constructrons[1].valid then
             decons = constructrons[1].surface.find_entities_filtered{
                 area = {chunk.minimum, chunk.maximum},
                 to_be_deconstructed = true,
