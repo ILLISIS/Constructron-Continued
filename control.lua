@@ -1,3 +1,5 @@
+require("util")
+
 function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
@@ -584,6 +586,24 @@ function do_until_leave(job)
             actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
             job.start_tick = game.tick
             DebugLog('Retrying go_to_position action')
+        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > 300 then -- max_jobtime then
+            local closest_station = get_closest_service_station(job.constructrons[1])
+            for unit_number, station in pairs(job.unused_stations) do
+                if not station.valid then
+                    job.unused_stations[unit_number] = nil
+                end
+            end
+            job.unused_stations[closest_station.unit_number] = nil
+            if not (next(job.unused_stations)) then
+                job.unused_stations = (table.deepcopy(global.service_stations))
+                job.unused_stations[closest_station.unit_number] = nil
+            end
+            next_station = get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
+            for c, constructron in ipairs(job.constructrons) do
+                request_path({constructron}, next_station.position)
+            end
+            job.start_tick = game.tick
+            DebugLog('request_items action timed out, moving to new station')
         end
     else
         invalid = true
@@ -852,20 +872,20 @@ conditions = {
     end,
     request_done = function(constructrons)
         DebugLog('CONDITION: request_done')
-        if constructrons_need_reload(constructrons) then
-            return false
-        else
-            for c, constructron in ipairs(constructrons) do
-                if constructron.valid then
-                    for i = 1, constructron.request_slot_count do
-                        constructron.clear_vehicle_logistic_slot(i)
+            if constructrons_need_reload(constructrons) then
+                return false
+            else
+                for c, constructron in ipairs(constructrons) do
+                    if constructron.valid then
+                        for i = 1, constructron.request_slot_count do
+                            constructron.clear_vehicle_logistic_slot(i)
+                        end
+                    else
+                        invalid = true
+                        return invalid
                     end
-                else
-                    invalid = true
-                    return invalid
                 end
             end
-        end
         return true
     end,
     pass = function(constructrons)
@@ -905,11 +925,11 @@ function get_closest_object(objects, position)
         iterator = ipairs
     end
     for i, object in iterator(objects) do
-        local distance = distance_between(object.position, position)
-        if not min_distance or (distance < min_distance) then
-            min_distance = distance
-            object_index = i
-        end
+        local distance = distance_between(object.position, position)        
+            if not min_distance or (distance < min_distance) then
+                min_distance = distance
+                object_index = i
+            end
     end
     return object_index
 end
@@ -1070,7 +1090,8 @@ function get_job(constructrons)
             action_args = {combined_chunks.requested_items},
             leave_condition = 'request_done',
             constructrons = selected_constructrons,
-            start_tick = game.tick
+            start_tick = game.tick,
+            unused_stations = table.deepcopy(global.service_stations)
         }
 
         global.job_bundle_index = (global.job_bundle_index or 0) + 1
@@ -1371,7 +1392,7 @@ function set_constructron_status(constructron, state, value)
 end
 
 function get_constructron_status(constructron, state)
-    if constructron.valid then
+    if constructron then
         if global.constructron_statuses[constructron.unit_number] then
             return global.constructron_statuses[constructron.unit_number][state]
         end
@@ -1387,6 +1408,13 @@ function get_closest_service_station(constructron)
     if service_stations then
         local service_station_index = get_closest_object(service_stations, constructron.position)
         return service_stations[service_station_index]
+    end
+end
+
+function get_closest_unused_service_station(constructron, unused_stations)
+    if unused_stations then
+        local unused_stations_index = get_closest_object(unused_stations, constructron.position)
+        return unused_stations[unused_stations_index]
     end
 end
 
