@@ -582,11 +582,11 @@ function do_until_leave(job)
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
-        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 900 then -- max_jobtime then
+        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > max_jobtime then
             actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
             job.start_tick = game.tick
             DebugLog('Retrying go_to_position action')
-        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > 300 then -- max_jobtime then
+        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > max_jobtime then
             local closest_station = get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do
                 if not station.valid then
@@ -734,8 +734,8 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1].valid then
-            local ghosts = constructrons[1].surface.find_entities_filtered{
+        if constructrons[1] then
+            ghosts = constructrons[1].surface.find_entities_filtered{
                 area = {chunk.minimum, chunk.maximum},
                 type = "entity-ghost",
                 ghost_name = entity_names,
@@ -765,8 +765,8 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1].valid then
-            local decons = constructrons[1].surface.find_entities_filtered{
+        if constructrons[1] then
+            decons = constructrons[1].surface.find_entities_filtered{
                 area = {chunk.minimum, chunk.maximum},
                 to_be_deconstructed = true,
                 ghost_name = entity_names,
