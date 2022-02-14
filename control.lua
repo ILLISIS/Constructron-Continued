@@ -23,6 +23,10 @@ function get_constructrons()
     return global.constructrons or {}
 end
 
+function get_surfaces()
+
+end
+
 function distance_between(position1, position2)
     return math.sqrt(math.pow(position1.x - position2.x, 2) + math.pow(position1.y - position2.y, 2))
 end
@@ -353,7 +357,7 @@ function add_ghosts_to_chunks()
                 global.ghost_entities_count = ghost_count - 1
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
-                    local key = chunk.y .. ',' .. chunk.x
+                    local key = entity.surface.index .. ',' .. chunk.y .. ',' .. chunk.x
                     local entity_key = entity.position.y .. ',' .. entity.position.x
                     if not global.construct_queue[key] then -- initialize queued_chunk
                         global.construct_queue[key] = {
@@ -420,7 +424,7 @@ function add_deconstruction_entities_to_chunks()
                 global.deconstruction_entities_count = ghost_count - 1
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
-                    local key = chunk.y .. ',' .. chunk.x
+                    local key = entity.surface.index .. ',' .. chunk.y .. ',' .. chunk.x
                     local entity_key = entity.position.y .. ',' .. entity.position.x
                     if not global.deconstruct_queue[key] then -- initialize queued_chunk
                         global.deconstruct_queue[key] = {
@@ -481,7 +485,7 @@ function add_upgrade_entities_to_chunks()
             local target = obj['target']
             if entity and entity.valid then
                 local chunk = chunk_from_position(entity.position)
-                local key = chunk.y .. ',' .. chunk.x
+                local key = entity.surface.index .. ',' .. chunk.y .. ',' .. chunk.x
                 if not global.upgrade_queue[key] then -- initialize queued_chunk
                     global.upgrade_queue[key] = {
                         key = key,
@@ -925,7 +929,7 @@ function get_closest_object(objects, position)
         iterator = ipairs
     end
     for i, object in iterator(objects) do
-        local distance = distance_between(object.position, position)        
+        local distance = distance_between(object.position, position)
             if not min_distance or (distance < min_distance) then
                 min_distance = distance
                 object_index = i
@@ -1406,6 +1410,11 @@ end
 function get_closest_service_station(constructron)
     local service_stations = get_service_stations()
     if service_stations then
+        for unit_number, station in pairs(service_stations) do
+            if not station.valid then
+                global.service_stations[unit_number] = nil
+            end
+        end
         local service_station_index = get_closest_object(service_stations, constructron.position)
         return service_stations[service_station_index]
     end
