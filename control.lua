@@ -23,10 +23,6 @@ function get_constructrons()
     return global.constructrons or {}
 end
 
-function get_surfaces()
-
-end
-
 function distance_between(position1, position2)
     return math.sqrt(math.pow(position1.x - position2.x, 2) + math.pow(position1.y - position2.y, 2))
 end
@@ -362,6 +358,7 @@ function add_ghosts_to_chunks()
                     if not global.construct_queue[key] then -- initialize queued_chunk
                         global.construct_queue[key] = {
                             key = key,
+                            surface = entity.surface.index,
                             entity_key = entity,
                             position = position_from_chunk(chunk),
                             area = get_area_from_chunk(chunk),
@@ -939,17 +936,6 @@ function get_closest_object(objects, position)
 end
 
 function get_job(constructrons)
-    local available_constructrons = {}
-    for c, constructron in pairs(constructrons) do
-        if constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
-            table.insert(available_constructrons, constructron)
-        end
-    end
-
-    if #available_constructrons < 1 then return end
-
-    local max_worker = settings.global['max-worker-per-job'].value
-
     function get_chunks_and_constructrons(queued_chunks, preselected_constructrons, max_constructron)
         local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
         local empty_stack_count = inventory.count_empty_stacks()
@@ -1039,150 +1025,165 @@ function get_job(constructrons)
         return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
     end
 
-    -----------------------
-
-    if (next(global.construct_queue) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
-
-        local chunks = {}
-        local job_type
-
-        if next(global.deconstruct_queue) then --deconstruction have priority over construction.
-            for key, chunk in pairs(global.deconstruct_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'deconstruct'
-        elseif next(global.construct_queue) then
-            for key, chunk in pairs(global.construct_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'construct'
-        elseif next(global.upgrade_queue) then
-            for key, chunk in pairs(global.upgrade_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'upgrade'
-        end
-        if not next(chunks) then return end
-
-        local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
-
-        if job_type == 'deconstruct' then
-            for key, value in pairs(global.deconstruct_queue) do
-                global.deconstruct_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.deconstruct_queue[chunk.key] = chunk
-            end
-        elseif job_type == 'construct' then
-            for key, value in pairs(global.construct_queue) do
-                global.construct_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.construct_queue[chunk.key] = chunk
-            end
-        elseif job_type == 'upgrade' then
-            for key, value in pairs(global.upgrade_queue) do
-                global.upgrade_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.upgrade_queue[chunk.key] = chunk
+    for surface_name, surface in pairs(game.surfaces) do
+        local available_constructrons = {}
+        for c, constructron in pairs(constructrons) do
+            if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
+                table.insert(available_constructrons, constructron)
             end
         end
 
-        local request_items_job = {
-            action = 'request_items',
-            action_args = {combined_chunks.requested_items},
-            leave_condition = 'request_done',
-            constructrons = selected_constructrons,
-            start_tick = game.tick,
-            unused_stations = table.deepcopy(global.service_stations)
-        }
+        if #available_constructrons < 1 then return end
 
-        global.job_bundle_index = (global.job_bundle_index or 0) + 1
-        create_job(global.job_bundle_index, request_items_job)
-        for i, chunk in ipairs(combined_chunks) do
-            -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
-            -- local chunk = table.remove(combined_chunks, chunk_index)
-            chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
-            local find_path = false
-            for p, position in ipairs(chunk.positions) do
-                if p == 1 then find_path = true end
-                local go_to_position_job = {
-                    action = 'go_to_position',
-                    action_args = {position, find_path},
-                    leave_condition = 'position_done',
-                    leave_args = {position},
-                    constructrons = selected_constructrons,
-                    start_tick = game.tick
-                }
-                create_job(global.job_bundle_index, go_to_position_job)
-                if not (job_type == 'deconstruct') then
-                    local build_job = {
-                        action = 'build',
-                        leave_condition = 'build_done',
-                        leave_args = {chunk.required_items, chunk.minimum, chunk.maximum},
-                        constructrons = selected_constructrons
-                    }
-                    create_job(global.job_bundle_index, build_job)
-                    for c, constructron in ipairs(selected_constructrons) do
-                        paint_constructron(constructron, 'construct')
+        local max_worker = settings.global['max-worker-per-job'].value
+
+        -----------------------
+
+        if (next(global.construct_queue) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
+
+            local chunks = {}
+            local job_type
+
+            if next(global.deconstruct_queue) then --deconstruction have priority over construction.
+                for key, chunk in pairs(global.deconstruct_queue) do
+                    table.insert(chunks, chunk)
+                end
+                job_type = 'deconstruct'
+            elseif next(global.construct_queue) then
+                for key, chunk in pairs(global.construct_queue) do
+                    if (chunk.surface == surface.index) then
+                        table.insert(chunks, chunk)
                     end
-                elseif job_type == 'deconstruct' then
-                    local deconstruction_job = {
-                        action = 'deconstruct',
-                        leave_condition = 'deconstruction_done',
-                        constructrons = selected_constructrons
-                    }
-                    create_job(global.job_bundle_index, deconstruction_job)
                 end
-                for c, constructron in ipairs(selected_constructrons) do
-                    paint_constructron(constructron, job_type)
+                job_type = 'construct'
+            elseif next(global.upgrade_queue) then
+                for key, chunk in pairs(global.upgrade_queue) do
+                    table.insert(chunks, chunk)
                 end
+                job_type = 'upgrade'
             end
-            if job_type == 'construct' then
-                local add_to_check_chunk_done_queue_job = {
-                    action = 'add_to_check_chunk_done_queue',
-                    action_args = {chunk},
-                    leave_condition = 'pass', -- there is no leave condition 
-                    constructrons = selected_constructrons,
-                }
-                create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
-            end
+            if not next(chunks) then return end
+
+            local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
+
             if job_type == 'deconstruct' then
-                local check_decon_chunk_job = {
-                    action = 'check_decon_chunk',
-                    action_args = {chunk},
-                    leave_condition = 'pass', -- there is no leave condition 
-                    constructrons = selected_constructrons,
-                }
-                create_job(global.job_bundle_index, check_decon_chunk_job)
+                for key, value in pairs(global.deconstruct_queue) do
+                    global.deconstruct_queue[key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                    global.deconstruct_queue[chunk.key] = chunk
+                end
+            elseif job_type == 'construct' then
+                for key, value in pairs(global.construct_queue) do
+                    global.construct_queue[key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                    global.construct_queue[chunk.key] = chunk
+                end
+            elseif job_type == 'upgrade' then
+                for key, value in pairs(global.upgrade_queue) do
+                    global.upgrade_queue[key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                    global.upgrade_queue[chunk.key] = chunk
+                end
             end
+
+            local request_items_job = {
+                action = 'request_items',
+                action_args = {combined_chunks.requested_items},
+                leave_condition = 'request_done',
+                constructrons = selected_constructrons,
+                start_tick = game.tick,
+                unused_stations = table.deepcopy(global.service_stations)
+            }
+
+            global.job_bundle_index = (global.job_bundle_index or 0) + 1
+            create_job(global.job_bundle_index, request_items_job)
+            for i, chunk in ipairs(combined_chunks) do
+                -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
+                -- local chunk = table.remove(combined_chunks, chunk_index)
+                chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
+                local find_path = false
+                for p, position in ipairs(chunk.positions) do
+                    if p == 1 then find_path = true end
+                    local go_to_position_job = {
+                        action = 'go_to_position',
+                        action_args = {position, find_path},
+                        leave_condition = 'position_done',
+                        leave_args = {position},
+                        constructrons = selected_constructrons,
+                        start_tick = game.tick
+                    }
+                    create_job(global.job_bundle_index, go_to_position_job)
+                    if not (job_type == 'deconstruct') then
+                        local build_job = {
+                            action = 'build',
+                            leave_condition = 'build_done',
+                            leave_args = {chunk.required_items, chunk.minimum, chunk.maximum},
+                            constructrons = selected_constructrons
+                        }
+                        create_job(global.job_bundle_index, build_job)
+                        for c, constructron in ipairs(selected_constructrons) do
+                            paint_constructron(constructron, 'construct')
+                        end
+                    elseif job_type == 'deconstruct' then
+                        local deconstruction_job = {
+                            action = 'deconstruct',
+                            leave_condition = 'deconstruction_done',
+                            constructrons = selected_constructrons
+                        }
+                        create_job(global.job_bundle_index, deconstruction_job)
+                    end
+                    for c, constructron in ipairs(selected_constructrons) do
+                        paint_constructron(constructron, job_type)
+                    end
+                end
+                if job_type == 'construct' then
+                    local add_to_check_chunk_done_queue_job = {
+                        action = 'add_to_check_chunk_done_queue',
+                        action_args = {chunk},
+                        leave_condition = 'pass', -- there is no leave condition 
+                        constructrons = selected_constructrons,
+                    }
+                    create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
+                end
+                if job_type == 'deconstruct' then
+                    local check_decon_chunk_job = {
+                        action = 'check_decon_chunk',
+                        action_args = {chunk},
+                        leave_condition = 'pass', -- there is no leave condition 
+                        constructrons = selected_constructrons,
+                    }
+                    create_job(global.job_bundle_index, check_decon_chunk_job)
+                end
+            end
+            -- go back to a service_station when job is done.
+            local closest_station = get_closest_service_station(selected_constructrons[1])
+            local home_position = closest_station.position
+            local go_to_home_job = {
+                action = 'go_to_position',
+                action_args = {home_position, true},
+                leave_condition = 'position_done',
+                leave_args = {home_position},
+                constructrons = selected_constructrons,
+                start_tick = game.tick
+            }
+            create_job(global.job_bundle_index, go_to_home_job)
+            local empty_inventory_job = {
+                action = 'clear_items',
+                leave_condition = 'request_done',
+                constructrons = selected_constructrons
+            }
+            create_job(global.job_bundle_index, empty_inventory_job)
+            local retire_job = {
+                action = 'retire',
+                leave_condition = 'position_done',
+                leave_args = {home_position},
+                constructrons = selected_constructrons
+            }
+            create_job(global.job_bundle_index, retire_job)
         end
-        -- go back to a service_station when job is done.
-        local closest_station = get_closest_service_station(selected_constructrons[1])
-        local home_position = closest_station.position
-        local go_to_home_job = {
-            action = 'go_to_position',
-            action_args = {home_position, true},
-            leave_condition = 'position_done',
-            leave_args = {home_position},
-            constructrons = selected_constructrons,
-            start_tick = game.tick
-        }
-        create_job(global.job_bundle_index, go_to_home_job)
-        local empty_inventory_job = {
-            action = 'clear_items',
-            leave_condition = 'request_done',
-            constructrons = selected_constructrons
-        }
-        create_job(global.job_bundle_index, empty_inventory_job)
-        local retire_job = {
-            action = 'retire',
-            leave_condition = 'position_done',
-            leave_args = {home_position},
-            constructrons = selected_constructrons
-        }
-        create_job(global.job_bundle_index, retire_job)
     end
     ------------------------------
 end
@@ -1378,8 +1379,7 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
-
-
+---
 
 function set_constructron_status(constructron, state, value)
     if constructron.valid then
