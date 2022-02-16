@@ -595,7 +595,7 @@ function do_until_leave(job)
             end
             job.unused_stations[closest_station.unit_number] = nil
             if not (next(job.unused_stations)) then
-                job.unused_stations = (table.deepcopy(global.service_stations))
+                job.unused_stations = (table.deepcopy(global.service_stations)) -- need to factor stations on same surface only
                 job.unused_stations[closest_station.unit_number] = nil
             end
             next_station = get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
@@ -1105,7 +1105,7 @@ function get_job(constructrons)
                 leave_condition = 'request_done',
                 constructrons = selected_constructrons,
                 start_tick = game.tick,
-                unused_stations = table.deepcopy(global.service_stations)
+                unused_stations = table.deepcopy(global.service_stations) -- need to factor stations on same surface only
             }
 
             global.job_bundle_index = (global.job_bundle_index or 0) + 1
@@ -1430,7 +1430,7 @@ function get_closest_service_station(constructron)
     end
 end
 
-function get_closest_unused_service_station(constructron, unused_stations)
+function get_closest_unused_service_station(constructron, unused_stations) -- need to factor stations on same surface only
     if unused_stations then
         local unused_stations_index = get_closest_object(unused_stations, constructron.position)
         return unused_stations[unused_stations_index]
