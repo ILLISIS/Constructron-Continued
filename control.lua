@@ -9,26 +9,25 @@ end
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 job_start_delay = (settings.global["job-start-delay"].value * 60)
 
-function get_service_stations()
-    -- return game.surfaces['nauvis'].find_entities_filtered {
-    --     name = "service_station"
-    -- }
-    return global.service_stations or {}
+function get_service_stations(index)
+    local stations_on_surface = {}
+    for s, station in pairs(global.service_stations) do
+        table.insert(stations_on_surface, station)
+    end
+    return stations_on_surface or {}
 end
 
 function get_constructrons()
-    -- return game.surfaces['nauvis'].find_entities_filtered {
-    --     name = "constructron"
-    -- }
-    return global.constructrons or {}
+    local constructrons_on_surface
+    for c, constructron in pairs(global.constructrons) do
+        table.insert(constructrons_on_surface, constructron)
+    end
+    return constructrons_on_surface or {}
 end
 
 function distance_between(position1, position2)
     return math.sqrt(math.pow(position1.x - position2.x, 2) + math.pow(position1.y - position2.y, 2))
 end
-
-
---todo is_registered_for_construction()
 
 function constructrons_need_reload(constructrons)
     for c, constructron in ipairs(constructrons) do
@@ -398,7 +397,7 @@ function add_ghosts_to_chunks()
                         for name, count in pairs(entity.item_requests) do
                             global.construct_queue[key]['required_items'][name] =
                                 (global.construct_queue[key]['required_items'][name] or 0) + count
-                        end
+                        en$
                     end
                 else
                     break
@@ -894,7 +893,7 @@ conditions = {
     end
 }
 
-function give_job(constructrons, job)
+function give_job(constructrons, job) -- this doesn't look like it is used
     -- we should give the job only to the leader aka constructrons[1]
     if not global.constructron_jobs[constructrons[1].unit_number] then
         global.constructron_jobs[constructrons[1].unit_number] = {}
@@ -1025,7 +1024,9 @@ function get_job(constructrons)
         return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
     end
 
-    for surface_name, surface in pairs(game.surfaces) do
+    local surfies = game.surfaces
+
+    for surface_name, surface in pairs(surfies) do -- iterate each surface
         local available_constructrons = {}
         for c, constructron in pairs(constructrons) do
             if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
@@ -1034,22 +1035,27 @@ function get_job(constructrons)
         end
 
         if #available_constructrons < 1 then return end
-
         local max_worker = settings.global['max-worker-per-job'].value
 
-        -----------------------
+        ----------------------- below I wanted to filter the global.construct_queue for the next statement
+        local constructq = {}
+        for k, build in pairs(global.construct_queue) do
+            if (build.surface == surface.index) then
+                table.insert(constructq, build)
+            end
+        end
 
-        if (next(global.construct_queue) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
+        if (next(constructq) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
 
             local chunks = {}
             local job_type
-
+            
             if next(global.deconstruct_queue) then --deconstruction have priority over construction.
                 for key, chunk in pairs(global.deconstruct_queue) do
                     table.insert(chunks, chunk)
                 end
                 job_type = 'deconstruct'
-            elseif next(global.construct_queue) then
+            elseif next(constructq) then
                 for key, chunk in pairs(global.construct_queue) do
                     if (chunk.surface == surface.index) then
                         table.insert(chunks, chunk)
@@ -1075,10 +1081,14 @@ function get_job(constructrons)
                 end
             elseif job_type == 'construct' then
                 for key, value in pairs(global.construct_queue) do
-                    global.construct_queue[key] = nil
+                    if (value.surface == surface.index) then
+                        global.construct_queue[key] = nil
+                    end
                 end
                 for i, chunk in ipairs(unused_chunks) do
-                    global.construct_queue[chunk.key] = chunk
+                    if (chunk.surface == surface.index) then
+                        global.construct_queue[chunk.key] = chunk
+                    end
                 end
             elseif job_type == 'upgrade' then
                 for key, value in pairs(global.upgrade_queue) do
@@ -1215,8 +1225,8 @@ function do_job(job_bundles)
 end
 
 script.on_nth_tick(60, function(event)
-    local constructrons = get_constructrons()
-    local service_stations = get_service_stations()
+    local constructrons = global.constructrons -- due to changes with the get_constructrons function
+    local service_stations = global.service_stations -- due to changes with the get_service_stations function
     if (not next(constructrons)) or (not next(service_stations)) then -- let's clear the queues, that means they probably added the ghosts etc before they had any constructrons.
         global.construct_queue = {}
         global.deconstruct_queue = {}
@@ -1408,7 +1418,7 @@ function get_constructron_status(constructron, state)
 end
 
 function get_closest_service_station(constructron)
-    local service_stations = get_service_stations()
+    local service_stations = get_service_stations(constructron.surface.index) -- only return service stations on the same surface
     if service_stations then
         for unit_number, station in pairs(service_stations) do
             if not station.valid then
