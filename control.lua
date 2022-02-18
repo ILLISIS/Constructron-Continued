@@ -424,11 +424,13 @@ function add_deconstruction_entities_to_chunks()
                 global.deconstruction_entities_count = ghost_count - 1
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
-                    local key = entity.surface.index .. ',' .. chunk.y .. ',' .. chunk.x
+                    local key = chunk.y .. ',' .. chunk.x
+                    local chunk_surface = entity.surface.index
                     local entity_key = entity.position.y .. ',' .. entity.position.x
-                    if not global.deconstruct_queue[key] then -- initialize queued_chunk
-                        global.deconstruct_queue[key] = {
+                    if not global.deconstruct_queue[chunk_surface][key] then -- initialize queued_chunk
+                        global.deconstruct_queue[chunk_surface][key] = {
                             key = key,
+                            surface = entity.surface.index,
                             entity_key = entity,
                             position = position_from_chunk(chunk),
                             area = get_area_from_chunk(chunk),
@@ -445,25 +447,25 @@ function add_deconstruction_entities_to_chunks()
                             trash_items = {}
                         }
                     else -- add to existing queued_chunk
-                        global.deconstruct_queue[key][entity_key] = entity
-                        if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
-                            global.deconstruct_queue[key]['minimum'].x = entity.position.x
-                        elseif entity.position.x > global.deconstruct_queue[key]['maximum'].x then
-                            global.deconstruct_queue[key]['maximum'].x = entity.position.x
+                        global.deconstruct_queue[chunk_surface][key][entity_key] = entity
+                        if entity.position.x < global.deconstruct_queue[chunk_surface][key]['minimum'].x then
+                            global.deconstruct_queue[chunk_surface][key]['minimum'].x = entity.position.x
+                        elseif entity.position.x > global.deconstruct_queue[chunk_surface][key]['maximum'].x then
+                            global.deconstruct_queue[chunk_surface][key]['maximum'].x = entity.position.x
                         end
-                        if entity.position.y < global.deconstruct_queue[key]['minimum'].y then
-                            global.deconstruct_queue[key]['minimum'].y = entity.position.y
-                        elseif entity.position.y > global.deconstruct_queue[key]['maximum'].y then
-                            global.deconstruct_queue[key]['maximum'].y = entity.position.y
+                        if entity.position.y < global.deconstruct_queue[chunk_surface][key]['minimum'].y then
+                            global.deconstruct_queue[chunk_surface][key]['minimum'].y = entity.position.y
+                        elseif entity.position.y > global.deconstruct_queue[chunk_surface][key]['maximum'].y then
+                            global.deconstruct_queue[chunk_surface][key]['maximum'].y = entity.position.y
                         end
                     end
                     if entity.type == "cliff" then
-                        global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
+                        global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] or 0) + 1
                     end
                     if entity.prototype.mineable_properties.products then
                         for index, item in ipairs(entity.prototype.mineable_properties.products) do
                             local amount = item.amount or item.amount_max
-                            global.deconstruct_queue[key]['trash_items'][item.name] = (global.deconstruct_queue[key]['trash_items'][item.name] or 0) + amount
+                            global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] = (global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] or 0) + amount
                         end
                     end
                 else
@@ -485,10 +487,12 @@ function add_upgrade_entities_to_chunks()
             local target = obj['target']
             if entity and entity.valid then
                 local chunk = chunk_from_position(entity.position)
-                local key = entity.surface.index .. ',' .. chunk.y .. ',' .. chunk.x
-                if not global.upgrade_queue[key] then -- initialize queued_chunk
-                    global.upgrade_queue[key] = {
+                local key = chunk.y .. ',' .. chunk.x
+                local chunk_surface = entity.surface.index
+                if not global.upgrade_queue[chunk_surface][key] then -- initialize queued_chunk
+                    global.upgrade_queue[chunk_surface][key] = {
                         key = key,
+                        surface = entity.surface.index,
                         entity_key = entity,
                         position = position_from_chunk(chunk),
                         area = get_area_from_chunk(chunk),
@@ -504,20 +508,20 @@ function add_upgrade_entities_to_chunks()
                         required_items = {},
                     }
                 else -- add to existing queued_chunk
-                    if entity.position.x < global.upgrade_queue[key]['minimum'].x then
-                        global.upgrade_queue[key]['minimum'].x = entity.position.x
-                    elseif entity.position.x > global.upgrade_queue[key]['maximum'].x then
-                        global.upgrade_queue[key]['maximum'].x = entity.position.x
+                    if entity.position.x < global.upgrade_queue[chunk_surface][key]['minimum'].x then
+                        global.upgrade_queue[chunk_surface][key]['minimum'].x = entity.position.x
+                    elseif entity.position.x > global.upgrade_queue[chunk_surface][key]['maximum'].x then
+                        global.upgrade_queue[chunk_surface][key]['maximum'].x = entity.position.x
                     end
-                    if entity.position.y < global.upgrade_queue[key]['minimum'].y then
-                        global.upgrade_queue[key]['minimum'].y = entity.position.y
-                    elseif entity.position.y > global.upgrade_queue[key]['maximum'].y then
-                        global.upgrade_queue[key]['maximum'].y = entity.position.y
+                    if entity.position.y < global.upgrade_queue[chunk_surface][key]['minimum'].y then
+                        global.upgrade_queue[chunk_surface][key]['minimum'].y = entity.position.y
+                    elseif entity.position.y > global.upgrade_queue[chunk_surface][key]['maximum'].y then
+                        global.upgrade_queue[chunk_surface][key]['maximum'].y = entity.position.y
                     end
                 end
                 for index, item in ipairs(target.items_to_place_this) do
-                    global.upgrade_queue[key]['required_items'][item.name] =
-                        (global.upgrade_queue[key]['required_items'][item.name] or 0) + item.count
+                    global.upgrade_queue[chunk_surface][key]['required_items'][item.name] =
+                        (global.upgrade_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
                 end
             else
                 break
@@ -1022,7 +1026,10 @@ function get_job(constructrons)
 
     for surface_name, surface in pairs(managed_surfaces) do -- iterate each surface
         global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
+        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+
+        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
             
             local max_worker = settings.global['max-worker-per-job'].value
             local available_constructrons = {}
@@ -1037,8 +1044,8 @@ function get_job(constructrons)
 
             if #available_constructrons < 1 then return end
 
-            if next(global.deconstruct_queue) then --deconstruction have priority over construction.
-                for key, chunk in pairs(global.deconstruct_queue) do
+            if next(global.deconstruct_queue[surface.index]) then --deconstruction have priority over construction.
+                for key, chunk in pairs(global.deconstruct_queue[surface.index]) do
                     table.insert(chunks, chunk)
                 end
                 job_type = 'deconstruct'
@@ -1049,8 +1056,8 @@ function get_job(constructrons)
                 end
                 job_type = 'construct'
 
-            elseif next(global.upgrade_queue) then
-                for key, chunk in pairs(global.upgrade_queue) do
+            elseif next(global.upgrade_queue[surface.index]) then
+                for key, chunk in pairs(global.upgrade_queue[surface.index]) do
                     table.insert(chunks, chunk)
                 end
                 job_type = 'upgrade'
@@ -1061,11 +1068,11 @@ function get_job(constructrons)
             local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
 
             if job_type == 'deconstruct' then
-                for key, value in pairs(global.deconstruct_queue) do
-                    global.deconstruct_queue[key] = nil
+                for key, value in pairs(global.deconstruct_queue[surface.index]) do
+                    global.deconstruct_queue[surface.index][key] = nil
                 end
                 for i, chunk in ipairs(unused_chunks) do
-                    global.deconstruct_queue[chunk.key] = chunk
+                    global.deconstruct_queue[surface.index][chunk.key] = chunk
                 end
 
             elseif job_type == 'construct' then
@@ -1077,11 +1084,11 @@ function get_job(constructrons)
                 end
 
             elseif job_type == 'upgrade' then
-                for key, value in pairs(global.upgrade_queue) do
-                    global.upgrade_queue[key] = nil
+                for key, value in pairs(global.upgrade_queue[surface.index]) do
+                    global.upgrade_queue[surface.index][key] = nil
                 end
                 for i, chunk in ipairs(unused_chunks) do
-                    global.upgrade_queue[chunk.key] = chunk
+                    global.upgrade_queue[surface.index][chunk.key] = chunk
                 end
             end
 
