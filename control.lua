@@ -9,26 +9,27 @@ end
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 job_start_delay = (settings.global["job-start-delay"].value * 60)
 
-function get_service_stations()
-    -- return game.surfaces['nauvis'].find_entities_filtered {
-    --     name = "service_station"
-    -- }
-    return global.service_stations or {}
+function get_service_stations(index)
+    local stations_on_surface = {}
+    for s, station in pairs(global.service_stations) do
+        if (index == station.surface.index) then
+            table.insert(stations_on_surface, station.unit_number, station)
+        end
+    end
+    return stations_on_surface or {}
 end
 
 function get_constructrons()
-    -- return game.surfaces['nauvis'].find_entities_filtered {
-    --     name = "constructron"
-    -- }
-    return global.constructrons or {}
+    local constructrons_on_surface
+    for c, constructron in pairs(global.constructrons) do
+        table.insert(constructrons_on_surface, constructron)
+    end
+    return constructrons_on_surface or {}
 end
 
 function distance_between(position1, position2)
     return math.sqrt(math.pow(position1.x - position2.x, 2) + math.pow(position1.y - position2.y, 2))
 end
-
-
---todo is_registered_for_construction()
 
 function constructrons_need_reload(constructrons)
     for c, constructron in ipairs(constructrons) do
@@ -354,10 +355,13 @@ function add_ghosts_to_chunks()
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
+                    local chunk_surface = entity.surface.index
                     local entity_key = entity.position.y .. ',' .. entity.position.x
-                    if not global.construct_queue[key] then -- initialize queued_chunk
-                        global.construct_queue[key] = {
+                    global.construct_queue[chunk_surface] = global.construct_queue[chunk_surface] or {}
+                    if not global.construct_queue[chunk_surface][key] then -- initialize queued_chunk
+                        global.construct_queue[chunk_surface][key] = {
                             key = key,
+                            surface = entity.surface.index,
                             entity_key = entity,
                             position = position_from_chunk(chunk),
                             area = get_area_from_chunk(chunk),
@@ -373,30 +377,30 @@ function add_ghosts_to_chunks()
                             required_items = {},
                         }
                     else -- add to existing queued_chunk
-                        global.construct_queue[key][entity_key] = entity
-                        if entity.position.x < global.construct_queue[key]['minimum'].x then
-                            global.construct_queue[key]['minimum'].x = entity.position.x
-                        elseif entity.position.x > global.construct_queue[key]['maximum'].x then
-                            global.construct_queue[key]['maximum'].x = entity.position.x
+                        global.construct_queue[chunk_surface][key][entity_key] = entity
+                        if entity.position.x < global.construct_queue[chunk_surface][key]['minimum'].x then
+                            global.construct_queue[chunk_surface][key]['minimum'].x = entity.position.x
+                        elseif entity.position.x > global.construct_queue[chunk_surface][key]['maximum'].x then
+                            global.construct_queue[chunk_surface][key]['maximum'].x = entity.position.x
                         end
-                        if entity.position.y < global.construct_queue[key]['minimum'].y then
-                            global.construct_queue[key]['minimum'].y = entity.position.y
-                        elseif entity.position.y > global.construct_queue[key]['maximum'].y then
-                            global.construct_queue[key]['maximum'].y = entity.position.y
+                        if entity.position.y < global.construct_queue[chunk_surface][key]['minimum'].y then
+                            global.construct_queue[chunk_surface][key]['minimum'].y = entity.position.y
+                        elseif entity.position.y > global.construct_queue[chunk_surface][key]['maximum'].y then
+                            global.construct_queue[chunk_surface][key]['maximum'].y = entity.position.y
                         end
                     end
                     -- to use for requesting stuff to constructron
                     if not (entity.type == 'item-request-proxy') then
                         for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                            global.construct_queue[key]['required_items'][item.name] =
-                                (global.construct_queue[key]['required_items'][item.name] or 0) + item.count
+                            global.construct_queue[chunk_surface][key]['required_items'][item.name] =
+                                (global.construct_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
                         end
                     end
                     -- for modules
                     if entity.type == 'entity-ghost' or entity.type == 'item-request-proxy' then
                         for name, count in pairs(entity.item_requests) do
-                            global.construct_queue[key]['required_items'][name] =
-                                (global.construct_queue[key]['required_items'][name] or 0) + count
+                            global.construct_queue[chunk_surface][key]['required_items'][name] =
+                                (global.construct_queue[chunk_surface][key]['required_items'][name] or 0) + count
                         end
                     end
                 else
@@ -421,10 +425,12 @@ function add_deconstruction_entities_to_chunks()
                 if entity.valid then
                     local chunk = chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
+                    local chunk_surface = entity.surface.index
                     local entity_key = entity.position.y .. ',' .. entity.position.x
-                    if not global.deconstruct_queue[key] then -- initialize queued_chunk
-                        global.deconstruct_queue[key] = {
+                    if not global.deconstruct_queue[chunk_surface][key] then -- initialize queued_chunk
+                        global.deconstruct_queue[chunk_surface][key] = {
                             key = key,
+                            surface = entity.surface.index,
                             entity_key = entity,
                             position = position_from_chunk(chunk),
                             area = get_area_from_chunk(chunk),
@@ -441,25 +447,25 @@ function add_deconstruction_entities_to_chunks()
                             trash_items = {}
                         }
                     else -- add to existing queued_chunk
-                        global.deconstruct_queue[key][entity_key] = entity
-                        if entity.position.x < global.deconstruct_queue[key]['minimum'].x then
-                            global.deconstruct_queue[key]['minimum'].x = entity.position.x
-                        elseif entity.position.x > global.deconstruct_queue[key]['maximum'].x then
-                            global.deconstruct_queue[key]['maximum'].x = entity.position.x
+                        global.deconstruct_queue[chunk_surface][key][entity_key] = entity
+                        if entity.position.x < global.deconstruct_queue[chunk_surface][key]['minimum'].x then
+                            global.deconstruct_queue[chunk_surface][key]['minimum'].x = entity.position.x
+                        elseif entity.position.x > global.deconstruct_queue[chunk_surface][key]['maximum'].x then
+                            global.deconstruct_queue[chunk_surface][key]['maximum'].x = entity.position.x
                         end
-                        if entity.position.y < global.deconstruct_queue[key]['minimum'].y then
-                            global.deconstruct_queue[key]['minimum'].y = entity.position.y
-                        elseif entity.position.y > global.deconstruct_queue[key]['maximum'].y then
-                            global.deconstruct_queue[key]['maximum'].y = entity.position.y
+                        if entity.position.y < global.deconstruct_queue[chunk_surface][key]['minimum'].y then
+                            global.deconstruct_queue[chunk_surface][key]['minimum'].y = entity.position.y
+                        elseif entity.position.y > global.deconstruct_queue[chunk_surface][key]['maximum'].y then
+                            global.deconstruct_queue[chunk_surface][key]['maximum'].y = entity.position.y
                         end
                     end
                     if entity.type == "cliff" then
-                        global.deconstruct_queue[key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[key]['required_items']['cliff-explosives'] or 0) + 1
+                        global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] or 0) + 1
                     end
                     if entity.prototype.mineable_properties.products then
                         for index, item in ipairs(entity.prototype.mineable_properties.products) do
                             local amount = item.amount or item.amount_max
-                            global.deconstruct_queue[key]['trash_items'][item.name] = (global.deconstruct_queue[key]['trash_items'][item.name] or 0) + amount
+                            global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] = (global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] or 0) + amount
                         end
                     end
                 else
@@ -482,9 +488,11 @@ function add_upgrade_entities_to_chunks()
             if entity and entity.valid then
                 local chunk = chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
-                if not global.upgrade_queue[key] then -- initialize queued_chunk
-                    global.upgrade_queue[key] = {
+                local chunk_surface = entity.surface.index
+                if not global.upgrade_queue[chunk_surface][key] then -- initialize queued_chunk
+                    global.upgrade_queue[chunk_surface][key] = {
                         key = key,
+                        surface = entity.surface.index,
                         entity_key = entity,
                         position = position_from_chunk(chunk),
                         area = get_area_from_chunk(chunk),
@@ -499,33 +507,21 @@ function add_upgrade_entities_to_chunks()
                         },
                         required_items = {},
                     }
-                    -- global.upgrade_queue[key] = {key = key}
-                    -- global.upgrade_queue[key]['position'] = position_from_chunk(chunk)
-                    -- global.upgrade_queue[key]['area'] = get_area_from_chunk(chunk)
-                    -- global.upgrade_queue[key]['minimum'] = {
-                    --     x = entity.position.x,
-                    --     y = entity.position.y
-                    -- }
-                    -- global.upgrade_queue[key]['maximum'] = {
-                    --     x = entity.position.x,
-                    --     y = entity.position.y
-                    -- }
-                    -- global.upgrade_queue[key]['required_items'] = {}
                 else -- add to existing queued_chunk
-                    if entity.position.x < global.upgrade_queue[key]['minimum'].x then
-                        global.upgrade_queue[key]['minimum'].x = entity.position.x
-                    elseif entity.position.x > global.upgrade_queue[key]['maximum'].x then
-                        global.upgrade_queue[key]['maximum'].x = entity.position.x
+                    if entity.position.x < global.upgrade_queue[chunk_surface][key]['minimum'].x then
+                        global.upgrade_queue[chunk_surface][key]['minimum'].x = entity.position.x
+                    elseif entity.position.x > global.upgrade_queue[chunk_surface][key]['maximum'].x then
+                        global.upgrade_queue[chunk_surface][key]['maximum'].x = entity.position.x
                     end
-                    if entity.position.y < global.upgrade_queue[key]['minimum'].y then
-                        global.upgrade_queue[key]['minimum'].y = entity.position.y
-                    elseif entity.position.y > global.upgrade_queue[key]['maximum'].y then
-                        global.upgrade_queue[key]['maximum'].y = entity.position.y
+                    if entity.position.y < global.upgrade_queue[chunk_surface][key]['minimum'].y then
+                        global.upgrade_queue[chunk_surface][key]['minimum'].y = entity.position.y
+                    elseif entity.position.y > global.upgrade_queue[chunk_surface][key]['maximum'].y then
+                        global.upgrade_queue[chunk_surface][key]['maximum'].y = entity.position.y
                     end
                 end
                 for index, item in ipairs(target.items_to_place_this) do
-                    global.upgrade_queue[key]['required_items'][item.name] =
-                        (global.upgrade_queue[key]['required_items'][item.name] or 0) + item.count
+                    global.upgrade_queue[chunk_surface][key]['required_items'][item.name] =
+                        (global.upgrade_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
                 end
             else
                 break
@@ -595,8 +591,10 @@ function do_until_leave(job)
             end
             job.unused_stations[closest_station.unit_number] = nil
             if not (next(job.unused_stations)) then
-                job.unused_stations = (table.deepcopy(global.service_stations))
-                job.unused_stations[closest_station.unit_number] = nil
+                job.unused_stations = get_service_stations(job.constructrons[1].surface.index)
+                if not #job.unused_stations == 1 then
+                    job.unused_stations[closest_station.unit_number] = nil
+                end
             end
             next_station = get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
             for c, constructron in ipairs(job.constructrons) do
@@ -893,7 +891,7 @@ conditions = {
     end
 }
 
-function give_job(constructrons, job)
+function give_job(constructrons, job) -- this doesn't look like it is used
     -- we should give the job only to the leader aka constructrons[1]
     if not global.constructron_jobs[constructrons[1].unit_number] then
         global.constructron_jobs[constructrons[1].unit_number] = {}
@@ -925,7 +923,7 @@ function get_closest_object(objects, position)
         iterator = ipairs
     end
     for i, object in iterator(objects) do
-        local distance = distance_between(object.position, position)        
+        local distance = distance_between(object.position, position)
             if not min_distance or (distance < min_distance) then
                 min_distance = distance
                 object_index = i
@@ -935,17 +933,6 @@ function get_closest_object(objects, position)
 end
 
 function get_job(constructrons)
-    local available_constructrons = {}
-    for c, constructron in pairs(constructrons) do
-        if constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
-            table.insert(available_constructrons, constructron)
-        end
-    end
-
-    if #available_constructrons < 1 then return end
-
-    local max_worker = settings.global['max-worker-per-job'].value
-
     function get_chunks_and_constructrons(queued_chunks, preselected_constructrons, max_constructron)
         local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
         local empty_stack_count = inventory.count_empty_stacks()
@@ -1035,152 +1022,172 @@ function get_job(constructrons)
         return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
     end
 
-    -----------------------
+    local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
 
-    if (next(global.construct_queue) or next(global.deconstruct_queue) or next(global.upgrade_queue)) then -- this means they are processed as chunks or it's empty.
+    for surface_name, surface in pairs(managed_surfaces) do -- iterate each surface
+        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
 
-        local chunks = {}
-        local job_type
-
-        if next(global.deconstruct_queue) then --deconstruction have priority over construction.
-            for key, chunk in pairs(global.deconstruct_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'deconstruct'
-        elseif next(global.construct_queue) then
-            for key, chunk in pairs(global.construct_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'construct'
-        elseif next(global.upgrade_queue) then
-            for key, chunk in pairs(global.upgrade_queue) do
-                table.insert(chunks, chunk)
-            end
-            job_type = 'upgrade'
-        end
-        if not next(chunks) then return end
-
-        local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
-
-        if job_type == 'deconstruct' then
-            for key, value in pairs(global.deconstruct_queue) do
-                global.deconstruct_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.deconstruct_queue[chunk.key] = chunk
-            end
-        elseif job_type == 'construct' then
-            for key, value in pairs(global.construct_queue) do
-                global.construct_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.construct_queue[chunk.key] = chunk
-            end
-        elseif job_type == 'upgrade' then
-            for key, value in pairs(global.upgrade_queue) do
-                global.upgrade_queue[key] = nil
-            end
-            for i, chunk in ipairs(unused_chunks) do
-                global.upgrade_queue[chunk.key] = chunk
-            end
-        end
-
-        local request_items_job = {
-            action = 'request_items',
-            action_args = {combined_chunks.requested_items},
-            leave_condition = 'request_done',
-            constructrons = selected_constructrons,
-            start_tick = game.tick,
-            unused_stations = table.deepcopy(global.service_stations)
-        }
-
-        global.job_bundle_index = (global.job_bundle_index or 0) + 1
-        create_job(global.job_bundle_index, request_items_job)
-        for i, chunk in ipairs(combined_chunks) do
-            -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
-            -- local chunk = table.remove(combined_chunks, chunk_index)
-            chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
-            local find_path = false
-            for p, position in ipairs(chunk.positions) do
-                if p == 1 then find_path = true end
-                local go_to_position_job = {
-                    action = 'go_to_position',
-                    action_args = {position, find_path},
-                    leave_condition = 'position_done',
-                    leave_args = {position},
-                    constructrons = selected_constructrons,
-                    start_tick = game.tick
-                }
-                create_job(global.job_bundle_index, go_to_position_job)
-                if not (job_type == 'deconstruct') then
-                    local build_job = {
-                        action = 'build',
-                        leave_condition = 'build_done',
-                        leave_args = {chunk.required_items, chunk.minimum, chunk.maximum},
-                        constructrons = selected_constructrons
-                    }
-                    create_job(global.job_bundle_index, build_job)
-                    for c, constructron in ipairs(selected_constructrons) do
-                        paint_constructron(constructron, 'construct')
-                    end
-                elseif job_type == 'deconstruct' then
-                    local deconstruction_job = {
-                        action = 'deconstruct',
-                        leave_condition = 'deconstruction_done',
-                        constructrons = selected_constructrons
-                    }
-                    create_job(global.job_bundle_index, deconstruction_job)
-                end
-                for c, constructron in ipairs(selected_constructrons) do
-                    paint_constructron(constructron, job_type)
+        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
+            
+            local max_worker = settings.global['max-worker-per-job'].value
+            local available_constructrons = {}
+            local chunks = {}
+            local job_type
+            
+            for c, constructron in pairs(constructrons) do
+                if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
+                    table.insert(available_constructrons, constructron)
                 end
             end
-            if job_type == 'construct' then
-                local add_to_check_chunk_done_queue_job = {
-                    action = 'add_to_check_chunk_done_queue',
-                    action_args = {chunk},
-                    leave_condition = 'pass', -- there is no leave condition 
-                    constructrons = selected_constructrons,
-                }
-                create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
+
+            if #available_constructrons < 1 then return end
+
+            if next(global.deconstruct_queue[surface.index]) then --deconstruction have priority over construction.
+                for key, chunk in pairs(global.deconstruct_queue[surface.index]) do
+                    table.insert(chunks, chunk)
+                end
+                job_type = 'deconstruct'
+
+            elseif next(global.construct_queue[surface.index]) then
+                for key, chunk in pairs(global.construct_queue[surface.index]) do
+                    table.insert(chunks, chunk)
+                end
+                job_type = 'construct'
+
+            elseif next(global.upgrade_queue[surface.index]) then
+                for key, chunk in pairs(global.upgrade_queue[surface.index]) do
+                    table.insert(chunks, chunk)
+                end
+                job_type = 'upgrade'
             end
+
+            if not next(chunks) then return end
+
+            local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
+
             if job_type == 'deconstruct' then
-                local check_decon_chunk_job = {
-                    action = 'check_decon_chunk',
-                    action_args = {chunk},
-                    leave_condition = 'pass', -- there is no leave condition 
-                    constructrons = selected_constructrons,
-                }
-                create_job(global.job_bundle_index, check_decon_chunk_job)
+                for key, value in pairs(global.deconstruct_queue[surface.index]) do
+                    global.deconstruct_queue[surface.index][key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                    global.deconstruct_queue[surface.index][chunk.key] = chunk
+                end
+
+            elseif job_type == 'construct' then
+                for key, value in pairs(global.construct_queue[surface.index]) do
+                    global.construct_queue[surface.index][key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                        global.construct_queue[surface.index][chunk.key] = chunk
+                end
+
+            elseif job_type == 'upgrade' then
+                for key, value in pairs(global.upgrade_queue[surface.index]) do
+                    global.upgrade_queue[surface.index][key] = nil
+                end
+                for i, chunk in ipairs(unused_chunks) do
+                    global.upgrade_queue[surface.index][chunk.key] = chunk
+                end
             end
+
+            local request_items_job = {
+                action = 'request_items',
+                action_args = {combined_chunks.requested_items},
+                leave_condition = 'request_done',
+                constructrons = selected_constructrons,
+                start_tick = game.tick,
+                unused_stations = get_service_stations(selected_constructrons[1].surface.index)
+            }
+
+            global.job_bundle_index = (global.job_bundle_index or 0) + 1
+            create_job(global.job_bundle_index, request_items_job)
+            for i, chunk in ipairs(combined_chunks) do
+                -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
+                -- local chunk = table.remove(combined_chunks, chunk_index)
+                chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
+                local find_path = false
+                for p, position in ipairs(chunk.positions) do
+                    if p == 1 then find_path = true end
+                    local go_to_position_job = {
+                        action = 'go_to_position',
+                        action_args = {position, find_path},
+                        leave_condition = 'position_done',
+                        leave_args = {position},
+                        constructrons = selected_constructrons,
+                        start_tick = game.tick
+                    }
+                    create_job(global.job_bundle_index, go_to_position_job)
+                    if not (job_type == 'deconstruct') then
+                        local build_job = {
+                            action = 'build',
+                            leave_condition = 'build_done',
+                            leave_args = {chunk.required_items, chunk.minimum, chunk.maximum},
+                            constructrons = selected_constructrons
+                        }
+                        create_job(global.job_bundle_index, build_job)
+                        for c, constructron in ipairs(selected_constructrons) do
+                            paint_constructron(constructron, 'construct')
+                        end
+                    elseif job_type == 'deconstruct' then
+                        local deconstruction_job = {
+                            action = 'deconstruct',
+                            leave_condition = 'deconstruction_done',
+                            constructrons = selected_constructrons
+                        }
+                        create_job(global.job_bundle_index, deconstruction_job)
+                    end
+                    for c, constructron in ipairs(selected_constructrons) do
+                        paint_constructron(constructron, job_type)
+                    end
+                end
+                if job_type == 'construct' then
+                    local add_to_check_chunk_done_queue_job = {
+                        action = 'add_to_check_chunk_done_queue',
+                        action_args = {chunk},
+                        leave_condition = 'pass', -- there is no leave condition 
+                        constructrons = selected_constructrons,
+                    }
+                    create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
+                end
+                if job_type == 'deconstruct' then
+                    local check_decon_chunk_job = {
+                        action = 'check_decon_chunk',
+                        action_args = {chunk},
+                        leave_condition = 'pass', -- there is no leave condition 
+                        constructrons = selected_constructrons,
+                    }
+                    create_job(global.job_bundle_index, check_decon_chunk_job)
+                end
+            end
+            -- go back to a service_station when job is done.
+            local closest_station = get_closest_service_station(selected_constructrons[1])
+            local home_position = closest_station.position
+            local go_to_home_job = {
+                action = 'go_to_position',
+                action_args = {home_position, true},
+                leave_condition = 'position_done',
+                leave_args = {home_position},
+                constructrons = selected_constructrons,
+                start_tick = game.tick
+            }
+            create_job(global.job_bundle_index, go_to_home_job)
+            local empty_inventory_job = {
+                action = 'clear_items',
+                leave_condition = 'request_done',
+                constructrons = selected_constructrons
+            }
+            create_job(global.job_bundle_index, empty_inventory_job)
+            local retire_job = {
+                action = 'retire',
+                leave_condition = 'position_done',
+                leave_args = {home_position},
+                constructrons = selected_constructrons
+            }
+            create_job(global.job_bundle_index, retire_job)
         end
-        -- go back to a service_station when job is done.
-        local closest_station = get_closest_service_station(selected_constructrons[1])
-        local home_position = closest_station.position
-        local go_to_home_job = {
-            action = 'go_to_position',
-            action_args = {home_position, true},
-            leave_condition = 'position_done',
-            leave_args = {home_position},
-            constructrons = selected_constructrons,
-            start_tick = game.tick
-        }
-        create_job(global.job_bundle_index, go_to_home_job)
-        local empty_inventory_job = {
-            action = 'clear_items',
-            leave_condition = 'request_done',
-            constructrons = selected_constructrons
-        }
-        create_job(global.job_bundle_index, empty_inventory_job)
-        local retire_job = {
-            action = 'retire',
-            leave_condition = 'position_done',
-            leave_args = {home_position},
-            constructrons = selected_constructrons
-        }
-        create_job(global.job_bundle_index, retire_job)
     end
-    ------------------------------
 end
 
 function do_job(job_bundles)
@@ -1210,8 +1217,8 @@ function do_job(job_bundles)
 end
 
 script.on_nth_tick(60, function(event)
-    local constructrons = get_constructrons()
-    local service_stations = get_service_stations()
+    local constructrons = global.constructrons -- due to changes with the get_constructrons function
+    local service_stations = global.service_stations -- due to changes with the get_service_stations function
     if (not next(constructrons)) or (not next(service_stations)) then -- let's clear the queues, that means they probably added the ghosts etc before they had any constructrons.
         global.construct_queue = {}
         global.deconstruct_queue = {}
@@ -1374,8 +1381,7 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
-
-
+---
 
 function set_constructron_status(constructron, state, value)
     if constructron.valid then
@@ -1404,8 +1410,13 @@ function get_constructron_status(constructron, state)
 end
 
 function get_closest_service_station(constructron)
-    local service_stations = get_service_stations()
+    local service_stations = get_service_stations(constructron.surface.index)
     if service_stations then
+        for unit_number, station in pairs(service_stations) do
+            if not station.valid then
+                global.service_stations[unit_number] = nil
+            end
+        end
         local service_station_index = get_closest_object(service_stations, constructron.position)
         return service_stations[service_station_index]
     end
