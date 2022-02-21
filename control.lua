@@ -1284,6 +1284,7 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         end
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
+        script.register_on_entity_destroyed(entity)
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
     end
@@ -1382,6 +1383,37 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
     global.deconstruction_entities[decon_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 ---
+
+script.on_event(defines.events.on_surface_deleted, function(event)
+    global.construct_queue[event.surface_index] = nil
+    global.deconstruct_queue[event.surface_index] = nil
+    global.upgrade_queue[event.surface_index] = nil
+end)
+---
+
+script.on_event(defines.events.on_entity_cloned, function(event)
+    DebugLog('Cloned!')
+    local entity = event.destination
+    if entity.name == 'constructron' then
+        global.constructrons[entity.unit_number] = entity
+    elseif entity.name == "service_station" then
+        global.service_stations[entity.unit_number] = entity
+    end
+end)
+
+script.on_event(defines.events.on_entity_destroyed, function(event)
+    DebugLog('Destroyed!')
+end)
+
+script.on_event(defines.events.script_raised_destroy, function(event)
+    DebugLog('Script_Destroy!')
+    local entity = event.entity
+    if entity.name == 'constructron' then
+        global.constructrons[entity.unit_number] = nil
+    elseif entity.name == 'service_station' then
+        global.service_stations[entity.unit_number] = nil
+    end
+end)
 
 function set_constructron_status(constructron, state, value)
     if constructron.valid then
