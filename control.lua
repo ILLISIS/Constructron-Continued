@@ -4,6 +4,7 @@ local collision_mask_util_extended = require("script.collision-mask-util-control
 function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
+        log(message)
     end
 end
 
