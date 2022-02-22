@@ -1297,11 +1297,11 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         end
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(constructron)
+        local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = "constructron"
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(constructron)
+        local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = "service_station"
     end
 end)
@@ -1329,11 +1329,11 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
             end
         elseif entity.name == 'constructron' then
             global.constructrons[entity.unit_number] = entity
-            local registration_number = script.register_on_entity_destroyed(constructron)
+            local registration_number = script.register_on_entity_destroyed(entity)
             global.registered_entities[registration_number] = "constructron"
         elseif entity.name == "service_station" then
             global.service_stations[entity.unit_number] = entity
-            local registration_number = script.register_on_entity_destroyed(constructron)
+            local registration_number = script.register_on_entity_destroyed(entity)
             global.registered_entities[registration_number] = "service_station"
         end
     elseif event.entity.type == 'item-request-proxy' then
@@ -1425,10 +1425,10 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
     local removed_entity = global.registered_entities[event.registration_number]
     if removed_entity == "constructron" then
         global.constructrons[event.unit_number] = nil
-        DebugLog('constructron' .. registration_number .. 'Destroyed!')
+        DebugLog('constructron' .. event.registration_number .. 'Destroyed!')
     elseif removed_entity == "service_station" then
         global.service_stations[event.unit_number] = nil
-        DebugLog('service_station' .. registration_number .. 'Destroyed!')
+        DebugLog('service_station' .. event.registration_number .. 'Destroyed!')
     end
 end)
 
@@ -1436,10 +1436,10 @@ script.on_event(defines.events.script_raised_destroy, function(event)
     local removed_entity = global.registered_entities[event.registration_number]
     if removed_entity == "constructron" then
         global.constructrons[event.unit_number] = nil
-        DebugLog('constructron' .. registration_number .. 'Destroyed!')
+        DebugLog('constructron' .. event.registration_number .. 'Destroyed!')
     elseif removed_entity == "service_station" then
         global.service_stations[event.unit_number] = nil
-        DebugLog('service_station' .. registration_number .. 'Destroyed!')
+        DebugLog('service_station' .. event.registration_number .. 'Destroyed!')
     end
 end)
 
