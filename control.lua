@@ -1,8 +1,10 @@
 require("util")
+local collision_mask_util_extended = require("script.collision-mask-util-control")
 
 function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
+        log(message)
     end
 end
 
@@ -119,9 +121,20 @@ end
 
 function request_path(constructrons, goal)
     if constructrons[1].valid then
+        local pathing_collision_mask = {
+            "water-tile",
+            --"consider-tile-transitions", 
+            "colliding-with-tiles-only"
+        }
+        if game.active_mods["space-exploration"] then
+            local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+            local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+            table.insert(pathing_collision_mask, spaceship_collision_layer)
+            table.insert(pathing_collision_mask, empty_space_collision_layer)
+        end
         local request_id = constructrons[1].surface.request_path {
             bounding_box = {{-3, -3}, {3, 3}},
-            collision_mask = {"water-tile", "colliding-with-tiles-only", "consider-tile-transitions"},
+            collision_mask = pathing_collision_mask,
             start = constructrons[1].position,
             goal = goal,
             force = constructrons[1].force,
