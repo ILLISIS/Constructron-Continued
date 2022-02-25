@@ -1,3 +1,38 @@
+local constructron_pathing_dummy = {
+  type = "simple-entity",
+  name = "constructron_pathing_dummy",
+  icon = "__core__/graphics/empty.png",
+  icon_size = 1,
+  icon_mipmaps = 0,
+  flags = {"placeable-neutral", "not-on-map"},
+  order = "z",
+  max_health = 1,
+  collision_box = {{-3, -3}, {3, 3}},
+  selection_box = {{-3, -3}, {3, 3}},
+  render_layer = "object",
+  pictures = {
+    {
+      filename = "__core__/graphics/empty.png",
+      width = 1,
+      height = 1
+    }
+  }
+}
+
+local constructron_pathing_dummy_item = {
+  type = "item",
+  flags = {
+    "hidden"
+  },
+  name = "constructron_pathing_dummy",
+  icon = "__core__/graphics/empty.png",
+  icon_size = 1,
+  order = "z",
+  place_result = "constructron_pathing_dummy",
+  stack_size = 1
+}
+data:extend({constructron_pathing_dummy, constructron_pathing_dummy_item})
+
 local constructron = table.deepcopy(data.raw["spider-vehicle"]["spidertron"])
 constructron.name = "constructron"
 
