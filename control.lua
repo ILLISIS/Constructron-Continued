@@ -12,7 +12,7 @@ local function VisualDebugText(message, entity)
     if not entity or not entity.valid then
         return
     end
-    if settings.global["constructron-debug-enabled"].value then
+	if settings.global["constructron-debug-enabled"].value then
         rendering.draw_text {
             text = message,
             target = entity,
@@ -32,7 +32,7 @@ local function VisualDebugText(message, entity)
 end
 
 local function VisualDebugCircle(position,surface, color, text)
-    if settings.global["constructron-debug-enabled"].value then
+	if settings.global["constructron-debug-enabled"].value then
         rendering.draw_circle {
             target = position,
             radius = 0.5,
@@ -156,35 +156,44 @@ script.on_configuration_changed(function()
 end)
 
 function request_path(constructrons, goal)
-    if constructrons[1].valid then
-        local pathing_collision_mask = {
-            "water-tile",
-            --"consider-tile-transitions", 
-            "colliding-with-tiles-only"
-        }
-        if game.active_mods["space-exploration"] then
-            local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-            local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-            table.insert(pathing_collision_mask, spaceship_collision_layer)
-            table.insert(pathing_collision_mask, empty_space_collision_layer)
-        end
-        local request_id = constructrons[1].surface.request_path {
-            bounding_box = {{-3, -3}, {3, 3}},
-            -- radius = 3,
-            collision_mask = pathing_collision_mask,
-            start = constructrons[1].position,
-            goal = goal,
-            force = constructrons[1].force,
-            pathfinding_flags = {
-                cache = false,
-                low_priority = true
+    local constructron = constructrons[1]
+    if constructron.valid then
+        local surface = constructrons[1].surface
+        local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
+        local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
+        VisualDebugCircle(goal,constructron.surface,{r = 100, g = 0, b = 0, a = 0.2})
+        VisualDebugCircle(new_goal,constructron.surface,{r = 0, g = 100, b = 0, a = 0.2})
+        if new_goal and new_start then
+            local pathing_collision_mask = {
+                "water-tile",
+                --"consider-tile-transitions", 
+                "colliding-with-tiles-only"
             }
-        }
-        global.constructron_pathfinder_requests[request_id] = {
-            constructrons = constructrons
-        }
-        for c, constructron in ipairs(constructrons) do
-            constructron.autopilot_destination = nil
+            if game.active_mods["space-exploration"] then
+                local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+                local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+                table.insert(pathing_collision_mask, spaceship_collision_layer)
+                table.insert(pathing_collision_mask, empty_space_collision_layer)
+            end
+            local request_id = surface.request_path {
+                bounding_box = {{-3, -3}, {3, 3}},
+                collision_mask = pathing_collision_mask,
+                start = new_start,
+                goal = new_goal,
+                force = constructron.force,
+                pathfinding_flags = {
+                    cache = false,
+                    low_priority = true
+                }
+            }
+            global.constructron_pathfinder_requests[request_id] = {
+                constructrons = constructrons
+            }
+            for c, constructron in ipairs(constructrons) do
+                constructron.autopilot_destination = nil
+            end
+        else
+            VisualDebugText("pathfinding request failed - target not reachable", constructron)
         end
     else
         invalid = true
@@ -211,12 +220,12 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
                     i = i + 1
                 end
             else
-                VisualDebugText("pathfinder callback path nil", constructron)
-            end
+				VisualDebugText("pathfinder callback path nil", constructron)
+			end
         end
-    else
-        VisualDebugText("pathfinder callback request nil", constructrons[1])
-    end
+	else
+		VisualDebugText("pathfinder callback request nil", constructrons[1])
+	end
 end)
 
 function clean_linear_path(path)
