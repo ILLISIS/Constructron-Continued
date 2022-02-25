@@ -8,6 +8,26 @@ function DebugLog(message)
     end
 end
 
+function VisualDebug(message, entity)
+    if settings.global["constructron-debug-enabled"].value then
+        rendering.draw_text {
+            text = message,
+            target = entity,
+            filled = true,
+            surface = entity.surface,
+            time_to_live = 60,
+            target_offset = {0, -2},
+            alignment = "center",
+            color = {
+                r = 255,
+                g = 255,
+                b = 255,
+                a = 255
+            }
+        }
+    end
+end
+
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 job_start_delay = (settings.global["job-start-delay"].value * 60)
 
@@ -100,25 +120,6 @@ script.on_configuration_changed(function()
     global.service_stations = global.service_stations or {}
 end)
 
-function clean_linear_path(path)
-    -- removes points on the same line except the start and the end.
-    local new_path = {}
-    for i, waypoint in ipairs(path) do
-        if i >= 2 and i < #path then
-            local prev_angle = math.atan2(waypoint.position.y - path[i - 1].position.y,
-                waypoint.position.x - path[i - 1].position.x)
-            local next_angle = math.atan2(path[i + 1].position.y - waypoint.position.y,
-                path[i + 1].position.x - waypoint.position.x)
-            if math.abs(prev_angle - next_angle) > 0.01 then
-                table.insert(new_path, waypoint)
-            end
-        else
-            table.insert(new_path, waypoint)
-        end
-    end
-    return new_path
-end
-
 function request_path(constructrons, goal)
     if constructrons[1].valid then
         local pathing_collision_mask = {
@@ -134,6 +135,7 @@ function request_path(constructrons, goal)
         end
         local request_id = constructrons[1].surface.request_path {
             bounding_box = {{-3, -3}, {3, 3}},
+            -- radius = 3,
             collision_mask = pathing_collision_mask,
             start = constructrons[1].position,
             goal = goal,
@@ -153,6 +155,63 @@ function request_path(constructrons, goal)
         invalid = true
         return invalid
     end
+end
+
+script.on_event(defines.events.on_script_path_request_finished, function(event)
+    local request = global.constructron_pathfinder_requests[event.id]
+    if not (request == nil) then
+        local constructrons = request.constructrons
+        local clean_path
+        -- if event.path then
+        --     clean_path = clean_linear_path(event.path)
+        -- end
+        for c, constructron in ipairs(constructrons) do
+            constructron.autopilot_destination = nil
+            if event.path then
+                for i, waypoint in ipairs(event.path) do
+                -- for i, waypoint in ipairs(clean_path) do
+                    constructron.add_autopilot_destination(waypoint.position)
+                    if settings.global["constructron-debug-enabled"].value then
+                        local otherp = {}
+                        otherp.x = waypoint.position.x - 1
+                        otherp.y = waypoint.position.y - 1
+                        rendering.draw_rectangle {
+                            left_top = waypoint.position,
+                            right_bottom = otherp,
+                            filled = true,
+                            surface = constructron.surface,
+                            time_to_live = 1800,
+                            color = {
+                                r = 100,
+                                g = 0,
+                                b = 100,
+                                a = 0.2
+                            }
+                        }
+                    end
+                end
+            end
+        end
+    end
+end)
+
+function clean_linear_path(path)
+    -- removes points on the same line except the start and the end.
+    local new_path = {}
+    for i, waypoint in ipairs(path) do
+        if i >= 2 and i < #path then
+            local prev_angle = math.atan2(waypoint.position.y - path[i - 1].position.y,
+                waypoint.position.x - path[i - 1].position.x)
+            local next_angle = math.atan2(path[i + 1].position.y - waypoint.position.y,
+                path[i + 1].position.x - waypoint.position.x)
+            if math.abs(prev_angle - next_angle) > 0.01 then
+                table.insert(new_path, waypoint)
+            end
+        else
+            table.insert(new_path, waypoint)
+        end
+    end
+    return new_path
 end
 
 function chunk_from_position(position)
@@ -311,6 +370,7 @@ function calculate_construct_positions(area, radius)
     local ypoints = {}
     local xpoint_count = math.ceil(width / radius / 2)
     local ypoint_count = math.ceil(height / radius / 2)
+
     if xpoint_count > 1 then
         for i = 1, xpoint_count do
             xpoints[i] = area[1].x + radius + (width - radius * 2) * (i - 1) / (xpoint_count - 1)
@@ -345,6 +405,26 @@ function calculate_construct_positions(area, radius)
                     x = xpoints[(xpoint_count + 1) * (y % 2) + math.pow(-1, y % 2) * x]
                 })
             end
+        end
+    end
+    if settings.global["constructron-debug-enabled"].value then
+        for p, point in pairs(points) do
+            local otherp = {}
+            otherp.x = point.x - 1
+            otherp.y = point.y - 1
+            rendering.draw_rectangle {
+                left_top = point,
+                right_bottom = otherp,
+                filled = true,
+                surface = game.surfaces['nauvis'],
+                time_to_live = 1800,
+                color = {
+                    r = 100,
+                    g = 100,
+                    b = 100,
+                    a = 0.2
+                }
+            }
         end
     end
     return points
@@ -591,10 +671,15 @@ function do_until_leave(job)
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
-        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > max_jobtime then
-            actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-            job.start_tick = game.tick
-            DebugLog('Retrying go_to_position action')
+        elseif (job.action == 'go_to_position') then -- and (game.tick - job.start_tick) > max_jobtime then
+            for c, constructron in ipairs(job.constructrons) do
+                if not constructron.autopilot_destination then
+                    actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                end
+            end
+            -- actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+            -- job.start_tick = game.tick
+            -- DebugLog('Retrying go_to_position action')
         elseif (job.action == 'request_items') and (game.tick - job.start_tick) > max_jobtime then
             local closest_station = get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do
@@ -805,7 +890,7 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        DebugLog('CONDITION: position_done')
+        VisualDebug("Moving to position", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 invalid = true
@@ -818,7 +903,7 @@ conditions = {
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
-        DebugLog('CONDITION: build_done')
+        VisualDebug("Constructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) >= max_jobtime then
@@ -860,7 +945,7 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        DebugLog('CONDITION: deconstruction_done')
+        VisualDebug("Deconstructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick')) >= max_jobtime then
@@ -882,21 +967,21 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
-        DebugLog('CONDITION: request_done')
-            if constructrons_need_reload(constructrons) then
-                return false
-            else
-                for c, constructron in ipairs(constructrons) do
-                    if constructron.valid then
-                        for i = 1, constructron.request_slot_count do
-                            constructron.clear_vehicle_logistic_slot(i)
-                        end
-                    else
-                        invalid = true
-                        return invalid
+        VisualDebug("Processing logistics", constructrons[1])
+        if constructrons_need_reload(constructrons) then
+            return false
+        else
+            for c, constructron in ipairs(constructrons) do
+                if constructron.valid then
+                    for i = 1, constructron.request_slot_count do
+                        constructron.clear_vehicle_logistic_slot(i)
                     end
+                else
+                    invalid = true
+                    return invalid
                 end
             end
+        end
         return true
     end,
     pass = function(constructrons)
@@ -1050,8 +1135,25 @@ function get_job(constructrons)
             local job_type
             
             for c, constructron in pairs(constructrons) do
-                if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
+                local desired_robots = 75 -- review - make as mod setting
+                local desired_robot_name = 'construction-robot' -- review - make as mod setting
+
+                if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots >= desired_robots and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
+                elseif not constructron.logistic_cell then
+                    VisualDebug("Needs Equipment", constructron)
+                elseif (constructron.logistic_network.all_construction_robots <= desired_robots) and (constructron.autopilot_destination == nil) then
+                    DebugLog('ACTION: Stage')
+                    VisualDebug("Requesting Construction Robots", constructron)
+                    local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
+                    -- local constructron.
+                    request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+                    local slot = 1
+                    constructron.set_vehicle_logistic_slot(slot, {
+                        name = desired_robot_name,
+                        min = desired_robots,
+                        max = desired_robots
+                    })
                 end
             end
 
@@ -1239,25 +1341,6 @@ script.on_nth_tick(60, function(event)
     end
     get_job(constructrons or {})
     do_job(global.job_bundles or {})
-end)
-
-script.on_event(defines.events.on_script_path_request_finished, function(event)
-    local request = global.constructron_pathfinder_requests[event.id]
-    if not (request == nil) then
-        local constructrons = request.constructrons
-        local clean_path
-        if event.path then
-            clean_path = clean_linear_path(event.path)
-        end
-        for c, constructron in ipairs(constructrons) do
-            constructron.autopilot_destination = nil
-            if event.path then
-                for i, waypoint in ipairs(clean_path) do
-                    constructron.add_autopilot_destination(waypoint.position)
-                end
-            end
-        end
-    end
 end)
 
 function remove_entity_from_queue(queue, entity)
