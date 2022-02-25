@@ -1,14 +1,17 @@
 require("util")
 local collision_mask_util_extended = require("script.collision-mask-util-control")
 
-function DebugLog(message)
+local function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
         log(message)
     end
 end
 
-function VisualDebug(message, entity)
+local function VisualDebugText(message, entity)
+    if not entity or not entity.valid then
+        return
+    end
     if settings.global["constructron-debug-enabled"].value then
         rendering.draw_text {
             text = message,
@@ -25,6 +28,36 @@ function VisualDebug(message, entity)
                 a = 255
             }
         }
+    end
+end
+
+local function VisualDebugCircle(position,surface, color, text)
+    if settings.global["constructron-debug-enabled"].value then
+        rendering.draw_circle {
+            target = position,
+            radius = 0.5,
+            filled = true,
+            surface = surface,
+            time_to_live = 900,
+            color = color
+        }
+        if text then
+            rendering.draw_text {
+                text = text,
+                target = position,
+                filled = true,
+                surface = surface,
+                time_to_live = 900,
+                target_offset = {0, 0},
+                alignment = "center",
+                color = {
+                    r = 255,
+                    g = 255,
+                    b = 255,
+                    a = 255
+                }
+            }
+        end
     end
 end
 
@@ -170,30 +203,19 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
             if event.path then
+                local i = 0
                 for i, waypoint in ipairs(event.path) do
                 -- for i, waypoint in ipairs(clean_path) do
                     constructron.add_autopilot_destination(waypoint.position)
-                    if settings.global["constructron-debug-enabled"].value then
-                        local otherp = {}
-                        otherp.x = waypoint.position.x - 1
-                        otherp.y = waypoint.position.y - 1
-                        rendering.draw_rectangle {
-                            left_top = waypoint.position,
-                            right_bottom = otherp,
-                            filled = true,
-                            surface = constructron.surface,
-                            time_to_live = 1800,
-                            color = {
-                                r = 100,
-                                g = 0,
-                                b = 100,
-                                a = 0.2
-                            }
-                        }
-                    end
+                    VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
+                    i = i + 1
                 end
+            else
+                VisualDebugText("pathfinder callback path nil", constructron)
             end
         end
+    else
+        VisualDebugText("pathfinder callback request nil", constructrons[1])
     end
 end)
 
@@ -892,7 +914,7 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        VisualDebug("Moving to position", constructrons[1])
+        VisualDebugText("Moving to position", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 invalid = true
@@ -905,7 +927,7 @@ conditions = {
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
-        VisualDebug("Constructing", constructrons[1])
+        VisualDebugText("Constructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) >= max_jobtime then
@@ -947,7 +969,7 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        VisualDebug("Deconstructing", constructrons[1])
+        VisualDebugText("Deconstructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick')) >= max_jobtime then
@@ -969,7 +991,7 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
-        VisualDebug("Processing logistics", constructrons[1])
+        VisualDebugText("Processing logistics", constructrons[1])
         if constructrons_need_reload(constructrons) then
             return false
         else
@@ -1143,10 +1165,10 @@ function get_job(constructrons)
                 if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots >= desired_robots and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
-                    VisualDebug("Needs Equipment", constructron)
+                    VisualDebugText("Needs Equipment", constructron)
                 elseif (constructron.logistic_network.all_construction_robots <= desired_robots) and (constructron.autopilot_destination == nil) then
                     DebugLog('ACTION: Stage')
-                    VisualDebug("Requesting Construction Robots", constructron)
+                    VisualDebugText("Requesting Construction Robots", constructron)
                     local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
                     -- local constructron.
                     request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
