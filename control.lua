@@ -101,6 +101,7 @@ script.on_init(function()
     global.job_bundles = {}
     global.constructrons = {}
     global.service_stations = {}
+    global.registered_entities = {}
 end)
 
 script.on_configuration_changed(function()
@@ -118,6 +119,7 @@ script.on_configuration_changed(function()
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
+    global.registered_entities = global.registered_entities or {}
 end)
 
 function request_path(constructrons, goal)
