@@ -13,23 +13,21 @@ local function VisualDebugText(message, entity)
         return
     end
 	if settings.global["constructron-debug-enabled"].value then
-        if position then    
-            rendering.draw_text {
-                text = message,
-                target = entity,
-                filled = true,
-                surface = entity.surface,
-                time_to_live = 60,
-                target_offset = {0, -2},
-                alignment = "center",
-                color = {
-                    r = 255,
-                    g = 255,
-                    b = 255,
-                    a = 255
-                }
+        rendering.draw_text {
+            text = message,
+            target = entity,
+            filled = true,
+            surface = entity.surface,
+            time_to_live = 60,
+            target_offset = {0, -2},
+            alignment = "center",
+            color = {
+                r = 255,
+                g = 255,
+                b = 255,
+                a = 255
             }
-        end
+        }
     end
 end
 
@@ -1169,14 +1167,14 @@ function get_job(constructrons)
             local job_type
             
             for c, constructron in pairs(constructrons) do
-                local desired_robots = 75 -- review - make as mod setting
-                local desired_robot_name = 'construction-robot' -- review - make as mod setting
+                local desired_robot_count = settings.global["desired_robot_count"].value
+                local desired_robot_name = settings.global["desired_robot_name"].value
 
-                if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots >= desired_robots and not get_constructron_status(constructron, 'busy') then
+                if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
                     VisualDebugText("Needs Equipment", constructron)
-                elseif (constructron.logistic_network.all_construction_robots <= desired_robots) and (constructron.autopilot_destination == nil) then
+                elseif (constructron.logistic_network.all_construction_robots <= desired_robot_count) and (constructron.autopilot_destination == nil) then
                     DebugLog('ACTION: Stage')
                     VisualDebugText("Requesting Construction Robots", constructron)
                     local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
@@ -1185,8 +1183,8 @@ function get_job(constructrons)
                     local slot = 1
                     constructron.set_vehicle_logistic_slot(slot, {
                         name = desired_robot_name,
-                        min = desired_robots,
-                        max = desired_robots
+                        min = desired_robot_count,
+                        max = desired_robot_count
                     })
                 end
             end
