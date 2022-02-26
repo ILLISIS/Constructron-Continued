@@ -1,6 +1,21 @@
 require("util")
 local collision_mask_util_extended = require("script.collision-mask-util-control")
 
+local function table_has_value (tab, val)
+    if val == nil then
+        return false
+    end
+    if not tab then
+        return false
+    end
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+    return false
+end
+
 local function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
@@ -1390,6 +1405,14 @@ function remove_entity_from_queue(queue, entity)
     end
 end
 
+local function is_floor_tile(entity_name)
+    local floor_tiles = {"landfill","se-space-platform-scaffold","se-space-platform-plating","se-spaceship-floor"}
+    --ToDo:
+    --  find landfill-like tiles based on collision layer
+    --  this list should be build at loading time not everytime
+    return table_has_value(floor_tiles, entity_name)
+end
+
 script.on_event(defines.events.on_built_entity, function(event) -- for entity creation
     local entity = event.created_entity
     local entity_type = entity.type
@@ -1399,7 +1422,7 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         if global.ignored_entities[entity_name] == nil then
             local items_to_place_this = entity.ghost_prototype.items_to_place_this
             global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-            if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+            if is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                 global.ignored_entities[entity_name] = true
             end
         end
@@ -1431,7 +1454,7 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
             if global.ignored_entities[entity_name] == nil then
                 local items_to_place_this = entity.ghost_prototype.items_to_place_this
                 global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-                if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+                if is_floor_tile(entity_name)  then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                     global.ignored_entities[entity_name] = true
                 end
             end
