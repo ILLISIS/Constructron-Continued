@@ -36,4 +36,18 @@ data:extend({
 		minimum_value = 0,
         maximum_value = 600,
 	},
+	{
+		type = "int-setting",
+		name = "desired_robot_count",
+		setting_type = "runtime-global",
+		default_value = 50,
+		minimum_value = 0,
+        maximum_value = 10000,
+	},
+	{
+		type = "string-setting",
+		name = "desired_robot_name",
+		setting_type = "runtime-global",
+		default_value = "construction-robot",
+	},
 })

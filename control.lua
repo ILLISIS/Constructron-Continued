@@ -1,8 +1,80 @@
 require("util")
+local collision_mask_util_extended = require("script.collision-mask-util-control")
 
-function DebugLog(message)
+local function table_has_value (tab, val)
+    if val == nil then
+        return false
+    end
+    if not tab then
+        return false
+    end
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+    return false
+end
+
+local function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
+        log(message)
+    end
+end
+
+local function VisualDebugText(message, entity)
+    if not entity or not entity.valid then
+        return
+    end
+	if settings.global["constructron-debug-enabled"].value then
+        rendering.draw_text {
+            text = message,
+            target = entity,
+            filled = true,
+            surface = entity.surface,
+            time_to_live = 60,
+            target_offset = {0, -2},
+            alignment = "center",
+            color = {
+                r = 255,
+                g = 255,
+                b = 255,
+                a = 255
+            }
+        }
+    end
+end
+
+local function VisualDebugCircle(position, surface, color, text)
+	if settings.global["constructron-debug-enabled"].value then
+        if position then
+            rendering.draw_circle {
+                target = position,
+                radius = 0.5,
+                filled = true,
+                surface = surface,
+                time_to_live = 900,
+                color = color
+            }
+            if text then
+                rendering.draw_text {
+                    text = text,
+                    target = position,
+                    filled = true,
+                    surface = surface,
+                    time_to_live = 900,
+                    target_offset = {0, 0},
+                    alignment = "center",
+                    color = {
+                        r = 255,
+                        g = 255,
+                        b = 255,
+                        a = 255
+                    }
+                }
+            end
+        end
     end
 end
 
@@ -79,6 +151,7 @@ script.on_init(function()
     global.job_bundles = {}
     global.constructrons = {}
     global.service_stations = {}
+    global.registered_entities = {}
 end)
 
 script.on_configuration_changed(function()
@@ -96,6 +169,79 @@ script.on_configuration_changed(function()
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
+    global.registered_entities = global.registered_entities or {}
+end)
+
+function request_path(constructrons, goal)
+    local constructron = constructrons[1]
+    if constructron.valid then
+        local surface = constructrons[1].surface
+        local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
+        local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
+        VisualDebugCircle(goal,constructron.surface,{r = 100, g = 0, b = 0, a = 0.2})
+        VisualDebugCircle(new_goal,constructron.surface,{r = 0, g = 100, b = 0, a = 0.2})
+        if new_goal and new_start then
+            local pathing_collision_mask = {
+                "water-tile",
+                --"consider-tile-transitions", 
+                "colliding-with-tiles-only"
+            }
+            if game.active_mods["space-exploration"] then
+                local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+                local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+                table.insert(pathing_collision_mask, spaceship_collision_layer)
+                table.insert(pathing_collision_mask, empty_space_collision_layer)
+            end
+            local request_id = surface.request_path {
+                bounding_box = {{-3, -3}, {3, 3}},
+                collision_mask = pathing_collision_mask,
+                start = new_start,
+                goal = new_goal,
+                force = constructron.force,
+                pathfinding_flags = {
+                    cache = false,
+                    low_priority = true
+                }
+            }
+            global.constructron_pathfinder_requests[request_id] = {
+                constructrons = constructrons
+            }
+            for c, constructron in ipairs(constructrons) do
+                constructron.autopilot_destination = nil
+            end
+        else
+            VisualDebugText("pathfinding request failed - target not reachable", constructron)
+        end
+    else
+        invalid = true
+        return invalid
+    end
+end
+
+script.on_event(defines.events.on_script_path_request_finished, function(event)
+    local request = global.constructron_pathfinder_requests[event.id]
+    if not (request == nil) then
+        local constructrons = request.constructrons
+        local clean_path
+        if event.path then
+            clean_path = clean_linear_path(event.path)
+        end
+        for c, constructron in ipairs(constructrons) do
+            constructron.autopilot_destination = nil
+            if event.path then
+                local i = 0
+                for i, waypoint in ipairs(clean_path) do
+                    constructron.add_autopilot_destination(waypoint.position)
+                    VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
+                    i = i + 1
+                end
+            else
+				VisualDebugText("pathfinder callback path nil", constructron)
+			end
+        end
+	else
+		VisualDebugText("pathfinder callback request nil", constructrons[1])
+	end
 end)
 
 function clean_linear_path(path)
@@ -115,31 +261,6 @@ function clean_linear_path(path)
         end
     end
     return new_path
-end
-
-function request_path(constructrons, goal)
-    if constructrons[1].valid then
-        local request_id = constructrons[1].surface.request_path {
-            bounding_box = {{-3, -3}, {3, 3}},
-            collision_mask = {"water-tile", "colliding-with-tiles-only", "consider-tile-transitions"},
-            start = constructrons[1].position,
-            goal = goal,
-            force = constructrons[1].force,
-            pathfinding_flags = {
-                cache = false,
-                low_priority = true
-            }
-        }
-        global.constructron_pathfinder_requests[request_id] = {
-            constructrons = constructrons
-        }
-        for c, constructron in ipairs(constructrons) do
-            constructron.autopilot_destination = nil
-        end
-    else
-        invalid = true
-        return invalid
-    end
 end
 
 function chunk_from_position(position)
@@ -298,6 +419,7 @@ function calculate_construct_positions(area, radius)
     local ypoints = {}
     local xpoint_count = math.ceil(width / radius / 2)
     local ypoint_count = math.ceil(height / radius / 2)
+
     if xpoint_count > 1 then
         for i = 1, xpoint_count do
             xpoints[i] = area[1].x + radius + (width - radius * 2) * (i - 1) / (xpoint_count - 1)
@@ -332,6 +454,26 @@ function calculate_construct_positions(area, radius)
                     x = xpoints[(xpoint_count + 1) * (y % 2) + math.pow(-1, y % 2) * x]
                 })
             end
+        end
+    end
+    if settings.global["constructron-debug-enabled"].value then
+        for p, point in pairs(points) do
+            local otherp = {}
+            otherp.x = point.x - 1
+            otherp.y = point.y - 1
+            rendering.draw_rectangle {
+                left_top = point,
+                right_bottom = otherp,
+                filled = true,
+                surface = game.surfaces['nauvis'],
+                time_to_live = 1800,
+                color = {
+                    r = 100,
+                    g = 100,
+                    b = 100,
+                    a = 0.2
+                }
+            }
         end
     end
     return points
@@ -578,10 +720,13 @@ function do_until_leave(job)
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
-        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > max_jobtime then
-            actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-            job.start_tick = game.tick
-            DebugLog('Retrying go_to_position action')
+        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
+            for c, constructron in ipairs(job.constructrons) do
+                if not constructron.autopilot_destination then
+                    actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                    job.start_tick = game.tick
+                end
+            end
         elseif (job.action == 'request_items') and (game.tick - job.start_tick) > max_jobtime then
             local closest_station = get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do
@@ -792,7 +937,7 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        DebugLog('CONDITION: position_done')
+        VisualDebugText("Moving to position", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 invalid = true
@@ -805,7 +950,7 @@ conditions = {
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
-        DebugLog('CONDITION: build_done')
+        VisualDebugText("Constructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) >= max_jobtime then
@@ -847,7 +992,7 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        DebugLog('CONDITION: deconstruction_done')
+        VisualDebugText("Deconstructing", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if not robots_inactive(constructron) then
                 if (game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick')) >= max_jobtime then
@@ -869,21 +1014,21 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
-        DebugLog('CONDITION: request_done')
-            if constructrons_need_reload(constructrons) then
-                return false
-            else
-                for c, constructron in ipairs(constructrons) do
-                    if constructron.valid then
-                        for i = 1, constructron.request_slot_count do
-                            constructron.clear_vehicle_logistic_slot(i)
-                        end
-                    else
-                        invalid = true
-                        return invalid
+        VisualDebugText("Processing logistics", constructrons[1])
+        if constructrons_need_reload(constructrons) then
+            return false
+        else
+            for c, constructron in ipairs(constructrons) do
+                if constructron.valid then
+                    for i = 1, constructron.request_slot_count do
+                        constructron.clear_vehicle_logistic_slot(i)
                     end
+                else
+                    invalid = true
+                    return invalid
                 end
             end
+        end
         return true
     end,
     pass = function(constructrons)
@@ -1037,8 +1182,25 @@ function get_job(constructrons)
             local job_type
             
             for c, constructron in pairs(constructrons) do
-                if (constructron.surface.index == surface.index) and constructron.logistic_cell and constructron.logistic_network.all_construction_robots > 0 and not get_constructron_status(constructron, 'busy') then
+                local desired_robot_count = settings.global["desired_robot_count"].value
+                local desired_robot_name = settings.global["desired_robot_name"].value
+
+                if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
+                elseif not constructron.logistic_cell then
+                    VisualDebugText("Needs Equipment", constructron)
+                elseif (constructron.logistic_network.all_construction_robots <= desired_robot_count) and (constructron.autopilot_destination == nil) then
+                    DebugLog('ACTION: Stage')
+                    VisualDebugText("Requesting Construction Robots", constructron)
+                    local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
+                    -- local constructron.
+                    request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+                    local slot = 1
+                    constructron.set_vehicle_logistic_slot(slot, {
+                        name = desired_robot_name,
+                        min = desired_robot_count,
+                        max = desired_robot_count
+                    })
                 end
             end
 
@@ -1228,25 +1390,6 @@ script.on_nth_tick(60, function(event)
     do_job(global.job_bundles or {})
 end)
 
-script.on_event(defines.events.on_script_path_request_finished, function(event)
-    local request = global.constructron_pathfinder_requests[event.id]
-    if not (request == nil) then
-        local constructrons = request.constructrons
-        local clean_path
-        if event.path then
-            clean_path = clean_linear_path(event.path)
-        end
-        for c, constructron in ipairs(constructrons) do
-            constructron.autopilot_destination = nil
-            if event.path then
-                for i, waypoint in ipairs(clean_path) do
-                    constructron.add_autopilot_destination(waypoint.position)
-                end
-            end
-        end
-    end
-end)
-
 function remove_entity_from_queue(queue, entity)
     local chunk = chunk_from_position(entity.position)
     local chunk_key = chunk.y .. ',' .. chunk.x
@@ -1262,6 +1405,14 @@ function remove_entity_from_queue(queue, entity)
     end
 end
 
+local function is_floor_tile(entity_name)
+    local floor_tiles = {"landfill","se-space-platform-scaffold","se-space-platform-plating","se-spaceship-floor"}
+    --ToDo:
+    --  find landfill-like tiles based on collision layer
+    --  this list should be build at loading time not everytime
+    return table_has_value(floor_tiles, entity_name)
+end
+
 script.on_event(defines.events.on_built_entity, function(event) -- for entity creation
     local entity = event.created_entity
     local entity_type = entity.type
@@ -1271,7 +1422,7 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         if global.ignored_entities[entity_name] == nil then
             local items_to_place_this = entity.ghost_prototype.items_to_place_this
             global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-            if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+            if is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                 global.ignored_entities[entity_name] = true
             end
         end
@@ -1284,8 +1435,12 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         end
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
+        local registration_number = script.register_on_entity_destroyed(entity)
+        global.registered_entities[registration_number] = "constructron"
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
+        local registration_number = script.register_on_entity_destroyed(entity)
+        global.registered_entities[registration_number] = "service_station"
     end
 end)
 
@@ -1299,7 +1454,7 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
             if global.ignored_entities[entity_name] == nil then
                 local items_to_place_this = entity.ghost_prototype.items_to_place_this
                 global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-                if entity_name == 'landfill' then -- need to fix pathing before landfill can be built. So ignore landfill.
+                if is_floor_tile(entity_name)  then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                     global.ignored_entities[entity_name] = true
                 end
             end
@@ -1312,8 +1467,12 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
             end
         elseif entity.name == 'constructron' then
             global.constructrons[entity.unit_number] = entity
+            local registration_number = script.register_on_entity_destroyed(entity)
+            global.registered_entities[registration_number] = "constructron"
         elseif entity.name == "service_station" then
             global.service_stations[entity.unit_number] = entity
+            local registration_number = script.register_on_entity_destroyed(entity)
+            global.registered_entities[registration_number] = "service_station"
         end
     elseif event.entity.type == 'item-request-proxy' then
         local entity = event.entity
@@ -1335,9 +1494,9 @@ script.on_event(defines.events.on_post_entity_died, function(event) -- for entit
         global.ghost_tick = event.tick
     end
     if event.prototype.name == 'constructron' then
-        global.constructrons[event.unit_number] = nil
+        global.constructrons[event.unit_number] = nil  -- could be redundant as entities are now registered
     elseif event.prototype.name == 'service_station' then
-        global.service_stations[event.unit_number] = nil
+        global.service_stations[event.unit_number] = nil  -- could be redundant as entities are now registered
     end
 end)
 
@@ -1353,7 +1512,7 @@ end)
 script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove service_stations from global when mined by robots
     local entity = event.entity
     if entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = nil
+        global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
     end
 end)
 ---
@@ -1361,9 +1520,9 @@ end)
 script.on_event(defines.events.on_player_mined_entity, function(event) -- remove service_stations and constructrons from global when mined by player
     local entity = event.entity
     if entity.name == "constructron" then
-        global.constructrons[entity.unit_number] = nil
+        global.constructrons[entity.unit_number] = nil  -- could be redundant as entities are now registered
     elseif entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = nil
+        global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
     end
 end)
 ---
@@ -1382,6 +1541,45 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
     global.deconstruction_entities[decon_count] = event.entity
 end, {{filter='name', name="item-on-ground", invert=true}})
 ---
+
+script.on_event(defines.events.on_surface_deleted, function(event)
+    global.construct_queue[event.surface_index] = nil
+    global.deconstruct_queue[event.surface_index] = nil
+    global.upgrade_queue[event.surface_index] = nil
+end)
+---
+
+script.on_event(defines.events.on_entity_cloned, function(event)
+    DebugLog('Cloned!')
+    local entity = event.destination
+    if entity.name == 'constructron' then
+        global.constructrons[entity.unit_number] = entity
+    elseif entity.name == "service_station" then
+        global.service_stations[entity.unit_number] = entity
+    end
+end)
+
+script.on_event(defines.events.on_entity_destroyed, function(event)
+    local removed_entity = global.registered_entities[event.registration_number]
+    if removed_entity == "constructron" then
+        global.constructrons[event.unit_number] = nil
+        DebugLog('constructron' .. event.registration_number .. 'Destroyed!')
+    elseif removed_entity == "service_station" then
+        global.service_stations[event.unit_number] = nil
+        DebugLog('service_station' .. event.registration_number .. 'Destroyed!')
+    end
+end)
+
+script.on_event(defines.events.script_raised_destroy, function(event)
+    local removed_entity = global.registered_entities[event.registration_number]
+    if removed_entity == "constructron" then
+        global.constructrons[event.unit_number] = nil
+        DebugLog('constructron' .. event.registration_number .. 'Destroyed!')
+    elseif removed_entity == "service_station" then
+        global.service_stations[event.unit_number] = nil
+        DebugLog('service_station' .. event.registration_number .. 'Destroyed!')
+    end
+end)
 
 function set_constructron_status(constructron, state, value)
     if constructron.valid then
@@ -1414,7 +1612,7 @@ function get_closest_service_station(constructron)
     if service_stations then
         for unit_number, station in pairs(service_stations) do
             if not station.valid then
-                global.service_stations[unit_number] = nil
+                global.service_stations[unit_number] = nil -- could be redundant as entities are now registered
             end
         end
         local service_station_index = get_closest_object(service_stations, constructron.position)
