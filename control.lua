@@ -1189,7 +1189,7 @@ function get_job(constructrons)
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
                     VisualDebugText("Needs Equipment", constructron)
-                elseif (constructron.logistic_network.all_construction_robots <= desired_robot_count) and (constructron.autopilot_destination == nil) then
+                elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     DebugLog('ACTION: Stage')
                     VisualDebugText("Requesting Construction Robots", constructron)
                     local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
