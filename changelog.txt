@@ -1,4 +1,25 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.8
+Date: 2022-02-26
+  Improvements:
+    - Surface support! using this mod with Space Exploration is now possible.
+    - Visual debuging! Massive improvements to the debug view so it is alot more obvious to see what a Constructron is doing.
+    - Constructrons will now request/refill robots based on two new mod settings, robot_name and robot_count.
+    - Service Stations now have a new look.
+    - Added Fuzzy pathing logic to assist when entities are placed in tight places or when using mods like MazeRibbon018.
+    - Constructrons will now retry move actions after a few seconds instead of max_jobtime.
+    - Constructrons and Service Stations are now registered entities so their removal will be captured regardless of how they are removed.
+  Fixes:
+    - Resolved the 'next_station' crash when only one Service Station was placed.
+  Space Exploration notes:
+    - Space platform tiles are not constructed at this time for the same reason as Landfill.
+  Misc:
+    - A discord has been created for discussions, ideas, bugs etc. https://discord.gg/m9TDSsH3u2
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.7
 Date: 2022-02-09
   Improvements:
@@ -13,8 +34,8 @@ Date: 2022-02-09
     - Constructrons will now retry to move into position after overshooting its destination due to moving too fast after max_jobtime is reached.
     - Constructrons will now retry to move into position after max_jobtime if a player interferes with the Contructron either by driving the Constructron or using a connected Spidertron Remote to it.
   Known issues:
-    - After job time out, Constructrons will attempt to finish the build or deconstruction queue when the inventory is full.
-    - If something happens to the Constructron during an active job it is assigned to the job 
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
     - The Landfill tile is not constructed as this requires changes to the pathing calculation.
 
 ---------------------------------------------------------------------------------------------------
