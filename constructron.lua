@@ -1,3 +1,16 @@
+local collision_mask_util_extended = require("data.collision-mask-util-extended")
+local pathing_collision_mask = {
+  "water-tile",
+  "colliding-with-tiles-only",
+  "not-colliding-with-itself"
+}
+if mods["space-exploration"] then
+  local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+  local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+  table.insert(pathing_collision_mask, spaceship_collision_layer)
+  table.insert(pathing_collision_mask, empty_space_collision_layer)
+end
+
 local constructron_pathing_dummy = {
   type = "simple-entity",
   name = "constructron_pathing_dummy",
@@ -10,11 +23,7 @@ local constructron_pathing_dummy = {
   collision_box = {{-3, -3}, {3, 3}},
   selection_box = {{-3, -3}, {3, 3}},
   render_layer = "object",
-  collision_mask = {
-    "water-tile",
-    "colliding-with-tiles-only",
-    "not-colliding-with-itself"
-  },
+  collision_mask = pathing_collision_mask,
   pictures = {
     {
       filename = "__core__/graphics/empty.png",
