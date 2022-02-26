@@ -13,42 +13,14 @@ local function VisualDebugText(message, entity)
         return
     end
 	if settings.global["constructron-debug-enabled"].value then
-        rendering.draw_text {
-            text = message,
-            target = entity,
-            filled = true,
-            surface = entity.surface,
-            time_to_live = 60,
-            target_offset = {0, -2},
-            alignment = "center",
-            color = {
-                r = 255,
-                g = 255,
-                b = 255,
-                a = 255
-            }
-        }
-    end
-end
-
-local function VisualDebugCircle(position,surface, color, text)
-	if settings.global["constructron-debug-enabled"].value then
-        rendering.draw_circle {
-            target = position,
-            radius = 0.5,
-            filled = true,
-            surface = surface,
-            time_to_live = 900,
-            color = color
-        }
-        if text then
+        if position then    
             rendering.draw_text {
-                text = text,
-                target = position,
+                text = message,
+                target = entity,
                 filled = true,
-                surface = surface,
-                time_to_live = 900,
-                target_offset = {0, 0},
+                surface = entity.surface,
+                time_to_live = 60,
+                target_offset = {0, -2},
                 alignment = "center",
                 color = {
                     r = 255,
@@ -57,6 +29,38 @@ local function VisualDebugCircle(position,surface, color, text)
                     a = 255
                 }
             }
+        end
+    end
+end
+
+local function VisualDebugCircle(position, surface, color, text)
+	if settings.global["constructron-debug-enabled"].value then
+        if position then
+            rendering.draw_circle {
+                target = position,
+                radius = 0.5,
+                filled = true,
+                surface = surface,
+                time_to_live = 900,
+                color = color
+            }
+            if text then
+                rendering.draw_text {
+                    text = text,
+                    target = position,
+                    filled = true,
+                    surface = surface,
+                    time_to_live = 900,
+                    target_offset = {0, 0},
+                    alignment = "center",
+                    color = {
+                        r = 255,
+                        g = 255,
+                        b = 255,
+                        a = 255
+                    }
+                }
+            end
         end
     end
 end
@@ -206,15 +210,14 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
     if not (request == nil) then
         local constructrons = request.constructrons
         local clean_path
-        -- if event.path then
-        --     clean_path = clean_linear_path(event.path)
-        -- end
+        if event.path then
+            clean_path = clean_linear_path(event.path)
+        end
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
             if event.path then
                 local i = 0
-                for i, waypoint in ipairs(event.path) do
-                -- for i, waypoint in ipairs(clean_path) do
+                for i, waypoint in ipairs(clean_path) do
                     constructron.add_autopilot_destination(waypoint.position)
                     VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
                     i = i + 1
@@ -704,15 +707,13 @@ function do_until_leave(job)
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
-        elseif (job.action == 'go_to_position') then -- and (game.tick - job.start_tick) > max_jobtime then
+        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
                 if not constructron.autopilot_destination then
                     actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                    job.start_tick = game.tick
                 end
             end
-            -- actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-            -- job.start_tick = game.tick
-            -- DebugLog('Retrying go_to_position action')
         elseif (job.action == 'request_items') and (game.tick - job.start_tick) > max_jobtime then
             local closest_station = get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do

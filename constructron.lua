@@ -10,6 +10,11 @@ local constructron_pathing_dummy = {
   collision_box = {{-3, -3}, {3, 3}},
   selection_box = {{-3, -3}, {3, 3}},
   render_layer = "object",
+  collision_mask = {
+    "water-tile",
+    "colliding-with-tiles-only",
+    "not-colliding-with-itself"
+  },
   pictures = {
     {
       filename = "__core__/graphics/empty.png",
