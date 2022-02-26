@@ -175,11 +175,11 @@ end)
 function request_path(constructrons, goal)
     local constructron = constructrons[1]
     if constructron.valid then
-        local surface = constructrons[1].surface
+        local surface = constructron.surface
         local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
         local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
-        VisualDebugCircle(goal,constructron.surface,{r = 100, g = 0, b = 0, a = 0.2})
-        VisualDebugCircle(new_goal,constructron.surface,{r = 0, g = 100, b = 0, a = 0.2})
+        VisualDebugCircle(goal,surface,{r = 100, g = 0, b = 0, a = 0.2})
+        VisualDebugCircle(new_goal,surface,{r = 0, g = 100, b = 0, a = 0.2})
         if new_goal and new_start then
             local pathing_collision_mask = {
                 "water-tile",
@@ -209,6 +209,7 @@ function request_path(constructrons, goal)
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = nil
             end
+            return new_goal
         else
             VisualDebugText("pathfinding request failed - target not reachable", constructron)
         end
@@ -709,7 +710,12 @@ function do_until_leave(job)
     -- leave_condition should have constructron as first argument
     if job.constructrons[1] then
         if not job.active then
-            actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+            if (job.action == 'go_to_position') then
+                new_pos_goal = actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                job.leave_args[1] = new_pos_goal
+            else
+                actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+            end
         end
         if job.start_tick == nil then
             job.start_tick = 2
@@ -758,7 +764,8 @@ actions = {
     go_to_position = function(constructrons, position, find_path)
         DebugLog('ACTION: go_to_position')
         if find_path then
-            request_path(constructrons, position)
+            local new_goal = request_path(constructrons, position)
+            return new_goal
         else
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = position
@@ -1192,6 +1199,7 @@ function get_job(constructrons)
                 elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     DebugLog('ACTION: Stage')
                     VisualDebugText("Requesting Construction Robots", constructron)
+                    constructron.enable_logistics_while_moving = false
                     local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
                     -- local constructron.
                     request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
