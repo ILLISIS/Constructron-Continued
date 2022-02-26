@@ -13,6 +13,7 @@ Date: 2022-02-26
     - Resolved the 'next_station' crash when only one Service Station was placed.
   Space Exploration notes:
     - Space platform tiles are not constructed at this time for the same reason as Landfill.
+    - Constructrons do not travel between surfaces themselves.
   Misc:
     - A discord has been created for discussions, ideas, bugs etc. https://discord.gg/m9TDSsH3u2
   Known issues:
