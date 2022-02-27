@@ -1351,7 +1351,7 @@ function get_job(constructrons)
             create_job(global.job_bundle_index, empty_inventory_job)
             local retire_job = {
                 action = 'retire',
-                leave_condition = 'position_done',
+                leave_condition = 'pass',
                 leave_args = {home_position},
                 constructrons = selected_constructrons
             }
