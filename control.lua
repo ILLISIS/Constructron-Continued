@@ -152,6 +152,8 @@ script.on_init(function()
     global.constructrons = {}
     global.service_stations = {}
     global.registered_entities = {}
+    global.constructrons_count = {}
+    global.stations_count = {}
 end)
 
 script.on_configuration_changed(function()
@@ -170,6 +172,8 @@ script.on_configuration_changed(function()
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
     global.registered_entities = global.registered_entities or {}
+    global.constructrons_count = global.constructrons_count or {}
+    global.stations_count = global.stations_count or {}
 end)
 
 function request_path(constructrons, goal)
@@ -243,6 +247,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 	else
 		VisualDebugText("pathfinder callback request nil", constructrons[1])
 	end
+    global.constructron_pathfinder_requests[event.id] = nil
 end)
 
 function clean_linear_path(path)
@@ -685,9 +690,19 @@ end)
 
 function robots_inactive(constructron)
     if constructron.valid then
-        if constructron.logistic_network and constructron.logistic_network.all_construction_robots ==
-            constructron.logistic_network.cells[1].stationed_construction_robot_count then
-            for i, equipment in ipairs(constructron.grid.equipment) do
+        local network = constructron.logistic_network
+        local cell = network.cells[1]
+        local all_construction_robots = network.all_construction_robots
+        local stationed_bots = cell.stationed_construction_robot_count
+        local charging_robots = cell.charging_robots
+        local to_charge_robots = cell.to_charge_robots
+        local active_bots = (all_construction_robots) - (stationed_bots)
+        local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
+        local empty_stacks = inventory.count_empty_stacks()
+
+        if (network and (active_bots == 0)) or 
+        ((active_bots >= 1) and not next(charging_robots) and not next(to_charge_robots) and (empty_stacks == 0)) then
+            for i, equipment in pairs(constructron.grid.equipment) do
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
                         return false
@@ -884,28 +899,20 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1].valid then
-            ghosts = constructrons[1].surface.find_entities_filtered{
-                area = {chunk.minimum, chunk.maximum},
-                type = "entity-ghost",
-                ghost_name = entity_names,
-            }
-        else
-            invalid = true
-            return invalid
-        end
+        surface = game.surfaces[chunk.surface]
+        ghosts = surface.find_entities_filtered{
+            area = {chunk.minimum, chunk.maximum},
+            type = "entity-ghost",
+            ghost_name = entity_names,
+        }
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
 
             for i, entity in ipairs(ghosts) do
-                -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
-                --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
-                -- table.insert(global.ghost_entities, entity)
                 local ghost_count = global.ghost_entities_count
                 ghost_count = ghost_count + 1
                 global.ghost_entities_count = ghost_count
                 global.ghost_entities[ghost_count] = entity
-                -- end
             end
         end
     end,
@@ -915,29 +922,21 @@ actions = {
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        if constructrons[1].valid then
-            decons = constructrons[1].surface.find_entities_filtered{
-                area = {chunk.minimum, chunk.maximum},
-                to_be_deconstructed = true,
-                ghost_name = entity_names,
-            }
-            if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-                game.print('added ' .. #decons .. ' to be deconstructed.')
+        surface = game.surfaces[chunk.surface]
+        decons = surface.find_entities_filtered{
+            area = {chunk.minimum, chunk.maximum},
+            to_be_deconstructed = true,
+            ghost_name = entity_names,
+        }
+        if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+            game.print('added ' .. #decons .. ' to be deconstructed.')
 
-                for i, entity in ipairs(decons) do
-                    -- if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
-                    --    (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
-                    -- table.insert(global.ghost_entities, entity)
-                    local decon_count = global.deconstruction_entities_count
-                    decon_count = decon_count + 1
-                    global.deconstruction_entities_count = decon_count
-                    global.deconstruction_entities[decon_count] = entity
-                    -- end
-                end
+            for i, entity in ipairs(decons) do
+                local decon_count = global.deconstruction_entities_count
+                decon_count = decon_count + 1
+                global.deconstruction_entities_count = decon_count
+                global.deconstruction_entities[decon_count] = entity
             end
-        else
-            invalid = true
-            return invalid
         end
     end
 }
@@ -958,41 +957,16 @@ conditions = {
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
         VisualDebugText("Constructing", constructrons[1])
-        for c, constructron in ipairs(constructrons) do
-            if not robots_inactive(constructron) then
-                if (game.tick - get_constructron_status(constructrons[1], 'build_tick')) >= max_jobtime then
-                    DebugLog('Constructron: construction job took too long!')
-                    return true
-                else
+        if constructrons[1].valid then
+            for c, constructron in ipairs(constructrons) do
+                local bots_inactive = robots_inactive(constructron)
+                if not bots_inactive then
                     return false
                 end
             end
-        end
-        if constructrons.valid and (game.tick - get_constructron_status(constructrons[1], 'build_tick')) > 120 then
-            -- local entity_names = {}
-            -- for name, count in pairs(items) do
-            --     table.insert(entity_names, name)
-            -- end
-            -- local area = {{x=math.max((constructrons[1].position.x)-40, minimum_position.x),
-            --                y=math.max((constructrons[1].position.y)-40, minimum_position.y)},
-            --               {x=math.min((constructrons[1].position.x)+40, maximum_position.x),
-            --                y=math.min((constructrons[1].position.y)+40, maximum_position.y)}}
-            -- local ghosts = constructrons[1].surface.find_entities_filtered{
-            --     position = constructrons[1].position,
-            --     radius = 40,
-            --     -- area = area,
-            --     type = "entity-ghost",
-            --     ghost_name = entity_names,
-            -- }
-            -- if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-            --     for i, entity in ipairs(ghosts) do
-            --         if (entity.position.x >= minimum_position.x and entity.position.y >= minimum_position.y) and
-            --            (entity.position.x <= maximum_position.x and entity.position.y <= maximum_position.y) then
-            --             table.insert(global.ghost_entities, entity)
-            --         end
-            --     end
-            -- end
-            return true
+            if (game.tick - (get_constructron_status(constructrons[1], 'build_tick'))) > 120 then
+                return true
+            end
         else
             invalid = true
             return invalid
@@ -1000,19 +974,13 @@ conditions = {
     end,
     deconstruction_done = function(constructrons)
         VisualDebugText("Deconstructing", constructrons[1])
-        for c, constructron in ipairs(constructrons) do
-            if not robots_inactive(constructron) then
-                if (game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick')) >= max_jobtime then
-                    DebugLog('Constructron: deconstruction job took too long!')
-                    return true
-                else
+        if constructrons[1].valid then
+            for c, constructron in ipairs(constructrons) do
+                if not robots_inactive(constructron) then
                     return false
                 end
             end
-        end
-        if constructrons[1].valid then
             if game.tick - get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
-                --unlike build, I'm not going to search for entities to be deconstructed.
                 return true
             end
         else
@@ -1190,8 +1158,7 @@ function get_job(constructrons)
             
             for c, constructron in pairs(constructrons) do
                 local desired_robot_count = settings.global["desired_robot_count"].value
-                local desired_robot_name = settings.global["desired_robot_name"].value
-
+                
                 if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
@@ -1201,7 +1168,7 @@ function get_job(constructrons)
                     VisualDebugText("Requesting Construction Robots", constructron)
                     constructron.enable_logistics_while_moving = false
                     local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
-                    -- local constructron.
+                    local desired_robot_name = settings.global["desired_robot_name"].value
                     request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
                     local slot = 1
                     constructron.set_vehicle_logistic_slot(slot, {
@@ -1277,6 +1244,7 @@ function get_job(constructrons)
                 -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
                 -- local chunk = table.remove(combined_chunks, chunk_index)
                 chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
+                chunk['surface'] = surface.index
                 local find_path = false
                 for p, position in ipairs(chunk.positions) do
                     if p == 1 then find_path = true end
@@ -1387,15 +1355,26 @@ function do_job(job_bundles)
 end
 
 script.on_nth_tick(60, function(event)
-    local constructrons = global.constructrons -- due to changes with the get_constructrons function
-    local service_stations = global.service_stations -- due to changes with the get_service_stations function
-    if (not next(constructrons)) or (not next(service_stations)) then -- let's clear the queues, that means they probably added the ghosts etc before they had any constructrons.
-        global.construct_queue = {}
-        global.deconstruct_queue = {}
-        global.upgrade_queue = {}
-    end
+    local constructrons = global.constructrons
+    local service_stations = global.service_stations
     get_job(constructrons or {})
     do_job(global.job_bundles or {})
+end)
+
+script.on_nth_tick(54000, function(event)
+    DebugLog('surface job cleanup')
+    local constructrons = global.constructrons
+    local service_stations = global.service_stations
+    for s, surface in pairs(game.surfaces) do
+        if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
+            DebugLog('No Constructrons or Service Stations found on ' .. surface.name .. '. All job queues cleared!')
+            global.construct_queue[surface.index] = {}
+            global.deconstruct_queue[surface.index] = {}
+            global.upgrade_queue[surface.index] = {}
+            global.constructrons_count[surface.index] = 0 -- in case it somehow goes below 0
+            global.stations_count[surface.index] = 0 -- in case it somehow goes below 0
+        end
+    end
 end)
 
 function remove_entity_from_queue(queue, entity)
@@ -1444,11 +1423,13 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
     elseif entity.name == 'constructron' then
         global.constructrons[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = "constructron"
+        global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
+        global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = "service_station"
+        global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
+        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
 end)
 
@@ -1476,11 +1457,13 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
         elseif entity.name == 'constructron' then
             global.constructrons[entity.unit_number] = entity
             local registration_number = script.register_on_entity_destroyed(entity)
-            global.registered_entities[registration_number] = "constructron"
+            global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
+            global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
         elseif entity.name == "service_station" then
             global.service_stations[entity.unit_number] = entity
             local registration_number = script.register_on_entity_destroyed(entity)
-            global.registered_entities[registration_number] = "service_station"
+            global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
+            global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
         end
     elseif event.entity.type == 'item-request-proxy' then
         local entity = event.entity
@@ -1501,38 +1484,41 @@ script.on_event(defines.events.on_post_entity_died, function(event) -- for entit
         global.ghost_entities[ghost_count] = entity
         global.ghost_tick = event.tick
     end
-    if event.prototype.name == 'constructron' then
-        global.constructrons[event.unit_number] = nil  -- could be redundant as entities are now registered
-    elseif event.prototype.name == 'service_station' then
-        global.service_stations[event.unit_number] = nil  -- could be redundant as entities are now registered
-    end
+    -- if event.prototype.name == 'constructron' then
+    --     global.constructrons[event.unit_number] = nil  -- could be redundant as entities are now registered
+    -- elseif event.prototype.name == 'service_station' then
+    --     global.service_stations[event.unit_number] = nil  -- could be redundant as entities are now registered
+    -- end
 end)
 
 script.on_event(defines.events.on_robot_built_entity, function(event) -- add service_stations to global when built by robots
     local entity = event.created_entity
     if entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
+        local registration_number = script.register_on_entity_destroyed(entity)
+        global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
+        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
 end)
 ---
 
--- remove from deconstruct queue if it's mined/deconstructed
-script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove service_stations from global when mined by robots
-    local entity = event.entity
-    if entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
-    end
-end)
+-- -- remove from deconstruct queue if it's mined/deconstructed
+-- script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove service_stations from global when mined by robots
+--     local entity = event.entity
+--     if entity.name == "service_station" then
+--         global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
+--     end
+-- end)
 ---
 
-script.on_event(defines.events.on_player_mined_entity, function(event) -- remove service_stations and constructrons from global when mined by player
-    local entity = event.entity
-    if entity.name == "constructron" then
-        global.constructrons[entity.unit_number] = nil  -- could be redundant as entities are now registered
-    elseif entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
-    end
-end)
+-- script.on_event(defines.events.on_player_mined_entity, function(event) -- remove service_stations and constructrons from global when mined by player
+--     local entity = event.entity
+--     if entity.name == "constructron" then
+--         global.constructrons[entity.unit_number] = nil  -- could be redundant as entities are now registered
+--     elseif entity.name == "service_station" then
+--         global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
+--     end
+-- end)
 ---
 
 script.on_event(defines.events.on_marked_for_upgrade, function(event) -- for entity upgrade
@@ -1550,10 +1536,19 @@ script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- 
 end, {{filter='name', name="item-on-ground", invert=true}})
 ---
 
+script.on_event(defines.events.on_surface_created, function(event)
+    global.constructrons_count[event.surface_index] = 0
+    global.stations_count[event.surface_index] = 0
+end)
+---
+
 script.on_event(defines.events.on_surface_deleted, function(event)
-    global.construct_queue[event.surface_index] = nil
-    global.deconstruct_queue[event.surface_index] = nil
-    global.upgrade_queue[event.surface_index] = nil
+    index = event.surface_index
+    global.construct_queue[index] = nil
+    global.deconstruct_queue[index] = nil
+    global.upgrade_queue[index] = nil
+    global.constructrons_count[index] = nil
+    global.stations_count[index] = nil
 end)
 ---
 
@@ -1563,35 +1558,50 @@ script.on_event(defines.events.on_entity_cloned, function(event)
         DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         global.constructrons[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = "constructron"
-        
+        global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
+        global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1        
     elseif entity.name == "service_station" then
         DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
         global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = "service_station"
+        global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
+        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
 end)
 
 script.on_event(defines.events.on_entity_destroyed, function(event)
-    local removed_entity = global.registered_entities[event.registration_number]
-    if removed_entity == "constructron" then
-        global.constructrons[event.unit_number] = nil
-        DebugLog('constructron ' .. event.registration_number .. ' Destroyed!')
-    elseif removed_entity == "service_station" then
-        global.service_stations[event.unit_number] = nil
-        DebugLog('service_station ' .. event.registration_number .. ' Destroyed!')
+    if global.registered_entities[event.registration_number] then
+        local removed_entity = global.registered_entities[event.registration_number]
+        if removed_entity.name == "constructron" then
+            local surface = removed_entity.surface
+            global.constructrons_count[surface] = global.constructrons_count[surface] - 1
+            global.constructrons[event.unit_number] = nil
+            DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
+        elseif removed_entity.name == "service_station" then
+            local surface = removed_entity.surface
+            global.stations_count[surface] = global.stations_count[surface] - 1
+            global.service_stations[event.unit_number] = nil
+            DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
+        end
+        global.registered_entities[event.registration_number] = nil
     end
 end)
 
 script.on_event(defines.events.script_raised_destroy, function(event)
-    local removed_entity = global.registered_entities[event.registration_number]
-    if removed_entity == "constructron" then
-        global.constructrons[event.unit_number] = nil
-        DebugLog('constructron' .. event.registration_number .. 'Destroyed!')
-    elseif removed_entity == "service_station" then
-        global.service_stations[event.unit_number] = nil
-        DebugLog('service_station' .. event.registration_number .. 'Destroyed!')
+    if global.registered_entities[event.registration_number] then
+        local removed_entity = global.registered_entities[event.registration_number]
+        if removed_entity.name == "constructron" then
+            local surface = removed_entity.surface
+            global.constructrons_count[surface] = global.constructrons_count[surface] - 1
+            global.constructrons[event.unit_number] = nil
+            DebugLog('constructron' .. event.unit_number .. 'Destroyed!')
+        elseif removed_entity.name == "service_station" then
+            local surface = removed_entity.surface
+            global.stations_count[surface] = global.stations_count[surface] - 1
+            global.service_stations[event.unit_number] = nil
+            DebugLog('service_station' .. event.unit_number .. 'Destroyed!')
+        end
+        global.registered_entities[event.registration_number] = nil
     end
 end)
 
