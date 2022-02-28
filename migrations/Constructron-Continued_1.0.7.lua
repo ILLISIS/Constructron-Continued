@@ -13,6 +13,7 @@ game.print('Constructron-Continued - All job queues have been cleared! Any jobs 
 
 for s, surface in pairs(game.surfaces) do 
     global.constructrons_count[surface.index] = 0
+    global.stations_count[surface.index] = 0
 end
 
 for c, constructron in pairs(global.constructrons) do
