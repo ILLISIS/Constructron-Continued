@@ -6,6 +6,8 @@ Date: 2022-02-26
     - Visual debuging! Massive improvements to the debug view so it is alot more obvious to see what a Constructron is doing.
     - Constructrons will now request/refill robots based on two new mod settings, robot_name and robot_count.
     - Service Stations now have a new look.
+    - Construction and Deconstruction jobs will now be fulfilled by another Constructron after the original stops existing.
+    - Deconstruction jobs now have better logic to detect when it's inventory is full. The process is much faster but still needs work.
     - Added Fuzzy pathing logic to assist when entities are placed in tight places or when using mods like MazeRibbon018.
     - Constructrons will now retry move actions after a few seconds instead of max_jobtime.
     - Constructrons and Service Stations are now registered entities so their removal will be captured regardless of how they are removed.
