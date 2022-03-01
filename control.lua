@@ -900,10 +900,24 @@ actions = {
             table.insert(entity_names, name)
         end
         surface = game.surfaces[chunk.surface]
+        if settings.global["constructron-debug-enabled"].value then
+            rendering.draw_rectangle {
+                left_top = chunk.minimum,
+                right_bottom = chunk.maximum,
+                filled = true,
+                surface = surface,
+                time_to_live = 600,
+                color = {
+                    r = 0,
+                    g = 0,
+                    b = 50,
+                    a = 100
+                }
+            }
+        end
         ghosts = surface.find_entities_filtered{
             area = {chunk.minimum, chunk.maximum},
             type = "entity-ghost",
-            ghost_name = entity_names,
         }
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
@@ -923,6 +937,21 @@ actions = {
             table.insert(entity_names, name)
         end
         surface = game.surfaces[chunk.surface]
+        if settings.global["constructron-debug-enabled"].value then
+            rendering.draw_rectangle {
+                left_top = chunk.minimum,
+                right_bottom = chunk.maximum,
+                filled = true,
+                surface = surface,
+                time_to_live = 600,
+                color = {
+                    r = 50,
+                    g = 0,
+                    b = 0,
+                    a = 50
+                }
+            }
+        end
         decons = surface.find_entities_filtered{
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
@@ -1243,7 +1272,7 @@ function get_job(constructrons)
             for i, chunk in ipairs(combined_chunks) do
                 -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
                 -- local chunk = table.remove(combined_chunks, chunk_index)
-                chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.90) -- 10% tolerance
+                chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.85) -- 15% tolerance
                 chunk['surface'] = surface.index
                 local find_path = false
                 for p, position in ipairs(chunk.positions) do
@@ -1362,17 +1391,19 @@ script.on_nth_tick(60, function(event)
 end)
 
 script.on_nth_tick(54000, function(event)
-    DebugLog('surface job cleanup')
+    DebugLog('Surface job cleanup')
     local constructrons = global.constructrons
     local service_stations = global.service_stations
     for s, surface in pairs(game.surfaces) do
+        if not global.constructrons_count[surface.index] or not global.stations_count[surface.index] then
+            global.constructrons_count[surface.index] = 0
+            global.stations_count[surface.index] = 0
+        end
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
             DebugLog('No Constructrons or Service Stations found on ' .. surface.name .. '. All job queues cleared!')
             global.construct_queue[surface.index] = {}
             global.deconstruct_queue[surface.index] = {}
             global.upgrade_queue[surface.index] = {}
-            global.constructrons_count[surface.index] = 0 -- in case it somehow goes below 0
-            global.stations_count[surface.index] = 0 -- in case it somehow goes below 0
         end
     end
 end)
@@ -1574,12 +1605,12 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" then
             local surface = removed_entity.surface
-            global.constructrons_count[surface] = global.constructrons_count[surface] - 1
+            global.constructrons_count[surface] = math.max(0,global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil
             DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
-            global.stations_count[surface] = global.stations_count[surface] - 1
+            global.stations_count[surface] = math.max(0,global.stations_count[surface] - 1)
             global.service_stations[event.unit_number] = nil
             DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
         end
@@ -1592,12 +1623,12 @@ script.on_event(defines.events.script_raised_destroy, function(event)
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" then
             local surface = removed_entity.surface
-            global.constructrons_count[surface] = global.constructrons_count[surface] - 1
+            global.constructrons_count[surface] = math.max(0,global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil
             DebugLog('constructron' .. event.unit_number .. 'Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
-            global.stations_count[surface] = global.stations_count[surface] - 1
+            global.stations_count[surface] = math.max(0,global.stations_count[surface] - 1)
             global.service_stations[event.unit_number] = nil
             DebugLog('service_station' .. event.unit_number .. 'Destroyed!')
         end
