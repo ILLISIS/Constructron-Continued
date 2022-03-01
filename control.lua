@@ -702,7 +702,7 @@ function robots_inactive(constructron)
 
         if (network and (active_bots == 0)) or 
         ((active_bots >= 1) and not next(charging_robots) and not next(to_charge_robots) and (empty_stacks == 0)) then
-            for i, equipment in pairs(constructron.grid.equipment) do
+            for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
                         return false
@@ -1187,24 +1187,29 @@ function get_job(constructrons)
             
             for c, constructron in pairs(constructrons) do
                 local desired_robot_count = settings.global["desired_robot_count"].value
-                
+                                
                 if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
                     VisualDebugText("Needs Equipment", constructron)
                 elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     DebugLog('ACTION: Stage')
-                    VisualDebugText("Requesting Construction Robots", constructron)
-                    constructron.enable_logistics_while_moving = false
-                    local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
                     local desired_robot_name = settings.global["desired_robot_name"].value
-                    request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
-                    local slot = 1
-                    constructron.set_vehicle_logistic_slot(slot, {
-                        name = desired_robot_name,
-                        min = desired_robot_count,
-                        max = desired_robot_count
-                    })
+                    
+                    if game.item_prototypes[desired_robot_name] then
+                        VisualDebugText("Requesting Construction Robots", constructron)
+                        constructron.enable_logistics_while_moving = false
+                        local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
+                        request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+                        local slot = 1
+                        constructron.set_vehicle_logistic_slot(slot, {
+                            name = desired_robot_name,
+                            min = desired_robot_count,
+                            max = desired_robot_count
+                        })
+                    else
+                        DebugLog('desired_robot_name name is not valid in mod settings')
+                    end
                 end
             end
 

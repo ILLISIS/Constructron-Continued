@@ -9,7 +9,8 @@ global.upgrade_queue = {}
 global.constructron_statuses = {}
 global.job_bundles = {}
 
-game.print('Constructron-Continued - All job queues have been cleared! Any jobs that were in progress will need to be removed and then readded to be built!')
+game.print('Constructron-Continued: Join the new discord! https://discord.gg/m9TDSsH3u2')
+game.print('Constructron-Continued: All job queues have been cleared! Any jobs that were in progress will need to be removed and then readded to be built!')
 
 for s, surface in pairs(game.surfaces) do 
     global.constructrons_count[surface.index] = 0
