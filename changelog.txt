@@ -7,12 +7,13 @@ Date: 2022-02-26
     - Constructrons will now request/refill robots based on two new mod settings, robot_name and robot_count.
     - Service Stations now have a new look.
     - Construction and Deconstruction jobs will now be fulfilled by another Constructron after the original stops existing.
-    - Deconstruction jobs now have better logic to detect when it's inventory is full. The process is much faster but still needs work.
+    - Deconstruction jobs now have better logic to detect when a Constructrons inventory is full. The process is much faster but still needs work.
     - Added Fuzzy pathing logic to assist when entities are placed in tight places or when using mods like MazeRibbon018.
     - Constructrons will now retry move actions after a few seconds instead of max_jobtime.
     - Constructrons and Service Stations are now registered entities so their removal will be captured regardless of how they are removed.
   Fixes:
     - Resolved the 'next_station' crash when only one Service Station was placed.
+    - Resolved an issue with unconstructucted rails being detected by the post job check.
   Space Exploration notes:
     - Space platform tiles are not constructed at this time for the same reason as Landfill.
     - Constructrons do not travel between surfaces themselves.
