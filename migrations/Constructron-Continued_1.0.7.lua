@@ -17,6 +17,10 @@ for s, surface in pairs(game.surfaces) do
     global.stations_count[surface.index] = 0
 end
 
+global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+
 for c, constructron in pairs(global.constructrons) do
     if constructron.valid then
         local registration_number = script.register_on_entity_destroyed(constructron)
