@@ -390,16 +390,6 @@ me.add_upgrade_entities_to_chunks = function()
     end
 end
 
-me.on_nth_tick = function(event)
-    if event.tick % 3 == 0 then
-        me.add_deconstruction_entities_to_chunks()
-    elseif event.tick % 3 == 1 then
-        me.add_ghosts_to_chunks()
-    elseif event.tick % 3 == 2 then
-        me.add_upgrade_entities_to_chunks()
-    end
-end
-
 me.robots_inactive = function(constructron)
     if constructron.valid then
         local network = constructron.logistic_network
@@ -1092,14 +1082,12 @@ me.do_job = function(job_bundles)
     end
 end
 
-me.on_nth_tick_60 = function(event)
-    local constructrons = global.constructrons
-    local service_stations = global.service_stations
-    me.get_job(constructrons or {})
-    me.do_job(global.job_bundles or {})
+me.process_job_queue = function(event)
+    me.get_job(global.constructrons)
+    me.do_job(global.job_bundles)
 end
 
-me.on_nth_tick_54000 = function(event)
+me.perform_surface_cleanup = function(event)
     debug_lib.DebugLog('Surface job cleanup')
     local constructrons = global.constructrons
     local service_stations = global.service_stations
@@ -1117,23 +1105,6 @@ me.on_nth_tick_54000 = function(event)
     end
 end
 
---[[
-function remove_entity_from_queue(queue, entity)
-    local chunk = chunk_util.chunk_from_position(entity.position)
-    local chunk_key = chunk.y .. ',' .. chunk.x
-    local quque_entity = queue[chunk_key]
-    if quque_entity then
-        local entity_key = entity.position.y .. ',' .. entity.position.x
-        if quque_entity[entity_key] then
-            quque_entity[entity_key] = nil
-            for i, item in ipairs(entity.prototype) do
-                quque_entity.required_items[item.name] = (quque_entity.required_items[item.name] or item.count) - item.count
-            end
-        end
-    end
-end
-]]
-
 me.on_built_entity = function(event) -- for entity creation
     local function is_floor_tile(entity_name)
         local floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
@@ -1142,49 +1113,10 @@ me.on_built_entity = function(event) -- for entity creation
         --  this list should be build at loading time not everytime
         return custom_lib.table_has_value(floor_tiles, entity_name)
     end
-    local entity = event.created_entity
-    local entity_type = entity.type
-    if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
-        local entity_name = entity.ghost_name
-        -- Need to separate ghosts and tiles in different tables
-        if global.ignored_entities[entity_name] == nil then
-            local items_to_place_this = entity.ghost_prototype.items_to_place_this
-            global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-            if is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
-                global.ignored_entities[entity_name] = true
-            end
-        end
-        if not global.ignored_entities[entity_name] == true then
-            local ghost_count = global.ghost_entities_count
-            ghost_count = ghost_count + 1
-            global.ghost_entities_count = ghost_count
-            global.ghost_entities[ghost_count] = entity
-            global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
-        end
-    elseif entity.name == 'constructron' then
-        global.constructrons[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = {
-            name = "constructron",
-            surface = entity.surface.index
-        }
-        global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
-        entity.enable_logistics_while_moving = false
-    elseif entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = {
-            name = "service_station",
-            surface = entity.surface.index
-        }
-        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
-    end
-end
 
-me.on_script_raised_built = function(event) -- for mods
-    if not event.entity.name == 'item-request-proxy' then
+    if not event.entity.name == 'item-request-proxy' then    
         local entity = event.created_entity
-        local entity_type = entity.type or {}
+        local entity_type = entity.type
         if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
             local entity_name = entity.ghost_name
             -- Need to separate ghosts and tiles in different tables
@@ -1196,10 +1128,8 @@ me.on_script_raised_built = function(event) -- for mods
                 end
             end
             if not global.ignored_entities[entity_name] == true then
-                local ghost_count = global.ghost_entities_count
-                ghost_count = ghost_count + 1
-                global.ghost_entities_count = ghost_count
-                global.ghost_entities[ghost_count] = entity
+                global.ghost_entities_count = global.ghost_entities_count + 1
+                global.ghost_entities[global.ghost_entities_count] = entity
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
@@ -1222,39 +1152,21 @@ me.on_script_raised_built = function(event) -- for mods
         end
     elseif event.entity.type == 'item-request-proxy' then
         local entity = event.entity
-        local ghost_count = global.ghost_entities_count
-        ghost_count = ghost_count + 1
-        global.ghost_entities_count = ghost_count
-        global.ghost_entities[ghost_count] = entity
+        global.ghost_entities_count = global.ghost_entities_count + 1
+        global.ghost_entities[global.ghost_entities_count] = entity
         global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
-    end
-end
-
-me.on_robot_built_entity = function(event) -- add service_stations to global when built by robots
-    local entity = event.created_entity
-    if entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = {
-            name = "service_station",
-            surface = entity.surface.index
-        }
-        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
 end
 
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
     if entity and entity.type == 'entity-ghost' then
-        local ghost_count = global.ghost_entities_count
-        ghost_count = ghost_count + 1
-        global.ghost_entities_count = ghost_count
-        global.ghost_entities[ghost_count] = entity
+        global.ghost_entities_count = global.ghost_entities_count + 1
+        global.ghost_entities[global.ghost_entities_count] = entity
         global.ghost_tick = event.tick
     end
 end
 
----
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
     global.upgrade_marked_tick = event.tick
     table.insert(global.upgrade_entities, {
@@ -1262,7 +1174,6 @@ me.on_marked_for_upgrade = function(event) -- for entity upgrade
         target = event.target
     })
 end
----
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     global.deconstruct_marked_tick = event.tick
@@ -1271,7 +1182,6 @@ me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstru
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
 end
----
 
 me.on_surface_created = function(event)
     local index = event.surface_index
@@ -1283,7 +1193,6 @@ me.on_surface_created = function(event)
     global.constructrons_count[index] = 0
     global.stations_count[index] = 0
 end
----
 
 me.on_surface_deleted = function(event)
     local index = event.surface_index
@@ -1295,7 +1204,6 @@ me.on_surface_deleted = function(event)
     global.constructrons_count[index] = nil
     global.stations_count[index] = nil
 end
----
 
 me.on_entity_cloned = function(event)
     local entity = event.destination
@@ -1333,24 +1241,6 @@ me.on_entity_destroyed = function(event)
             global.stations_count[surface] = math.max(0, global.stations_count[surface] - 1)
             global.service_stations[event.unit_number] = nil
             debug_lib.DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
-        end
-        global.registered_entities[event.registration_number] = nil
-    end
-end
-
-me.on_script_raised_destroy = function(event)
-    if global.registered_entities[event.registration_number] then
-        local removed_entity = global.registered_entities[event.registration_number]
-        if removed_entity.name == "constructron" then
-            local surface = removed_entity.surface
-            global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] - 1)
-            global.constructrons[event.unit_number] = nil
-            debug_lib.DebugLog('constructron' .. event.unit_number .. 'Destroyed!')
-        elseif removed_entity.name == "service_station" then
-            local surface = removed_entity.surface
-            global.stations_count[surface] = math.max(0, global.stations_count[surface] - 1)
-            global.service_stations[event.unit_number] = nil
-            debug_lib.DebugLog('service_station' .. event.unit_number .. 'Destroyed!')
         end
         global.registered_entities[event.registration_number] = nil
     end
