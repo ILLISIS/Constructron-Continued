@@ -225,29 +225,27 @@ end
 
 script.on_event(defines.events.on_script_path_request_finished, function(event)
     local request = global.constructron_pathfinder_requests[event.id]
-    if not (request == nil) then
-        local constructrons = request.constructrons
-        local clean_path
-        if event.path then
-            clean_path = clean_linear_path(event.path)
-        end
+    
+    if not request then return end
+    local constructrons = request.constructrons
+    local path = event.path
+    local clean_path
+
+    if path then
+        clean_path = clean_linear_path(path)
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
-            if event.path then
-                local i = 0
-                for i, waypoint in ipairs(clean_path) do
-                    constructron.add_autopilot_destination(waypoint.position)
-                    VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
-                    i = i + 1
-                end
-            else
-				VisualDebugText("pathfinder callback path nil", constructron)
-			end
+            local i = 0
+            for i, waypoint in ipairs(clean_path) do
+                constructron.add_autopilot_destination(waypoint.position)
+                VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
+                i = i + 1
+            end
         end
-	else
-		VisualDebugText("pathfinder callback request nil", constructrons[1])
-	end
-    global.constructron_pathfinder_requests[event.id] = nil
+        global.constructron_pathfinder_requests[event.id] = nil
+    elseif not path then
+        VisualDebugText("pathfinder callback path nil", constructrons[1])
+    end
 end)
 
 function clean_linear_path(path)
@@ -705,6 +703,23 @@ function robots_inactive(constructron)
             for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
+                        if settings.global["constructron-debug-enabled"].value then
+                            rendering.draw_text {
+                                text = "Charging Roboports",
+                                target = constructron,
+                                filled = true,
+                                surface = constructron.surface,
+                                time_to_live = 60,
+                                target_offset = {0, -3},
+                                alignment = "center",
+                                color = {
+                                    r = 0,
+                                    g = 255,
+                                    b = 0,
+                                    a = 255
+                                }
+                            }
+                        end
                         return false
                     end
                 end
@@ -1174,9 +1189,6 @@ function get_job(constructrons)
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
 
     for surface_name, surface in pairs(managed_surfaces) do -- iterate each surface
-        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
-        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
 
         if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
             

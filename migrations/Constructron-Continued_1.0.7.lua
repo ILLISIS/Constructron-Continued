@@ -17,14 +17,26 @@ for s, surface in pairs(game.surfaces) do
     global.stations_count[surface.index] = 0
 end
 
+global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+
 for c, constructron in pairs(global.constructrons) do
-    local registration_number = script.register_on_entity_destroyed(constructron)
-    global.registered_entities[registration_number] = {name = "constructron", surface = constructron.surface.index}
-    global.constructrons_count[constructron.surface.index] = global.constructrons_count[constructron.surface.index] + 1
+    if constructron.valid then
+        local registration_number = script.register_on_entity_destroyed(constructron)
+        global.registered_entities[registration_number] = {name = "constructron", surface = constructron.surface.index}
+        global.constructrons_count[constructron.surface.index] = global.constructrons_count[constructron.surface.index] + 1
+    else
+        global.constructrons[constructron.unit_number] = nil
+    end
 end
 
 for s, station in pairs(global.service_stations) do
-    local registration_number = script.register_on_entity_destroyed(station)
-    global.registered_entities[registration_number] = {name = "service_station", surface = station.surface.index}
-    global.stations_count[station.surface.index] = global.stations_count[station.surface.index] + 1
+    if station.valid then
+        local registration_number = script.register_on_entity_destroyed(station)
+        global.registered_entities[registration_number] = {name = "service_station", surface = station.surface.index}
+        global.stations_count[station.surface.index] = global.stations_count[station.surface.index] + 1
+    else
+        global.service_station[station.unit_number] = nil
+    end
 end
