@@ -8,6 +8,64 @@ local me = {}
 
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 job_start_delay = (settings.global["job-start-delay"].value * 60)
+entity_per_tick = 100
+
+me.on_init = function()
+    global.constructron_pathfinder_requests = {}
+    global.ignored_entities = {}
+    global.ghost_entities = {}
+    global.ghost_entities_count = 0
+    global.deconstruction_entities = {}
+    global.deconstruction_entities_count = 0
+    global.upgrade_entities = {}
+    global.constructron_statuses = {}
+    global.construct_queue = {}  
+    global.deconstruct_queue = {}
+    global.upgrade_queue = {}
+    global.job_bundles = {}
+    global.constructrons = {}
+    global.service_stations = {}
+    global.registered_entities = {}
+    global.constructrons_count = {}
+    global.stations_count = {}
+
+    for s, surface in pairs(game.surfaces) do 
+        global.constructrons_count[surface.index] = 0
+        global.stations_count[surface.index] = 0
+        global.construct_queue[surface.index] = {}
+        global.deconstruct_queue[surface.index] = {}
+        global.upgrade_queue[surface.index] = {}
+    end
+end
+
+me.on_configuration_changed = function()
+    global.constructron_pathfinder_requests = global.constructron_pathfinder_requests or {}
+    global.constructron_statuses = global.constructron_statuses or {}
+    global.deconstruction_entities = global.deconstruction_entities or {}
+    global.deconstruction_entities_count = global.deconstruction_entities_count or 0
+    global.upgrade_entities = global.upgrade_entities or {}
+    global.construct_queue = global.construct_queue or {}
+    global.deconstruct_queue = global.deconstruct_queue or {}
+    global.upgrade_queue = global.upgrade_queue or {}
+    global.ignored_entities = global.ignored_entities or {}
+    global.ghost_entities = global.ghost_entities or {}
+    global.ghost_entities_count = global.ghost_entities_count or 0
+    global.job_bundles = global.job_bundles or {}
+    global.constructrons = global.constructrons or {}
+    global.service_stations = global.service_stations or {}
+    global.registered_entities = global.registered_entities or {}
+    global.constructrons_count = global.constructrons_count or {}
+    global.stations_count = global.stations_count or {}
+
+    for s, surface in pairs(game.surfaces) do 
+        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
+        global.stations_count[surface.index] = global.stations_count[surface.index] or 0
+        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+    end
+end
+
 
 function get_service_stations(index)
     local stations_on_surface = {}
@@ -25,10 +83,6 @@ function get_constructrons()
         table.insert(constructrons_on_surface, constructron)
     end
     return constructrons_on_surface or {}
-end
-
-function distance_between(position1, position2)
-    return math.sqrt(math.pow(position1.x - position2.x, 2) + math.pow(position1.y - position2.y, 2))
 end
 
 function constructrons_need_reload(constructrons)
@@ -63,62 +117,6 @@ function calculate_required_inventory_slot_count(required_items, divisor)
     end
     return slots
 end
-
-script.on_init(function()
-    global.constructron_pathfinder_requests = {}
-    global.ignored_entities = {}
-    global.ghost_entities = {}
-    global.ghost_entities_count = 0
-    global.deconstruction_entities = {}
-    global.deconstruction_entities_count = 0
-    global.upgrade_entities = {}
-    global.constructron_statuses = {}
-    global.construct_queue = {}  
-    global.deconstruct_queue = {}
-    global.upgrade_queue = {}
-    global.job_bundles = {}
-    global.constructrons = {}
-    global.service_stations = {}
-    global.registered_entities = {}
-    global.constructrons_count = {}
-    global.stations_count = {}
-
-    for s, surface in pairs(game.surfaces) do 
-        global.constructrons_count[surface.index] = 0
-        global.stations_count[surface.index] = 0
-        global.construct_queue[surface.index] = {}
-        global.deconstruct_queue[surface.index] = {}
-        global.upgrade_queue[surface.index] = {}
-    end
-end)
-
-script.on_configuration_changed(function()
-    global.constructron_pathfinder_requests = global.constructron_pathfinder_requests or {}
-    global.constructron_statuses = global.constructron_statuses or {}
-    global.deconstruction_entities = global.deconstruction_entities or {}
-    global.deconstruction_entities_count = global.deconstruction_entities_count or 0
-    global.upgrade_entities = global.upgrade_entities or {}
-    global.construct_queue = global.construct_queue or {}
-    global.deconstruct_queue = global.deconstruct_queue or {}
-    global.upgrade_queue = global.upgrade_queue or {}
-    global.ignored_entities = global.ignored_entities or {}
-    global.ghost_entities = global.ghost_entities or {}
-    global.ghost_entities_count = global.ghost_entities_count or 0
-    global.job_bundles = global.job_bundles or {}
-    global.constructrons = global.constructrons or {}
-    global.service_stations = global.service_stations or {}
-    global.registered_entities = global.registered_entities or {}
-    global.constructrons_count = global.constructrons_count or {}
-    global.stations_count = global.stations_count or {}
-
-    for s, surface in pairs(game.surfaces) do 
-        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
-        global.stations_count[surface.index] = global.stations_count[surface.index] or 0
-        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
-        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
-    end
-end)
 
 function request_path(constructrons, goal)
     local constructron = constructrons[1]
@@ -167,7 +165,7 @@ function request_path(constructrons, goal)
     end
 end
 
-script.on_event(defines.events.on_script_path_request_finished, function(event)
+me.on_script_path_request_finished = function(event)
     local request = global.constructron_pathfinder_requests[event.id]
     
     if not request then return end
@@ -176,7 +174,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
     local clean_path
 
     if path then
-        clean_path = clean_linear_path(path)
+        clean_path = chunk_util.clean_linear_path(path)
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
             local i = 0
@@ -190,248 +188,8 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
     elseif not path then
         debug_lib.VisualDebugText("pathfinder callback path nil", constructrons[1])
     end
-end)
-
-function clean_linear_path(path)
-    -- removes points on the same line except the start and the end.
-    local new_path = {}
-    for i, waypoint in ipairs(path) do
-        if i >= 2 and i < #path then
-            local prev_angle = math.atan2(waypoint.position.y - path[i - 1].position.y,
-                waypoint.position.x - path[i - 1].position.x)
-            local next_angle = math.atan2(path[i + 1].position.y - waypoint.position.y,
-                path[i + 1].position.x - waypoint.position.x)
-            if math.abs(prev_angle - next_angle) > 0.01 then
-                table.insert(new_path, waypoint)
-            end
-        else
-            table.insert(new_path, waypoint)
-        end
-    end
-    return new_path
 end
 
-function chunk_from_position(position)
-    -- if a ghost entity found anywhere in the surface, we want to get the corresponding chunk
-    -- so that we can fill constructron with all the other ghosts
-    return {
-        y = math.floor((position.y) / 80),
-        x = math.floor((position.x) / 80)
-    }
-end
-
-function position_from_chunk(chunk)
-    return {
-        y = chunk.y * 80,
-        x = chunk.x * 80
-    }
-end
-
-function get_area_from_chunk(chunk)
-    local area = {{
-        y = chunk.y * 80,-- - 6,
-        x = chunk.x * 80-- - 6
-    }, {
-        y = (chunk.y+1) * 80,-- + 6,
-        x = (chunk.x+1) * 80-- + 6
-    }}
-    -- rendering.draw_rectangle {
-    --     left_top = area[1],
-    --     right_bottom = area[2],
-    --     filled = true,
-    --     surface = game.surfaces['nauvis'],
-    --     time_to_live = 5000,
-    --     color = {
-    --         r = 100,
-    --         g = 100,
-    --         b = 100,
-    --         a = 0.2
-    --     }
-    -- }
-    return area
-end
-
--- This section is unused.
--- function find_ghosts(chunk, position, radius)
---     -- both chunk and position are optional
---     -- if given chunk, it will look in that chunk
---     -- if given position, it will find the corresponding chunk and look in that chunk
---     -- if not given any of it, it will find a single ghost
---     local area = nil
---     if chunk then
---         area = get_area_from_chunk(chunk)
---     elseif position then
---         return game.surfaces['nauvis'].find_entities_filtered {
---             position = position,
---             radius = radius,
---             type = "entity-ghost"
---         }
---     else
---         return game.surfaces['nauvis'].find_entities_filtered {
---             type = "entity-ghost",
---             limit = 1
---         }
---     end
---     local ghosts = game.surfaces['nauvis'].find_entities_filtered {
---         type = "entity-ghost",
---         area = area
---     }
---     return ghosts
--- end
-
-entity_per_tick = 100
-
-function merge_direct_neighbour(a1, a2)
-
-    local merge
-    -- if they are in the same row
-    if (a1[1].y == a2[1].y) and (a1[2].y == a2[2].y) then
-        -- if they are neighbours
-        if (a1[1].x == a2[2].x) or (a1[2].x == a2[1].x) then
-            merge = true
-        end
-    end
-
-    -- if they are in the same column
-    if (a1[1].x == a2[1].x) and (a1[2].x == a2[2].x) then
-        -- if they are neighbours
-        if (a1[1].y == a2[2].y) or (a1[2].y == a2[1].y) then
-            merge = true
-        end
-    end
-    if merge then
-        return {{
-            x = math.min(a1[1].x, a2[1].x),
-            y = math.min(a1[1].y, a2[1].y)
-        }, {
-            x = math.max(a1[2].x, a2[2].x),
-            y = math.max(a1[2].y, a2[2].y)
-        }}
-    end
-end
-
-function merge_neighbour_chunks(merged_area, chunk1, chunk2)
-    -- must be called if chunks are direct neighbors. area is what is returned from merge_direct_neighbour function.
-    local new_chunk = {
-        area = merged_area,
-        minimum = chunk1.minimum,
-        maximum = chunk1.maximum,
-        position = {
-            x = math.min(chunk1.minimum.x, chunk2.minimum.x),
-            y = math.min(chunk1.minimum.y, chunk2.minimum.y)
-        }
-    }
-    local required_items = {}
-    for key, count in pairs(chunk1.required_items) do
-        required_items[key] = count
-    end
-    for key, count in pairs(chunk2.required_items) do
-        required_items[key] = (required_items[key] or 0) + count
-    end
-    for xy, val in pairs(chunk2.minimum) do
-        new_chunk.minimum[xy] = math.min(val, new_chunk.minimum[xy])
-    end
-    for xy, val in pairs(chunk2.maximum) do
-        new_chunk.maximum[xy] = math.max(val, new_chunk.maximum[xy])
-    end
-    new_chunk['required_items'] = required_items
-    return new_chunk
-end
-
-function combine_chunks(chunks)
-    for i, chunk1 in ipairs(chunks) do
-        for j, chunk2 in ipairs(chunks) do
-            if not (i == j) then
-                local merged_area = merge_direct_neighbour(chunk1.area, chunk2.area)
-                if merged_area then
-                    local new_chunk = merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                    local new_chunks = {}
-                    for k, chunk in ipairs(chunks) do
-                        if (not (k == i)) and (not (k == j)) then
-                            table.insert(new_chunks, chunk)
-                        end
-                    end
-                    table.insert(new_chunks, new_chunk)
-                    return combine_chunks(new_chunks) -- recursion
-                end
-            end
-        end
-    end
-    return chunks
-end
-
-function calculate_construct_positions(area, radius)
-    local height = math.max(area[2].y - area[1].y, 1) -- a single object has no width or height. which makes xpoint_count and ypoint_count zero. which means it won't be build.
-    local width = math.max(area[2].x - area[1].x, 1) -- so, if either height or width are zero. they must be set to at least 1.
-    local xpoints = {}
-    local ypoints = {}
-    local xpoint_count = math.ceil(width / radius / 2)
-    local ypoint_count = math.ceil(height / radius / 2)
-
-    if xpoint_count > 1 then
-        for i = 1, xpoint_count do
-            xpoints[i] = area[1].x + radius + (width - radius * 2) * (i - 1) / (xpoint_count - 1)
-        end
-    else
-        xpoints[1] = area[1].x + width / 2
-    end
-
-    if ypoint_count > 1 then
-        for j = 1, ypoint_count do
-            ypoints[j] = area[1].y + radius + (height - radius * 2) * (j - 1) / (ypoint_count - 1)
-        end
-    else
-        ypoints[1] = area[1].y + height / 2
-    end
-
-    local points = {}
-    if xpoint_count < ypoint_count then
-        for x = 1, xpoint_count do
-            for y = 1, ypoint_count do
-                table.insert(points, {
-                    x = xpoints[x],
-                    y = ypoints[(ypoint_count + 1) * (x % 2) + math.pow(-1, x % 2) * y]
-                })
-            end
-        end
-    else
-        for y = 1, ypoint_count do
-            for x = 1, xpoint_count do
-                table.insert(points, {
-                    y = ypoints[y],
-                    x = xpoints[(xpoint_count + 1) * (y % 2) + math.pow(-1, y % 2) * x]
-                })
-            end
-        end
-    end
-    if settings.global["constructron-debug-enabled"].value then
-        for p, point in pairs(points) do
-            local otherp = {}
-            otherp.x = point.x - 1
-            otherp.y = point.y - 1
-            rendering.draw_rectangle {
-                left_top = point,
-                right_bottom = otherp,
-                filled = true,
-                surface = game.surfaces['nauvis'],
-                time_to_live = 1800,
-                color = {
-                    r = 100,
-                    g = 100,
-                    b = 100,
-                    a = 0.2
-                }
-            }
-        end
-    end
-    return points
-end
-
--- idea
--- local entity_per_tick = #entities
--- if entity_per_tick > 100 then
---     entity_per_tick = 100
--- end
 
 function add_ghosts_to_chunks()
     if global.ghost_entities[1] and (game.tick - global.ghost_tick) > job_start_delay then -- if the ghost isn't built in 5 seconds or 300 ticks(default setting).
@@ -443,7 +201,7 @@ function add_ghosts_to_chunks()
                 global.ghost_entities[ghost_count] = nil
                 global.ghost_entities_count = ghost_count - 1
                 if entity.valid then
-                    local chunk = chunk_from_position(entity.position)
+                    local chunk = chunk_util.chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
                     local chunk_surface = entity.surface.index
                     local entity_key = entity.position.y .. ',' .. entity.position.x
@@ -453,8 +211,8 @@ function add_ghosts_to_chunks()
                             key = key,
                             surface = entity.surface.index,
                             entity_key = entity,
-                            position = position_from_chunk(chunk),
-                            area = get_area_from_chunk(chunk),
+                            position = chunk_util.position_from_chunk(chunk),
+                            area = chunk_util.get_area_from_chunk(chunk),
                             minimum = {
                                 x = entity.position.x,
                                 y = entity.position.y
@@ -513,7 +271,7 @@ function add_deconstruction_entities_to_chunks()
                 global.deconstruction_entities[ghost_count] = nil
                 global.deconstruction_entities_count = ghost_count - 1
                 if entity.valid then
-                    local chunk = chunk_from_position(entity.position)
+                    local chunk = chunk_util.chunk_from_position(entity.position)
                     local key = chunk.y .. ',' .. chunk.x
                     local chunk_surface = entity.surface.index
                     local entity_key = entity.position.y .. ',' .. entity.position.x
@@ -522,8 +280,8 @@ function add_deconstruction_entities_to_chunks()
                             key = key,
                             surface = entity.surface.index,
                             entity_key = entity,
-                            position = position_from_chunk(chunk),
-                            area = get_area_from_chunk(chunk),
+                            position = chunk_util.position_from_chunk(chunk),
+                            area = chunk_util.get_area_from_chunk(chunk),
                             minimum = {
                                 x = entity.position.x,
                                 y = entity.position.y
@@ -576,7 +334,7 @@ function add_upgrade_entities_to_chunks()
             local entity = obj['entity']
             local target = obj['target']
             if entity and entity.valid then
-                local chunk = chunk_from_position(entity.position)
+                local chunk = chunk_util.chunk_from_position(entity.position)
                 local key = chunk.y .. ',' .. chunk.x
                 local chunk_surface = entity.surface.index
                 if not global.upgrade_queue[chunk_surface][key] then -- initialize queued_chunk
@@ -584,8 +342,8 @@ function add_upgrade_entities_to_chunks()
                         key = key,
                         surface = entity.surface.index,
                         entity_key = entity,
-                        position = position_from_chunk(chunk),
-                        area = get_area_from_chunk(chunk),
+                        position = chunk_util.position_from_chunk(chunk),
+                        area = chunk_util.get_area_from_chunk(chunk),
                         minimum = {
                             x = entity.position.x,
                             y = entity.position.y
@@ -620,7 +378,7 @@ function add_upgrade_entities_to_chunks()
     end
 end
 
-script.on_nth_tick(1, function(event)
+me.on_nth_tick = function(event)
     if event.tick % 3 == 0 then
         add_deconstruction_entities_to_chunks()
     elseif event.tick % 3 == 1 then
@@ -628,7 +386,7 @@ script.on_nth_tick(1, function(event)
     elseif event.tick % 3 == 2 then
         add_upgrade_entities_to_chunks()
     end
-end)
+end
 
 function robots_inactive(constructron)
     if constructron.valid then
@@ -937,7 +695,7 @@ conditions = {
                 invalid = true
                 return invalid
             end
-            if (distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
+            if (chunk_util.distance_between(constructron.position, position) > 5) then -- or not robots_inactive(constructron) then
                 return false
             end
         end
@@ -1031,7 +789,7 @@ function get_closest_object(objects, position)
         iterator = ipairs
     end
     for i, object in iterator(objects) do
-        local distance = distance_between(object.position, position)
+        local distance = chunk_util.distance_between(object.position, position)
             if not min_distance or (distance < min_distance) then
                 min_distance = distance
                 object_index = i
@@ -1052,7 +810,7 @@ function get_job(constructrons)
             for i, chunk1 in ipairs(chunks) do
                 for j, chunk2 in ipairs(chunks) do
                     if not (i==j) then
-                        local merged_area = merge_direct_neighbour(chunk1.area, chunk2.area)
+                        local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area)
                         if merged_area then
                             local required_slots1
                             local required_slots2
@@ -1076,7 +834,7 @@ function get_job(constructrons)
                             end
                             if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then
                                 total_required_slots = total_required_slots + required_slots1 + required_slots2
-                                merged_chunk = merge_neighbour_chunks(merged_area, chunk1, chunk2)
+                                merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
                                 merged_chunk.merged = true
 
                                 -- create a new table for remaining chunks
@@ -1233,7 +991,7 @@ function get_job(constructrons)
             for i, chunk in ipairs(combined_chunks) do
                 -- local chunk_index = get_closest_object(combined_chunks, constructrons[1].position)
                 -- local chunk = table.remove(combined_chunks, chunk_index)
-                chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.85) -- 15% tolerance
+                chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.85) -- 15% tolerance
                 chunk['surface'] = surface.index
                 local find_path = false
                 for p, position in ipairs(chunk.positions) do
@@ -1344,14 +1102,14 @@ function do_job(job_bundles)
     end
 end
 
-script.on_nth_tick(60, function(event)
+me.on_nth_tick_60 = function(event)
     local constructrons = global.constructrons
     local service_stations = global.service_stations
     get_job(constructrons or {})
     do_job(global.job_bundles or {})
-end)
+end
 
-script.on_nth_tick(54000, function(event)
+me.on_nth_tick_54000 = function(event)
     debug_lib.DebugLog('Surface job cleanup')
     local constructrons = global.constructrons
     local service_stations = global.service_stations
@@ -1367,10 +1125,10 @@ script.on_nth_tick(54000, function(event)
             global.upgrade_queue[surface.index] = {}
         end
     end
-end)
+end
 
 function remove_entity_from_queue(queue, entity)
-    local chunk = chunk_from_position(entity.position)
+    local chunk = chunk_util.chunk_from_position(entity.position)
     local chunk_key = chunk.y .. ',' .. chunk.x
     local quque_entity = queue[chunk_key]
     if quque_entity then
@@ -1392,7 +1150,7 @@ local function is_floor_tile(entity_name)
     return custom_lib.table_has_value(floor_tiles, entity_name)
 end
 
-script.on_event(defines.events.on_built_entity, function(event) -- for entity creation
+me.on_built_entity = function(event) -- for entity creation
     local entity = event.created_entity
     local entity_type = entity.type
     if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
@@ -1424,9 +1182,9 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
         global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
-end)
+end
 
-script.on_event(defines.events.script_raised_built, function(event) -- for mods
+me.on_script_raised_built = function(event) -- for mods
     if not event.entity.name == 'item-request-proxy' then
         local entity = event.created_entity
         local entity_type = entity.type or {}
@@ -1467,9 +1225,19 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
         global.ghost_entities[ghost_count] = entity
         global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     end
-end)
+end
 
-script.on_event(defines.events.on_post_entity_died, function(event) -- for entities that die and need rebuilding
+me.on_robot_built_entity = function(event) -- add service_stations to global when built by robots
+    local entity = event.created_entity
+    if entity.name == "service_station" then
+        global.service_stations[entity.unit_number] = entity
+        local registration_number = script.register_on_entity_destroyed(entity)
+        global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
+        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
+    end
+end
+
+me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
     if entity and entity.type == 'entity-ghost' then
         local ghost_count = global.ghost_entities_count
@@ -1478,59 +1246,25 @@ script.on_event(defines.events.on_post_entity_died, function(event) -- for entit
         global.ghost_entities[ghost_count] = entity
         global.ghost_tick = event.tick
     end
-    -- if event.prototype.name == 'constructron' then
-    --     global.constructrons[event.unit_number] = nil  -- could be redundant as entities are now registered
-    -- elseif event.prototype.name == 'service_station' then
-    --     global.service_stations[event.unit_number] = nil  -- could be redundant as entities are now registered
-    -- end
-end)
+end
 
-script.on_event(defines.events.on_robot_built_entity, function(event) -- add service_stations to global when built by robots
-    local entity = event.created_entity
-    if entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(entity)
-        global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
-        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
-    end
-end)
 ---
-
--- -- remove from deconstruct queue if it's mined/deconstructed
--- script.on_event(defines.events.on_robot_mined_entity, function(event) -- remove service_stations from global when mined by robots
---     local entity = event.entity
---     if entity.name == "service_station" then
---         global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
---     end
--- end)
----
-
--- script.on_event(defines.events.on_player_mined_entity, function(event) -- remove service_stations and constructrons from global when mined by player
---     local entity = event.entity
---     if entity.name == "constructron" then
---         global.constructrons[entity.unit_number] = nil  -- could be redundant as entities are now registered
---     elseif entity.name == "service_station" then
---         global.service_stations[entity.unit_number] = nil  -- could be redundant as entities are now registered
---     end
--- end)
----
-
-script.on_event(defines.events.on_marked_for_upgrade, function(event) -- for entity upgrade
+me.on_marked_for_upgrade = function(event) -- for entity upgrade
     global.upgrade_marked_tick = event.tick
     table.insert(global.upgrade_entities, {entity=event.entity, target=event.target})
-end)
+end
 ---
 
-script.on_event(defines.events.on_marked_for_deconstruction, function(event) -- for entity deconstruction
+me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     global.deconstruct_marked_tick = event.tick
     local decon_count = global.deconstruction_entities_count
     decon_count = decon_count + 1
     global.deconstruction_entities_count = decon_count
     global.deconstruction_entities[decon_count] = event.entity
-end, {{filter='name', name="item-on-ground", invert=true}})
+end
 ---
 
-script.on_event(defines.events.on_surface_created, function(event)
+me.on_surface_created = function(event)
     local index = event.surface_index
 
     global.construct_queue[index] = {}
@@ -1539,10 +1273,10 @@ script.on_event(defines.events.on_surface_created, function(event)
 
     global.constructrons_count[index] = 0
     global.stations_count[index] = 0
-end)
+end
 ---
 
-script.on_event(defines.events.on_surface_deleted, function(event)
+me.on_surface_deleted = function(event)
     local index = event.surface_index
 
     global.construct_queue[index] = nil
@@ -1551,10 +1285,10 @@ script.on_event(defines.events.on_surface_deleted, function(event)
 
     global.constructrons_count[index] = nil
     global.stations_count[index] = nil
-end)
+end
 ---
 
-script.on_event(defines.events.on_entity_cloned, function(event)
+me.on_entity_cloned = function(event)
     local entity = event.destination
     if entity.name == 'constructron' then
         debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
@@ -1569,9 +1303,9 @@ script.on_event(defines.events.on_entity_cloned, function(event)
         global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
         global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
-end)
+end
 
-script.on_event(defines.events.on_entity_destroyed, function(event)
+me.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" then
@@ -1587,9 +1321,9 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
         end
         global.registered_entities[event.registration_number] = nil
     end
-end)
+end
 
-script.on_event(defines.events.script_raised_destroy, function(event)
+me.on_script_raised_destroy = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" then
@@ -1605,7 +1339,7 @@ script.on_event(defines.events.script_raised_destroy, function(event)
         end
         global.registered_entities[event.registration_number] = nil
     end
-end)
+end
 
 function set_constructron_status(constructron, state, value)
     if constructron.valid then
