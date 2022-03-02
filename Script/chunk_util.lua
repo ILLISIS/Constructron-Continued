@@ -198,4 +198,24 @@ me.calculate_construct_positions = function(area, radius)
     return points
 end
 
+me.get_closest_object = function(objects, position)
+    -- actually returns object index or key rather than object.
+    local min_distance
+    local object_index
+    local iterator
+    if not objects[1] then
+        iterator = pairs
+    else
+        iterator = ipairs
+    end
+    for i, object in iterator(objects) do
+        local distance = me.distance_between(object.position, position)
+        if not min_distance or (distance < min_distance) then
+            min_distance = distance
+            object_index = i
+        end
+    end
+    return object_index
+end
+
 return me
