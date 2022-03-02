@@ -50,7 +50,7 @@ me.get_service_stations = function(index)
     return stations_on_surface or {}
 end
 
--- Explain.... 
+-- Explain ...
 me.get_constructrons = function()
     local constructrons_on_surface = {}
     for c, constructron in pairs(global.constructrons) do
