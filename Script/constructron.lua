@@ -1,5 +1,10 @@
-require("util")
+-- require("util") --disabled as it should be loaded by default
 local collision_mask_util_extended = require("__Constructron-Continued__.script.collision-mask-util-control")
+local chunk_util = require("__Constructron-Continued__.script.chunk_util")
+local custom_lib = require("__Constructron-Continued__.script.custom_lib")
+local debug_lib = require("__Constructron-Continued__.script.debug_lib")
+
+local me = {}
 
 local function table_has_value (tab, val)
     if val == nil then
@@ -1738,3 +1743,5 @@ function paint_constructron(constructron, color_state)
     end
     constructron.color = color
 end
+
+return me
