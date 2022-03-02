@@ -13,8 +13,8 @@ game.print('Constructron-Continued: Join the new discord! https://discord.gg/m9T
 game.print('Constructron-Continued: All job queues have been cleared! Any jobs that were in progress will need to be removed and then readded to be built!')
 
 for s, surface in pairs(game.surfaces) do 
-    global.constructrons_count[surface.index] = 0
-    global.stations_count[surface.index] = 0
+    global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
+    global.stations_count[surface.index] = global.stations_count[surface.index] or 0
     global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
     global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
     global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
