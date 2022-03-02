@@ -288,18 +288,7 @@ me.robots_inactive = function(constructron)
             for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
-                        if settings.global["constructron-debug-enabled"].value then
-                            rendering.draw_text {
-                                text = "Charging Roboports",
-                                target = constructron,
-                                filled = true,
-                                surface = constructron.surface,
-                                time_to_live = 60,
-                                target_offset = {0, -3},
-                                alignment = "center",
-                                color = color_lib.color_alpha(color_lib.colors.green, 1)
-                            }
-                        end
+                        debug_lib.VisualDebugText("Charging Roboports", constructron)
                         return false
                     end
                 end
@@ -488,16 +477,8 @@ me.actions = {
             table.insert(entity_names, name)
         end
         surface = game.surfaces[chunk.surface]
-        if settings.global["constructron-debug-enabled"].value then
-            rendering.draw_rectangle {
-                left_top = chunk.minimum,
-                right_bottom = chunk.maximum,
-                filled = true,
-                surface = surface,
-                time_to_live = 600,
-                color = color_lib.color_alpha(color_lib.colors.blue, 0.5)
-            }
-        end
+        debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
+
         ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             type = "entity-ghost"
@@ -520,16 +501,8 @@ me.actions = {
             table.insert(entity_names, name)
         end
         surface = game.surfaces[chunk.surface]
-        if settings.global["constructron-debug-enabled"].value then
-            rendering.draw_rectangle {
-                left_top = chunk.minimum,
-                right_bottom = chunk.maximum,
-                filled = true,
-                surface = surface,
-                time_to_live = 600,
-                color = color_lib.color_alpha(color_lib.colors.red, 0.5)
-            }
-        end
+        debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
+
         decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,

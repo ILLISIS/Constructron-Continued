@@ -62,4 +62,34 @@ me.VisualDebugCircle = function(position, surface, color, text)
     end
 end
 
+me.draw_rectangle = function(minimum, maximum, surface, color)
+    if settings.global["constructron-debug-enabled"].value then
+        local inner_color = {
+            r = color.r,
+            g = color.g,
+            b = color.b,
+            a = 0.1
+        }
+
+        rendering.draw_rectangle {
+            left_top = minimum,
+            right_bottom = maximum,
+            filled = true,
+            surface = surface,
+            time_to_live = 600,
+            color = inner_color
+        }
+
+        rendering.draw_rectangle {
+            left_top = minimum,
+            right_bottom = maximum,
+            width = 3,
+            filled = false,
+            surface = surface,
+            time_to_live = 600,
+            color = color
+        }
+    end
+end
+
 return me
