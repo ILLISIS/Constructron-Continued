@@ -6,29 +6,6 @@ local debug_lib = require("__Constructron-Continued__.script.debug_lib")
 
 local me = {}
 
-local function VisualDebugText(message, entity)
-    if not entity or not entity.valid then
-        return
-    end
-	if settings.global["constructron-debug-enabled"].value then
-        rendering.draw_text {
-            text = message,
-            target = entity,
-            filled = true,
-            surface = entity.surface,
-            time_to_live = 60,
-            target_offset = {0, -2},
-            alignment = "center",
-            color = {
-                r = 255,
-                g = 255,
-                b = 255,
-                a = 255
-            }
-        }
-    end
-end
-
 local function VisualDebugCircle(position, surface, color, text)
 	if settings.global["constructron-debug-enabled"].value then
         if position then
@@ -214,7 +191,7 @@ function request_path(constructrons, goal)
             end
             return new_goal
         else
-            VisualDebugText("pathfinding request failed - target not reachable", constructron)
+            debug_lib.VisualDebugText("pathfinding request failed - target not reachable", constructron)
         end
     else
         invalid = true
@@ -243,7 +220,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         end
         global.constructron_pathfinder_requests[event.id] = nil
     elseif not path then
-        VisualDebugText("pathfinder callback path nil", constructrons[1])
+        debug_lib.VisualDebugText("pathfinder callback path nil", constructrons[1])
     end
 end)
 
@@ -986,7 +963,7 @@ actions = {
 
 conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        VisualDebugText("Moving to position", constructrons[1])
+        debug_lib.VisualDebugText("Moving to position", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then 
                 invalid = true
@@ -999,7 +976,7 @@ conditions = {
         return true
     end,
     build_done = function(constructrons, items, minimum_position, maximum_position)
-        VisualDebugText("Constructing", constructrons[1])
+        debug_lib.VisualDebugText("Constructing", constructrons[1])
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 local bots_inactive = robots_inactive(constructron)
@@ -1016,7 +993,7 @@ conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        VisualDebugText("Deconstructing", constructrons[1])
+        debug_lib.VisualDebugText("Deconstructing", constructrons[1])
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 if not robots_inactive(constructron) then
@@ -1032,7 +1009,7 @@ conditions = {
         end
     end,
     request_done = function(constructrons)
-        VisualDebugText("Processing logistics", constructrons[1])
+        debug_lib.VisualDebugText("Processing logistics", constructrons[1])
         if constructrons_need_reload(constructrons) then
             return false
         else
@@ -1202,13 +1179,13 @@ function get_job(constructrons)
                 if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not get_constructron_status(constructron, 'busy') then
                     table.insert(available_constructrons, constructron)
                 elseif not constructron.logistic_cell then
-                    VisualDebugText("Needs Equipment", constructron)
+                    debug_lib.VisualDebugText("Needs Equipment", constructron)
                 elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     debug_lib.DebugLog('ACTION: Stage')
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     
                     if game.item_prototypes[desired_robot_name] then
-                        VisualDebugText("Requesting Construction Robots", constructron)
+                        debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
                         constructron.enable_logistics_while_moving = false
                         local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
                         request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
