@@ -1,6 +1,6 @@
 local me = {}
 
-me.table_has_value = function (tab, val)
+me.table_has_value = function(tab, val)
     if val == nil then
         return false
     end

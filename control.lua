@@ -16,7 +16,7 @@ script.on_event(ev.on_built_entity, ctron.on_built_entity)
 script.on_event(ev.script_raised_built, ctron.on_script_raised_built)
 script.on_event(ev.on_robot_built_entity, ctron.on_robot_built_entity)
 
---ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common  processing function with 2 different preprocessors/wrappers for each event if required
+-- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common  processing function with 2 different preprocessors/wrappers for each event if required
 script.on_event(ev.on_marked_for_upgrade, ctron.on_marked_for_upgrade)
 
 script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction, {{
@@ -25,12 +25,12 @@ script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deco
     invert = true
 }})
 
-script.on_event(ev.on_surface_created,ctron.on_surface_created)
-script.on_event(ev.on_surface_deleted,ctron.on_surface_deleted)
+script.on_event(ev.on_surface_created, ctron.on_surface_created)
+script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
 
-script.on_event(ev.on_entity_cloned,ctron.on_entity_cloned)
+script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 
 -- ToDo: merge handlers for on_entity_destroyed, on_script_raised_destroy, check if on_post_entity_died is similiar
-script.on_event(ev.on_entity_destroyed,ctron.on_entity_destroyed)
-script.on_event(ev.script_raised_destroy,ctron.on_script_raised_destroy)
+script.on_event(ev.on_entity_destroyed, ctron.on_entity_destroyed)
+script.on_event(ev.script_raised_destroy, ctron.on_script_raised_destroy)
 script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
