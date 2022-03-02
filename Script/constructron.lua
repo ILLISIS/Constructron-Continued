@@ -92,6 +92,7 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
     return slots
 end
 
+-- Idea: I would like to move all the pathfinding stuff into a separate file as it has no real logic dependancy on the constructron control flow
 me.request_path = function(constructrons, goal)
     local constructron = constructrons[1]
     if constructron.valid then
@@ -130,8 +131,7 @@ me.request_path = function(constructrons, goal)
             debug_lib.VisualDebugText("pathfinding request failed - target not reachable", constructron)
         end
     else
-        invalid = true
-        return invalid
+        return true
     end
 end
 
@@ -162,187 +162,111 @@ me.on_script_path_request_finished = function(event)
     end
 end
 
-me.add_ghosts_to_chunks = function()
-    if global.ghost_entities[1] and (game.tick - global.ghost_tick) > me.job_start_delay then -- if the ghost isn't built in 5 seconds or 300 ticks(default setting).
-        for i = 1, me.entity_per_tick do
-            -- local entity = table.remove(global.ghost_entities)
-            local ghost_count = global.ghost_entities_count
-            local entity = global.ghost_entities[ghost_count]
-            if ghost_count > 0 then
-                global.ghost_entities[ghost_count] = nil
-                global.ghost_entities_count = ghost_count - 1
-                if entity.valid then
-                    local chunk = chunk_util.chunk_from_position(entity.position)
-                    local key = chunk.y .. ',' .. chunk.x
-                    local chunk_surface = entity.surface.index
-                    local entity_key = entity.position.y .. ',' .. entity.position.x
-                    global.construct_queue[chunk_surface] = global.construct_queue[chunk_surface] or {}
-                    if not global.construct_queue[chunk_surface][key] then -- initialize queued_chunk
-                        global.construct_queue[chunk_surface][key] = {
-                            key = key,
-                            surface = entity.surface.index,
-                            entity_key = entity,
-                            position = chunk_util.position_from_chunk(chunk),
-                            area = chunk_util.get_area_from_chunk(chunk),
-                            minimum = {
-                                x = entity.position.x,
-                                y = entity.position.y
-                            },
-                            maximum = {
-                                x = entity.position.x,
-                                y = entity.position.y
-
-                            },
-                            required_items = {}
-                        }
-                    else -- add to existing queued_chunk
-                        global.construct_queue[chunk_surface][key][entity_key] = entity
-                        if entity.position.x < global.construct_queue[chunk_surface][key]['minimum'].x then
-                            global.construct_queue[chunk_surface][key]['minimum'].x = entity.position.x
-                        elseif entity.position.x > global.construct_queue[chunk_surface][key]['maximum'].x then
-                            global.construct_queue[chunk_surface][key]['maximum'].x = entity.position.x
-                        end
-                        if entity.position.y < global.construct_queue[chunk_surface][key]['minimum'].y then
-                            global.construct_queue[chunk_surface][key]['minimum'].y = entity.position.y
-                        elseif entity.position.y > global.construct_queue[chunk_surface][key]['maximum'].y then
-                            global.construct_queue[chunk_surface][key]['maximum'].y = entity.position.y
-                        end
-                    end
-                    -- to use for requesting stuff to constructron
-                    if not (entity.type == 'item-request-proxy') then
-                        for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                            global.construct_queue[chunk_surface][key]['required_items'][item.name] = (global.construct_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
-                        end
-                    end
-                    -- for modules
-                    if entity.type == 'entity-ghost' or entity.type == 'item-request-proxy' then
-                        for name, count in pairs(entity.item_requests) do
-                            global.construct_queue[chunk_surface][key]['required_items'][name] = (global.construct_queue[chunk_surface][key]['required_items'][name] or 0) + count
-                        end
-                    end
-                else
-                    break
-                end
-            else
-                break
-            end
-        end
+me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
+    local entities, entity_count_type, queue, event_tick
+    if build_type == "ghost" then
+        entities = global.ghost_entities -- array, call by ref
+        entity_count_type = "ghost_entities_count"
+        queue = global.construct_queue -- array, call by ref
+        event_tick = global.ghost_tick -- call by value, it is used as read_only
+    elseif build_type == "deconstruction" then
+        entities = global.deconstruction_entities -- array, call by ref
+        entity_count_type = "deconstruction_entities_count"
+        queue = global.deconstruct_queue -- array, call by ref
+        event_tick = global.deconstruct_marked_tick -- call by value, it is used as read_only
+    elseif build_type == "upgrade" then
+        entities = global.upgrade_entities -- array, call by ref
+        entity_count_type = nil
+        queue = global.upgrade_queue -- array, call by ref
+        event_tick = global.upgrade_marked_tick -- call by value, it is used as read_only
     end
-end
 
-me.add_deconstruction_entities_to_chunks = function()
-    if global.deconstruction_entities[1] and (game.tick - (global.deconstruct_marked_tick or 0)) > me.job_start_delay then -- if the entity isn't deconstructed in 5 seconds or 300 ticks(default setting).
+    if entities[1] and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for i = 1, me.entity_per_tick do
-            -- local entity = table.remove(global.deconstruction_entities)
-            local ghost_count = global.deconstruction_entities_count
-            local entity = global.deconstruction_entities[ghost_count]
-            if ghost_count > 0 then
-                global.deconstruction_entities[ghost_count] = nil
-                global.deconstruction_entities_count = ghost_count - 1
-                if entity.valid then
-                    local chunk = chunk_util.chunk_from_position(entity.position)
-                    local key = chunk.y .. ',' .. chunk.x
-                    local chunk_surface = entity.surface.index
-                    local entity_key = entity.position.y .. ',' .. entity.position.x
-                    if not global.deconstruct_queue[chunk_surface][key] then -- initialize queued_chunk
-                        global.deconstruct_queue[chunk_surface][key] = {
-                            key = key,
-                            surface = entity.surface.index,
-                            entity_key = entity,
-                            position = chunk_util.position_from_chunk(chunk),
-                            area = chunk_util.get_area_from_chunk(chunk),
-                            minimum = {
-                                x = entity.position.x,
-                                y = entity.position.y
-                            },
-                            maximum = {
-                                x = entity.position.x,
-                                y = entity.position.y
-
-                            },
-                            required_items = {},
-                            trash_items = {}
-                        }
-                    else -- add to existing queued_chunk
-                        global.deconstruct_queue[chunk_surface][key][entity_key] = entity
-                        if entity.position.x < global.deconstruct_queue[chunk_surface][key]['minimum'].x then
-                            global.deconstruct_queue[chunk_surface][key]['minimum'].x = entity.position.x
-                        elseif entity.position.x > global.deconstruct_queue[chunk_surface][key]['maximum'].x then
-                            global.deconstruct_queue[chunk_surface][key]['maximum'].x = entity.position.x
-                        end
-                        if entity.position.y < global.deconstruct_queue[chunk_surface][key]['minimum'].y then
-                            global.deconstruct_queue[chunk_surface][key]['minimum'].y = entity.position.y
-                        elseif entity.position.y > global.deconstruct_queue[chunk_surface][key]['maximum'].y then
-                            global.deconstruct_queue[chunk_surface][key]['maximum'].y = entity.position.y
-                        end
-                    end
-                    if entity.type == "cliff" then
-                        global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] = (global.deconstruct_queue[chunk_surface][key]['required_items']['cliff-explosives'] or 0) + 1
-                    end
-                    if entity.prototype.mineable_properties.products then
-                        for index, item in ipairs(entity.prototype.mineable_properties.products) do
-                            local amount = item.amount or item.amount_max
-                            global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] = (global.deconstruct_queue[chunk_surface][key]['trash_items'][item.name] or 0) + amount
-                        end
-                    end
-                else
-                    break
-                end
-            else
-                break
+            local entity, target_entity
+            local obj = table.remove(entities)
+            if global[entity_count_type] then
+                global[entity_count_type] = math.max(0, global[entity_count_type] - 1)
             end
-        end
-    end
-end
-
-me.add_upgrade_entities_to_chunks = function()
-    if global.upgrade_entities[1] and (game.tick - (global.upgrade_marked_tick or 0)) > me.job_start_delay then -- if the entity isn't upgraded in 5 seconds or 300 ticks(default setting).
-        for i = 1, me.entity_per_tick do
-            local obj = table.remove(global.upgrade_entities)
             if not obj then
                 break
             end
-            local entity = obj['entity']
-            local target = obj['target']
-            if entity and entity.valid then
-                local chunk = chunk_util.chunk_from_position(entity.position)
-                local key = chunk.y .. ',' .. chunk.x
-                local chunk_surface = entity.surface.index
-                if not global.upgrade_queue[chunk_surface][key] then -- initialize queued_chunk
-                    global.upgrade_queue[chunk_surface][key] = {
-                        key = key,
-                        surface = entity.surface.index,
-                        entity_key = entity,
-                        position = chunk_util.position_from_chunk(chunk),
-                        area = chunk_util.get_area_from_chunk(chunk),
-                        minimum = {
-                            x = entity.position.x,
-                            y = entity.position.y
-                        },
-                        maximum = {
-                            x = entity.position.x,
-                            y = entity.position.y
 
-                        },
-                        required_items = {}
-                    }
-                else -- add to existing queued_chunk
-                    if entity.position.x < global.upgrade_queue[chunk_surface][key]['minimum'].x then
-                        global.upgrade_queue[chunk_surface][key]['minimum'].x = entity.position.x
-                    elseif entity.position.x > global.upgrade_queue[chunk_surface][key]['maximum'].x then
-                        global.upgrade_queue[chunk_surface][key]['maximum'].x = entity.position.x
-                    end
-                    if entity.position.y < global.upgrade_queue[chunk_surface][key]['minimum'].y then
-                        global.upgrade_queue[chunk_surface][key]['minimum'].y = entity.position.y
-                    elseif entity.position.y > global.upgrade_queue[chunk_surface][key]['maximum'].y then
-                        global.upgrade_queue[chunk_surface][key]['maximum'].y = entity.position.y
-                    end
-                end
-                for index, item in ipairs(target.items_to_place_this) do
-                    global.upgrade_queue[chunk_surface][key]['required_items'][item.name] = (global.upgrade_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
-                end
+            if build_type == "upgrade" then
+                entity = obj['entity']
+                target_entity = obj['target']
             else
+                entity = obj
+            end
+
+            if not entity or not entity.valid then
                 break
+            end
+            local chunk = chunk_util.chunk_from_position(entity.position)
+            local key = chunk.y .. ',' .. chunk.x
+            local entity_surface = entity.surface.index
+            local entity_key = entity.position.y .. ',' .. entity.position.x
+            queue[entity_surface] = queue[entity_surface] or {}
+            if not queue[entity_surface][key] then -- initialize queued_chunk
+                queue[entity_surface][key] = {
+                    key = key,
+                    surface = entity.surface.index,
+                    entity_key = entity,
+                    position = chunk_util.position_from_chunk(chunk),
+                    area = chunk_util.get_area_from_chunk(chunk),
+                    minimum = {
+                        x = entity.position.x,
+                        y = entity.position.y
+                    },
+                    maximum = {
+                        x = entity.position.x,
+                        y = entity.position.y
+
+                    },
+                    required_items = {},
+                    trash_items = {}
+                }
+            else -- add to existing queued_chunk
+                queue[entity_surface][key][entity_key] = entity
+                if entity.position.x < queue[entity_surface][key]['minimum'].x then
+                    queue[entity_surface][key]['minimum'].x = entity.position.x
+                elseif entity.position.x > queue[entity_surface][key]['maximum'].x then
+                    queue[entity_surface][key]['maximum'].x = entity.position.x
+                end
+                if entity.position.y < queue[entity_surface][key]['minimum'].y then
+                    queue[entity_surface][key]['minimum'].y = entity.position.y
+                elseif entity.position.y > queue[entity_surface][key]['maximum'].y then
+                    queue[entity_surface][key]['maximum'].y = entity.position.y
+                end
+            end
+            -- ghosts
+            if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
+                for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
+                    queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                end
+            end
+            -- module-requests
+            if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
+                for name, count in pairs(entity.item_requests) do
+                    queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
+                end
+            end
+            -- cliff demolition
+            if (build_type == "deconstruction") and entity.type == "cliff" then
+                queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
+            end
+            -- mining/deconstruction results
+            if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
+                for _, item in ipairs(entity.prototype.mineable_properties.products) do
+                    local amount = item.amount or item.amount_max
+                    queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
+                end
+            end
+            -- entity upgrades
+            if target_entity then
+                for _, item in ipairs(target_entity.items_to_place_this) do
+                    queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                end
             end
         end
     end
@@ -383,10 +307,8 @@ me.robots_inactive = function(constructron)
             return true
         end
         return false
-    else
-        invalid = true
-        return invalid
     end
+    return true
 end
 
 me.do_until_leave = function(job)
@@ -441,8 +363,7 @@ me.do_until_leave = function(job)
             debug_lib.DebugLog('request_items action timed out, moving to new station')
         end
     else
-        invalid = true
-        return invalid
+        return true
     end
 end
 
@@ -474,8 +395,7 @@ me.actions = {
                 me.set_constructron_status(constructron, 'build_tick', game.tick)
             end
         else
-            invalid = true
-            return invalid
+            return true
         end
         -- enable construct 
     end,
@@ -491,8 +411,7 @@ me.actions = {
                 constructron.enable_logistics_while_moving = false
                 me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
             else
-                invalid = true
-                return invalid
+                return true
             end
         end
         -- enable construct 
@@ -547,8 +466,7 @@ me.actions = {
                     end
                 end
             else
-                invalid = true
-                return invalid
+                return true
             end
         end
     end,
@@ -559,8 +477,7 @@ me.actions = {
                 me.set_constructron_status(constructron, 'busy', false)
                 me.paint_constructron(constructron, 'idle')
             else
-                invalid = true
-                return invalid
+                return true
             end
         end
     end,
@@ -636,8 +553,7 @@ me.conditions = {
         debug_lib.VisualDebugText("Moving to position", constructrons[1])
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
-                invalid = true
-                return invalid
+                return true
             end
             if (chunk_util.distance_between(constructron.position, position) > 5) then -- or not me.robots_inactive(constructron) then
                 return false
@@ -658,8 +574,7 @@ me.conditions = {
                 return true
             end
         else
-            invalid = true
-            return invalid
+            return true
         end
     end,
     deconstruction_done = function(constructrons)
@@ -674,8 +589,7 @@ me.conditions = {
                 return true
             end
         else
-            invalid = true
-            return invalid
+            return true
         end
     end,
     request_done = function(constructrons)
@@ -689,8 +603,7 @@ me.conditions = {
                         constructron.clear_vehicle_logistic_slot(i)
                     end
                 else
-                    invalid = true
-                    return invalid
+                    return true
                 end
             end
         end
@@ -1016,8 +929,7 @@ me.do_job = function(job_bundles)
                 me.do_until_leave(job)
                 job.active = true
             else
-                invalid = true
-                return invalid
+                return true
             end
         else
             job_bundles[i] = nil
@@ -1061,7 +973,7 @@ me.on_built_entity = function(event) -- for entity creation
     if not entity then
         return
     end
-    
+
     if entity.type == 'item-request-proxy' then
         global.ghost_entities_count = global.ghost_entities_count + 1
         global.ghost_entities[global.ghost_entities_count] = entity
@@ -1200,8 +1112,7 @@ me.set_constructron_status = function(constructron, state, value)
             global.constructron_statuses[constructron.unit_number][state] = value
         end
     else
-        invalid = true
-        return invalid
+        return true
     end
 end
 
@@ -1212,8 +1123,7 @@ me.get_constructron_status = function(constructron, state)
         end
         return nil
     else
-        invalid = true
-        return invalid
+        return true
     end
 end
 
