@@ -6,13 +6,6 @@ local debug_lib = require("__Constructron-Continued__.script.debug_lib")
 
 local me = {}
 
-local function DebugLog(message)
-    if settings.global["constructron-debug-enabled"].value then
-        game.print(message)
-        log(message)
-    end
-end
-
 local function VisualDebugText(message, entity)
     if not entity or not entity.valid then
         return
@@ -788,7 +781,7 @@ function do_until_leave(job)
                 request_path({constructron}, next_station.position)
             end
             job.start_tick = game.tick
-            DebugLog('request_items action timed out, moving to new station')
+            debug_lib.DebugLog('request_items action timed out, moving to new station')
         end
     else
         invalid = true
@@ -798,7 +791,7 @@ end
 
 actions = {
     go_to_position = function(constructrons, position, find_path)
-        DebugLog('ACTION: go_to_position')
+        debug_lib.DebugLog('ACTION: go_to_position')
         if find_path then
             local new_goal = request_path(constructrons, position)
             return new_goal
@@ -812,7 +805,7 @@ actions = {
         end
     end,
     build = function(constructrons)
-        DebugLog('ACTION: build')
+        debug_lib.DebugLog('ACTION: build')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -830,7 +823,7 @@ actions = {
         -- enable construct 
     end,
     deconstruct = function(constructrons)
-        DebugLog('ACTION: deconstruct')
+        debug_lib.DebugLog('ACTION: deconstruct')
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -848,7 +841,7 @@ actions = {
         -- enable construct 
     end,
     request_items = function(constructrons, items)
-        DebugLog('ACTION: request_items')
+        debug_lib.DebugLog('ACTION: request_items')
         local closest_station = get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
         for c, constructron in ipairs(constructrons) do
             request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
@@ -873,7 +866,7 @@ actions = {
         end
     end,
     clear_items = function(constructrons)
-        DebugLog('ACTION: clear_items')
+        debug_lib.DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
             for c, constructron in ipairs(constructrons) do
@@ -903,7 +896,7 @@ actions = {
             end
     end,
     retire = function(constructrons)
-        DebugLog('ACTION: retire')
+        debug_lib.DebugLog('ACTION: retire')
         for c, constructron in ipairs(constructrons) do
             if constructron.valid then
                 set_constructron_status(constructron, 'busy', false)
@@ -915,7 +908,7 @@ actions = {
         end
     end,
     add_to_check_chunk_done_queue = function(constructrons, chunk)
-        DebugLog('ACTION: add_to_check_chunk_done_queue')
+        debug_lib.DebugLog('ACTION: add_to_check_chunk_done_queue')
         local entity_names = {}
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
@@ -952,7 +945,7 @@ actions = {
         end
     end,
     check_decon_chunk = function(constructrons, chunk)
-        DebugLog('ACTION: check_decon_chunk')
+        debug_lib.DebugLog('ACTION: check_decon_chunk')
         local entity_names = {}
         for name, count in pairs(chunk.required_items) do
             table.insert(entity_names, name)
@@ -1211,7 +1204,7 @@ function get_job(constructrons)
                 elseif not constructron.logistic_cell then
                     VisualDebugText("Needs Equipment", constructron)
                 elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
-                    DebugLog('ACTION: Stage')
+                    debug_lib.DebugLog('ACTION: Stage')
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     
                     if game.item_prototypes[desired_robot_name] then
@@ -1226,7 +1219,7 @@ function get_job(constructrons)
                             max = desired_robot_count
                         })
                     else
-                        DebugLog('desired_robot_name name is not valid in mod settings')
+                        debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                     end
                 end
             end
@@ -1414,7 +1407,7 @@ script.on_nth_tick(60, function(event)
 end)
 
 script.on_nth_tick(54000, function(event)
-    DebugLog('Surface job cleanup')
+    debug_lib.DebugLog('Surface job cleanup')
     local constructrons = global.constructrons
     local service_stations = global.service_stations
     for s, surface in pairs(game.surfaces) do
@@ -1423,7 +1416,7 @@ script.on_nth_tick(54000, function(event)
             global.stations_count[surface.index] = 0
         end
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
-            DebugLog('No Constructrons or Service Stations found on ' .. surface.name .. '. All job queues cleared!')
+            debug_lib.DebugLog('No Constructrons or Service Stations found on ' .. surface.name .. '. All job queues cleared!')
             global.construct_queue[surface.index] = {}
             global.deconstruct_queue[surface.index] = {}
             global.upgrade_queue[surface.index] = {}
@@ -1619,13 +1612,13 @@ end)
 script.on_event(defines.events.on_entity_cloned, function(event)
     local entity = event.destination
     if entity.name == 'constructron' then
-        DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
+        debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         global.constructrons[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1        
     elseif entity.name == "service_station" then
-        DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
+        debug_lib.DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
         global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
@@ -1640,12 +1633,12 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0,global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil
-            DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
+            debug_lib.DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
             global.stations_count[surface] = math.max(0,global.stations_count[surface] - 1)
             global.service_stations[event.unit_number] = nil
-            DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
+            debug_lib.DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
         end
         global.registered_entities[event.registration_number] = nil
     end
@@ -1658,12 +1651,12 @@ script.on_event(defines.events.script_raised_destroy, function(event)
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0,global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil
-            DebugLog('constructron' .. event.unit_number .. 'Destroyed!')
+            debug_lib.DebugLog('constructron' .. event.unit_number .. 'Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
             global.stations_count[surface] = math.max(0,global.stations_count[surface] - 1)
             global.service_stations[event.unit_number] = nil
-            DebugLog('service_station' .. event.unit_number .. 'Destroyed!')
+            debug_lib.DebugLog('service_station' .. event.unit_number .. 'Destroyed!')
         end
         global.registered_entities[event.registration_number] = nil
     end
