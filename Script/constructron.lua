@@ -6,21 +6,6 @@ local debug_lib = require("__Constructron-Continued__.script.debug_lib")
 
 local me = {}
 
-local function table_has_value (tab, val)
-    if val == nil then
-        return false
-    end
-    if not tab then
-        return false
-    end
-    for index, value in ipairs(tab) do
-        if value == val then
-            return true
-        end
-    end
-    return false
-end
-
 local function DebugLog(message)
     if settings.global["constructron-debug-enabled"].value then
         game.print(message)
@@ -1466,7 +1451,7 @@ local function is_floor_tile(entity_name)
     --ToDo:
     --  find landfill-like tiles based on collision layer
     --  this list should be build at loading time not everytime
-    return table_has_value(floor_tiles, entity_name)
+    return custom_lib.table_has_value(floor_tiles, entity_name)
 end
 
 script.on_event(defines.events.on_built_entity, function(event) -- for entity creation
