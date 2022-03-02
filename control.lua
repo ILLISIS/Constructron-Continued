@@ -244,8 +244,8 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 				VisualDebugText("pathfinder callback path nil", constructron)
 			end
         end
-	else
-		VisualDebugText("pathfinder callback request nil", constructrons[1])
+	elseif request and request.constructrons then
+		VisualDebugText("pathfinder callback request nil", request.constructrons[1])
 	end
     global.constructron_pathfinder_requests[event.id] = nil
 end)
