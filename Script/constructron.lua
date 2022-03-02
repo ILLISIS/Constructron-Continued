@@ -6,38 +6,6 @@ local debug_lib = require("__Constructron-Continued__.script.debug_lib")
 
 local me = {}
 
-local function VisualDebugCircle(position, surface, color, text)
-	if settings.global["constructron-debug-enabled"].value then
-        if position then
-            rendering.draw_circle {
-                target = position,
-                radius = 0.5,
-                filled = true,
-                surface = surface,
-                time_to_live = 900,
-                color = color
-            }
-            if text then
-                rendering.draw_text {
-                    text = text,
-                    target = position,
-                    filled = true,
-                    surface = surface,
-                    time_to_live = 900,
-                    target_offset = {0, 0},
-                    alignment = "center",
-                    color = {
-                        r = 255,
-                        g = 255,
-                        b = 255,
-                        a = 255
-                    }
-                }
-            end
-        end
-    end
-end
-
 max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 job_start_delay = (settings.global["job-start-delay"].value * 60)
 
@@ -158,8 +126,8 @@ function request_path(constructrons, goal)
         local surface = constructron.surface
         local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
         local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
-        VisualDebugCircle(goal,surface,{r = 100, g = 0, b = 0, a = 0.2})
-        VisualDebugCircle(new_goal,surface,{r = 0, g = 100, b = 0, a = 0.2})
+        debug_lib.VisualDebugCircle(goal,surface,{r = 100, g = 0, b = 0, a = 0.2})
+        debug_lib.VisualDebugCircle(new_goal,surface,{r = 0, g = 100, b = 0, a = 0.2})
         if new_goal and new_start then
             local pathing_collision_mask = {
                 "water-tile",
@@ -214,7 +182,7 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
             local i = 0
             for i, waypoint in ipairs(clean_path) do
                 constructron.add_autopilot_destination(waypoint.position)
-                VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
+                debug_lib.VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
                 i = i + 1
             end
         end
