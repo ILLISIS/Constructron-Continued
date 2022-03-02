@@ -1,4 +1,4 @@
---  service_station images derived from 
+--  service_station images derived from:
 --    https://github.com/nEbul4/Factorio_Roboport_mk2/
 --    https://github.com/kirazy/classic-beacon/
 local service_station = table.deepcopy(data.raw["roboport"]["roboport"])

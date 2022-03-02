@@ -50,12 +50,13 @@ me.get_service_stations = function(index)
     return stations_on_surface or {}
 end
 
+-- Explain.... 
 me.get_constructrons = function()
-    local constructrons_on_surface
+    local constructrons_on_surface = {}
     for c, constructron in pairs(global.constructrons) do
         table.insert(constructrons_on_surface, constructron)
     end
-    return constructrons_on_surface or {}
+    return constructrons_on_surface
 end
 
 me.constructrons_need_reload = function(constructrons)
@@ -123,8 +124,8 @@ me.request_path = function(constructrons, goal)
             global.constructron_pathfinder_requests[request_id] = {
                 constructrons = constructrons
             }
-            for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = nil
+            for _, constructron2 in ipairs(constructrons) do
+                constructron2.autopilot_destination = nil
             end
             return new_goal
         else
@@ -149,11 +150,11 @@ me.on_script_path_request_finished = function(event)
         clean_path = chunk_util.clean_linear_path(path)
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
-            local i = 0
+            local x = 0
             for i, waypoint in ipairs(clean_path) do
                 constructron.add_autopilot_destination(waypoint.position)
-                debug_lib.VisualDebugCircle(waypoint.position, constructron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(i))
-                i = i + 1
+                debug_lib.VisualDebugCircle(waypoint.position, constructron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(x))
+                x = x + 1
             end
         end
         global.constructron_pathfinder_requests[event.id] = nil
@@ -308,7 +309,7 @@ me.do_until_leave = function(job)
     if job.constructrons[1] then
         if not job.active then
             if (job.action == 'go_to_position') then
-                new_pos_goal = me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                local new_pos_goal = me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                 job.leave_args[1] = new_pos_goal
             else
                 me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
@@ -344,8 +345,8 @@ me.do_until_leave = function(job)
                     job.unused_stations[closest_station.unit_number] = nil
                 end
             end
-            next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
-            for c, constructron in ipairs(job.constructrons) do
+            local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
+            for _, constructron in ipairs(job.constructrons) do
                 me.request_path({constructron}, next_station.position)
             end
             job.start_tick = game.tick
@@ -386,7 +387,7 @@ me.actions = {
         else
             return true
         end
-        -- enable construct 
+        -- enable construct
     end,
     deconstruct = function(constructrons)
         debug_lib.DebugLog('ACTION: deconstruct')
@@ -403,7 +404,7 @@ me.actions = {
                 return true
             end
         end
-        -- enable construct 
+        -- enable construct
     end,
     request_items = function(constructrons, items)
         debug_lib.DebugLog('ACTION: request_items')
@@ -470,20 +471,20 @@ me.actions = {
             end
         end
     end,
-    add_to_check_chunk_done_queue = function(constructrons, chunk)
+    add_to_check_chunk_done_queue = function(_, chunk)
         debug_lib.DebugLog('ACTION: add_to_check_chunk_done_queue')
         local entity_names = {}
-        for name, count in pairs(chunk.required_items) do
+        for name, _ in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        surface = game.surfaces[chunk.surface]
+        local surface = game.surfaces[chunk.surface]
         debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
 
-        ghosts = surface.find_entities_filtered {
+        local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             type = "entity-ghost"
-        }
-        if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+        } or {}
+        if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
 
             for i, entity in ipairs(ghosts) do
@@ -494,21 +495,21 @@ me.actions = {
             end
         end
     end,
-    check_decon_chunk = function(constructrons, chunk)
+    check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
         local entity_names = {}
-        for name, count in pairs(chunk.required_items) do
+        for name, _ in pairs(chunk.required_items) do
             table.insert(entity_names, name)
         end
-        surface = game.surfaces[chunk.surface]
+        local surface = game.surfaces[chunk.surface]
         debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
 
-        decons = surface.find_entities_filtered {
+        local decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
             ghost_name = entity_names
-        }
-        if next(decons or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+        } or {}
+        if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #decons .. ' to be deconstructed.')
 
             for i, entity in ipairs(decons) do
@@ -534,7 +535,7 @@ me.conditions = {
         end
         return true
     end,
-    build_done = function(constructrons, items, minimum_position, maximum_position)
+    build_done = function(constructrons, _, _, _)
         debug_lib.VisualDebugText("Constructing", constructrons[1])
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
@@ -582,7 +583,7 @@ me.conditions = {
         end
         return true
     end,
-    pass = function(constructrons)
+    pass = function(_)
         return true
     end
 }
@@ -605,8 +606,8 @@ me.get_job = function(constructrons)
     local function get_chunks_and_constructrons(queued_chunks, preselected_constructrons, max_constructron)
         local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
         local empty_stack_count = inventory.count_empty_stacks()
-        local selected_chunks = {}
-        local selected_constructrons = {}
+        --local selected_chunks = {}
+        --local selected_constructrons = {}
 
         local function get_job_chunks_and_constructrons(chunks, constructron_count, total_required_slots, requested_items)
             local merged_chunk
@@ -653,16 +654,18 @@ me.get_job = function(constructrons)
                                 -- use the original chunks and empty merge_chunks and start over
                                 return get_job_chunks_and_constructrons(queued_chunks, constructron_count + 1, 0, {})
                             end
-                        else
+                        --[[
+                            else
                             local area1 = chunk1.area
                             local area2 = chunk2.area
+                        ]]
                         end
                     end
                 end
             end
-            local constructrons = {}
+            local my_constructrons = {}
             for c = 1, constructron_count do
-                table.insert(constructrons, preselected_constructrons[c])
+                table.insert(my_constructrons, preselected_constructrons[c])
             end
 
             -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
@@ -686,14 +689,14 @@ me.get_job = function(constructrons)
             end
 
             used_chunks.requested_items = requested_items
-            return used_chunks, constructrons, unused_chunks
+            return used_chunks, my_constructrons, unused_chunks
         end
         return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
     end
 
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
 
-    for surface_name, surface in pairs(managed_surfaces) do -- iterate each surface
+    for _ , surface in pairs(managed_surfaces) do -- iterate each surface
 
         if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
 
@@ -760,7 +763,7 @@ me.get_job = function(constructrons)
             local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
 
             if job_type == 'deconstruct' then
-                for key, value in pairs(global.deconstruct_queue[surface.index]) do
+                for key, _ in pairs(global.deconstruct_queue[surface.index]) do
                     global.deconstruct_queue[surface.index][key] = nil
                 end
                 for i, chunk in ipairs(unused_chunks) do
@@ -768,7 +771,7 @@ me.get_job = function(constructrons)
                 end
 
             elseif job_type == 'construct' then
-                for key, value in pairs(global.construct_queue[surface.index]) do
+                for key, _ in pairs(global.construct_queue[surface.index]) do
                     global.construct_queue[surface.index][key] = nil
                 end
                 for i, chunk in ipairs(unused_chunks) do
@@ -776,7 +779,7 @@ me.get_job = function(constructrons)
                 end
 
             elseif job_type == 'upgrade' then
-                for key, value in pairs(global.upgrade_queue[surface.index]) do
+                for key, _ in pairs(global.upgrade_queue[surface.index]) do
                     global.upgrade_queue[surface.index][key] = nil
                 end
                 for i, chunk in ipairs(unused_chunks) do
@@ -841,7 +844,7 @@ me.get_job = function(constructrons)
                     local add_to_check_chunk_done_queue_job = {
                         action = 'add_to_check_chunk_done_queue',
                         action_args = {chunk},
-                        leave_condition = 'pass', -- there is no leave condition 
+                        leave_condition = 'pass', -- there is no leave condition
                         constructrons = selected_constructrons
                     }
                     me.create_job(global.job_bundle_index, add_to_check_chunk_done_queue_job)
@@ -850,7 +853,7 @@ me.get_job = function(constructrons)
                     local check_decon_chunk_job = {
                         action = 'check_decon_chunk',
                         action_args = {chunk},
-                        leave_condition = 'pass', -- there is no leave condition 
+                        leave_condition = 'pass', -- there is no leave condition
                         constructrons = selected_constructrons
                     }
                     me.create_job(global.job_bundle_index, check_decon_chunk_job)
@@ -910,15 +913,13 @@ me.do_job = function(job_bundles)
     end
 end
 
-me.process_job_queue = function(event)
+me.process_job_queue = function(_)
     me.get_job(global.constructrons)
     me.do_job(global.job_bundles)
 end
 
-me.perform_surface_cleanup = function(event)
+me.perform_surface_cleanup = function(_)
     debug_lib.DebugLog('Surface job cleanup')
-    local constructrons = global.constructrons
-    local service_stations = global.service_stations
     for s, surface in pairs(game.surfaces) do
         if not global.constructrons_count[surface.index] or not global.stations_count[surface.index] then
             global.constructrons_count[surface.index] = 0

@@ -12,7 +12,7 @@ global.job_bundles = {}
 game.print('Constructron-Continued: Join the new discord! https://discord.gg/m9TDSsH3u2')
 game.print('Constructron-Continued: All job queues have been cleared! Any jobs that were in progress will need to be removed and then readded to be built!')
 
-for s, surface in pairs(game.surfaces) do 
+for s, surface in pairs(game.surfaces) do
     global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
     global.stations_count[surface.index] = global.stations_count[surface.index] or 0
     global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
