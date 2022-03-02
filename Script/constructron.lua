@@ -1,5 +1,5 @@
 require("util")
-local collision_mask_util_extended = require("script.collision-mask-util-control")
+local collision_mask_util_extended = require("__Constructron-Continued__.script.collision-mask-util-control")
 
 local function table_has_value (tab, val)
     if val == nil then

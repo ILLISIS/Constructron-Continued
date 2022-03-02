@@ -1,4 +1,4 @@
-local collision_mask_util_extended = require("data.collision-mask-util-extended")
+local collision_mask_util_extended = require("__Constructron-Continued__.data.collision-mask-util-extended")
 local pathing_collision_mask = {
   "water-tile",
   "colliding-with-tiles-only",
