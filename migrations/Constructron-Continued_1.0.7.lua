@@ -15,11 +15,10 @@ game.print('Constructron-Continued: All job queues have been cleared! Any jobs t
 for s, surface in pairs(game.surfaces) do 
     global.constructrons_count[surface.index] = 0
     global.stations_count[surface.index] = 0
+    global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+    global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+    global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
 end
-
-global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
-global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
 
 for c, constructron in pairs(global.constructrons) do
     if constructron.valid then
