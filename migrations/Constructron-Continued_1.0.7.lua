@@ -19,12 +19,12 @@ end
 
 for c, constructron in pairs(global.constructrons) do
     local registration_number = script.register_on_entity_destroyed(constructron)
-    global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
+    global.registered_entities[registration_number] = {name = "constructron", surface = constructron.surface.index}
     global.constructrons_count[constructron.surface.index] = global.constructrons_count[constructron.surface.index] + 1
 end
 
 for s, station in pairs(global.service_stations) do
     local registration_number = script.register_on_entity_destroyed(station)
-    global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
-    global.stations_count[constructron.surface.index] = global.stations_count[constructron.surface.index] + 1
+    global.registered_entities[registration_number] = {name = "service_station", surface = station.surface.index}
+    global.stations_count[station.surface.index] = global.stations_count[station.surface.index] + 1
 end
