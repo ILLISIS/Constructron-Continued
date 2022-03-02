@@ -3,6 +3,7 @@ local collision_mask_util_extended = require("__Constructron-Continued__.script.
 local chunk_util = require("__Constructron-Continued__.script.chunk_util")
 local custom_lib = require("__Constructron-Continued__.script.custom_lib")
 local debug_lib = require("__Constructron-Continued__.script.debug_lib")
+local color_lib = require("__Constructron-Continued__.script.color_lib")
 -- local actions = require("__Constructron-Continued__.script.constructron_actions")
 
 local me = {}
@@ -11,35 +12,7 @@ me.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 me.job_start_delay = (settings.global["job-start-delay"].value * 60)
 me.entity_per_tick = 100
 
-me.on_init = function()
-    global.constructron_pathfinder_requests = {}
-    global.ignored_entities = {}
-    global.ghost_entities = {}
-    global.ghost_entities_count = 0
-    global.deconstruction_entities = {}
-    global.deconstruction_entities_count = 0
-    global.upgrade_entities = {}
-    global.constructron_statuses = {}
-    global.construct_queue = {}
-    global.deconstruct_queue = {}
-    global.upgrade_queue = {}
-    global.job_bundles = {}
-    global.constructrons = {}
-    global.service_stations = {}
-    global.registered_entities = {}
-    global.constructrons_count = {}
-    global.stations_count = {}
-
-    for s, surface in pairs(game.surfaces) do
-        global.constructrons_count[surface.index] = 0
-        global.stations_count[surface.index] = 0
-        global.construct_queue[surface.index] = {}
-        global.deconstruct_queue[surface.index] = {}
-        global.upgrade_queue[surface.index] = {}
-    end
-end
-
-me.on_configuration_changed = function()
+me.ensure_globals = function()
     global.constructron_pathfinder_requests = global.constructron_pathfinder_requests or {}
     global.constructron_statuses = global.constructron_statuses or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
@@ -125,18 +98,8 @@ me.request_path = function(constructrons, goal)
         local surface = constructron.surface
         local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
         local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
-        debug_lib.VisualDebugCircle(goal, surface, {
-            r = 100,
-            g = 0,
-            b = 0,
-            a = 0.2
-        })
-        debug_lib.VisualDebugCircle(new_goal, surface, {
-            r = 0,
-            g = 100,
-            b = 0,
-            a = 0.2
-        })
+        debug_lib.VisualDebugCircle(goal, surface, color_lib.color_alpha(color_lib.colors.red, 0.2))
+        debug_lib.VisualDebugCircle(new_goal, surface, color_lib.color_alpha(color_lib.colors.green, 0.2))
         if new_goal and new_start then
             local pathing_collision_mask = {"water-tile", --[[ "consider-tile-transitions", ]] "colliding-with-tiles-only"}
             if game.active_mods["space-exploration"] then
@@ -189,12 +152,7 @@ me.on_script_path_request_finished = function(event)
             local i = 0
             for i, waypoint in ipairs(clean_path) do
                 constructron.add_autopilot_destination(waypoint.position)
-                debug_lib.VisualDebugCircle(waypoint.position, constructron.surface, {
-                    r = 100,
-                    g = 0,
-                    b = 100,
-                    a = 0.2
-                }, tostring(i))
+                debug_lib.VisualDebugCircle(waypoint.position, constructron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(i))
                 i = i + 1
             end
         end
@@ -415,12 +373,7 @@ me.robots_inactive = function(constructron)
                                 time_to_live = 60,
                                 target_offset = {0, -3},
                                 alignment = "center",
-                                color = {
-                                    r = 0,
-                                    g = 255,
-                                    b = 0,
-                                    a = 255
-                                }
+                                color = color_lib.color_alpha(color_lib.colors.green, 1)
                             }
                         end
                         return false
@@ -625,12 +578,7 @@ me.actions = {
                 filled = true,
                 surface = surface,
                 time_to_live = 600,
-                color = {
-                    r = 0,
-                    g = 0,
-                    b = 50,
-                    a = 100
-                }
+                color = color_lib.color_alpha(color_lib.colors.blue, 0.5)
             }
         end
         ghosts = surface.find_entities_filtered {
@@ -662,12 +610,7 @@ me.actions = {
                 filled = true,
                 surface = surface,
                 time_to_live = 600,
-                color = {
-                    r = 50,
-                    g = 0,
-                    b = 0,
-                    a = 50
-                }
+                color = color_lib.color_alpha(color_lib.colors.red, 0.5)
             }
         end
         decons = surface.find_entities_filtered {
@@ -1114,10 +1057,17 @@ me.on_built_entity = function(event) -- for entity creation
         return custom_lib.table_has_value(floor_tiles, entity_name)
     end
 
-    if not event.entity.name == 'item-request-proxy' then    
-        local entity = event.created_entity
-        local entity_type = entity.type
-        if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
+    local entity = event.entity or event.created_entity
+    if not entity then
+        return
+    end
+    
+    if entity.type == 'item-request-proxy' then
+        global.ghost_entities_count = global.ghost_entities_count + 1
+        global.ghost_entities[global.ghost_entities_count] = entity
+        global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
+    else
+        if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' then
             local entity_name = entity.ghost_name
             -- Need to separate ghosts and tiles in different tables
             if global.ignored_entities[entity_name] == nil then
@@ -1150,11 +1100,6 @@ me.on_built_entity = function(event) -- for entity creation
             }
             global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
         end
-    elseif event.entity.type == 'item-request-proxy' then
-        local entity = event.entity
-        global.ghost_entities_count = global.ghost_entities_count + 1
-        global.ghost_entities[global.ghost_entities_count] = entity
-        global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     end
 end
 
@@ -1293,37 +1238,15 @@ me.get_closest_unused_service_station = function(constructron, unused_stations)
 end
 
 me.paint_constructron = function(constructron, color_state)
-    local color
     if color_state == 'idle' then
-        color = {
-            r = 0.5,
-            g = 0.5,
-            b = 0.5,
-            a = 0.5
-        }
+        constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
     elseif color_state == 'construct' then
-        color = {
-            r = 0,
-            g = 0.35,
-            b = 0.65,
-            a = 0.5
-        }
+        constructron.color = color_lib.color_alpha(color_lib.colors.blue, 0.4)
     elseif color_state == 'deconstruct' then
-        color = {
-            r = 1,
-            g = 0.0,
-            b = 0,
-            a = 0.75
-        }
+        constructron.color = color_lib.color_alpha(color_lib.colors.red, 0.4)
     elseif color_state == 'upgrade' then
-        color = {
-            r = 0,
-            g = 0.65,
-            b = 0,
-            a = 0.5
-        }
+        constructron.color = color_lib.color_alpha(color_lib.colors.green, 0.4)
     end
-    constructron.color = color
 end
 
 return me

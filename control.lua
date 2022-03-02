@@ -1,7 +1,7 @@
 local ctron = require("__Constructron-Continued__.script.constructron")
 
-script.on_init(ctron.on_init)
-script.on_configuration_changed(ctron.on_configuration_changed)
+script.on_init(ctron.ensure_globals)
+script.on_configuration_changed(ctron.ensure_globals)
 
 -- Possibly do this at a 10x lower frequency or controlled by a mod setting
 script.on_nth_tick(1, (function(event)
