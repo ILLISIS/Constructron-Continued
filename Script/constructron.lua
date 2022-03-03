@@ -478,7 +478,7 @@ me.actions = {
             table.insert(entity_names, name)
         end
         local surface = game.surfaces[chunk.surface]
-        debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
 
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
@@ -502,7 +502,7 @@ me.actions = {
             table.insert(entity_names, name)
         end
         local surface = game.surfaces[chunk.surface]
-        debug_lib.draw_rectangle(chunk.minimum,chunk.maximum,surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
 
         local decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
@@ -601,126 +601,28 @@ me.create_job = function(job_bundle_index, job)
     global.job_bundles[job_bundle_index][index] = job
 end
 
--- This function is a Mess, split & refactor !!!
-me.get_job = function(constructrons)
-    local function get_chunks_and_constructrons(queued_chunks, preselected_constructrons, max_constructron)
-        local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
-        local empty_stack_count = inventory.count_empty_stacks()
-        --local selected_chunks = {}
-        --local selected_constructrons = {}
 
-        local function get_job_chunks_and_constructrons(chunks, constructron_count, total_required_slots, requested_items)
-            local merged_chunk
-            for i, chunk1 in ipairs(chunks) do
-                for j, chunk2 in ipairs(chunks) do
-                    if not (i == j) then
-                        local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area)
-                        if merged_area then
-                            local required_slots1
-                            local required_slots2
-                            if not chunk1.merged then
-                                required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items, constructron_count)
-                                required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {}, constructron_count)
-                                for name, count in pairs(chunk1['required_items']) do
-                                    requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
-                                end
-                            else
-                                required_slots1 = 0
-                            end
-                            if not chunk2.merged then
-                                required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items, constructron_count)
-                                required_slots2 = required_slots2 + me.calculate_required_inventory_slot_count(chunk2.trash_items or {}, constructron_count)
-                                for name, count in pairs(chunk2['required_items']) do
-                                    requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
-                                end
-                            else
-                                required_slots2 = 0
-                            end
-                            if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then
-                                total_required_slots = total_required_slots + required_slots1 + required_slots2
-                                merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                                merged_chunk.merged = true
-
-                                -- create a new table for remaining chunks
-                                local remaining_chunks = {}
-                                table.insert(remaining_chunks, merged_chunk)
-                                for k, chunk in ipairs(chunks) do
-                                    if (not (k == i)) and (not (k == j)) then
-                                        table.insert(remaining_chunks, chunk)
-                                    end
-                                end
-                                return get_job_chunks_and_constructrons(remaining_chunks, constructron_count, total_required_slots, requested_items)
-                            elseif constructron_count < max_constructron and constructron_count < #preselected_constructrons then
-                                -- use the original chunks and empty merge_chunks and start over
-                                return get_job_chunks_and_constructrons(queued_chunks, constructron_count + 1, 0, {})
-                            end
-                        --[[
-                            else
-                            local area1 = chunk1.area
-                            local area2 = chunk2.area
-                        ]]
-                        end
-                    end
-                end
-            end
-            local my_constructrons = {}
-            for c = 1, constructron_count do
-                table.insert(my_constructrons, preselected_constructrons[c])
-            end
-
-            -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
-            local unused_chunks = {}
-            local used_chunks = {}
-            requested_items = {}
-            total_required_slots = 0
-
-            for i, chunk in ipairs(chunks) do
-                local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items, constructron_count)
-                required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {}, constructron_count)
-                if ((total_required_slots + required_slots) < empty_stack_count) then
-                    total_required_slots = total_required_slots + required_slots
-                    for name, count in pairs(chunk['required_items']) do
-                        requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
-                    end
-                    table.insert(used_chunks, chunk)
-                else
-                    table.insert(unused_chunks, chunk)
-                end
-            end
-
-            used_chunks.requested_items = requested_items
-            return used_chunks, my_constructrons, unused_chunks
-        end
-        return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
-    end
-
+me.setup_constructrons = function()
+    local constructrons = global.constructrons
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
-
-    for _ , surface in pairs(managed_surfaces) do -- iterate each surface
-
-        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
-
-            local max_worker = settings.global['max-worker-per-job'].value
-            local available_constructrons = {}
-            local chunks = {}
-            local job_type
-
-            for c, constructron in pairs(constructrons) do
-                local desired_robot_count = settings.global["desired_robot_count"].value
-
-                if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots >= desired_robot_count) and not me.get_constructron_status(constructron, 'busy') then
-                    table.insert(available_constructrons, constructron)
-                elseif not constructron.logistic_cell then
+    for _, surface in pairs(managed_surfaces) do -- iterate each surface
+        for _, constructron in pairs(constructrons) do
+            debug_lib.VisualDebugText("Checking Constructron", constructron)
+            local desired_robot_count = settings.global["desired_robot_count"].value
+            if not me.get_constructron_status(constructron, 'busy') then
+                if not constructron.logistic_cell then
                     debug_lib.VisualDebugText("Needs Equipment", constructron)
                 elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     debug_lib.DebugLog('ACTION: Stage')
                     local desired_robot_name = settings.global["desired_robot_name"].value
-
                     if game.item_prototypes[desired_robot_name] then
                         debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
                         constructron.enable_logistics_while_moving = false
-                        local closest_station = me.get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
-                        me.request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+                        -- they must go to the same station even if they are not in the same station.
+                        -- they can be elsewhere though. they don't have to start in the same place.
+                        -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
+                        local closest_station = me.get_closest_service_station(constructron)
+                        me.request_path({constructron}, closest_station.position)
                         local slot = 1
                         constructron.set_vehicle_logistic_slot(slot, {
                             name = desired_robot_name,
@@ -730,6 +632,116 @@ me.get_job = function(constructrons)
                     else
                         debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                     end
+                end
+            end
+        end
+    end
+end
+
+-- This function is a Mess: refactor - carefull, recursion!!!
+me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructrons, max_constructron)
+    local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
+    local empty_stack_count = inventory.count_empty_stacks()
+    -- local selected_chunks = {}
+    -- local selected_constructrons = {}
+
+    local function get_job_chunks_and_constructrons(chunks, constructron_count, total_required_slots, requested_items)
+        local merged_chunk
+        for i, chunk1 in ipairs(chunks) do
+            for j, chunk2 in ipairs(chunks) do
+                if not (i == j) then
+                    local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area)
+                    if merged_area then
+                        local required_slots1
+                        local required_slots2
+                        if not chunk1.merged then
+                            required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items, constructron_count)
+                            required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {}, constructron_count)
+                            for name, count in pairs(chunk1['required_items']) do
+                                requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
+                            end
+                        else
+                            required_slots1 = 0
+                        end
+                        if not chunk2.merged then
+                            required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items, constructron_count)
+                            required_slots2 = required_slots2 + me.calculate_required_inventory_slot_count(chunk2.trash_items or {}, constructron_count)
+                            for name, count in pairs(chunk2['required_items']) do
+                                requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
+                            end
+                        else
+                            required_slots2 = 0
+                        end
+                        if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then
+                            total_required_slots = total_required_slots + required_slots1 + required_slots2
+                            merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
+                            merged_chunk.merged = true
+
+                            -- create a new table for remaining chunks
+                            local remaining_chunks = {}
+                            table.insert(remaining_chunks, merged_chunk)
+                            for k, chunk in ipairs(chunks) do
+                                if (not (k == i)) and (not (k == j)) then
+                                    table.insert(remaining_chunks, chunk)
+                                end
+                            end
+                            -- !!! recursive call 
+                            return get_job_chunks_and_constructrons(remaining_chunks, constructron_count, total_required_slots, requested_items)
+                        elseif constructron_count < max_constructron and constructron_count < #preselected_constructrons then
+                            -- use the original chunks and empty merge_chunks and start over
+                            -- !!! recursive call 
+                            return get_job_chunks_and_constructrons(queued_chunks, constructron_count + 1, 0, {})
+                        end
+                    end
+                end
+            end
+        end
+        local my_constructrons = {}
+        for c = 1, constructron_count do
+            table.insert(my_constructrons, preselected_constructrons[c])
+        end
+
+        -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
+        local unused_chunks = {}
+        local used_chunks = {}
+        requested_items = {}
+        total_required_slots = 0
+
+        for i, chunk in ipairs(chunks) do
+            local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items, constructron_count)
+            required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {}, constructron_count)
+            if ((total_required_slots + required_slots) < empty_stack_count) then
+                total_required_slots = total_required_slots + required_slots
+                for name, count in pairs(chunk['required_items']) do
+                    requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
+                end
+                table.insert(used_chunks, chunk)
+            else
+                table.insert(unused_chunks, chunk)
+            end
+        end
+
+        used_chunks.requested_items = requested_items
+        return used_chunks, my_constructrons, unused_chunks
+    end
+    return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
+end
+
+
+me.get_job = function(constructrons)
+    local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
+
+    for _, surface in pairs(managed_surfaces) do -- iterate each surface
+        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
+
+            local max_worker = settings.global['max-worker-per-job'].value
+            local available_constructrons = {}
+            local chunks = {}
+            local job_type
+
+            for _, constructron in pairs(constructrons) do
+                if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) and not me.get_constructron_status(constructron, 'busy') then
+                    table.insert(available_constructrons, constructron)
                 end
             end
 
@@ -760,7 +772,7 @@ me.get_job = function(constructrons)
                 return
             end
 
-            local combined_chunks, selected_constructrons, unused_chunks = get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
+            local combined_chunks, selected_constructrons, unused_chunks = me.get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
 
             if job_type == 'deconstruct' then
                 for key, _ in pairs(global.deconstruct_queue[surface.index]) do

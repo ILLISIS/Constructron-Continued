@@ -5,14 +5,13 @@ script.on_configuration_changed(ctron.ensure_globals)
 
 -- Possibly do this at a 10x lower frequency or controlled by a mod setting
 script.on_nth_tick(1, (function(event)
-    if event.tick % 3 == 0 then
-        --ctron.add_deconstruction_entities_to_chunks()
+    if event.tick % 300 == 0 then
+        ctron.setup_constructrons()
+    elseif event.tick % 15 == 0 then
         ctron.add_entities_to_chunks("deconstruction")
-    elseif event.tick % 3 == 1 then
-        --ctron.add_ghosts_to_chunks()
+    elseif event.tick % 15 == 5 then
         ctron.add_entities_to_chunks("ghost")
-    elseif event.tick % 3 == 2 then
-        --ctron.add_upgrade_entities_to_chunks()
+    elseif event.tick % 15 == 10 then
         ctron.add_entities_to_chunks("upgrade")
     end
 end))
