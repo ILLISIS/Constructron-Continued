@@ -12,8 +12,13 @@ me.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 me.job_start_delay = (settings.global["job-start-delay"].value * 60)
 me.entity_per_tick = 100
 
+me.pathfinder = {
+    -- just a template, check pathfinder.lua for implementation
+    request_path = (function(_,_,_) end)
+}
+
 me.ensure_globals = function()
-    global.constructron_pathfinder_requests = global.constructron_pathfinder_requests or {}
+    global.constructron_pathfinder_requests = nil
     global.constructron_statuses = global.constructron_statuses or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
     global.deconstruction_entities_count = global.deconstruction_entities_count or 0
@@ -91,76 +96,6 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
         slots = slots + math.ceil(count / stack_size / divisor)
     end
     return slots
-end
-
--- Idea: I would like to move all the pathfinding stuff into a separate file as it has no real logic dependancy on the constructron control flow
-me.request_path = function(constructrons, goal)
-    local constructron = constructrons[1]
-    if constructron.valid then
-        local surface = constructron.surface
-        local new_start = surface.find_non_colliding_position("constructron_pathing_dummy", constructron.position, 32, 0.1, false)
-        local new_goal = surface.find_non_colliding_position("constructron_pathing_dummy", goal, 32, 0.1, false)
-        debug_lib.VisualDebugCircle(goal, surface, color_lib.color_alpha(color_lib.colors.red, 0.2))
-        debug_lib.VisualDebugCircle(new_goal, surface, color_lib.color_alpha(color_lib.colors.green, 0.2))
-        if new_goal and new_start then
-            local pathing_collision_mask = {"water-tile", --[[ "consider-tile-transitions", ]] "colliding-with-tiles-only"}
-            if game.active_mods["space-exploration"] then
-                local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-                local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-                table.insert(pathing_collision_mask, spaceship_collision_layer)
-                table.insert(pathing_collision_mask, empty_space_collision_layer)
-            end
-            local request_id = surface.request_path {
-                bounding_box = {{-3, -3}, {3, 3}},
-                collision_mask = pathing_collision_mask,
-                start = new_start,
-                goal = new_goal,
-                force = constructron.force,
-                pathfinding_flags = {
-                    cache = false,
-                    low_priority = true
-                }
-            }
-            global.constructron_pathfinder_requests[request_id] = {
-                constructrons = constructrons
-            }
-            for _, constructron2 in ipairs(constructrons) do
-                constructron2.autopilot_destination = nil
-            end
-            return new_goal
-        else
-            debug_lib.VisualDebugText("pathfinding request failed - target not reachable", constructron)
-        end
-    else
-        return true
-    end
-end
-
-me.on_script_path_request_finished = function(event)
-    local request = global.constructron_pathfinder_requests[event.id]
-
-    if not request then
-        return
-    end
-    local constructrons = request.constructrons
-    local path = event.path
-    local clean_path
-
-    if path then
-        clean_path = chunk_util.clean_linear_path(path)
-        for c, constructron in ipairs(constructrons) do
-            constructron.autopilot_destination = nil
-            local x = 0
-            for i, waypoint in ipairs(clean_path) do
-                constructron.add_autopilot_destination(waypoint.position)
-                debug_lib.VisualDebugCircle(waypoint.position, constructron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(x))
-                x = x + 1
-            end
-        end
-        global.constructron_pathfinder_requests[event.id] = nil
-    elseif not path then
-        debug_lib.VisualDebugText("pathfinder callback path nil", constructrons[1])
-    end
 end
 
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
@@ -347,7 +282,7 @@ me.do_until_leave = function(job)
             end
             local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
             for _, constructron in ipairs(job.constructrons) do
-                me.request_path({constructron}, next_station.position)
+                me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
             end
             job.start_tick = game.tick
             debug_lib.DebugLog('request_items action timed out, moving to new station')
@@ -361,8 +296,7 @@ me.actions = {
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         if find_path then
-            local new_goal = me.request_path(constructrons, position)
-            return new_goal
+            return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = position
@@ -410,7 +344,7 @@ me.actions = {
         debug_lib.DebugLog('ACTION: request_items')
         local closest_station = me.get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
         for c, constructron in ipairs(constructrons) do
-            me.request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+            me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
             local slot = 1
             -- set every item that isn't placable as zero.
             -- for i, name in ipairs({'stone', 'coal', 'wood', 'iron-ore', 'copper-ore', 'uranium-ore'}) do
@@ -620,7 +554,7 @@ me.setup_constructrons = function()
                         -- they can be elsewhere though. they don't have to start in the same place.
                         -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
                         local closest_station = me.get_closest_service_station(constructron)
-                        me.request_path({constructron}, closest_station.position)
+                        me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                         local slot = 1
                         constructron.set_vehicle_logistic_slot(slot, {
                             name = desired_robot_name,

@@ -1,7 +1,13 @@
 local ctron = require("__Constructron-Continued__.script.constructron")
+local pathfinder = require("__Constructron-Continued__.script.pathfinder")
+ctron.pathfinder = pathfinder
 
-script.on_init(ctron.ensure_globals)
-script.on_configuration_changed(ctron.ensure_globals)
+local init = function()
+    ctron.ensure_globals()
+    pathfinder.init()
+end
+script.on_init(init)
+script.on_configuration_changed(init)
 
 -- Possibly do this at a 10x lower frequency or controlled by a mod setting
 script.on_nth_tick(1, (function(event)
@@ -21,7 +27,7 @@ script.on_nth_tick(60, ctron.process_job_queue)
 script.on_nth_tick(54000, ctron.perform_surface_cleanup)
 
 local ev = defines.events
-script.on_event(ev.on_script_path_request_finished, ctron.on_script_path_request_finished)
+script.on_event(ev.on_script_path_request_finished, pathfinder.on_script_path_request_finished)
 
 script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
 
