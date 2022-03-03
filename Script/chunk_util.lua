@@ -4,25 +4,6 @@ me.distance_between = function(position1, position2)
     return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
 end
 
-me.clean_linear_path = function(path)
-    -- removes points on the same line except the start and the end.
-    local new_path = {}
-    for i, waypoint in ipairs(path) do
-        if i >= 2 and i < #path then
-            local prev_angle = math.atan2(waypoint.position.y - path[i - 1].position.y,
-                waypoint.position.x - path[i - 1].position.x)
-            local next_angle = math.atan2(path[i + 1].position.y - waypoint.position.y,
-                path[i + 1].position.x - waypoint.position.x)
-            if math.abs(prev_angle - next_angle) > 0.01 then
-                table.insert(new_path, waypoint)
-            end
-        else
-            table.insert(new_path, waypoint)
-        end
-    end
-    return new_path
-end
-
 me.chunk_from_position = function(position)
     -- if a ghost entity found anywhere in the surface, we want to get the corresponding chunk
     -- so that we can fill constructron with all the other ghosts
