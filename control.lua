@@ -154,6 +154,14 @@ script.on_init(function()
     global.registered_entities = {}
     global.constructrons_count = {}
     global.stations_count = {}
+
+    for s, surface in pairs(game.surfaces) do 
+        global.constructrons_count[surface.index] = 0
+        global.stations_count[surface.index] = 0
+        global.construct_queue[surface.index] = {}
+        global.deconstruct_queue[surface.index] = {}
+        global.upgrade_queue[surface.index] = {}
+    end
 end)
 
 script.on_configuration_changed(function()
@@ -174,6 +182,14 @@ script.on_configuration_changed(function()
     global.registered_entities = global.registered_entities or {}
     global.constructrons_count = global.constructrons_count or {}
     global.stations_count = global.stations_count or {}
+
+    for s, surface in pairs(game.surfaces) do 
+        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
+        global.stations_count[surface.index] = global.stations_count[surface.index] or 0
+        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
+        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+    end
 end)
 
 function request_path(constructrons, goal)
@@ -1473,6 +1489,7 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
         local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
+        entity.enable_logistics_while_moving = false
     elseif entity.name == "service_station" then
         global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
@@ -1507,6 +1524,7 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
             local registration_number = script.register_on_entity_destroyed(entity)
             global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
             global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
+            entity.enable_logistics_while_moving = false
         elseif entity.name == "service_station" then
             global.service_stations[entity.unit_number] = entity
             local registration_number = script.register_on_entity_destroyed(entity)
@@ -1585,16 +1603,24 @@ end, {{filter='name', name="item-on-ground", invert=true}})
 ---
 
 script.on_event(defines.events.on_surface_created, function(event)
-    global.constructrons_count[event.surface_index] = 0
-    global.stations_count[event.surface_index] = 0
+    local index = event.surface_index
+
+    global.construct_queue[index] = {}
+    global.deconstruct_queue[index] = {}
+    global.upgrade_queue[index] = {}
+
+    global.constructrons_count[index] = 0
+    global.stations_count[index] = 0
 end)
 ---
 
 script.on_event(defines.events.on_surface_deleted, function(event)
-    index = event.surface_index
+    local index = event.surface_index
+
     global.construct_queue[index] = nil
     global.deconstruct_queue[index] = nil
     global.upgrade_queue[index] = nil
+
     global.constructrons_count[index] = nil
     global.stations_count[index] = nil
 end)
