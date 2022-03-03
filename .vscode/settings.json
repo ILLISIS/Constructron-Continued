@@ -6,8 +6,12 @@
         "global",
         "entity",
         "defines",
-        "max_jobtime",
-        "data"
+        "data",
+        "rendering",
+        "mods",
+        "log",
+        "util",
+        "table"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
