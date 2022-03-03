@@ -47,7 +47,6 @@ me.request_path = function(spidertrons, pathfinding_proxy_entity_name, goal)
                 table.insert(pathing_collision_mask, spaceship_collision_layer)
                 table.insert(pathing_collision_mask, empty_space_collision_layer)
             end
-            
             local request_id = surface.request_path {
                 bounding_box = {{-0.5, -0.5}, {0.5, 0.5}},
                 collision_mask = pathing_collision_mask,
