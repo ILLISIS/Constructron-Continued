@@ -605,33 +605,31 @@ end
 me.setup_constructrons = function()
     local constructrons = global.constructrons
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
-    for _, surface in pairs(managed_surfaces) do -- iterate each surface
-        for _, constructron in pairs(constructrons) do
-            debug_lib.VisualDebugText("Checking Constructron", constructron)
-            local desired_robot_count = settings.global["desired_robot_count"].value
-            if not me.get_constructron_status(constructron, 'busy') then
-                if not constructron.logistic_cell then
-                    debug_lib.VisualDebugText("Needs Equipment", constructron)
-                elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
-                    debug_lib.DebugLog('ACTION: Stage')
-                    local desired_robot_name = settings.global["desired_robot_name"].value
-                    if game.item_prototypes[desired_robot_name] then
-                        debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
-                        constructron.enable_logistics_while_moving = false
-                        -- they must go to the same station even if they are not in the same station.
-                        -- they can be elsewhere though. they don't have to start in the same place.
-                        -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
-                        local closest_station = me.get_closest_service_station(constructron)
-                        me.request_path({constructron}, closest_station.position)
-                        local slot = 1
-                        constructron.set_vehicle_logistic_slot(slot, {
-                            name = desired_robot_name,
-                            min = desired_robot_count,
-                            max = desired_robot_count
-                        })
-                    else
-                        debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
-                    end
+    for _, constructron in pairs(constructrons) do
+        debug_lib.VisualDebugText("Checking Constructron", constructron)
+        local desired_robot_count = settings.global["desired_robot_count"].value
+        if not me.get_constructron_status(constructron, 'busy') then
+            if not constructron.logistic_cell then
+                debug_lib.VisualDebugText("Needs Equipment", constructron)
+            elseif (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
+                debug_lib.DebugLog('ACTION: Stage')
+                local desired_robot_name = settings.global["desired_robot_name"].value
+                if game.item_prototypes[desired_robot_name] then
+                    debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
+                    constructron.enable_logistics_while_moving = false
+                    -- they must go to the same station even if they are not in the same station.
+                    -- they can be elsewhere though. they don't have to start in the same place.
+                    -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
+                    local closest_station = me.get_closest_service_station(constructron)
+                    me.request_path({constructron}, closest_station.position)
+                    local slot = 1
+                    constructron.set_vehicle_logistic_slot(slot, {
+                        name = desired_robot_name,
+                        min = desired_robot_count,
+                        max = desired_robot_count
+                    })
+                else
+                    debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                 end
             end
         end
@@ -678,11 +676,11 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                                     table.insert(remaining_chunks, chunk)
                                 end
                             end
-                            -- !!! recursive call 
+                            -- !!! recursive call
                             return get_job_chunks_and_constructrons(remaining_chunks, constructron_count, total_required_slots, requested_items)
                         elseif constructron_count < max_constructron and constructron_count < #preselected_constructrons then
                             -- use the original chunks and empty merge_chunks and start over
-                            -- !!! recursive call 
+                            -- !!! recursive call
                             return get_job_chunks_and_constructrons(queued_chunks, constructron_count + 1, 0, {})
                         end
                     end
