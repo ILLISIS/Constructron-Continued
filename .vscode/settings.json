@@ -11,7 +11,8 @@
         "mods",
         "log",
         "util",
-        "table"
+        "table",
+        "serpent"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
