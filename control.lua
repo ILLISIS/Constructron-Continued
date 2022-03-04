@@ -213,7 +213,7 @@ function request_path(constructrons, goal)
                 table.insert(pathing_collision_mask, empty_space_collision_layer)
             end
             local request_id = surface.request_path {
-                bounding_box = {{-3, -3}, {3, 3}},
+                bounding_box = {{0, 0}, {0, 0}},
                 collision_mask = pathing_collision_mask,
                 start = new_start,
                 goal = new_goal,
@@ -259,8 +259,9 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
             end
         end
         global.constructron_pathfinder_requests[event.id] = nil
-    elseif not path then
+    else
         VisualDebugText("pathfinder callback path nil", constructrons[1])
+        global.constructron_pathfinder_requests[event.id] = nil
     end
 end)
 
@@ -948,7 +949,7 @@ actions = {
         end
         ghosts = surface.find_entities_filtered{
             area = {chunk.minimum, chunk.maximum},
-            type = "entity-ghost",
+            type = {"entity-ghost", "tile-ghost" }
         }
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
