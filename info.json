@@ -1,14 +1,14 @@
 {
-    "name": "Constructron-Continued",
-    "version": "1.0.8",
-    "title": "Constructron-Continued",
-    "author": "ILLISIS",
-    "homepage": "https://github.com/ILLISIS/Constructron-continued/",
-    "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map for the ultimate fire and forget automation experience.",
-    "factorio_version": "1.1",
-    "dependencies": [
-      "base",
-      "? space-exploration",
-      "! Constructron"
-    ]
-  }
+  "name": "Constructron-Continued",
+  "version": "1.0.9",
+  "title": "Constructron-Continued",
+  "author": "ILLISIS",
+  "homepage": "https://github.com/ILLISIS/Constructron-continued/",
+  "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map for the ultimate fire and forget automation experience.",
+  "factorio_version": "1.1",
+  "dependencies": [
+    "base",
+    "? space-exploration",
+    "! Constructron"
+  ]
+}
