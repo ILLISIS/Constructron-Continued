@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.9
+Date: 2022-03-05
+  Improvements:
+    - The mod will now detect unbuilt ghost tiles after a build job.
+    - Constructron pathing now takes into account the smallest gaps(1 tile) between water to path through.
+    - Garbage collection on path requests that fail to navigate to destination.
+  Fixes:
+    - Resolved a crash in 1.0.7 migrations with invalid entities.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.8
 Date: 2022-02-26
   Improvements:
