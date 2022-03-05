@@ -11,17 +11,14 @@ if mods["space-exploration"] then
   table.insert(pathing_collision_mask, empty_space_collision_layer)
 end
 
-local constructron_pathing_dummy = {
+local template_entity = {
   type = "simple-entity",
-  name = "constructron_pathing_dummy",
   icon = "__core__/graphics/empty.png",
   icon_size = 1,
   icon_mipmaps = 0,
   flags = {"placeable-neutral", "not-on-map"},
   order = "z",
   max_health = 1,
-  collision_box = {{-3, -3}, {3, 3}},
-  selection_box = {{-3, -3}, {3, 3}},
   render_layer = "object",
   collision_mask = pathing_collision_mask,
   pictures = {
@@ -33,7 +30,7 @@ local constructron_pathing_dummy = {
   }
 }
 
-local constructron_pathing_dummy_item = {
+local template_item = {
   type = "item",
   flags = {
     "hidden"
@@ -42,7 +39,18 @@ local constructron_pathing_dummy_item = {
   icon = "__core__/graphics/empty.png",
   icon_size = 1,
   order = "z",
-  place_result = "constructron_pathing_dummy",
   stack_size = 1
 }
-data:extend({constructron_pathing_dummy, constructron_pathing_dummy_item})
+
+for _, size in pairs({6, 4, 2, 1}) do
+  local proxy_entity = table.deepcopy(template_entity)
+  proxy_entity.collision_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
+  proxy_entity.selection_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
+  proxy_entity.name = "constructron_pathing_proxy_" .. size
+
+  local proxy_item = table.deepcopy(template_item)
+  proxy_item.name = "constructron_pathing_proxy_" .. size
+  proxy_item.place_result = "constructron_pathing_proxy_" .. size
+
+  data:extend({proxy_entity, proxy_item})
+end
