@@ -96,6 +96,7 @@ me.on_script_path_request_finished = function(event)
         global.pathfinder_requests[event.id] = nil
     elseif not path then
         debug_lib.VisualDebugText("pathfinder callback: path nil", spidertrons[1])
+        global.pathfinder_requests[event.id] = nil
     end
 end
 

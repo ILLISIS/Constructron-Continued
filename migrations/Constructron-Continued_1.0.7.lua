@@ -26,7 +26,7 @@ for c, constructron in pairs(global.constructrons) do
         global.registered_entities[registration_number] = {name = "constructron", surface = constructron.surface.index}
         global.constructrons_count[constructron.surface.index] = global.constructrons_count[constructron.surface.index] + 1
     else
-        global.constructrons[constructron.unit_number] = nil
+        global.constructrons[c] = nil
     end
 end
 
@@ -36,6 +36,6 @@ for s, station in pairs(global.service_stations) do
         global.registered_entities[registration_number] = {name = "service_station", surface = station.surface.index}
         global.stations_count[station.surface.index] = global.stations_count[station.surface.index] + 1
     else
-        global.service_station[station.unit_number] = nil
+        global.service_stations[s] = nil
     end
 end
