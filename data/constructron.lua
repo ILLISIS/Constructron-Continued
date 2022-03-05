@@ -1,60 +1,28 @@
-local collision_mask_util_extended = require("__Constructron-Continued__.data.collision-mask-util-extended")
-local pathing_collision_mask = {
-  "water-tile",
-  "colliding-with-tiles-only",
-  "not-colliding-with-itself"
-}
-if mods["space-exploration"] then
-  local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-  local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-  table.insert(pathing_collision_mask, spaceship_collision_layer)
-  table.insert(pathing_collision_mask, empty_space_collision_layer)
-end
-
-local constructron_pathing_dummy = {
-  type = "simple-entity",
-  name = "constructron_pathing_dummy",
-  icon = "__core__/graphics/empty.png",
-  icon_size = 1,
-  icon_mipmaps = 0,
-  flags = {"placeable-neutral", "not-on-map"},
-  order = "z",
-  max_health = 1,
-  collision_box = {{-3, -3}, {3, 3}},
-  selection_box = {{-3, -3}, {3, 3}},
-  render_layer = "object",
-  collision_mask = pathing_collision_mask,
-  pictures = {
-    {
-      filename = "__core__/graphics/empty.png",
-      width = 1,
-      height = 1
-    }
-  }
-}
-
-local constructron_pathing_dummy_item = {
-  type = "item",
-  flags = {
-    "hidden"
-  },
-  name = "constructron_pathing_dummy",
-  icon = "__core__/graphics/empty.png",
-  icon_size = 1,
-  order = "z",
-  place_result = "constructron_pathing_dummy",
-  stack_size = 1
-}
-data:extend({constructron_pathing_dummy, constructron_pathing_dummy_item})
-
 local constructron = table.deepcopy(data.raw["spider-vehicle"]["spidertron"])
 constructron.name = "constructron"
-
-local constructron_item = table.deepcopy(data.raw["item-with-entity-data"]["spidertron"])
-constructron_item.name = "constructron"
-constructron_item.place_result = "constructron"
-constructron_item.order = constructron_item.order .. "b"
 constructron.minable = {hardness = 0.5, mining_time = 1, result = "constructron"}
+
+local constructron_item = {
+  icons = {
+    {
+      icon = "__Constructron-Continued__/graphics/icon_texture.png",
+      icon_size = 256,
+      scale = 0.25
+    },
+    {
+      icon = "__base__/graphics/icons/spidertron.png",
+      icon_size = 64,
+      icon_mipmaps = 4,
+      scale = 1
+    }
+  },
+  name = "constructron",
+  order = "b[personal-transport]-c[spidertron]-a[spider]b",
+  place_result = "constructron",
+  stack_size = 1,
+  subgroup = "transport",
+  type = "item-with-entity-data"
+}
 
 local constructron_recipe = {
     type = "recipe",
