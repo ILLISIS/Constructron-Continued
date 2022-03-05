@@ -1,4 +1,5 @@
 local debug_lib = require("__Constructron-Continued__.script.debug_lib")
+local custom_lib = require("__Constructron-Continued__.script.custom_lib")
 local color_lib = require("__Constructron-Continued__.script.color_lib")
 local collision_mask_util_extended = require("__Constructron-Continued__.script.collision-mask-util-control")
 
@@ -27,6 +28,33 @@ me.clean_linear_path = function(path)
             table.insert(new_path, waypoint)
         end
     end
+    return new_path
+end
+
+me.clean_path_steps = function(path)
+    if #path == 1 then
+        return path
+    end
+    log("path" .. serpent.block(path))
+    local min_distance = 12
+    local new_path = {}
+    local prev = path[1]
+    table.insert(new_path, prev)
+    for i, p in pairs(path) do
+        local d = custom_lib.distance_between(prev.position, p.position)
+        if (d > min_distance) then
+            prev = p
+            table.insert(new_path, p)
+        end
+    end
+    --fix last point
+    local d = custom_lib.distance_between(prev.position, path[#path].position)
+    if (d > min_distance) or (#new_path == 1) then
+        table.insert(new_path, path[#path])
+    else
+        new_path[#new_path] = path[#path]
+    end
+    log("new_path" .. serpent.block(new_path))
     return new_path
 end
 
@@ -105,6 +133,16 @@ me.request_path = function(spidertrons, _, destination)
     return new_destination
 end
 
+me.get_path_length = function(path)
+    local distance = 0
+    for i, waypoint in ipairs(path) do
+        if i > 1 then
+            distance = distance + custom_lib.distance_between(path[i - 1].position, waypoint.position)
+        end
+    end
+    return distance
+end
+
 me.on_script_path_request_finished = function(event)
     local request = global.pathfinder_requests[event.id]
     if not request then
@@ -119,9 +157,12 @@ me.on_script_path_request_finished = function(event)
     else
         if path then
             local clean_path = me.clean_linear_path(path)
+            clean_path = me.clean_path_steps(clean_path)
+            local distance = me.get_path_length(clean_path)
+            log("path length " .. math.ceil(distance * 10) / 10)
             for _, spidertron in ipairs(spidertrons) do
                 spidertron.autopilot_destination = nil
-                local x = 0
+                local x = 1
                 for i, waypoint in ipairs(clean_path) do
                     spidertron.add_autopilot_destination(waypoint.position)
                     debug_lib.VisualDebugCircle(waypoint.position, spidertron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(x))
