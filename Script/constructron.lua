@@ -413,7 +413,7 @@ me.actions = {
 
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
-            type = "entity-ghost"
+            type = {"entity-ghost", "tile-ghost" }
         } or {}
         if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
