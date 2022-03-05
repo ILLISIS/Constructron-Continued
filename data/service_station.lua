@@ -4,20 +4,21 @@
 local service_station = table.deepcopy(data.raw["roboport"]["roboport"])
 service_station.name = "service_station"
 service_station.minable = {
-    hardness = 0.2,
-    mining_time = 0.5,
-    result = "service_station"
+  hardness = 0.2,
+  mining_time = 0.5,
+  result = "service_station"
 }
 service_station.logistics_radius = 10
 service_station.construction_radius = 0
+
 for _, layer in pairs(service_station.base.layers) do
-    if layer.filename == "__base__/graphics/entity/roboport/roboport-base.png" then
-        layer.filename = "__Constructron-Continued__/graphics/entity/constructotron-service-station.png"
-        layer.width = 114
-        layer.height = 139
-        layer.shift = layer.hr_version.shift
-        layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructotron-service-station.png"
-    end
+  if layer.filename == "__base__/graphics/entity/roboport/roboport-base.png" then
+    layer.filename = "__Constructron-Continued__/graphics/entity/constructotron-service-station.png"
+    layer.width = 114
+    layer.height = 139
+    layer.shift = layer.hr_version.shift
+    layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructotron-service-station.png"
+  end
 end
 -- Beacon Antenna
 local shft_1 = util.by_pixel(-1, -55)
@@ -45,10 +46,29 @@ service_station.base_animation = {
     }}
 }
 
-local service_station_item = table.deepcopy(data.raw["item"]["roboport"])
-service_station_item.name = "service_station"
-service_station_item.place_result = "service_station"
-service_station_item.order = service_station_item.order .. "b"
+local service_station_item = {
+  icons = {
+    {
+      icon = "__base__/graphics/icons/roboport.png",
+      icon_size = 64,
+      icon_mipmaps = 4,
+      scale = 1
+    },
+    {
+      icon = "__base__/graphics/icons/spidertron.png",
+      icon_size = 64,
+      icon_mipmaps = 4,
+      scale = 0.6,
+      shift = {-20, 20}
+    }
+  },
+  name = "service_station",
+  order = "c[signal]-a[roboport]b",
+  place_result = "service_station",
+  stack_size = 5,
+  subgroup = "logistic-network",
+  type = "item"
+}
 
 local service_station_recipe = {
     type = "recipe",

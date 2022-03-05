@@ -1,11 +1,28 @@
 local constructron = table.deepcopy(data.raw["spider-vehicle"]["spidertron"])
 constructron.name = "constructron"
-
-local constructron_item = table.deepcopy(data.raw["item-with-entity-data"]["spidertron"])
-constructron_item.name = "constructron"
-constructron_item.place_result = "constructron"
-constructron_item.order = constructron_item.order .. "b"
 constructron.minable = {hardness = 0.5, mining_time = 1, result = "constructron"}
+
+local constructron_item = {
+  icons = {
+    {
+      icon = "__Constructron-Continued__/graphics/icon_texture.png",
+      icon_size = 256,
+      scale = 0.25
+    },
+    {
+      icon = "__base__/graphics/icons/spidertron.png",
+      icon_size = 64,
+      icon_mipmaps = 4,
+      scale = 1
+    }
+  },
+  name = "constructron",
+  order = "b[personal-transport]-c[spidertron]-a[spider]b",
+  place_result = "constructron",
+  stack_size = 1,
+  subgroup = "transport",
+  type = "item-with-entity-data"
+}
 
 local constructron_recipe = {
     type = "recipe",
