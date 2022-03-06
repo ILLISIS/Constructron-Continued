@@ -413,7 +413,7 @@ me.actions = {
 
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
-            type = {"entity-ghost", "tile-ghost" }
+            type = {"entity-ghost", "tile-ghost", "item-request-proxy"}
         } or {}
         if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
@@ -878,6 +878,7 @@ me.on_built_entity = function(event) -- for entity creation
             end
         elseif entity.name == 'constructron' then
             global.constructrons[entity.unit_number] = entity
+            me.paint_constructron(entity, 'idle')
             local registration_number = script.register_on_entity_destroyed(entity)
             global.registered_entities[registration_number] = {
                 name = "constructron",
@@ -949,6 +950,7 @@ me.on_entity_cloned = function(event)
     if entity.name == 'constructron' then
         debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         global.constructrons[entity.unit_number] = entity
+        me.paint_constructron(entity, 'idle')
         local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = {
             name = "constructron",

@@ -127,7 +127,9 @@ me.request_path = function(spidertrons, _, destination)
             bounding_box_size = bounding_box_size
         }
         for _, _spidertron in ipairs(spidertrons) do
-            _spidertron.autopilot_destination = nil
+            if _spidertron.valid then
+                _spidertron.autopilot_destination = nil
+            end
         end
     end
     return new_destination
@@ -161,12 +163,14 @@ me.on_script_path_request_finished = function(event)
             local distance = me.get_path_length(clean_path)
             log("path length " .. math.ceil(distance * 10) / 10)
             for _, spidertron in ipairs(spidertrons) do
-                spidertron.autopilot_destination = nil
-                local x = 1
-                for i, waypoint in ipairs(clean_path) do
-                    spidertron.add_autopilot_destination(waypoint.position)
-                    debug_lib.VisualDebugCircle(waypoint.position, spidertron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(x))
-                    x = x + 1
+                if spidertron.valid then
+                    spidertron.autopilot_destination = nil
+                    local x = 1
+                    for i, waypoint in ipairs(clean_path) do
+                        spidertron.add_autopilot_destination(waypoint.position)
+                        debug_lib.VisualDebugCircle(waypoint.position, spidertron.surface, color_lib.color_alpha(color_lib.colors.pink, 0.2), tostring(x))
+                        x = x + 1
+                    end
                 end
             end
         else
