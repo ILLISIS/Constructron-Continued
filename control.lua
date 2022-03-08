@@ -227,7 +227,9 @@ function request_path(constructrons, goal)
                 constructrons = constructrons
             }
             for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = nil
+                if constructron.valid then
+                    constructron.autopilot_destination = nil
+                end
             end
             return new_goal
         else
@@ -949,7 +951,7 @@ actions = {
         end
         ghosts = surface.find_entities_filtered{
             area = {chunk.minimum, chunk.maximum},
-            type = {"entity-ghost", "tile-ghost" }
+            type = {"entity-ghost", "tile-ghost", "item-request-proxy"}
         }
         if next(ghosts or {}) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
@@ -1130,7 +1132,7 @@ function get_job(constructrons)
                             local required_slots1
                             local required_slots2
                             if not chunk1.merged then
-                                required_slots1 = calculate_required_inventory_slot_count(chunk1.required_items, constructron_count)
+                                required_slots1 = calculate_required_inventory_slot_count(chunk1.required_items or {}, constructron_count)
                                 required_slots1 = required_slots1 + calculate_required_inventory_slot_count(chunk1.trash_items or {}, constructron_count)
                                 for name, count in pairs(chunk1['required_items']) do
                                     requested_items[name] = math.ceil(((requested_items[name] or 0)*constructron_count + count) / constructron_count)
@@ -1139,7 +1141,7 @@ function get_job(constructrons)
                                 required_slots1 = 0
                             end
                             if not chunk2.merged then
-                                required_slots2 = calculate_required_inventory_slot_count(chunk2.required_items, constructron_count)
+                                required_slots2 = calculate_required_inventory_slot_count(chunk2.required_items or {}, constructron_count)
                                 required_slots2 = required_slots2 + calculate_required_inventory_slot_count(chunk2.trash_items or {}, constructron_count)
                                 for name, count in pairs(chunk2['required_items']) do
                                     requested_items[name] = math.ceil(((requested_items[name] or 0)*constructron_count + count) / constructron_count)
@@ -1184,7 +1186,7 @@ function get_job(constructrons)
             total_required_slots = 0
 
             for i, chunk in ipairs(chunks) do
-                local required_slots = calculate_required_inventory_slot_count(chunk.required_items, constructron_count)
+                local required_slots = calculate_required_inventory_slot_count(chunk.required_items or {}, constructron_count)
                 required_slots = required_slots + calculate_required_inventory_slot_count(chunk.trash_items or {}, constructron_count)
                 if ((total_required_slots + required_slots) < empty_stack_count) then
                     total_required_slots = total_required_slots + required_slots
@@ -1308,12 +1310,11 @@ function get_job(constructrons)
                 -- local chunk = table.remove(combined_chunks, chunk_index)
                 chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.85) -- 15% tolerance
                 chunk['surface'] = surface.index
-                local find_path = false
                 for p, position in ipairs(chunk.positions) do
                     if p == 1 then find_path = true end
                     local go_to_position_job = {
                         action = 'go_to_position',
-                        action_args = {position, find_path},
+                        action_args = {position, true},
                         leave_condition = 'position_done',
                         leave_args = {position},
                         constructrons = selected_constructrons,
