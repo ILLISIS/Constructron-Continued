@@ -2,10 +2,9 @@
 Version: 1.0.10
 Date: 2022-03-08
   Improvements:
-    - In Constructron groups, the slave(s) now uses the path finder to get to the leader.
     - Chunk checks now finds item-request-proxy / unfulfilled modules and will queue another job.
   Fixes:
-    - Resolved a crash when a slave was no longer valid.
+    - Resolved a crash when a Constructron slave was no longer valid.
     - Resolved 'calculate_required_inventory_slot_count' crash.
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.

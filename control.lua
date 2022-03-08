@@ -253,11 +253,11 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
         clean_path = clean_linear_path(path)
         for c, constructron in ipairs(constructrons) do
             constructron.autopilot_destination = nil
-            local i = 0
+            local x = 1
             for i, waypoint in ipairs(clean_path) do
                 constructron.add_autopilot_destination(waypoint.position)
-                VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(i))
-                i = i + 1
+                VisualDebugCircle(waypoint.position,constructron.surface,{r = 100, g = 0, b = 100, a = 0.2},tostring(x))
+                x = x + 1
             end
         end
         global.constructron_pathfinder_requests[event.id] = nil
@@ -817,7 +817,7 @@ actions = {
             return new_goal
         else
             for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = request_path(constructron, position)
+                constructron.autopilot_destination = position
             end
         end
         for c, constructron in ipairs(constructrons) do
