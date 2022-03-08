@@ -817,7 +817,7 @@ actions = {
             return new_goal
         else
             for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = position
+                constructron.autopilot_destination = request_path(constructron, position)
             end
         end
         for c, constructron in ipairs(constructrons) do
@@ -1310,11 +1310,12 @@ function get_job(constructrons)
                 -- local chunk = table.remove(combined_chunks, chunk_index)
                 chunk['positions'] = calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius*0.85) -- 15% tolerance
                 chunk['surface'] = surface.index
+                local find_path = false
                 for p, position in ipairs(chunk.positions) do
                     if p == 1 then find_path = true end
                     local go_to_position_job = {
                         action = 'go_to_position',
-                        action_args = {position, true},
+                        action_args = {position, find_path},
                         leave_condition = 'position_done',
                         leave_args = {position},
                         constructrons = selected_constructrons,
