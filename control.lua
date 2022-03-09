@@ -1490,14 +1490,17 @@ script.on_event(defines.events.on_built_entity, function(event) -- for entity cr
             global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
         end
     elseif entity.name == 'constructron' then
-        global.constructrons[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
+
+        paint_constructron(entity, 'idle')
+        global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
         entity.enable_logistics_while_moving = false
     elseif entity.name == "service_station" then
-        global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
+
+        global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
         global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end
@@ -1525,8 +1528,10 @@ script.on_event(defines.events.script_raised_built, function(event) -- for mods
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
-            global.constructrons[entity.unit_number] = entity
             local registration_number = script.register_on_entity_destroyed(entity)
+
+            paint_constructron(entity, 'idle')
+            global.constructrons[entity.unit_number] = entity
             global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
             global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
             entity.enable_logistics_while_moving = false
@@ -1634,15 +1639,18 @@ end)
 script.on_event(defines.events.on_entity_cloned, function(event)
     local entity = event.destination
     if entity.name == 'constructron' then
-        DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
-        global.constructrons[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
+
+        DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
+        paint_constructron(entity, 'idle')
+        global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {name = "constructron", surface = entity.surface.index}
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1        
     elseif entity.name == "service_station" then
+        local registration_number = script.register_on_entity_destroyed(entity)
+        
         DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
         global.service_stations[entity.unit_number] = entity
-        local registration_number = script.register_on_entity_destroyed(entity)
         global.registered_entities[registration_number] = {name = "service_station", surface = entity.surface.index}
         global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
     end

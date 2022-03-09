@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.11
 Date: 2022-03-09
+  Improvements:
+    - Constructrons are now painted grey(idle) when placed or cloned to another surface.
   Fixes:
     - Resolved a crash in Constructron staging when no stations were placed.
     - Resolved a crash in go_to_position retry when a companion was no longer valid.
