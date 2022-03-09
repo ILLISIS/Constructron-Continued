@@ -777,9 +777,13 @@ function do_until_leave(job)
             return true -- returning true means you can remove this job from job list
         elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
-                if not constructron.autopilot_destination then
-                    actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-                    job.start_tick = game.tick
+                if constructron.valid then
+                    if not constructron.autopilot_destination then
+                        actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                        job.start_tick = game.tick
+                    end
+                else
+                    job.constructrons[c] = nil
                 end
             end
         elseif (job.action == 'request_items') and (game.tick - job.start_tick) > max_jobtime then
@@ -921,9 +925,6 @@ actions = {
             if constructron.valid then
                 set_constructron_status(constructron, 'busy', false)
                 paint_constructron(constructron, 'idle')
-            else
-                invalid = true
-                return invalid
             end
         end
     end,
@@ -1210,7 +1211,6 @@ function get_job(constructrons)
     for surface_name, surface in pairs(managed_surfaces) do -- iterate each surface
 
         if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
-            
             local max_worker = settings.global['max-worker-per-job'].value
             local available_constructrons = {}
             local chunks = {}
@@ -1228,16 +1228,18 @@ function get_job(constructrons)
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     
                     if game.item_prototypes[desired_robot_name] then
-                        VisualDebugText("Requesting Construction Robots", constructron)
-                        constructron.enable_logistics_while_moving = false
-                        local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
-                        request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
-                        local slot = 1
-                        constructron.set_vehicle_logistic_slot(slot, {
-                            name = desired_robot_name,
-                            min = desired_robot_count,
-                            max = desired_robot_count
-                        })
+                        if global.stations_count[surface.index] > 0 then
+                            VisualDebugText("Requesting Construction Robots", constructron)
+                            constructron.enable_logistics_while_moving = false
+                            local closest_station = get_closest_service_station(constructron) -- they must go to the same station even if they are not in the same station.
+                            request_path({constructron}, closest_station.position) -- they can be elsewhere though. they don't have to start in the same place.
+                            local slot = 1
+                            constructron.set_vehicle_logistic_slot(slot, {
+                                name = desired_robot_name,
+                                min = desired_robot_count,
+                                max = desired_robot_count
+                            })
+                        end
                     else
                         DebugLog('desired_robot_name name is not valid in mod settings')
                     end

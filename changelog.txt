@@ -1,10 +1,21 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.11
+Date: 2022-03-09
+  Fixes:
+    - Resolved a crash in Constructron staging when no stations were placed.
+    - Resolved a crash in go_to_position retry when a companion was no longer valid.
+    - Fixed companion Constructrons not resetting thier status after the leader became invalid.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.10
 Date: 2022-03-08
   Improvements:
     - Chunk checks now finds item-request-proxy / unfulfilled modules and will queue another job.
   Fixes:
-    - Resolved a crash when a Constructron slave was no longer valid.
+    - Resolved a crash when a Constructron companion was no longer valid.
     - Resolved 'calculate_required_inventory_slot_count' crash.
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
