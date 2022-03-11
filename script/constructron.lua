@@ -175,30 +175,40 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
             -- ghosts
             if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
                 for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                    queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                    if not game.item_prototypes[item.name].has_flag('hidden') then
+                        queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                    end
                 end
             end
             -- module-requests
             if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
                 for name, count in pairs(entity.item_requests) do
-                    queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
+                    if not game.item_prototypes[item.name].has_flag('hidden') then
+                        queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
+                    end
                 end
             end
             -- cliff demolition
             if (build_type == "deconstruction") and entity.type == "cliff" then
-                queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
+                if not game.item_prototypes[item.name].has_flag('hidden') then
+                    queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
+                end
             end
             -- mining/deconstruction results
             if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
                 for _, item in ipairs(entity.prototype.mineable_properties.products) do
                     local amount = item.amount or item.amount_max
-                    queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
+                    if not game.item_prototypes[item.name].has_flag('hidden') then
+                        queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
+                    end
                 end
             end
             -- entity upgrades
             if target_entity then
                 for _, item in ipairs(target_entity.items_to_place_this) do
-                    queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                    if not game.item_prototypes[item.name].has_flag('hidden') then
+                        queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                    end
                 end
             end
         end
@@ -258,9 +268,13 @@ me.do_until_leave = function(job)
             return true -- returning true means you can remove this job from job list
         elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
-                if not constructron.autopilot_destination then
-                    me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-                    job.start_tick = game.tick
+                if constructron.valid then
+                    if not constructron.autopilot_destination then
+                        actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                        job.start_tick = game.tick
+                    end
+                else
+                    job.constructrons[c] = nil
                 end
             end
         elseif (job.action == 'request_items') and (game.tick - job.start_tick) > me.max_jobtime then
@@ -296,7 +310,7 @@ me.actions = {
             return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = position
+                constructron.autopilot_destination = position -- does not use path finder!
             end
         end
         for c, constructron in ipairs(constructrons) do
@@ -397,8 +411,6 @@ me.actions = {
             if constructron.valid then
                 me.set_constructron_status(constructron, 'busy', false)
                 me.paint_constructron(constructron, 'idle')
-            else
-                return true
             end
         end
     end,
@@ -545,19 +557,21 @@ me.setup_constructrons = function()
                     debug_lib.DebugLog('ACTION: Stage')
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     if game.item_prototypes[desired_robot_name] then
-                        debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
-                        constructron.enable_logistics_while_moving = false
-                        -- they must go to the same station even if they are not in the same station.
-                        -- they can be elsewhere though. they don't have to start in the same place.
-                        -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
-                        local closest_station = me.get_closest_service_station(constructron)
-                        me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
-                        local slot = 1
-                        constructron.set_vehicle_logistic_slot(slot, {
-                            name = desired_robot_name,
-                            min = desired_robot_count,
-                            max = desired_robot_count
-                        })
+                        if global.stations_count[surface.index] > 0 then
+                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
+                            constructron.enable_logistics_while_moving = false
+                            -- they must go to the same station even if they are not in the same station.
+                            -- they can be elsewhere though. they don't have to start in the same place.
+                            -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
+                            local closest_station = me.get_closest_service_station(constructron)
+                            me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                            local slot = 1
+                            constructron.set_vehicle_logistic_slot(slot, {
+                                name = desired_robot_name,
+                                min = desired_robot_count,
+                                max = desired_robot_count
+                            })
+                        end
                     else
                         debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                     end
@@ -581,14 +595,14 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                         local required_slots1 = 0
                         local required_slots2 = 0
                         if not chunk1.merged then
-                            required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items, constructron_count)
+                            required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items or {}, constructron_count)
                             required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {}, constructron_count)
                             for name, count in pairs(chunk1['required_items']) do
                                 requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
                             end
                         end
                         if not chunk2.merged then
-                            required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items, constructron_count)
+                            required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items or {}, constructron_count)
                             required_slots2 = required_slots2 + me.calculate_required_inventory_slot_count(chunk2.trash_items or {}, constructron_count)
                             for name, count in pairs(chunk2['required_items']) do
                                 requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
@@ -630,7 +644,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
         total_required_slots = 0
 
         for i, chunk in ipairs(chunks) do
-            local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items, constructron_count)
+            local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items or {}, constructron_count)
             required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {}, constructron_count)
             if ((total_required_slots + required_slots) < empty_stack_count) then
                 total_required_slots = total_required_slots + required_slots
@@ -877,18 +891,20 @@ me.on_built_entity = function(event) -- for entity creation
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
-            global.constructrons[entity.unit_number] = entity
-            me.paint_constructron(entity, 'idle')
             local registration_number = script.register_on_entity_destroyed(entity)
+            
+            me.paint_constructron(entity, 'idle')
+            entity.enable_logistics_while_moving = false
+            global.constructrons[entity.unit_number] = entity
             global.registered_entities[registration_number] = {
                 name = "constructron",
                 surface = entity.surface.index
             }
             global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
-            entity.enable_logistics_while_moving = false
         elseif entity.name == "service_station" then
-            global.service_stations[entity.unit_number] = entity
             local registration_number = script.register_on_entity_destroyed(entity)
+            
+            global.service_stations[entity.unit_number] = entity
             global.registered_entities[registration_number] = {
                 name = "service_station",
                 surface = entity.surface.index
@@ -948,19 +964,21 @@ end
 me.on_entity_cloned = function(event)
     local entity = event.destination
     if entity.name == 'constructron' then
-        debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
-        global.constructrons[entity.unit_number] = entity
-        me.paint_constructron(entity, 'idle')
         local registration_number = script.register_on_entity_destroyed(entity)
+        debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
+        me.paint_constructron(entity, 'idle')
+
+        global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "constructron",
             surface = entity.surface.index
         }
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
     elseif entity.name == "service_station" then
-        debug_lib.DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
-        global.service_stations[entity.unit_number] = entity
         local registration_number = script.register_on_entity_destroyed(entity)
+        debug_lib.DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
+
+        global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "service_station",
             surface = entity.surface.index

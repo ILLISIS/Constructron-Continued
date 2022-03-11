@@ -31,7 +31,7 @@ script.on_event(ev.on_script_path_request_finished, pathfinder.on_script_path_re
 
 script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
 
--- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common  processing function with 2 different preprocessors/wrappers for each event if required
+-- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required
 script.on_event(ev.on_marked_for_upgrade, ctron.on_marked_for_upgrade)
 script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction, {{
     filter = 'name',
