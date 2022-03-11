@@ -270,7 +270,7 @@ me.do_until_leave = function(job)
             for c, constructron in ipairs(job.constructrons) do
                 if constructron.valid then
                     if not constructron.autopilot_destination then
-                        actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                        me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                         job.start_tick = game.tick
                     end
                 else
