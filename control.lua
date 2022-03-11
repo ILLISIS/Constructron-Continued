@@ -557,8 +557,10 @@ function add_ghosts_to_chunks()
                     -- to use for requesting stuff to constructron
                     if not (entity.type == 'item-request-proxy') then
                         for index, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                            global.construct_queue[chunk_surface][key]['required_items'][item.name] =
-                                (global.construct_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
+                            if not game.item_prototypes[item.name].has_flag('hidden') then
+                                global.construct_queue[chunk_surface][key]['required_items'][item.name] =
+                                    (global.construct_queue[chunk_surface][key]['required_items'][item.name] or 0) + item.count
+                            end
                         end
                     end
                     -- for modules
