@@ -1,3 +1,4 @@
+-- luacheck: ignore
 -- File Licence: You can copy and distribute this file regardless of the mod's general licence. This licence exception does not affect other files of this mod.
 local collision_mask_util_extended = require("__core__/lualib/collision-mask-util")
 
