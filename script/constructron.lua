@@ -269,6 +269,9 @@ me.do_until_leave = function(job)
         elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
                 if constructron.valid then
+                    if chunk_util.distance_between(constructron.position, constructron.autopilot_destination) < 7 then
+                        constructron.autopilot_destination == nil
+                    end
                     if not constructron.autopilot_destination then
                         me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                         job.start_tick = game.tick

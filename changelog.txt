@@ -3,6 +3,9 @@ Version: 1.0.13
 Date: 2022-03-11
   Improvements:
     - Countless amounts of code cleanup and refactoring all thanks to Karoschl!
+    - Constructron waypoint circling should be detected and reset.
+  Krastorio2:
+    - Tesla coils should now target Constructrons
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.12
 Date: 2022-03-11
