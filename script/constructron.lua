@@ -183,16 +183,14 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
             -- module-requests
             if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
                 for name, count in pairs(entity.item_requests) do
-                    if not game.item_prototypes[item.name].has_flag('hidden') then
+                    if not game.item_prototypes[name].has_flag('hidden') then
                         queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
                     end
                 end
             end
             -- cliff demolition
             if (build_type == "deconstruction") and entity.type == "cliff" then
-                if not game.item_prototypes[item.name].has_flag('hidden') then
                     queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
-                end
             end
             -- mining/deconstruction results
             if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
@@ -269,9 +267,6 @@ me.do_until_leave = function(job)
         elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
                 if constructron.valid then
-                    if chunk_util.distance_between(constructron.position, constructron.autopilot_destination) < 7 then
-                        constructron.autopilot_destination = nil
-                    end
                     if not constructron.autopilot_destination then
                         me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                         job.start_tick = game.tick
@@ -560,7 +555,7 @@ me.setup_constructrons = function()
                     debug_lib.DebugLog('ACTION: Stage')
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     if game.item_prototypes[desired_robot_name] then
-                        if global.stations_count[surface.index] > 0 then
+                        if global.stations_count[constructron.surface.index] > 0 then
                             debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
                             constructron.enable_logistics_while_moving = false
                             -- they must go to the same station even if they are not in the same station.
@@ -895,7 +890,7 @@ me.on_built_entity = function(event) -- for entity creation
             end
         elseif entity.name == 'constructron' then
             local registration_number = script.register_on_entity_destroyed(entity)
-            
+
             me.paint_constructron(entity, 'idle')
             entity.enable_logistics_while_moving = false
             global.constructrons[entity.unit_number] = entity
@@ -906,7 +901,7 @@ me.on_built_entity = function(event) -- for entity creation
             global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
         elseif entity.name == "service_station" then
             local registration_number = script.register_on_entity_destroyed(entity)
-            
+
             global.service_stations[entity.unit_number] = entity
             global.registered_entities[registration_number] = {
                 name = "service_station",
