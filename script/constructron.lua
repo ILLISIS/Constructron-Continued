@@ -270,7 +270,7 @@ me.do_until_leave = function(job)
             for c, constructron in ipairs(job.constructrons) do
                 if constructron.valid then
                     if chunk_util.distance_between(constructron.position, constructron.autopilot_destination) < 7 then
-                        constructron.autopilot_destination == nil
+                        constructron.autopilot_destination = nil
                     end
                     if not constructron.autopilot_destination then
                         me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
