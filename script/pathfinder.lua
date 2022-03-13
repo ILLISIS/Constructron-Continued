@@ -36,7 +36,7 @@ me.clean_path_steps = function(path)
         return path
     end
     log("path" .. serpent.block(path))
-    local min_distance = 12
+    local min_distance = 6
     local new_path = {}
     local prev = path[1]
     table.insert(new_path, prev)
