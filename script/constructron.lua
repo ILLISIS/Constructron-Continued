@@ -18,20 +18,20 @@ me.ensure_globals = function()
     global.constructron_pathfinder_requests = nil
     global.constructron_statuses = global.constructron_statuses or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
-    global.deconstruction_entities_count = global.deconstruction_entities_count or 0
     global.upgrade_entities = global.upgrade_entities or {}
     global.construct_queue = global.construct_queue or {}
     global.deconstruct_queue = global.deconstruct_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
     global.ignored_entities = global.ignored_entities or {}
     global.ghost_entities = global.ghost_entities or {}
-    global.ghost_entities_count = global.ghost_entities_count or 0
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
     global.registered_entities = global.registered_entities or {}
     global.constructrons_count = global.constructrons_count or {}
     global.stations_count = global.stations_count or {}
+    global.repair_entities = global.repair_entities or {}
+    global.repair_queue = global.repair_queue or {}
 
     for s, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
@@ -39,6 +39,7 @@ me.ensure_globals = function()
         global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
         global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
+        global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
     end
 end
 
@@ -96,45 +97,48 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
 end
 
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
-    local entities, entity_count_type, queue, event_tick
+    local entities, queue, event_tick
+    local entity_counter = 0
+
     if build_type == "ghost" then
         entities = global.ghost_entities -- array, call by ref
-        entity_count_type = "ghost_entities_count"
         queue = global.construct_queue -- array, call by ref
-        event_tick = global.ghost_tick -- call by value, it is used as read_only
+        event_tick = global.ghost_tick or 0 -- call by value, it is used as read_only
     elseif build_type == "deconstruction" then
         entities = global.deconstruction_entities -- array, call by ref
-        entity_count_type = "deconstruction_entities_count"
         queue = global.deconstruct_queue -- array, call by ref
-        event_tick = global.deconstruct_marked_tick -- call by value, it is used as read_only
+        event_tick = global.deconstruct_marked_tick or 0 -- call by value, it is used as read_only
     elseif build_type == "upgrade" then
         entities = global.upgrade_entities -- array, call by ref
-        entity_count_type = nil
         queue = global.upgrade_queue -- array, call by ref
-        event_tick = global.upgrade_marked_tick -- call by value, it is used as read_only
+        event_tick = global.upgrade_marked_tick or 0 -- call by value, it is used as read_only
+    elseif build_type == "repair" then
+        entities = global.repair_entities -- array, call by ref
+        queue = global.repair_queue -- array, call by ref
+        event_tick = global.repair_marked_tick or 0-- call by value, it is used as read_only
     end
-
-    if entities[1] and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
-        for i = 1, me.entity_per_tick do
-            local entity, target_entity
-            local obj = table.remove(entities)
-            if global[entity_count_type] then
-                global[entity_count_type] = math.max(0, global[entity_count_type] - 1)
-            end
-            if not obj then
+    
+    if next(entities) and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
+        for unit_number, entity in pairs(entities) do
+            local target_entity
+            
+            if entity_counter >= me.entity_per_tick then
                 break
+            else 
+                entity_counter = entity_counter + 1
             end
 
-            if build_type == "upgrade" then
-                entity = obj['entity']
-                target_entity = obj['target']
-            else
-                entity = obj
+            if build_type == 'upgrade' then
+                target_entity = entity.target
+                entity = entity.entity
             end
 
             if not entity or not entity.valid then
                 break
             end
+
+            entities[unit_number] = nil
+
             local chunk = chunk_util.chunk_from_position(entity.position)
             local key = chunk.y .. ',' .. chunk.x
             local entity_surface = entity.surface.index
@@ -187,6 +191,10 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
                         queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
                     end
                 end
+            end
+            -- repair
+            if (build_type == "repair") then
+                queue[entity_surface][key]['required_items']['repair-pack'] = (queue[entity_surface][key]['required_items']['repair-pack'] or 0) + 3
             end
             -- cliff demolition
             if (build_type == "deconstruction") and entity.type == "cliff" then
@@ -300,6 +308,10 @@ me.do_until_leave = function(job)
         return true
     end
 end
+
+-------------------------------------------------------------------------------
+--  Actions
+-------------------------------------------------------------------------------
 
 me.actions = {
     go_to_position = function(constructrons, position, find_path)
@@ -462,6 +474,10 @@ me.actions = {
         end
     end
 }
+
+-------------------------------------------------------------------------------
+--  Conditions
+-------------------------------------------------------------------------------
 
 me.conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
@@ -664,7 +680,7 @@ end
 me.get_job = function(constructrons)
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
     for _, surface in pairs(managed_surfaces) do -- iterate each surface
-        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
+        if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
             local max_worker = settings.global['max-worker-per-job'].value
             local available_constructrons = {}
             local chunks = {}
@@ -696,7 +712,14 @@ me.get_job = function(constructrons)
                     table.insert(chunks, chunk)
                 end
                 job_type = 'upgrade'
+
+            elseif next(global.repair_queue[surface.index]) then
+                for key, chunk in pairs(global.repair_queue[surface.index]) do
+                    table.insert(chunks, chunk)
+                end
+                job_type = 'repair'
             end
+
             if not next(chunks) then
                 return
             end
@@ -710,6 +733,8 @@ me.get_job = function(constructrons)
                 queue = global.construct_queue
             elseif job_type == 'upgrade' then
                 queue = global.upgrade_queue
+            elseif job_type == 'repair' then
+                queue = global.repair_queue
             end
             queue[surface.index] = {}
             for i, chunk in ipairs(unused_chunks) do
@@ -748,12 +773,19 @@ me.get_job = function(constructrons)
                             action = 'build',
                             leave_condition = 'build_done',
                             leave_args = {chunk.required_items, chunk.minimum, chunk.maximum},
-                            constructrons = selected_constructrons
+                            constructrons = selected_constructrons,
+                            job_class = job_type
                         })
-                        for c, constructron in ipairs(selected_constructrons) do
-                            me.paint_constructron(constructron, 'construct')
+                        if (job_type == 'construct') then
+                            for c, constructron in ipairs(selected_constructrons) do
+                                me.paint_constructron(constructron, 'construct')
+                            end
+                        elseif (job_type == 'repair') then
+                            for c, constructron in ipairs(selected_constructrons) do
+                                me.paint_constructron(constructron, 'repair')
+                            end
                         end
-                    elseif job_type == 'deconstruct' then
+                    elseif (job_type == 'deconstruct') then
                         me.create_job(global.job_bundle_index, {
                             action = 'deconstruct',
                             leave_condition = 'deconstruction_done',
@@ -764,7 +796,7 @@ me.get_job = function(constructrons)
                         me.paint_constructron(constructron, job_type)
                     end
                 end
-                if job_type == 'construct' then
+                if (job_type == 'construct') then
                     me.create_job(global.job_bundle_index, {
                         action = 'add_to_check_chunk_done_queue',
                         action_args = {chunk},
@@ -772,7 +804,7 @@ me.get_job = function(constructrons)
                         constructrons = selected_constructrons
                     })
                 end
-                if job_type == 'deconstruct' then
+                if (job_type == 'deconstruct') then
                     me.create_job(global.job_bundle_index, {
                         action = 'check_decon_chunk',
                         action_args = {chunk},
@@ -869,8 +901,7 @@ me.on_built_entity = function(event) -- for entity creation
     end
 
     if entity.type == 'item-request-proxy' then
-        global.ghost_entities_count = global.ghost_entities_count + 1
-        global.ghost_entities[global.ghost_entities_count] = entity
+        global.ghost_entities[entity.unit_number] = entity
         global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     else
         if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' then
@@ -884,8 +915,7 @@ me.on_built_entity = function(event) -- for entity creation
                 end
             end
             if not global.ignored_entities[entity_name] == true then
-                global.ghost_entities_count = global.ghost_entities_count + 1
-                global.ghost_entities[global.ghost_entities_count] = entity
+                global.ghost_entities[entity.unit_number] = entity
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
@@ -912,29 +942,38 @@ me.on_built_entity = function(event) -- for entity creation
     end
 end
 
+me.on_entity_damaged = function(event)
+    local entity = event.entity
+    local max_health = entity.prototype.max_health / 2
+    if event.final_health < max_health and not (event.final_health == 0) then
+        if not global.repair_entities[entity.unit_number] then
+            global.repair_marked_tick = event.tick
+            global.repair_entities[entity.unit_number] = entity
+        end
+    elseif global.repair_entities[entity.unit_number] and event.final_health == 0 then
+        global.repair_entities[entity.unit_number] = nil
+    end
+end
+
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
     if entity and entity.type == 'entity-ghost' then
-        global.ghost_entities_count = global.ghost_entities_count + 1
-        global.ghost_entities[global.ghost_entities_count] = entity
+        global.ghost_entities[entity.unit_number] = entity
         global.ghost_tick = event.tick
     end
 end
 
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
     global.upgrade_marked_tick = event.tick
-    table.insert(global.upgrade_entities, {
+    global.upgrade_entities[event.entity.unit_number] = {
         entity = event.entity,
         target = event.target
-    })
+    }
 end
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     global.deconstruct_marked_tick = event.tick
-    local decon_count = global.deconstruction_entities_count
-    decon_count = decon_count + 1
-    global.deconstruction_entities_count = decon_count
-    global.deconstruction_entities[decon_count] = event.entity
+    global.deconstruction_entities[event.entity.unit_number] = event.entity
 end
 
 me.on_surface_created = function(event)
@@ -943,6 +982,7 @@ me.on_surface_created = function(event)
     global.construct_queue[index] = {}
     global.deconstruct_queue[index] = {}
     global.upgrade_queue[index] = {}
+    global.repair_queue[index] = {}
 
     global.constructrons_count[index] = 0
     global.stations_count[index] = 0
@@ -954,6 +994,7 @@ me.on_surface_deleted = function(event)
     global.construct_queue[index] = nil
     global.deconstruct_queue[index] = nil
     global.upgrade_queue[index] = nil
+    global.repair_queue[index] = nil
 
     global.constructrons_count[index] = nil
     global.stations_count[index] = nil
@@ -1056,6 +1097,8 @@ me.paint_constructron = function(constructron, color_state)
         constructron.color = color_lib.color_alpha(color_lib.colors.red, 0.4)
     elseif color_state == 'upgrade' then
         constructron.color = color_lib.color_alpha(color_lib.colors.green, 0.4)
+    elseif color_state == 'repair' then
+        constructron.color = color_lib.color_alpha(color_lib.colors.purple, 0.4)
     end
 end
 

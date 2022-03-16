@@ -13,12 +13,14 @@ script.on_configuration_changed(init)
 script.on_nth_tick(1, (function(event)
     if event.tick % 300 == 0 then
         ctron.setup_constructrons()
-    elseif event.tick % 15 == 0 then
+    elseif event.tick % 20 == 0 then
         ctron.add_entities_to_chunks("deconstruction")
-    elseif event.tick % 15 == 5 then
+    elseif event.tick % 20 == 5 then
         ctron.add_entities_to_chunks("ghost")
-    elseif event.tick % 15 == 10 then
+    elseif event.tick % 20 == 10 then
         ctron.add_entities_to_chunks("upgrade")
+    elseif event.tick % 20 == 15 then
+        ctron.add_entities_to_chunks("repair")
     end
 end))
 -- main worker
@@ -44,3 +46,4 @@ script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
 script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
+script.on_event(ev.on_entity_damaged, ctron.on_entity_damaged)
