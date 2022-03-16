@@ -117,14 +117,14 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
         queue = global.repair_queue -- array, call by ref
         event_tick = global.repair_marked_tick or 0-- call by value, it is used as read_only
     end
-    
+
     if next(entities) and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for unit_number, entity in pairs(entities) do
             local target_entity
-            
+
             if entity_counter >= me.entity_per_tick then
                 break
-            else 
+            else
                 entity_counter = entity_counter + 1
             end
 
