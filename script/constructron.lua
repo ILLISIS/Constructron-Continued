@@ -11,7 +11,7 @@ me.entity_per_tick = 100
 
 me.pathfinder = {
     -- just a template, check pathfinder.lua for implementation
-    request_path = (function(_,_,_) end)
+    request_path = (function(_,_,_,_) end)
 }
 
 me.ensure_globals = function()
@@ -299,7 +299,7 @@ me.do_until_leave = function(job)
             end
             local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
             for _, constructron in ipairs(job.constructrons) do
-                me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
+                me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
             end
             job.start_tick = game.tick
             debug_lib.DebugLog('request_items action timed out, moving to new station')
@@ -317,7 +317,7 @@ me.actions = {
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         if find_path then
-            return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
+            return me.pathfinder:request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = position -- does not use path finder!
@@ -365,7 +365,7 @@ me.actions = {
         debug_lib.DebugLog('ACTION: request_items')
         local closest_station = me.get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
         for c, constructron in ipairs(constructrons) do
-            me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+            me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
             local slot = 1
             -- set every item that isn't placable as zero.
             -- for i, name in ipairs({'stone', 'coal', 'wood', 'iron-ore', 'copper-ore', 'uranium-ore'}) do
@@ -578,7 +578,7 @@ me.setup_constructrons = function()
                             -- they can be elsewhere though. they don't have to start in the same place.
                             -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
                             local closest_station = me.get_closest_service_station(constructron)
-                            me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                            me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                             local slot = 1
                             constructron.set_vehicle_logistic_slot(slot, {
                                 name = desired_robot_name,

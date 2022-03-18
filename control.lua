@@ -1,10 +1,10 @@
 local ctron = require("__Constructron-Continued__.script.constructron")
-local pathfinder = require("__Constructron-Continued__.script.pathfinder")
-ctron.pathfinder = pathfinder
+local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
+ctron.pathfinder = Spidertron_Pathfinder()
 
 local init = function()
     ctron.ensure_globals()
-    pathfinder.init()
+    Spidertron_Pathfinder.init_globals()
 end
 script.on_init(init)
 script.on_configuration_changed(init)
@@ -25,11 +25,16 @@ script.on_nth_tick(1, (function(event)
 end))
 -- main worker
 script.on_nth_tick(60, ctron.process_job_queue)
--- surface cleanup
-script.on_nth_tick(54000, ctron.perform_surface_cleanup)
+-- cleanup
+script.on_nth_tick(54000, (function(event) 
+    ctron.perform_surface_cleanup(event)
+    Spidertron_Pathfinder.check_pathfinder_requests_timeout()
+end))
 
 local ev = defines.events
-script.on_event(ev.on_script_path_request_finished, pathfinder.on_script_path_request_finished)
+script.on_event(ev.on_script_path_request_finished, (function(event)
+    Spidertron_Pathfinder:on_script_path_request_finished(event)
+end))
 
 script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
 
