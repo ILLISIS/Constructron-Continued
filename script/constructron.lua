@@ -479,7 +479,7 @@ me.actions = {
 
 me.conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        debug_lib.VisualDebugText("Moving to position", constructrons[1], -3)
+        debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
                 return true
@@ -491,7 +491,7 @@ me.conditions = {
         return true
     end,
     build_done = function(constructrons, _, _, _)
-        debug_lib.VisualDebugText("Constructing", constructrons[1], -3)
+        debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 local bots_inactive = me.robots_inactive(constructron)
@@ -507,7 +507,7 @@ me.conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3)
+        debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 if not me.robots_inactive(constructron) then
@@ -522,7 +522,7 @@ me.conditions = {
         end
     end,
     request_done = function(constructrons)
-        debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3)
+        debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3, 1)
         if me.constructrons_need_reload(constructrons) then
             return false
         else

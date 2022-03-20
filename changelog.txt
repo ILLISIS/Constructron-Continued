@@ -9,6 +9,7 @@ Date: 2022-03-20
     - Map mod settings now update in game.
   Notes:
     - The Constructron colour whilst performing a repair job is charcoal.
+    - Any pre-existing damaged entities will not be repaired. The repair jobs are triggered by on_entity_damaged.
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
     - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
