@@ -5,8 +5,6 @@ local color_lib = require("__Constructron-Continued__.script.color_lib")
 
 local me = {}
 
-me.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
-me.job_start_delay = (settings.global["job-start-delay"].value * 60)
 me.entity_per_tick = 100
 
 me.pathfinder = {
@@ -118,7 +116,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
         event_tick = global.repair_marked_tick or 0-- call by value, it is used as read_only
     end
 
-    if next(entities) and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
+    if next(entities) and (game.tick - event_tick) > (settings.global["job-start-delay"].value * 60) then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for unit_number, entity in pairs(entities) do
             local target_entity
 
@@ -134,6 +132,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
             end
 
             if not entity or not entity.valid then
+                entities[unit_number] = nil
                 break
             end
 
@@ -237,7 +236,7 @@ me.robots_inactive = function(constructron)
             for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
-                        debug_lib.VisualDebugText("Charging Roboports", constructron)
+                        debug_lib.VisualDebugText("Charging Roboports", constructron, -2)
                         return false
                     end
                 end
@@ -283,7 +282,7 @@ me.do_until_leave = function(job)
                     job.constructrons[c] = nil
                 end
             end
-        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > me.max_jobtime then
+        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > (settings.global["max-jobtime-per-job"].value * 60 * 60) then
             local closest_station = me.get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do
                 if not station.valid then
@@ -481,7 +480,7 @@ me.actions = {
 
 me.conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        debug_lib.VisualDebugText("Moving to position", constructrons[1])
+        debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
                 return true
@@ -493,7 +492,7 @@ me.conditions = {
         return true
     end,
     build_done = function(constructrons, _, _, _)
-        debug_lib.VisualDebugText("Constructing", constructrons[1])
+        debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 local bots_inactive = me.robots_inactive(constructron)
@@ -509,7 +508,7 @@ me.conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        debug_lib.VisualDebugText("Deconstructing", constructrons[1])
+        debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 if not me.robots_inactive(constructron) then
@@ -524,7 +523,7 @@ me.conditions = {
         end
     end,
     request_done = function(constructrons)
-        debug_lib.VisualDebugText("Processing logistics", constructrons[1])
+        debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3, 1)
         if me.constructrons_need_reload(constructrons) then
             return false
         else
@@ -560,11 +559,11 @@ end
 
 me.setup_constructrons = function()
     for _, constructron in pairs(global.constructrons) do
-        debug_lib.VisualDebugText("Checking Constructron", constructron)
+        debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
         local desired_robot_count = settings.global["desired_robot_count"].value
         if not me.get_constructron_status(constructron, 'busy') then
             if not constructron.logistic_cell then
-                debug_lib.VisualDebugText("Needs Equipment", constructron)
+                debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
             else
                 constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
                 if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
@@ -572,7 +571,7 @@ me.setup_constructrons = function()
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     if game.item_prototypes[desired_robot_name] then
                         if global.stations_count[constructron.surface.index] > 0 then
-                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
+                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
                             constructron.enable_logistics_while_moving = false
                             -- they must go to the same station even if they are not in the same station.
                             -- they can be elsewhere though. they don't have to start in the same place.
@@ -900,8 +899,10 @@ me.on_built_entity = function(event) -- for entity creation
         return
     end
 
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     if entity.type == 'item-request-proxy' then
-        global.ghost_entities[entity.unit_number] = entity
+        global.ghost_entities[key] = entity
         global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     else
         if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' then
@@ -915,7 +916,7 @@ me.on_built_entity = function(event) -- for entity creation
                 end
             end
             if not global.ignored_entities[entity_name] == true then
-                global.ghost_entities[entity.unit_number] = entity
+                global.ghost_entities[key] = entity
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
@@ -944,36 +945,47 @@ end
 
 me.on_entity_damaged = function(event)
     local entity = event.entity
-    local max_health = entity.prototype.max_health / 2
-    if event.final_health < max_health and not (event.final_health == 0) then
-        if not global.repair_entities[entity.unit_number] then
+    local force = entity.force.name
+    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+    if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value) then
+        if not global.repair_entities[key] then
             global.repair_marked_tick = event.tick
-            global.repair_entities[entity.unit_number] = entity
+            global.repair_entities[key] = entity
         end
-    elseif global.repair_entities[entity.unit_number] and event.final_health == 0 then
-        global.repair_entities[entity.unit_number] = nil
+    elseif force == "player" and global.repair_entities[key] and event.final_health == 0 then
+        global.repair_entities[key] = nil
     end
 end
 
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
+    
     if entity and entity.type == 'entity-ghost' then
-        global.ghost_entities[entity.unit_number] = entity
+        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+        global.ghost_entities[key] = entity
         global.ghost_tick = event.tick
     end
 end
 
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
+    local entity = event.entity
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     global.upgrade_marked_tick = event.tick
-    global.upgrade_entities[event.entity.unit_number] = {
-        entity = event.entity,
+    global.upgrade_entities[key] = {
+        entity = entity,
         target = event.target
     }
 end
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
+    local entity = event.entity
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     global.deconstruct_marked_tick = event.tick
-    global.deconstruction_entities[event.entity.unit_number] = event.entity
+    global.deconstruction_entities[key] = event.entity
 end
 
 me.on_surface_created = function(event)
@@ -1098,7 +1110,7 @@ me.paint_constructron = function(constructron, color_state)
     elseif color_state == 'upgrade' then
         constructron.color = color_lib.color_alpha(color_lib.colors.green, 0.4)
     elseif color_state == 'repair' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.purple, 0.4)
+        constructron.color = color_lib.color_alpha(color_lib.colors.charcoal, 0.4)
     end
 end
 

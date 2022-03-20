@@ -2,7 +2,23 @@
 Version: 1.0.14
 Date: 2022-03-21
   Improvements:
+    - Constructrons can now repair entities! This is OFF by default - toggle this in the mod settings.
     - v3 pathfinder has been introduced for better path finding!
+    - A mod settings to control how low an entity can get before a repair job is triggered has been added.
+    - Startup mod settings have been added which gives the ability to toggle construct, rebuild, deconstruct, upgrade and repair jobs.
+    - Debug text no longer has a random offset.
+  Fixes:
+    - Map mod settings now update in game.
+  Notes:
+    - The Constructron colour whilst performing a repair job is charcoal.
+    - Any pre-existing damage on entities will not be repaired. The repair jobs are triggered by on_entity_damaged.
+    - Constructrons that are already on the way to repair an entity that dies will still proceed as the job is already in progress.
+    - Constructrons that are already on the way to repair an entity that gets repaired by a local robot will still proceed as the job is already in progress.
+    - If you find there are too many repair jobs that are fulfilled by robots the advice is to lower the repair % or toggle the repair jobs to OFF.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.13
 Date: 2022-03-11
@@ -11,6 +27,10 @@ Date: 2022-03-11
     - Constructron waypoint circling should be detected and reset.
   Krastorio2:
     - Tesla coils should now target Constructrons
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.12
 Date: 2022-03-11
