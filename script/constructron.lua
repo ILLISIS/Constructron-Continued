@@ -440,10 +440,8 @@ me.actions = {
             game.print('added ' .. #ghosts .. ' unbuilt ghosts.')
 
             for i, entity in ipairs(ghosts) do
-                local ghost_count = global.ghost_entities_count
-                ghost_count = ghost_count + 1
-                global.ghost_entities_count = ghost_count
-                global.ghost_entities[ghost_count] = entity
+                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+                global.ghost_entities[key] = entity
             end
         end
     end,
@@ -465,10 +463,8 @@ me.actions = {
             game.print('added ' .. #decons .. ' to be deconstructed.')
 
             for i, entity in ipairs(decons) do
-                local decon_count = global.deconstruction_entities_count
-                decon_count = decon_count + 1
-                global.deconstruction_entities_count = decon_count
-                global.deconstruction_entities[decon_count] = entity
+                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+                global.deconstruction_entities[key] = entity
             end
         end
     end
