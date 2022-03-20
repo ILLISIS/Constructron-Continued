@@ -960,7 +960,7 @@ end
 
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
-    
+
     if entity and entity.type == 'entity-ghost' then
         local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 

@@ -71,12 +71,12 @@ data:extend({{
     name = "repair_jobs",
     order = "a5",
     setting_type = "startup",
-    default_value = true
+    default_value = false
 }, {
     type = "int-setting",
     name = "repair_percent",
     setting_type = "runtime-global",
-    default_value = 85,
+    default_value = 75,
     minimum_value = 1,
     maximum_value = 99
 }})
