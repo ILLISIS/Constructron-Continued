@@ -5,8 +5,6 @@ local color_lib = require("__Constructron-Continued__.script.color_lib")
 
 local me = {}
 
-me.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
-me.job_start_delay = (settings.global["job-start-delay"].value * 60)
 me.entity_per_tick = 100
 
 me.pathfinder = {
@@ -118,7 +116,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
         event_tick = global.repair_marked_tick or 0-- call by value, it is used as read_only
     end
 
-    if next(entities) and (game.tick - event_tick) > me.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
+    if next(entities) and (game.tick - event_tick) > (settings.global["job-start-delay"].value * 60) then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for unit_number, entity in pairs(entities) do
             local target_entity
 
@@ -283,7 +281,7 @@ me.do_until_leave = function(job)
                     job.constructrons[c] = nil
                 end
             end
-        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > me.max_jobtime then
+        elseif (job.action == 'request_items') and (game.tick - job.start_tick) > (settings.global["max-jobtime-per-job"].value * 60 * 60) then
             local closest_station = me.get_closest_service_station(job.constructrons[1])
             for unit_number, station in pairs(job.unused_stations) do
                 if not station.valid then
@@ -944,8 +942,7 @@ end
 
 me.on_entity_damaged = function(event)
     local entity = event.entity
-    local max_health = entity.prototype.max_health / 2
-    if event.final_health < max_health and not (event.final_health == 0) then
+    if ((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value then
         if not global.repair_entities[entity.unit_number] then
             global.repair_marked_tick = event.tick
             global.repair_entities[entity.unit_number] = entity
@@ -1098,7 +1095,7 @@ me.paint_constructron = function(constructron, color_state)
     elseif color_state == 'upgrade' then
         constructron.color = color_lib.color_alpha(color_lib.colors.green, 0.4)
     elseif color_state == 'repair' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.purple, 0.4)
+        constructron.color = color_lib.color_alpha(color_lib.colors.charcoal, 0.4)
     end
 end
 
