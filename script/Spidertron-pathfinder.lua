@@ -119,8 +119,8 @@ end
 
 function Spidertron_Pathfinder:request_path(units, _ , destination)
     local request_params = {unit = units[1], units = units, goal = destination}
-    local destination_target = self:request_path2(request_params)
-    return destination_target
+    self:request_path2(request_params)
+    return destination
 end
 
 function Spidertron_Pathfinder:request_path2(request_params)
@@ -169,7 +169,6 @@ function Spidertron_Pathfinder:request_path2(request_params)
         --log("new pathing request" .. serpent.block(request))
         local request_id = position.surface.request_path(request)
         global.pathfinder_requests[request_id] = request
-        return request.initial_target
     end
 end
 
