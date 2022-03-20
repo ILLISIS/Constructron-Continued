@@ -235,7 +235,7 @@ me.robots_inactive = function(constructron)
             for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
-                        debug_lib.VisualDebugText("Charging Roboports", constructron)
+                        debug_lib.VisualDebugText("Charging Roboports", constructron, -2)
                         return false
                     end
                 end
@@ -479,7 +479,7 @@ me.actions = {
 
 me.conditions = {
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
-        debug_lib.VisualDebugText("Moving to position", constructrons[1])
+        debug_lib.VisualDebugText("Moving to position", constructrons[1], -3)
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
                 return true
@@ -491,7 +491,7 @@ me.conditions = {
         return true
     end,
     build_done = function(constructrons, _, _, _)
-        debug_lib.VisualDebugText("Constructing", constructrons[1])
+        debug_lib.VisualDebugText("Constructing", constructrons[1], -3)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 local bots_inactive = me.robots_inactive(constructron)
@@ -507,7 +507,7 @@ me.conditions = {
         end
     end,
     deconstruction_done = function(constructrons)
-        debug_lib.VisualDebugText("Deconstructing", constructrons[1])
+        debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3)
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
                 if not me.robots_inactive(constructron) then
@@ -522,7 +522,7 @@ me.conditions = {
         end
     end,
     request_done = function(constructrons)
-        debug_lib.VisualDebugText("Processing logistics", constructrons[1])
+        debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3)
         if me.constructrons_need_reload(constructrons) then
             return false
         else
@@ -558,11 +558,11 @@ end
 
 me.setup_constructrons = function()
     for _, constructron in pairs(global.constructrons) do
-        debug_lib.VisualDebugText("Checking Constructron", constructron)
+        debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
         local desired_robot_count = settings.global["desired_robot_count"].value
         if not me.get_constructron_status(constructron, 'busy') then
             if not constructron.logistic_cell then
-                debug_lib.VisualDebugText("Needs Equipment", constructron)
+                debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
             else
                 constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
                 if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
@@ -570,7 +570,7 @@ me.setup_constructrons = function()
                     local desired_robot_name = settings.global["desired_robot_name"].value
                     if game.item_prototypes[desired_robot_name] then
                         if global.stations_count[constructron.surface.index] > 0 then
-                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron)
+                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
                             constructron.enable_logistics_while_moving = false
                             -- they must go to the same station even if they are not in the same station.
                             -- they can be elsewhere though. they don't have to start in the same place.
