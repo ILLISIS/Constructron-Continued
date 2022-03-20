@@ -56,7 +56,8 @@ if (settings.startup["repair_jobs"].value) then
         {filter = "final-health", comparison = ">", value = 0, mode = "and"},
         {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
         {filter = "vehicle", invert = true, mode = "and"},
-        {filter = "rolling-stock", invert = true, mode = "and"}
+        {filter = "rolling-stock", invert = true, mode = "and"},
+        {filter = "type", type = "character", invert = true, mode = "and"}
     })
 end
 

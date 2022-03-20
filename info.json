@@ -1,10 +1,10 @@
 {
   "name": "Constructron-Continued",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "title": "Constructron-Continued",
   "author": "ILLISIS",
   "homepage": "https://github.com/ILLISIS/Constructron-continued/",
-  "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map for the ultimate fire and forget automation experience.",
+  "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map with items from your logistic network for the ultimate fire and forget automation experience and unmatched scaling potential.",
   "factorio_version": "1.1",
   "dependencies": [
     "base",

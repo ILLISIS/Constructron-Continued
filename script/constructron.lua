@@ -132,6 +132,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
             end
 
             if not entity or not entity.valid then
+                entities[unit_number] = nil
                 break
             end
 
@@ -898,8 +899,10 @@ me.on_built_entity = function(event) -- for entity creation
         return
     end
 
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     if entity.type == 'item-request-proxy' then
-        global.ghost_entities[entity.unit_number] = entity
+        global.ghost_entities[key] = entity
         global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
     else
         if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' then
@@ -913,7 +916,7 @@ me.on_built_entity = function(event) -- for entity creation
                 end
             end
             if not global.ignored_entities[entity_name] == true then
-                global.ghost_entities[entity.unit_number] = entity
+                global.ghost_entities[key] = entity
                 global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
             end
         elseif entity.name == 'constructron' then
@@ -942,35 +945,47 @@ end
 
 me.on_entity_damaged = function(event)
     local entity = event.entity
-    if ((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value then
-        if not global.repair_entities[entity.unit_number] then
+    local force = entity.force.name
+    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+    if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value) then
+        if not global.repair_entities[key] then
             global.repair_marked_tick = event.tick
-            global.repair_entities[entity.unit_number] = entity
+            global.repair_entities[key] = entity
         end
-    elseif global.repair_entities[entity.unit_number] and event.final_health == 0 then
-        global.repair_entities[entity.unit_number] = nil
+    elseif force == "player" and global.repair_entities[key] and event.final_health == 0 then
+        global.repair_entities[key] = nil
     end
 end
 
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     local entity = event.ghost
+    
     if entity and entity.type == 'entity-ghost' then
-        global.ghost_entities[entity.unit_number] = entity
+        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+        global.ghost_entities[key] = entity
         global.ghost_tick = event.tick
     end
 end
 
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
+    local entity = event.entity
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     global.upgrade_marked_tick = event.tick
-    global.upgrade_entities[event.entity.unit_number] = {
-        entity = event.entity,
+    global.upgrade_entities[key] = {
+        entity = entity,
         target = event.target
     }
 end
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
+    local entity = event.entity
+    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
     global.deconstruct_marked_tick = event.tick
-    global.deconstruction_entities[event.entity.unit_number] = event.entity
+    global.deconstruction_entities[key] = event.entity
 end
 
 me.on_surface_created = function(event)
