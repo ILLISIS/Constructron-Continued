@@ -3,6 +3,7 @@ Version: 1.0.14
 Date: 2022-03-21
   Improvements:
     - Constructrons can now repair entities! This is OFF by default - toggle this in the mod settings.
+    - v3 pathfinder has been introduced for better path finding!
     - A mod settings to control how low an entity can get before a repair job is triggered has been added.
     - Startup mod settings have been added which gives the ability to toggle construct, rebuild, deconstruct, upgrade and repair jobs.
     - Debug text no longer has a random offset.
