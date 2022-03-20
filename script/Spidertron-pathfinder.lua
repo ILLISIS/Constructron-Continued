@@ -135,9 +135,11 @@ function Spidertron_Pathfinder:request_path2(request_params)
     request_params = request_params or {}
     local unit = request_params.unit
     local units = request_params.units
-    if unit then
+    if unit and unit.valid then
         for _, unit2 in ipairs(units) do
-            Spidertron_Pathfinder.set_autopilot(unit2, {})
+            if unit2 and unit2.valid then
+                Spidertron_Pathfinder.set_autopilot(unit2, {})
+            end
         end
 
         local position = {
@@ -174,7 +176,7 @@ end
 
 function Spidertron_Pathfinder:on_script_path_request_finished(event)
     local request = global.pathfinder_requests[event.id]
-    if request and request.unit then
+    if request and request.unit and request.unit.valid then
         local path = event.path
         if event.try_again_later then
             if request.try_again_later < 5 then
@@ -215,7 +217,9 @@ function Spidertron_Pathfinder:on_script_path_request_finished(event)
             else
                 -- 7. f*ck it... just try to walk there in a straight line
                 for _, unit in ipairs(request.units) do
-                    Spidertron_Pathfinder.set_autopilot(unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
+                    if unit and unit.valid then
+                        Spidertron_Pathfinder.set_autopilot(unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
+                    end
                 end
             end
         else
@@ -231,7 +235,9 @@ function Spidertron_Pathfinder:on_script_path_request_finished(event)
             end
             --log(serpent.block(request.request))
             for _, unit in ipairs(request.units) do
-                Spidertron_Pathfinder.set_autopilot(unit, path)
+                if unit and unit.valid then
+                    Spidertron_Pathfinder.set_autopilot(unit, path)
+                end
             end
         end
     end
