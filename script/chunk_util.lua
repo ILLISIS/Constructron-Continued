@@ -1,7 +1,9 @@
 local me = {}
 
 me.distance_between = function(position1, position2)
-    return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
+    if position1 and position2 then
+        return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
+    end
 end
 
 me.chunk_from_position = function(position)
