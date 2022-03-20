@@ -119,7 +119,8 @@ end
 
 function Spidertron_Pathfinder:request_path(units, _ , destination)
     local request_params = {unit = units[1], units = units, goal = destination}
-    self:request_path2(request_params)
+    local destination_target = self:request_path2(request_params)
+    return destination_target
 end
 
 function Spidertron_Pathfinder:request_path2(request_params)
@@ -135,8 +136,8 @@ function Spidertron_Pathfinder:request_path2(request_params)
     local unit = request_params.unit
     local units = request_params.units
     if unit then
-        for _, unit in ipairs(units) do
-            Spidertron_Pathfinder.set_autopilot(unit, {})
+        for _, unit2 in ipairs(units) do
+            Spidertron_Pathfinder.set_autopilot(unit2, {})
         end
 
         local position = {
@@ -165,9 +166,10 @@ function Spidertron_Pathfinder:request_path2(request_params)
         request.initial_target = request.initial_target or request.goal -- not used by the factorio-pathfinder
         request.request_tick = game.tick -- not used by the factorio-pathfinder
 
-        --log("new pathign request" .. serpent.block(request))
+        --log("new pathing request" .. serpent.block(request))
         local request_id = position.surface.request_path(request)
         global.pathfinder_requests[request_id] = request
+        return request.initial_target
     end
 end
 
@@ -198,9 +200,12 @@ function Spidertron_Pathfinder:on_script_path_request_finished(event)
                 elseif request.retry == 4 then
                     request.radius = self.radius
                     -- 5. find_non_colliding_positions and Re-Request
-                    position = request.unit:get_position()
+                    local position = {
+                        position = request.unit.position,
+                        surface = request.unit.surface
+                    }
                     request.start = self:find_non_colliding_position(position.surface, request.start) or request.start
-                    request.goal = self:find_non_colliding_position(position.surface, request.start) or request.goal
+                    request.goal = self:find_non_colliding_position(position.surface, request.goal) or request.goal
                 elseif request.retry == 5 then
                     -- 6. Re-Request with even more increased radius again
                     request.radius = 10
