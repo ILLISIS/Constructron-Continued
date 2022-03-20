@@ -26,6 +26,11 @@ me.colors.white = {
     g = 0.65,
     b = 0.65
 }
+me.colors.charcoal = {
+    r = 0.1,
+    g = 0.1,
+    b = 0.1
+}
 
 me.color_alpha = function(color, alpha)
     color.a = alpha

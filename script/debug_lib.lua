@@ -7,19 +7,26 @@ me.DebugLog = function(message)
     end
 end
 
-me.VisualDebugText = function(message, entity)
+me.VisualDebugText = function(message, entity, offset, ttl)
     if not entity or not entity.valid then
         return
     end
+    if not offset then
+        offset = 0
+    end
+    if not ttl then
+        ttl = 1
+    else
+        ttl = ttl * 60
+    end
     if settings.global["constructron-debug-enabled"].value then
-        local offset = {0, (math.random() * 3 - 1.5) - 2}
         rendering.draw_text {
             text = message,
             target = entity,
             filled = true,
             surface = entity.surface,
-            time_to_live = 60,
-            target_offset = offset,
+            time_to_live = ttl,
+            target_offset = {0, offset},
             alignment = "center",
             color = {
                 r = 255,
