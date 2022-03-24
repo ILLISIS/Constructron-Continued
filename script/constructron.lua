@@ -117,32 +117,14 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     end
 
     if next(entities) and (game.tick - event_tick) > (settings.global["job-start-delay"].value * 60) then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
-        for unit_number, entity in pairs(entities) do
-            local target_entity
-
-            if entity_counter >= me.entity_per_tick then
-                break
-            else
-                entity_counter = entity_counter + 1
-            end
-
-            if build_type == 'upgrade' then
-                target_entity = entity.target
-                entity = entity.entity
-            end
-
-            if not entity or not entity.valid then
-                entities[unit_number] = nil
-                break
-            end
-
-            entities[unit_number] = nil
-
+        local function process_entity(entity, target_entity)
             local chunk = chunk_util.chunk_from_position(entity.position)
             local key = chunk.y .. ',' .. chunk.x
             local entity_surface = entity.surface.index
             local entity_key = entity.position.y .. ',' .. entity.position.x
+
             queue[entity_surface] = queue[entity_surface] or {}
+
             if not queue[entity_surface][key] then -- initialize queued_chunk
                 queue[entity_surface][key] = {
                     key = key,
@@ -157,7 +139,6 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
                     maximum = {
                         x = entity.position.x,
                         y = entity.position.y
-
                     },
                     required_items = {},
                     trash_items = {}
@@ -215,6 +196,34 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
                         queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
                     end
                 end
+            end
+        end
+
+        for entity_key, entity in pairs(entities) do
+            local target_entity
+
+            if build_type == "upgrade" then
+                target_entity = entity.target
+                entity = entity.entity
+                if entity.valid and not entity.to_be_upgraded() then
+                    entity = nil
+                end
+            end
+
+            if build_type == "deconstruction" and entity.valid and not entity.to_be_deconstructed() then
+                entity = nil
+            end
+
+            if entity and entity.valid then
+                process_entity(entity, target_entity)
+            end
+
+            entities[entity_key] = nil
+
+            if entity_counter >= me.entity_per_tick then
+                break
+            else
+                entity_counter = entity_counter + 1
             end
         end
     end
@@ -895,7 +904,7 @@ me.on_built_entity = function(event) -- for entity creation
         return
     end
 
-    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
     if entity.type == 'item-request-proxy' then
         global.ghost_entities[key] = entity
@@ -958,7 +967,7 @@ me.on_post_entity_died = function(event) -- for entities that die and need rebui
     local entity = event.ghost
 
     if entity and entity.type == 'entity-ghost' then
-        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+        local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
         global.ghost_entities[key] = entity
         global.ghost_tick = event.tick
@@ -967,7 +976,7 @@ end
 
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
     local entity = event.entity
-    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
     global.upgrade_marked_tick = event.tick
     global.upgrade_entities[key] = {
@@ -978,10 +987,10 @@ end
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     local entity = event.entity
-    local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
     global.deconstruct_marked_tick = event.tick
-    global.deconstruction_entities[key] = event.entity
+    global.deconstruction_entities[key] = entity
 end
 
 me.on_surface_created = function(event)
