@@ -94,6 +94,88 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
     return slots
 end
 
+me.process_entity = function(entity, target_entity, build_type, queue)
+    local chunk = chunk_util.chunk_from_position(entity.position)
+    local key = chunk.y .. ',' .. chunk.x
+    local entity_surface = entity.surface.index
+    local entity_key = entity.position.y .. ',' .. entity.position.x
+
+    queue[entity_surface] = queue[entity_surface] or {}
+
+    if not queue[entity_surface][key] then -- initialize queued_chunk
+        queue[entity_surface][key] = {
+            key = key,
+            surface = entity.surface.index,
+            entity_key = entity,
+            position = chunk_util.position_from_chunk(chunk),
+            area = chunk_util.get_area_from_chunk(chunk),
+            minimum = {
+                x = entity.position.x,
+                y = entity.position.y
+            },
+            maximum = {
+                x = entity.position.x,
+                y = entity.position.y
+            },
+            required_items = {},
+            trash_items = {}
+        }
+    else -- add to existing queued_chunk
+        queue[entity_surface][key][entity_key] = entity
+        if entity.position.x < queue[entity_surface][key]['minimum'].x then
+            queue[entity_surface][key]['minimum'].x = entity.position.x
+        elseif entity.position.x > queue[entity_surface][key]['maximum'].x then
+            queue[entity_surface][key]['maximum'].x = entity.position.x
+        end
+        if entity.position.y < queue[entity_surface][key]['minimum'].y then
+            queue[entity_surface][key]['minimum'].y = entity.position.y
+        elseif entity.position.y > queue[entity_surface][key]['maximum'].y then
+            queue[entity_surface][key]['maximum'].y = entity.position.y
+        end
+    end
+    -- ghosts
+    if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
+        for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
+            if not game.item_prototypes[item.name].has_flag('hidden') then
+                queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+            end
+        end
+    end
+    -- module-requests
+    if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
+        for name, count in pairs(entity.item_requests) do
+            if not game.item_prototypes[name].has_flag('hidden') then
+                queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
+            end
+        end
+    end
+    -- repair
+    if (build_type == "repair") then
+        queue[entity_surface][key]['required_items']['repair-pack'] = (queue[entity_surface][key]['required_items']['repair-pack'] or 0) + 3
+    end
+    -- cliff demolition
+    if (build_type == "deconstruction") and entity.type == "cliff" then
+            queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
+    end
+    -- mining/deconstruction results
+    if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
+        for _, item in ipairs(entity.prototype.mineable_properties.products) do
+            local amount = item.amount or item.amount_max
+            if not game.item_prototypes[item.name].has_flag('hidden') then
+                queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
+            end
+        end
+    end
+    -- entity upgrades
+    if target_entity then
+        for _, item in ipairs(target_entity.items_to_place_this) do
+            if not game.item_prototypes[item.name].has_flag('hidden') then
+                queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+            end
+        end
+    end
+end
+
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
     local entities, queue, event_tick
     local entity_counter = 0
@@ -117,88 +199,6 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     end
 
     if next(entities) and (game.tick - event_tick) > (settings.global["job-start-delay"].value * 60) then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
-        local function process_entity(entity, target_entity)
-            local chunk = chunk_util.chunk_from_position(entity.position)
-            local key = chunk.y .. ',' .. chunk.x
-            local entity_surface = entity.surface.index
-            local entity_key = entity.position.y .. ',' .. entity.position.x
-
-            queue[entity_surface] = queue[entity_surface] or {}
-
-            if not queue[entity_surface][key] then -- initialize queued_chunk
-                queue[entity_surface][key] = {
-                    key = key,
-                    surface = entity.surface.index,
-                    entity_key = entity,
-                    position = chunk_util.position_from_chunk(chunk),
-                    area = chunk_util.get_area_from_chunk(chunk),
-                    minimum = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    },
-                    maximum = {
-                        x = entity.position.x,
-                        y = entity.position.y
-                    },
-                    required_items = {},
-                    trash_items = {}
-                }
-            else -- add to existing queued_chunk
-                queue[entity_surface][key][entity_key] = entity
-                if entity.position.x < queue[entity_surface][key]['minimum'].x then
-                    queue[entity_surface][key]['minimum'].x = entity.position.x
-                elseif entity.position.x > queue[entity_surface][key]['maximum'].x then
-                    queue[entity_surface][key]['maximum'].x = entity.position.x
-                end
-                if entity.position.y < queue[entity_surface][key]['minimum'].y then
-                    queue[entity_surface][key]['minimum'].y = entity.position.y
-                elseif entity.position.y > queue[entity_surface][key]['maximum'].y then
-                    queue[entity_surface][key]['maximum'].y = entity.position.y
-                end
-            end
-            -- ghosts
-            if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
-                for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-                    if not game.item_prototypes[item.name].has_flag('hidden') then
-                        queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
-                    end
-                end
-            end
-            -- module-requests
-            if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
-                for name, count in pairs(entity.item_requests) do
-                    if not game.item_prototypes[name].has_flag('hidden') then
-                        queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
-                    end
-                end
-            end
-            -- repair
-            if (build_type == "repair") then
-                queue[entity_surface][key]['required_items']['repair-pack'] = (queue[entity_surface][key]['required_items']['repair-pack'] or 0) + 3
-            end
-            -- cliff demolition
-            if (build_type == "deconstruction") and entity.type == "cliff" then
-                    queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
-            end
-            -- mining/deconstruction results
-            if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
-                for _, item in ipairs(entity.prototype.mineable_properties.products) do
-                    local amount = item.amount or item.amount_max
-                    if not game.item_prototypes[item.name].has_flag('hidden') then
-                        queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
-                    end
-                end
-            end
-            -- entity upgrades
-            if target_entity then
-                for _, item in ipairs(target_entity.items_to_place_this) do
-                    if not game.item_prototypes[item.name].has_flag('hidden') then
-                        queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
-                    end
-                end
-            end
-        end
-
         for entity_key, entity in pairs(entities) do
             local target_entity
 
@@ -215,7 +215,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
             end
 
             if entity and entity.valid then
-                process_entity(entity, target_entity)
+                me.process_entity(entity, target_entity, build_type, queue)
             end
 
             entities[entity_key] = nil
@@ -890,16 +890,17 @@ me.perform_surface_cleanup = function(_)
     end
 end
 
-me.on_built_entity = function(event) -- for entity creation
-    local function is_floor_tile(entity_name)
-        local floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
-        -- ToDo:
-        --  find landfill-like tiles based on collision layer
-        --  this list should be build at loading time not everytime
-        return custom_lib.table_has_value(floor_tiles, entity_name)
-    end
+me.is_floor_tile = function(entity_name)
+    local floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
+    -- ToDo:
+    --  find landfill-like tiles based on collision layer
+    --  this list should be build at loading time not everytime
+    return custom_lib.table_has_value(floor_tiles, entity_name)
+end
 
+me.on_built_entity = function(event) -- for entity creation
     local entity = event.entity or event.created_entity
+    
     if not entity then
         return
     end
@@ -916,7 +917,7 @@ me.on_built_entity = function(event) -- for entity creation
             if global.ignored_entities[entity_name] == nil then
                 local items_to_place_this = entity.ghost_prototype.items_to_place_this
                 global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
-                if is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
+                if me.is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                     global.ignored_entities[entity_name] = true
                 end
             end
