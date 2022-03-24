@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.16
+Date: 2022-03-25
+  Fixes:
+    - Fixed queue backlogs that were created if a player performed an action on a lot of entities and then undone the changes
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.15
 Date: 2022-03-21
   Fixes:

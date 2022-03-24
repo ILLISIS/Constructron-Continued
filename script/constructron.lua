@@ -900,7 +900,7 @@ end
 
 me.on_built_entity = function(event) -- for entity creation
     local entity = event.entity or event.created_entity
-    
+
     if not entity then
         return
     end
