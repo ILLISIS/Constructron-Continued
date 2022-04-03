@@ -76,7 +76,14 @@ data:extend({{
     type = "int-setting",
     name = "repair_percent",
     setting_type = "runtime-global",
+    order = "a6",
     default_value = 75,
     minimum_value = 1,
     maximum_value = 99
+}, {
+    type = "bool-setting",
+    name = "allow_landfill",
+    order = "a7",
+    setting_type = "runtime-global",
+    default_value = true
 }})

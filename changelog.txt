@@ -1,4 +1,26 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.18
+Date: 2022-04-03
+  Experimental:
+    - Added the ability to construct landfill and landfill like tiles! READ NOTES!
+  Improvements:
+    - Reregistered and recounted all entities on all surfaces to reduce the chances of crashes occuring from entites previously placed on older versions of the mod.
+    - Added force checks to various actions such as construct, deconstruct and upgrade to accomodate AbandonedRuins mod and Auto-Deconstruct mod.
+    - Added force to chunk checks so other forces entities will not be considered when a ghost is placed from another force.
+    - Expanded minimum chunk check range so item-request-proxies / missing modules would be found in single entity construction if they got missed somehow.
+  Fixes:
+    - Various crashes due to lack of entity validation.
+  Notes:
+    - Landfill can be enabled or disabled through the mod settings menu.
+    - Landfill functionality is highly experimental and does not represent the finished product.
+    - Landfill is best constructed in small jobs close to the shore. It is highly recommended to have atleast a few Constructrons placed.
+    - Constructrons will obviously not be able to reach entities/tiles in the middle of a lake and will cause Construnctrons to become stuck if this is done.
+    - Constructing landfill will likely cause inefficient behaviour of Constructrons until the job is complete.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.17
 Date: 2022-03-26
   Fixes:
