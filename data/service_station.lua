@@ -1,6 +1,7 @@
 --  service_station images derived from:
 --    https://github.com/nEbul4/Factorio_Roboport_mk2/
 --    https://github.com/kirazy/classic-beacon/
+local util = require('util')
 local service_station = table.deepcopy(data.raw["roboport"]["roboport"])
 service_station.name = "service_station"
 service_station.minable = {
