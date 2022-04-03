@@ -20,7 +20,7 @@ for s, surface in pairs(game.surfaces) do
             name = "service_station",
             surface = surface.index
         }
-        
+
         global.stations_count[surface.index] = global.stations_count[surface.index] + 1
     end
     game.print('Registered ' .. global.stations_count[surface.index] .. ' stations on ' .. surface.name .. '.')
