@@ -13,7 +13,7 @@ local constructron_item = {
       icon = "__base__/graphics/icons/spidertron.png",
       icon_size = 64,
       icon_mipmaps = 4,
-      scale = 1
+      scale = 0.8
     }
   },
   name = "constructron",

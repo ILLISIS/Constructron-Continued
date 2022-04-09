@@ -47,9 +47,13 @@ if (settings.startup["rebuild_jobs"].value) then
 end
 
 if (settings.startup["deconstruct_jobs"].value) then
-    script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction, {
-        {filter = 'name', name = "item-on-ground", invert = true}
-    })
+    if settings.startup["decon_ground_items"].value then
+        script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction)
+    else
+        script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction, {
+            {filter = 'name', name = "item-on-ground", invert = true}
+        })
+    end
 end
 
 if (settings.startup["upgrade_jobs"].value) then

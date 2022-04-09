@@ -86,4 +86,17 @@ data:extend({{
     order = "a7",
     setting_type = "runtime-global",
     default_value = true
+}, {
+    type = "int-setting",
+    name = "construction_mat_alert",
+    setting_type = "runtime-global",
+    default_value = 30,
+    minimum_value = 0,
+    maximum_value = 3600
+}, {
+    type = "bool-setting",
+    name = "decon_ground_items",
+    order = "a8",
+    setting_type = "startup",
+    default_value = true
 }})
