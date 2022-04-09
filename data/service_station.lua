@@ -50,18 +50,24 @@ service_station.base_animation = {
 local service_station_item = {
   icons = {
     {
+      icon = "__Constructron-Continued__/graphics/icon_texture.png",
+      icon_size = 256,
+      scale = 0.25
+    },
+    {
       icon = "__base__/graphics/icons/roboport.png",
       icon_size = 64,
       icon_mipmaps = 4,
-      scale = 1
-    },
-    {
-      icon = "__base__/graphics/icons/spidertron.png",
-      icon_size = 64,
-      icon_mipmaps = 4,
-      scale = 0.6,
-      shift = {-20, 20}
+      scale = 0.8
     }
+
+    -- {
+    --   icon = "__base__/graphics/icons/spidertron.png",
+    --   icon_size = 64,
+    --   icon_mipmaps = 4,
+    --   scale = 0.6,
+    --   shift = {-20, 20}
+    -- }
   },
   name = "service_station",
   order = "c[signal]-a[roboport]b",

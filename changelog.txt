@@ -1,4 +1,21 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.19
+Date: 2022-04-10
+  Improvements:
+    - Added a check to detect entities that may have been missed during an upgrade job.
+    - Moved missed entity messages to debug instead of game chat.
+    - Added a game alert when a Constructrons logistic request is not fulfilled within 30 seconds by default.
+    - Added a setting to control after how long the alert is displayed.
+    - Items on the ground that get marked for deconstruction will now be actioned.
+    - Added a toggle option in startup settings that toggles deconstruction of items on ground.
+  Fixes:
+    - Fixed a bug that caused Rocks and trees to be excluded from deconstruction jobs.
+    - Construction robots will now be cleared from inventory if the count exceeds desired_robot_count.
+  Known issues:
+    - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
+    - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
+    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.18
 Date: 2022-04-03
   Experimental:
