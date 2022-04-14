@@ -1,4 +1,8 @@
 global.registered_entities = {}
+global.stations_count = global.stations_count or {}
+global.constructrons_count = global.constructrons_count or {}
+
+---
 
 for s, surface in pairs(game.surfaces) do
     global.stations_count[surface.index] = 0
