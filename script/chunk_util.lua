@@ -10,27 +10,27 @@ me.chunk_from_position = function(position)
     -- if a ghost entity found anywhere in the surface, we want to get the corresponding chunk
     -- so that we can fill constructron with all the other ghosts
     local chunk_index = {
-        y = math.floor((position.y) / 32),
-        x = math.floor((position.x) / 32)
+        y = math.floor((position.y) / 80),
+        x = math.floor((position.x) / 80)
     }
     return chunk_index
 end
 
 me.position_from_chunk = function(chunk_index)
     local position = {
-        y = chunk_index.y * 32,
-        x = chunk_index.x * 32
+        y = chunk_index.y * 80,
+        x = chunk_index.x * 80
     }
     return position
 end
 
 me.get_area_from_chunk = function(chunk_index)
     local area = {{
-        y = chunk_index.y * 32,
-        x = chunk_index.x * 32
+        y = chunk_index.y * 80,
+        x = chunk_index.x * 80
     }, {
-        y = (chunk_index.y + 1) * 32,
-        x = (chunk_index.x + 1) * 32
+        y = (chunk_index.y + 1) * 80,
+        x = (chunk_index.x + 1) * 80
     }}
     return area
 end

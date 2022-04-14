@@ -1,6 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.19
 Date: 2022-04-10
+  Fixes:
+    - Changed chunk calculation assumptions back to original value to decrease the chance of missing entities.
+    - Bugfix in migration script which only occurred in older saves.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.19
+Date: 2022-04-10
   Improvements:
     - Added a check to detect entities that may have been missed during an upgrade job.
     - Moved missed entity messages to debug instead of game chat.
