@@ -75,3 +75,41 @@ script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
 
 script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
+
+-------------------------------------------------------------------------------
+local function reset()
+    log("control:reset")
+    game.print("Constructron: !!! reset !!!", {r = 1, g = 0.2, b = 0.2})
+    game.print("warning: present ghosts might be ignored", {r = 1, g = 0.2, b = 0.2})
+    for _, surface in pairs(game.surfaces) do
+        ctron.force_surface_cleanup(surface)
+    end
+end
+
+--===========================================================================--
+-- commands & interfaces
+--===========================================================================--
+
+local ctron_commands = {
+    reset = reset,
+}
+
+-------------------------------------------------------------------------------
+-- commands
+-------------------------------------------------------------------------------
+commands.add_command(
+    "ctron",
+    "/ctron reset",
+    function(param)
+        log("/ctron " .. (param.parameter or ""))
+        --local player = game.players[param.player_index]
+        if param.parameter and ctron_commands[param.parameter] then
+            ctron_commands[param.parameter]()
+        end
+    end
+)
+
+-------------------------------------------------------------------------------
+--- game interfaces
+-------------------------------------------------------------------------------
+remote.add_interface("ctron_interface", ctron_commands)
