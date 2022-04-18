@@ -1022,7 +1022,7 @@ me.perform_surface_cleanup = function(_)
             global.stations_count[surface.index] = 0
         end
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
-            debug_lib.DebugLog('No Constructrons or Service Stations found on ')
+            debug_lib.DebugLog('No Constructrons or Service Stations found on ' .. surface.name)
             me.force_surface_cleanup(surface)
         end
     end
