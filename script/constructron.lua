@@ -1079,7 +1079,7 @@ me.on_built_entity = function(event) -- for entity creation
             end
         elseif entity.name == 'constructron' then
             local registration_number = script.register_on_entity_destroyed(entity)
-
+            me.set_constructron_status(entity, 'busy', false)
             me.paint_constructron(entity, 'idle')
             entity.enable_logistics_while_moving = false
             global.constructrons[entity.unit_number] = entity
