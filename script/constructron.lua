@@ -1015,20 +1015,27 @@ me.process_job_queue = function(_)
 end
 
 me.perform_surface_cleanup = function(_)
-    debug_lib.DebugLog('Surface job cleanup')
+    debug_lib.DebugLog('Surface job validation & cleanup')
     for s, surface in pairs(game.surfaces) do
         if not global.constructrons_count[surface.index] or not global.stations_count[surface.index] then
             global.constructrons_count[surface.index] = 0
             global.stations_count[surface.index] = 0
         end
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
-            debug_lib.DebugLog('No Constructrons or Service Stations found on ' .. surface.name .. '. All job queues cleared!')
-            global.construct_queue[surface.index] = {}
-            global.deconstruct_queue[surface.index] = {}
-            global.upgrade_queue[surface.index] = {}
+            debug_lib.DebugLog('No Constructrons or Service Stations found on ')
+            me.force_surface_cleanup(surface)
         end
     end
 end
+
+me.force_surface_cleanup = function(surface)
+    debug_lib.DebugLog('All job queues on '.. surface.name ..' cleared!')
+    global.construct_queue[surface.index] = {}
+    global.deconstruct_queue[surface.index] = {}
+    global.upgrade_queue[surface.index] = {}
+    global.repair_queue[surface.index] = {}
+end
+
 
 me.is_floor_tile = function(entity_name)
     local floor_tiles
