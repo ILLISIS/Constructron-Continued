@@ -22,7 +22,7 @@ me.ensure_globals = function()
     global.construct_queue = global.construct_queue or {}
     global.deconstruct_queue = global.deconstruct_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
-    global.ignored_entities = global.ignored_entities or {}
+    global.ignored_entities = {}
     global.ghost_entities = global.ghost_entities or {}
     global.job_bundles = global.job_bundles or {}
     global.constructrons = global.constructrons or {}
@@ -105,6 +105,22 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
     return slots
 end
 
+me.check_item_allowed = function(item_name)
+    -- if this has perforemance issues: use global table<string,boolean> to cache results; needs to be reset on tech researched
+    if not game.item_prototypes[item_name].has_flag("hidden") then
+        return true
+    end
+    local recipes = game.get_filtered_recipe_prototypes(
+        {
+            {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}, mode = "and"},
+            {filter = "enabled", value = true, mode = "and"},
+            {filter = "hidden-from-player-crafting", value = false, mode = "and"}
+        }
+    )
+    local _ , recipe = next(recipes)
+    return (recipe ~= nil)
+end
+
 me.process_entity = function(entity, target_entity, build_type, queue)
     local chunk = chunk_util.chunk_from_position(entity.position)
     local key = chunk.y .. ',' .. chunk.x
@@ -148,7 +164,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     -- ghosts
     if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
         for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
-            if not game.item_prototypes[item.name].has_flag('hidden') then
+            if me.check_item_allowed(item.name) then
                 queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
             end
         end
@@ -156,7 +172,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     -- module-requests
     if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
         for name, count in pairs(entity.item_requests) do
-            if not game.item_prototypes[name].has_flag('hidden') then
+            if me.check_item_allowed(name) then
                 queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
             end
         end
@@ -173,15 +189,17 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
         for _, item in ipairs(entity.prototype.mineable_properties.products) do
             local amount = item.amount or item.amount_max
-            if not game.item_prototypes[item.name].has_flag('hidden') then
+            if me.check_item_allowed(item.name) then
                 queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
             end
         end
     end
     -- entity upgrades
     if target_entity then
+        log("target_entity.name" .. serpent.block(target_entity.name))
+        log("target_entity.items_to_place_this" .. serpent.block(target_entity.items_to_place_this))
         for _, item in ipairs(target_entity.items_to_place_this) do
-            if not game.item_prototypes[item.name].has_flag('hidden') then
+            if me.check_item_allowed(item.name) then
                 queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
             end
         end
@@ -1068,7 +1086,7 @@ me.on_built_entity = function(event) -- for entity creation
             -- Need to separate ghosts and tiles in different tables
             if global.ignored_entities[entity_name] == nil then
                 local items_to_place_this = entity.ghost_prototype.items_to_place_this
-                global.ignored_entities[entity_name] = game.item_prototypes[items_to_place_this[1].name].has_flag('hidden')
+                global.ignored_entities[entity_name] = (me.check_item_allowed(items_to_place_this[1].name) == false)
                 if me.is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
                     global.ignored_entities[entity_name] = true
                 end
