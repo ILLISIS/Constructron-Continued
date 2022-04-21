@@ -99,4 +99,11 @@ data:extend({{
     order = "a8",
     setting_type = "startup",
     default_value = true
-}})
+}, {
+    type = "bool-setting",
+    name = "pathfinder_cache_enabled",
+    order = "a9",
+    setting_type = "startup",
+    default_value = true
+}
+})

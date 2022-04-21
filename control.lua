@@ -1,6 +1,8 @@
 local ctron = require("__Constructron-Continued__.script.constructron")
 local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
-ctron.pathfinder = Spidertron_Pathfinder()
+ctron.pathfinder = Spidertron_Pathfinder({
+    cache_enabled = (settings.startup["pathfinder_cache_enabled"].value == true)
+})
 
 local init = function()
     ctron.ensure_globals()
