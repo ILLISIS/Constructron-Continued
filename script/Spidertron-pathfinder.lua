@@ -10,7 +10,8 @@ local Spidertron_Pathfinder = {
     non_colliding_position_accuracy = 0.5,
     radius = 1,
     path_resolution_modifier = -2,
-    initial_bounding_box = {{-5, -5}, {5, 5}}
+    initial_bounding_box = {{-5, -5}, {5, 5}},
+    cache_enabled = true
 }
 
 Spidertron_Pathfinder.__index = Spidertron_Pathfinder
@@ -124,7 +125,7 @@ function Spidertron_Pathfinder:request_path(units, _ , destination)
 end
 
 function Spidertron_Pathfinder:request_path2(request_params)
-    log("request_path2")
+    --log("request_path2")
     local pathing_collision_mask = {"water-tile", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"}
     if game.active_mods["space-exploration"] then
         local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
@@ -136,6 +137,7 @@ function Spidertron_Pathfinder:request_path2(request_params)
     local unit = request_params.unit
     local units = request_params.units
     if unit and unit.valid then
+        log("request_path2.unit " .. tostring(unit.unit_number))
         for _, unit2 in ipairs(units) do
             if unit2 and unit2.valid then
                 Spidertron_Pathfinder.set_autopilot(unit2, {})
@@ -158,7 +160,7 @@ function Spidertron_Pathfinder:request_path2(request_params)
             radius = self.radius,
             path_resolution_modifier = self.path_resolution_modifier,
             pathfinding_flags = {
-                cache = true,
+                cache = self.cache_enabled,
                 low_priority = true
             },
             retry = 0, -- not used by the factorio-pathfinder
@@ -188,6 +190,7 @@ function Spidertron_Pathfinder:on_script_path_request_finished(event)
                 log("try_again_later: ABORTED, to many retrys")
             end
         elseif not path then
+            log("on_script_path_request_finished.retry " .. tostring(request.retry))
             if request.retry < 6 then
                 if request.retry == 1 then
                     -- 2. Re-Request with normal  bounding box
