@@ -282,12 +282,13 @@ me.do_until_leave = function(job)
             if (job.action == 'go_to_position') then
                 local new_pos_goal = me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                 job.leave_args[1] = new_pos_goal
+                job.start_tick = game.tick
+            elseif (job.action == 'request_items') then
+                me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                job.start_tick = game.tick
             else
                 me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
             end
-        end
-        if job.start_tick == nil then
-            job.start_tick = 2
         end
         if me.conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {})) then
             table.remove(global.job_bundles[job.bundle_index], 1)
@@ -353,9 +354,6 @@ me.actions = {
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = position -- does not use path finder!
             end
-        end
-        for c, constructron in ipairs(constructrons) do
-            me.set_constructron_status(constructron, 'on_transit', true)
         end
     end,
     build = function(constructrons)
@@ -880,7 +878,6 @@ me.get_job = function(constructrons)
                         action_args = {combined_chunks.requested_items},
                         leave_condition = 'request_done',
                         constructrons = selected_constructrons,
-                        start_tick = game.tick,
                         unused_stations = me.get_service_stations(selected_constructrons[1].surface.index)
                     }
 
@@ -900,7 +897,6 @@ me.get_job = function(constructrons)
                                 leave_condition = 'position_done',
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
-                                start_tick = game.tick
                             })
                             if not (job_type == 'deconstruct') then
                                 me.create_job(global.job_bundle_index, {
@@ -1200,6 +1196,7 @@ me.on_entity_destroyed = function(event)
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil
+            global.constructron_statuses[event.unit_number] = nil
             debug_lib.DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
@@ -1212,7 +1209,7 @@ me.on_entity_destroyed = function(event)
 end
 
 me.set_constructron_status = function(constructron, state, value)
-    if constructron.valid then
+    if constructron and constructron.valid then
         if global.constructron_statuses[constructron.unit_number] then
             global.constructron_statuses[constructron.unit_number][state] = value
         else
@@ -1225,7 +1222,7 @@ me.set_constructron_status = function(constructron, state, value)
 end
 
 me.get_constructron_status = function(constructron, state)
-    if constructron then
+    if constructron and constructron.valid then
         if global.constructron_statuses[constructron.unit_number] then
             return global.constructron_statuses[constructron.unit_number][state]
         end

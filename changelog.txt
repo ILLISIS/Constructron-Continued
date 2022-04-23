@@ -1,5 +1,11 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.19
+Version: 1.0.21
+Date: 2022-04-23
+  Fixes:
+    - Minor bugfix with unit status not clearing after it was picked up/destroyed.
+    - Bugfix for Constructrons requesting more than one path at once.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.20
 Date: 2022-04-10
   Fixes:
     - Changed chunk calculation assumptions back to original value to decrease the chance of missing entities.
