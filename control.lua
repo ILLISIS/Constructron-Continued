@@ -1,5 +1,7 @@
+local custom_lib = require("__Constructron-Continued__.script.custom_lib")
 local ctron = require("__Constructron-Continued__.script.constructron")
 local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
+
 ctron.pathfinder = Spidertron_Pathfinder({
     cache_enabled = (settings.startup["pathfinder_cache_enabled"].value == true)
 })
@@ -79,8 +81,10 @@ script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 
 -------------------------------------------------------------------------------
-local function reset()
+local function reset(player, parameters)
     log("control:reset")
+    log("by player:" .. player.name)
+    log("parameters: " .. serpent.block(parameters))
     game.print("Constructron: !!! reset !!!", {r = 1, g = 0.2, b = 0.2})
     game.print("warning: present ghosts might be ignored", {r = 1, g = 0.2, b = 0.2})
     for _, surface in pairs(game.surfaces) do
@@ -104,9 +108,13 @@ commands.add_command(
     "/ctron reset",
     function(param)
         log("/ctron " .. (param.parameter or ""))
-        --local player = game.players[param.player_index]
-        if param.parameter and ctron_commands[param.parameter] then
-            ctron_commands[param.parameter]()
+        if param.parameter then
+            local player = game.players[param.player_index]
+            local params = custom_lib.string_split(param.parameter, " ")
+            local command = table.remove(params, 1)
+            if command and ctron_commands[command] then
+                ctron_commands[command](player,params)
+            end
         end
     end
 )
