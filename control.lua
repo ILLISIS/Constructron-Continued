@@ -1,6 +1,7 @@
 local custom_lib = require("__Constructron-Continued__.script.custom_lib")
 local ctron = require("__Constructron-Continued__.script.constructron")
 local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
+local cmd = require("__Constructron-Continued__.script.command_functions")
 
 ctron.pathfinder = Spidertron_Pathfinder({
     cache_enabled = (settings.startup["pathfinder_cache_enabled"].value == true)
@@ -42,37 +43,23 @@ script.on_event(ev.on_script_path_request_finished, (function(event)
 end))
 
 -- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required
-if (settings.startup["construct_jobs"].value) then
-    script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
-end
+script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
 
-if (settings.startup["rebuild_jobs"].value) then
-    script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
-end
+script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
 
-if (settings.startup["deconstruct_jobs"].value) then
-    if settings.startup["decon_ground_items"].value then
-        script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction)
-    else
-        script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction, {
-            {filter = 'name', name = "item-on-ground", invert = true}
-        })
-    end
-end
 
-if (settings.startup["upgrade_jobs"].value) then
-    script.on_event(ev.on_marked_for_upgrade, ctron.on_marked_for_upgrade)
-end
+script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction)
 
-if (settings.startup["repair_jobs"].value) then
-    script.on_event(ev.on_entity_damaged, ctron.on_entity_damaged, {
-        {filter = "final-health", comparison = ">", value = 0, mode = "and"},
-        {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
-        {filter = "vehicle", invert = true, mode = "and"},
-        {filter = "rolling-stock", invert = true, mode = "and"},
-        {filter = "type", type = "character", invert = true, mode = "and"}
-    })
-end
+
+script.on_event(ev.on_marked_for_upgrade, ctron.on_marked_for_upgrade)
+
+script.on_event(ev.on_entity_damaged, ctron.on_entity_damaged, {
+    {filter = "final-health", comparison = ">", value = 0, mode = "and"},
+    {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
+    {filter = "vehicle", invert = true, mode = "and"},
+    {filter = "rolling-stock", invert = true, mode = "and"},
+    {filter = "type", type = "character", invert = true, mode = "and"}
+})
 
 script.on_event(ev.on_surface_created, ctron.on_surface_created)
 script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
@@ -80,16 +67,192 @@ script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
 script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 
+script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
 -------------------------------------------------------------------------------
 local function reset(player, parameters)
     log("control:reset")
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
-    game.print("Constructron: !!! reset !!!", {r = 1, g = 0.2, b = 0.2})
-    game.print("warning: present ghosts might be ignored", {r = 1, g = 0.2, b = 0.2})
-    for _, surface in pairs(game.surfaces) do
-        ctron.force_surface_cleanup(surface)
+
+    if parameters[1] == "recall" then
+        cmd.recall_ctrons()
     end
+
+    if parameters[1] == "queues" then
+        cmd.clear_queues()
+
+    elseif parameters[1] == "entities" then
+        cmd.reload_entities()
+
+    elseif parameters[1] == "settings" then
+        cmd.reset_settings()
+
+    elseif parameters[1] == "all" then
+        -- reset settings
+        cmd.reset_settings()
+
+        -- Clear jobs/queues/entities
+        game.print('Clear jobs/queues/entities')
+        global.job_bundles = {}
+        cmd.clear_queues()
+
+        -- Clear supporting globals
+        game.print('Clear supporting globals')
+        global.ignored_entities = {}
+
+        -- Clear and reacquire Constructrons & Stations
+        cmd.reload_entities()
+        cmd.reload_ctron_status()
+        cmd.reload_ctron_color()
+
+        -- -- Recall Ctrons
+        game.print('Recall Ctrons')
+        cmd.recall_ctrons()
+
+        -- Reacquire Construction jobs
+        game.print('Reacquire Construction jobs')
+        cmd.reacquire_construction_jobs()
+
+        -- Reacquire Deconstruction jobs
+        game.print('Reacquire Deconstruction jobs')
+        cmd.reacquire_deconstruction_jobs()
+
+        -- Reacquire Upgrade jobs
+        game.print('Reacquire Upgrade jobs')
+        cmd.reacquire_upgrade_jobs()
+
+    else
+        game.print('Command parameter does not exist.')
+        cmd.help_text()
+    end
+end
+
+local function clear(player, parameters)
+    log("control:clear")
+    log("by player:" .. player.name)
+    log("parameters: " .. serpent.block(parameters))
+
+    if parameters[1] == "all" then
+        game.print('All jobs, queued jobs and unprocessed entities cleared.')
+        cmd.clear_queues()
+        cmd.reload_ctron_status()
+        cmd.reload_ctron_color()
+        global.job_bundles = {}
+        cmd.recall_ctrons()
+
+    else
+        game.print('Command parameter does not exist.')
+        cmd.help_text()
+    end
+end
+
+local function enable(player, parameters)
+    log("control:enable")
+    log("by player:" .. player.name)
+    log("parameters: " .. serpent.block(parameters))
+
+    if parameters[1] == "construction" then
+        global.construction_job_toggle = true
+        settings.global["construct_jobs"] = {value = true}
+        cmd.reacquire_construction_jobs()
+        game.print('Construction jobs enabled.')
+
+    elseif parameters[1] == "rebuild" then
+        global.rebuild_job_toggle = true
+        settings.global["rebuild_jobs"] = {value = true}
+        game.print('Rebuild jobs enabled.')
+
+    elseif parameters[1] == "deconstruction" then
+        global.deconstruction_job_toggle = true
+        settings.global["deconstruct_jobs"] = {value = true}
+        cmd.reacquire_deconstruction_jobs()
+        game.print('Deconstruction jobs enabled.')
+
+    elseif parameters[1] == "ground_deconstruction" then
+        global.ground_decon_job_toggle = true
+        settings.global["decon_ground_items"] = {value = true}
+        game.print('items-on-ground deconstruction enabled.')
+
+    elseif parameters[1] == "upgrade" then
+        global.upgrade_job_toggle = true
+        settings.global["upgrade_jobs"] = {value = true}
+        cmd.reacquire_upgrade_jobs()
+        game.print('Upgrade jobs enabled.')
+
+    elseif parameters[1] == "repair" then
+        global.repair_job_toggle = true
+        settings.global["repair_jobs"] = {value = true}
+        game.print('Repair jobs enabled.')
+
+    elseif parameters[1] == "debug" then
+        global.debug_toggle = true
+        settings.global["constructron-debug-enabled"] = {value = true}
+        game.print('Debug view enabled.')
+
+    elseif parameters[1] == "landfill" then
+        global.landfill_job_toggle = true
+        settings.global["allow_landfill"] = {value = true}
+        game.print('Landfill enabled.')
+
+    else
+        game.print('Command parameter does not exist.')
+        cmd.help_text()
+    end
+end
+
+local function disable(player, parameters)
+    log("control:disable")
+    log("by player:" .. player.name)
+    log("parameters: " .. serpent.block(parameters))
+
+    if parameters[1] == "construction" then
+        global.construction_job_toggle = false
+        settings.global["construct_jobs"] = {value = false}
+        game.print('Construction jobs disabled.')
+
+    elseif parameters[1] == "rebuild" then
+        global.rebuild_job_toggle = false
+        settings.global["rebuild_jobs"] = {value = false}
+        game.print('Rebuild jobs disabled.')
+
+    elseif parameters[1] == "deconstruction" then
+        global.deconstruction_job_toggle = false
+        settings.global["deconstruct_jobs"] = {value = false}
+        game.print('Deconstruction jobs disabled.')
+
+    elseif parameters[1] == "ground_deconstruction" then
+        global.ground_decon_job_toggle = false
+        settings.global["decon_ground_items"] = {value = false}
+        game.print('items-on-ground deconstruction disabled.')
+
+    elseif parameters[1] == "upgrade" then
+        global.upgrade_job_toggle = false
+        settings.global["upgrade_jobs"] = {value = false}
+        game.print('Upgrade jobs disabled.')
+
+    elseif parameters[1] == "repair" then
+        global.repair_job_toggle = false
+        settings.global["repair_jobs"] = {value = false}
+        game.print('Repair jobs disabled.')
+
+    elseif parameters[1] == "debug" then
+        global.debug_toggle = false
+        settings.global["constructron-debug-enabled"] = {value = false}
+        game.print('Debug view disabled.')
+
+    elseif parameters[1] == "landfill" then
+        global.landfill_job_toggle = false
+        settings.global["allow_landfill"] = {value = false}
+        game.print('Landfill disabled.')
+
+    else
+        game.print('Command parameter does not exist.')
+        cmd.help_text()
+    end
+end
+
+local function help()
+    cmd.help()
 end
 
 --===========================================================================--
@@ -97,7 +260,11 @@ end
 --===========================================================================--
 
 local ctron_commands = {
+    help = help,
     reset = reset,
+    clear = clear,
+    enable = enable,
+    disable = disable,
 }
 
 -------------------------------------------------------------------------------
@@ -114,6 +281,9 @@ commands.add_command(
             local command = table.remove(params, 1)
             if command and ctron_commands[command] then
                 ctron_commands[command](player,params)
+            else
+                game.print('Command parameter does not exist.')
+                cmd.help_text()
             end
         end
     end

@@ -15,23 +15,28 @@ me.pathfinder = {
 }
 
 me.ensure_globals = function()
-    global.constructron_pathfinder_requests = nil
+    global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
+    global.ignored_entities = {}
+    global.allowed_items = {}
+
+    global.ghost_entities = global.ghost_entities or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
     global.upgrade_entities = global.upgrade_entities or {}
+    global.repair_entities = global.repair_entities or {}
+
     global.construct_queue = global.construct_queue or {}
     global.deconstruct_queue = global.deconstruct_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
-    global.ignored_entities = {}
-    global.ghost_entities = global.ghost_entities or {}
+    global.repair_queue = global.repair_queue or {}
+
     global.job_bundles = global.job_bundles or {}
+
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
-    global.registered_entities = global.registered_entities or {}
+
     global.constructrons_count = global.constructrons_count or {}
     global.stations_count = global.stations_count or {}
-    global.repair_entities = global.repair_entities or {}
-    global.repair_queue = global.repair_queue or {}
 
     for s, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
@@ -105,20 +110,33 @@ me.calculate_required_inventory_slot_count = function(required_items, divisor)
     return slots
 end
 
-me.check_item_allowed = function(item_name)
-    -- if this has perforemance issues: use global table<string,boolean> to cache results; needs to be reset on tech researched
-    if not game.item_prototypes[item_name].has_flag("hidden") then
+
+---@param item_name string
+---@param force LuaForce
+---return boolean
+me.check_item_allowed = function(item_name, force)
+    if not global.allowed_items[item_name] then
+        if not game.item_prototypes[item_name].has_flag("hidden") then
+            global.allowed_items[item_name] = true
+            return true
+        end
+        local recipes = game.get_filtered_recipe_prototypes(
+            {
+                {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}, mode = "and"}
+            }
+        )
+        for _ , recipe in pairs(recipes) do
+            -- !! refactor force call
+            if game.forces["player"].recipes[recipe.name].enabled and not game.forces["player"].recipes[recipe.name].hidden then
+                global.allowed_items[item_name] = true
+                return true
+            end
+        end
+        global.allowed_items[item_name] = false
+        return false
+    else
         return true
     end
-    local recipes = game.get_filtered_recipe_prototypes(
-        {
-            {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}, mode = "and"},
-            {filter = "enabled", value = true, mode = "and"},
-            {filter = "hidden-from-player-crafting", value = false, mode = "and"}
-        }
-    )
-    local _ , recipe = next(recipes)
-    return (recipe ~= nil)
 end
 
 me.process_entity = function(entity, target_entity, build_type, queue)
@@ -1052,115 +1070,163 @@ end
 
 
 me.is_floor_tile = function(entity_name)
-    local floor_tiles
-    if (settings.global["allow_landfill"].value) then
-        floor_tiles = {}
-    else
-        floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
+    if global.landfill_job_toggle then
+        return false
     end
+    local floor_tiles
+    floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
     -- ToDo:
     --  find landfill-like tiles based on collision layer
     --  this list should be build at loading time not everytime
-    return custom_lib.table_has_value(floor_tiles, entity_name)
+    if floor_tiles[entity_name] then
+        return true
+    else
+        return false
+    end
+end
+
+me.mod_settings_changed = function(event)
+    log("mod setting change: " .. event.setting)
+    local setting = event.setting
+    if setting == "construct_jobs" then
+        global.construction_job_toggle = settings.global["construct_jobs"].value
+    elseif setting == "rebuild_jobs" then
+        global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
+    elseif setting == "deconstruct_jobs" then
+        global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
+    elseif setting == "decon_ground_items" then
+        global.ground_decon_job_toggle = settings.global["decon_ground_items"].value
+    elseif setting == "upgrade_jobs" then
+        global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
+    elseif setting == "repair_jobs" then
+        global.repair_job_toggle = settings.global["repair_jobs"].value
+    elseif setting == "constructron-debug-enabled" then
+        global.debug_toggle = settings.global["constructron-debug-enabled"].value
+    elseif setting == "landfill_toggle" then
+        global.landfill_job_toggle = settings.global["allow_landfill"].value
+    end
 end
 
 me.on_built_entity = function(event) -- for entity creation
-    local entity = event.entity or event.created_entity
+    if global.construction_job_toggle then
+        local entity = event.entity or event.created_entity
 
-    if not entity or not entity.force.name == "player" then
-        return
-    end
+        if not entity or not entity.force.name == "player" then
+            return
+        end
 
-    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+        local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+        local entity_type = entity.type
 
-    if entity.type == 'item-request-proxy' then
-        global.ghost_entities[key] = entity
-        global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
-    else
-        if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' then
-            local entity_name = entity.ghost_name
-            -- Need to separate ghosts and tiles in different tables
-            if global.ignored_entities[entity_name] == nil then
-                local items_to_place_this = entity.ghost_prototype.items_to_place_this
-                global.ignored_entities[entity_name] = (me.check_item_allowed(items_to_place_this[1].name) == false)
-                if me.is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
-                    global.ignored_entities[entity_name] = true
+        if entity_type == 'item-request-proxy' then
+            global.ghost_entities[key] = entity
+            global.ghost_tick = event.tick
+        else
+            if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' then
+                local entity_name = entity.ghost_name
+                -- Need to separate ghosts and tiles in different tables
+                if global.ignored_entities[entity_name] == nil then
+                    local items_to_place_this = entity.ghost_prototype.items_to_place_this
+                    global.ignored_entities[entity_name] = (me.check_item_allowed(items_to_place_this[1].name) == false)
+                    -- if me.is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
+                    --     global.ignored_entities[entity_name] = true
+                    -- end
                 end
-            end
-            if not global.ignored_entities[entity_name] == true then
-                global.ghost_entities[key] = entity
-                global.ghost_tick = event.tick -- to look at later, updating a global each time a ghost is created, should this be per ghost?
-            end
-        elseif entity.name == 'constructron' then
-            local registration_number = script.register_on_entity_destroyed(entity)
-            me.set_constructron_status(entity, 'busy', false)
-            me.paint_constructron(entity, 'idle')
-            entity.enable_logistics_while_moving = false
-            global.constructrons[entity.unit_number] = entity
-            global.registered_entities[registration_number] = {
-                name = "constructron",
-                surface = entity.surface.index
-            }
-            global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
-        elseif entity.name == "service_station" then
-            local registration_number = script.register_on_entity_destroyed(entity)
+                if not global.ignored_entities[entity_name] == true then
+                    if not me.is_floor_tile(entity_name) then
+                        global.ghost_entities[key] = entity
+                        global.ghost_tick = event.tick
+                    end
+                end
+            elseif entity.name == 'constructron' then
+                local registration_number = script.register_on_entity_destroyed(entity)
+                me.set_constructron_status(entity, 'busy', false)
+                me.paint_constructron(entity, 'idle')
+                entity.enable_logistics_while_moving = false
+                global.constructrons[entity.unit_number] = entity
+                global.registered_entities[registration_number] = {
+                    name = "constructron",
+                    surface = entity.surface.index
+                }
+                global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
+            elseif entity.name == "service_station" then
+                local registration_number = script.register_on_entity_destroyed(entity)
 
-            global.service_stations[entity.unit_number] = entity
-            global.registered_entities[registration_number] = {
-                name = "service_station",
-                surface = entity.surface.index
+                global.service_stations[entity.unit_number] = entity
+                global.registered_entities[registration_number] = {
+                    name = "service_station",
+                    surface = entity.surface.index
+                }
+                global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
+            end
+        end
+    end
+end
+
+me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
+    if global.rebuild_job_toggle then
+        local entity = event.ghost
+
+        if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
+            local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+            global.ghost_entities[key] = entity
+            global.ghost_tick = event.tick
+        end
+    end
+end
+
+me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
+    if global.deconstruction_job_toggle then
+        if not event.entity.name == "item-on-ground" then
+            local entity = event.entity
+            local force_name = entity.force.name
+            local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+            if force_name == "player" or force_name == "neutral" then
+                global.deconstruct_marked_tick = event.tick
+                global.deconstruction_entities[key] = entity
+            end
+        elseif global.ground_decon_job_toggle then
+            local entity = event.entity
+            local force_name = entity.force.name
+            local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+            if force_name == "player" or force_name == "neutral" then
+                global.deconstruct_marked_tick = event.tick
+                global.deconstruction_entities[key] = entity
+            end
+        end
+    end
+end
+
+me.on_marked_for_upgrade = function(event) -- for entity upgrade
+    if global.upgrade_job_toggle then
+        local entity = event.entity
+        local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+
+        if entity.force.name == "player" then
+            global.upgrade_marked_tick = event.tick
+            global.upgrade_entities[key] = {
+                entity = entity,
+                target = event.target
             }
-            global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
         end
     end
 end
 
 me.on_entity_damaged = function(event)
-    local entity = event.entity
-    local force = entity.force.name
-    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-
-    if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value) then
-        if not global.repair_entities[key] then
-            global.repair_marked_tick = event.tick
-            global.repair_entities[key] = entity
-        end
-    elseif force == "player" and global.repair_entities[key] and event.final_health == 0 then
-        global.repair_entities[key] = nil
-    end
-end
-
-me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
-    local entity = event.ghost
-
-    if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
+    if global.repair_job_toggle then
+        local entity = event.entity
+        local force = entity.force.name
         local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
-        global.ghost_entities[key] = entity
-        global.ghost_tick = event.tick
-    end
-end
-
-me.on_marked_for_upgrade = function(event) -- for entity upgrade
-    local entity = event.entity
-    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-
-    if entity.force.name == "player" then
-        global.upgrade_marked_tick = event.tick
-        global.upgrade_entities[key] = {
-            entity = entity,
-            target = event.target
-        }
-    end
-end
-
-me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
-    local entity = event.entity
-    local force_name = entity.force.name
-    local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-    if force_name == "player" or force_name == "neutral" then
-        global.deconstruct_marked_tick = event.tick
-        global.deconstruction_entities[key] = entity
+        if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value) then
+            if not global.repair_entities[key] then
+                global.repair_marked_tick = event.tick
+                global.repair_entities[key] = entity
+            end
+        elseif force == "player" and global.repair_entities[key] and event.final_health == 0 then
+            global.repair_entities[key] = nil
+        end
     end
 end
 
