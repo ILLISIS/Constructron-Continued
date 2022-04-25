@@ -58,7 +58,8 @@ script.on_event(ev.on_entity_damaged, ctron.on_entity_damaged, {
     {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
     {filter = "vehicle", invert = true, mode = "and"},
     {filter = "rolling-stock", invert = true, mode = "and"},
-    {filter = "type", type = "character", invert = true, mode = "and"}
+    {filter = "type", type = "character", invert = true, mode = "and"},
+    {filter = "type", type = "fish", invert = true, mode = "and"}
 })
 
 script.on_event(ev.on_surface_created, ctron.on_surface_created)
