@@ -8,3 +8,5 @@ global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
 global.repair_job_toggle = settings.global["repair_jobs"].value
 global.debug_toggle = settings.global["constructron-debug-enabled"].value
 global.landfill_job_toggle = settings.global["allow_landfill"].value
+
+game.print('Constructron-Continued: v1.0.21 migration complete')

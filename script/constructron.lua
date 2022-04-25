@@ -46,6 +46,16 @@ me.ensure_globals = function()
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
     end
+
+    -- settings
+    global.construction_job_toggle = settings.global["construct_jobs"].value
+    global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
+    global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
+    global.ground_decon_job_toggle = settings.global["decon_ground_items"].value
+    global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
+    global.repair_job_toggle = settings.global["repair_jobs"].value
+    global.debug_toggle = settings.global["constructron-debug-enabled"].value
+    global.landfill_job_toggle = settings.global["allow_landfill"].value
 end
 
 me.get_service_stations = function(index)

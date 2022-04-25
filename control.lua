@@ -79,10 +79,7 @@ local function reset(player, parameters)
         cmd.recall_ctrons()
     end
 
-    if parameters[1] == "queues" then
-        cmd.clear_queues()
-
-    elseif parameters[1] == "entities" then
+    if parameters[1] == "entities" then
         cmd.reload_entities()
 
     elseif parameters[1] == "settings" then
@@ -100,15 +97,19 @@ local function reset(player, parameters)
         -- Clear supporting globals
         game.print('Clear supporting globals')
         global.ignored_entities = {}
+        global.allowed_items = {}
 
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
         cmd.reload_ctron_status()
         cmd.reload_ctron_color()
 
-        -- -- Recall Ctrons
+        -- Recall Ctrons
         game.print('Recall Ctrons')
         cmd.recall_ctrons()
+
+        -- Clear Constructron inventory
+        cmd.clear_ctron_inventory()
 
         -- Reacquire Construction jobs
         game.print('Reacquire Construction jobs')

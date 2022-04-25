@@ -164,7 +164,7 @@ me.reload_ctron_color = function (event)
     end
 end
 
-me.recall_ctrons = function (event)
+me.recall_ctrons = function(event)
     for k, surface in pairs(game.surfaces) do
         local constructrons = surface.find_entities_filtered {
             name = "constructron",
@@ -175,6 +175,57 @@ me.recall_ctrons = function (event)
             local closest_station = ctron.get_closest_service_station(constructron)
             -- find path to station
             ctron.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+        end
+    end
+end
+
+me.clear_ctron_inventory = function(event)
+    local slot = 1
+    local desired_robot_count = settings.global["desired_robot_count"].value
+    local desired_robot_name = settings.global["desired_robot_name"].value
+
+    for c, constructron in pairs(global.constructrons) do
+        local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
+        local filtered_items = {}
+        local robot_count = 0
+
+        for i = 1, #inventory do
+            local item = inventory[i]
+
+            if item.valid_for_read then
+                if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
+                    if not filtered_items[item.name] then
+                        constructron.set_vehicle_logistic_slot(slot, {
+                            name = item.name,
+                            min = 0,
+                            max = 0
+                        })
+                        slot = slot + 1
+                        filtered_items[item.name] = true
+                    end
+                else
+                    robot_count = robot_count + item.count
+                    if robot_count > desired_robot_count then
+                        if not filtered_items[item.name] then
+                            if item.name == desired_robot_name then
+                                constructron.set_vehicle_logistic_slot(slot, {
+                                    name = item.name,
+                                    min = desired_robot_count,
+                                    max = desired_robot_count
+                                })
+                            else
+                                constructron.set_vehicle_logistic_slot(slot, {
+                                    name = item.name,
+                                    min = 0,
+                                    max = 0
+                                })
+                            end
+                            slot = slot + 1
+                            filtered_items[item.name] = true
+                        end
+                    end
+                end
+            end
         end
     end
 end
