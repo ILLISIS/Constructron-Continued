@@ -1,6 +1,22 @@
 local lib_spider = require("__Constructron-Continued__.data.lib.lib_spider")
+
+local constructron_collision_mask = {
+    "water-tile",
+    "colliding-with-tiles-only",
+    "not-colliding-with-itself"
+}
+
+if mods["space-exploration"] then
+    local collision_mask_util_extended = require("__space-exploration__.collision-mask-util-extended.data.collision-mask-util-extended")
+    local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+    local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
+    table.insert(constructron_collision_mask, spaceship_collision_layer)
+    table.insert(constructron_collision_mask, collision_mask_space_tile)
+end
+
 local spidertron_definition = {
     name = "constructron",
+    collision_mask = constructron_collision_mask
 }
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 

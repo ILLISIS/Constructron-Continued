@@ -59,6 +59,8 @@ function lib_spider.create_spidertron(arguments)
     local burner = arguments.burner
     local energy_source = arguments.energy_source
     local allow_passengers = arguments.allow_passengers or true
+    local collision_mask = arguments.collision_mask or {}
+
     if not burner and not energy_source then
         energy_source = {
             type = "void"
@@ -141,7 +143,7 @@ function lib_spider.create_spidertron(arguments)
         braking_force = 1,
         friction_force = 1,
         flags = {"placeable-neutral", "player-creation", "placeable-off-grid"},
-        collision_mask = {},
+        collision_mask = collision_mask,
         minable = {
             mining_time = 0.5,
             result = mining_result
@@ -260,6 +262,7 @@ function lib_spider.create_spidertron_legs(arguments)
     local leg_movement_speed = arguments.leg_movement_speed or 1
     local leg_thickness = arguments.leg_thickness or 1
     local leg_scale = scale * (arguments.leg_scale or 1)
+    local collision_mask = arguments.collision_mask or {}
     local leg_entities = {}
     for x = 1, #legs do
         local leg_details = legs[x]
@@ -269,6 +272,7 @@ function lib_spider.create_spidertron_legs(arguments)
             custom_leg_thickness = 1 / custom_scale * leg_thickness
         end
         local leg = lib_spider.make_spidertron_leg(arguments.name, (custom_scale or leg_scale), (custom_leg_thickness or leg_thickness), leg_movement_speed, x)
+        leg.collision_mask = collision_mask
         table.insert(leg_entities, leg)
     end
     return leg_entities

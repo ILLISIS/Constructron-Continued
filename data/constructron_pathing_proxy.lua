@@ -6,9 +6,9 @@ local pathing_collision_mask = {
 }
 if mods["space-exploration"] then
   local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-  local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+  --local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
   table.insert(pathing_collision_mask, spaceship_collision_layer)
-  table.insert(pathing_collision_mask, empty_space_collision_layer)
+  --table.insert(pathing_collision_mask, empty_space_collision_layer)
 end
 
 local template_entity = {
