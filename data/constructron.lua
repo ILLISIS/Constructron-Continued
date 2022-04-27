@@ -9,9 +9,17 @@ local constructron_collision_mask = {
 if mods["space-exploration"] then
     local collision_mask_util_extended = require("__space-exploration__.collision-mask-util-extended.data.collision-mask-util-extended")
     local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-    local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
     table.insert(constructron_collision_mask, spaceship_collision_layer)
-    table.insert(constructron_collision_mask, collision_mask_space_tile)
+
+    if settings.startup["enable_rocket_powered_constructron"].value then
+        --collide with all of "space"
+        local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
+        table.insert(constructron_collision_mask, collision_mask_space_tile)
+    else
+        --collide with "empty space"
+        local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+        table.insert(constructron_collision_mask, empty_space_collision_layer)
+    end
 end
 
 local spidertron_definition = {

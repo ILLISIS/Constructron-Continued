@@ -105,5 +105,11 @@ data:extend({{
     order = "a9",
     setting_type = "startup",
     default_value = true
+}, {
+    type = "bool-setting",
+    name = "enable_rocket_powered_constructron",
+    order = "a9",
+    setting_type = "startup",
+    default_value = false
 }
 })

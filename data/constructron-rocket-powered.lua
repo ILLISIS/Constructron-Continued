@@ -92,8 +92,7 @@ local constructron_recipe = {
         {"fusion-reactor-equipment", 2},
         {"exoskeleton-equipment", 4},
         {"radar", 2},
-        {"se-heat-shielding", 1000},
-        {"rocket-control-unit", 200}
+        {"se-cargo-rocket-section", 200}
     },
     result = "constructron-rocket-powered",
     result_count = 1,
@@ -106,8 +105,7 @@ local constructron_easy_recipe = {
     enabled = false,
     ingredients = {
         {"spidertron", 1},
-        {"se-heat-shielding", 1000},
-        {"rocket-control-unit", 200}
+        {"se-cargo-rocket-section", 200}
     },
     result = "constructron-rocket-powered",
     result_count = 1,
