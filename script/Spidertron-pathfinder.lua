@@ -72,7 +72,7 @@ function Spidertron_Pathfinder.clean_path_steps(path, min_distance)
 end
 
 function Spidertron_Pathfinder.set_autopilot(unit, path)
-    if unit.valid then
+    if unit and unit.valid then
         unit.autopilot_destination = nil
         unit.enable_logistics_while_moving = false
         for i, waypoint in ipairs(path) do
@@ -102,7 +102,13 @@ end
 
 function Spidertron_Pathfinder.request_path(units, _, destination)
     local request_params = {unit = units[1], units = units, goal = destination}
-    Spidertron_Pathfinder.request_path2(request_params)
+    if request_params.unit.name == "constructron-rocket-powered" then
+        for _, unit in ipairs(units) do
+            Spidertron_Pathfinder.set_autopilot(unit, {{position = destination}})
+        end
+    else
+        Spidertron_Pathfinder.request_path2(request_params)
+    end
     return destination
 end
 
