@@ -1,7 +1,6 @@
 require("util")
 
 local chunk_util = require("__Constructron-Continued__.script.chunk_util")
-local custom_lib = require("__Constructron-Continued__.script.custom_lib")
 local debug_lib = require("__Constructron-Continued__.script.debug_lib")
 local color_lib = require("__Constructron-Continued__.script.color_lib")
 
@@ -130,7 +129,7 @@ end
 ---@param item_name string
 ---@param force LuaForce
 ---return boolean
-me.check_item_allowed = function(item_name, force)
+me.check_item_allowed = function(item_name)
     if not global.allowed_items[item_name] then
         if not game.item_prototypes[item_name].has_flag("hidden") then
             global.allowed_items[item_name] = true
@@ -164,7 +163,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     local entity_key = entity_pos_y .. ',' .. entity_pos_x
 
     queue[entity_surface] = queue[entity_surface] or {}
-    
+
     local queue_surface_key = queue[entity_surface][key]
 
     if not queue_surface_key then -- initialize queued_chunk

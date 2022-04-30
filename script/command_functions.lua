@@ -2,7 +2,7 @@ local ctron = require("__Constructron-Continued__.script.constructron")
 
 local me = {}
 
-me.reset_settings = function(event)
+me.reset_settings = function()
     settings.global["construct_jobs"] = {value = true}
     settings.global["rebuild_jobs"] = {value = true}
     settings.global["deconstruct_jobs"] = {value = true}
@@ -12,7 +12,7 @@ me.reset_settings = function(event)
     settings.global["constructron-debug-enabled"] = {value = false}
 end
 
-me.clear_queues = function(event)
+me.clear_queues = function()
     global.ghost_entities = {}
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
@@ -33,8 +33,8 @@ me.clear_queues = function(event)
     end
 end
 
-me.reacquire_construction_jobs = function(event)
-    for k, surface in pairs(game.surfaces) do
+me.reacquire_construction_jobs = function()
+    for _, surface in pairs(game.surfaces) do
         local event = {}
         event["tick"] = game.tick
         local ghosts = surface.find_entities_filtered {
@@ -43,15 +43,15 @@ me.reacquire_construction_jobs = function(event)
             surface = surface.name
         }
         game.print('found '.. #ghosts ..' entities on '.. surface.name ..' to construct.')
-        for k, ghost in pairs(ghosts) do
+        for _, ghost in pairs(ghosts) do
             event["entity"] = ghost
             ctron.on_built_entity(event)
         end
     end
 end
 
-me.reacquire_deconstruction_jobs = function(event)
-    for k, surface in pairs(game.surfaces) do
+me.reacquire_deconstruction_jobs = function()
+    for _, surface in pairs(game.surfaces) do
         local event = {}
         event["tick"] = game.tick
         local decons = surface.find_entities_filtered {
@@ -60,15 +60,15 @@ me.reacquire_deconstruction_jobs = function(event)
             surface = surface.name
         }
         game.print('found '.. #decons ..' entities on '.. surface.name ..' to deconstruct.')
-        for k, decon in pairs(decons) do
+        for _, decon in pairs(decons) do
             event["entity"] = decon
             ctron.on_built_entity(event)
         end
     end
 end
 
-me.reacquire_upgrade_jobs = function(event)
-    for k, surface in pairs(game.surfaces) do
+me.reacquire_upgrade_jobs = function()
+    for _, surface in pairs(game.surfaces) do
         local event = {}
         event["tick"] = game.tick
         local upgrades = surface.find_entities_filtered {
@@ -77,7 +77,7 @@ me.reacquire_upgrade_jobs = function(event)
             surface = surface.name
         }
         game.print('found '.. #upgrades ..' entities on '.. surface.name ..' to upgrade.')
-        for k, upgrade in pairs(upgrades) do
+        for _, upgrade in pairs(upgrades) do
             event["entity"] = upgrade
             event["target"] = "something"
             ctron.on_built_entity(event)
@@ -85,7 +85,7 @@ me.reacquire_upgrade_jobs = function(event)
     end
 end
 
-me.reload_entities = function (event)
+me.reload_entities = function()
     global.registered_entities = {}
 
     global.service_stations = {}
@@ -98,7 +98,7 @@ me.reload_entities = function (event)
     me.reacquire_ctrons()
 end
 
-me.reacquire_stations = function(event)
+me.reacquire_stations = function()
     for s, surface in pairs(game.surfaces) do
         global.stations_count[surface.index] = 0
         local stations = surface.find_entities_filtered {
@@ -125,7 +125,7 @@ me.reacquire_stations = function(event)
     end
 end
 
-me.reacquire_ctrons = function(event)
+me.reacquire_ctrons = function()
     for s, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = 0
         local constructrons = surface.find_entities_filtered {
@@ -152,26 +152,26 @@ me.reacquire_ctrons = function(event)
     end
 end
 
-me.reload_ctron_status = function(event)
+me.reload_ctron_status = function()
     for k, constructron in pairs(global.constructrons) do
         ctron.set_constructron_status(constructron, 'busy', false)
     end
 end
 
-me.reload_ctron_color = function (event)
+me.reload_ctron_color = function()
     for k, constructron in pairs(global.constructrons) do
         ctron.paint_constructron(constructron, 'idle')
     end
 end
 
-me.recall_ctrons = function(event)
-    for k, surface in pairs(game.surfaces) do
+me.recall_ctrons = function()
+    for _, surface in pairs(game.surfaces) do
         local constructrons = surface.find_entities_filtered {
             name = "constructron",
             force = "player",
             surface = surface.name
         }
-        for k, constructron in pairs(constructrons) do
+        for _, constructron in pairs(constructrons) do
             local closest_station = ctron.get_closest_service_station(constructron)
             -- find path to station
             ctron.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
@@ -179,7 +179,7 @@ me.recall_ctrons = function(event)
     end
 end
 
-me.clear_ctron_inventory = function(event)
+me.clear_ctron_inventory = function()
     local slot = 1
     local desired_robot_count = global.desired_robot_count
     local desired_robot_name = global.desired_robot_name
