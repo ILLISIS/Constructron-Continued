@@ -56,6 +56,12 @@ me.ensure_globals = function()
     global.repair_job_toggle = settings.global["repair_jobs"].value
     global.debug_toggle = settings.global["constructron-debug-enabled"].value
     global.landfill_job_toggle = settings.global["allow_landfill"].value
+    global.job_start_delay = (settings.global["job-start-delay"].value * 60)
+    global.desired_robot_count = settings.global["desired_robot_count"].value
+    global.desired_robot_name = settings.global["desired_robot_name"].value
+    global.max_worker_per_job = settings.global['max-worker-per-job'].value
+    global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
+    global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
 end
 
 me.get_service_stations = function(index)
@@ -153,12 +159,16 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     local chunk = chunk_util.chunk_from_position(entity.position)
     local key = chunk.y .. ',' .. chunk.x
     local entity_surface = entity.surface.index
-    local entity_key = entity.position.y .. ',' .. entity.position.x
+    local entity_pos_y = entity.position.y
+    local entity_pos_x = entity.position.x
+    local entity_key = entity_pos_y .. ',' .. entity_pos_x
 
     queue[entity_surface] = queue[entity_surface] or {}
+    
+    local queue_surface_key = queue[entity_surface][key]
 
-    if not queue[entity_surface][key] then -- initialize queued_chunk
-        queue[entity_surface][key] = {
+    if not queue_surface_key then -- initialize queued_chunk
+        queue_surface_key = {
             key = key,
             surface = entity.surface.index,
             entity_key = entity,
@@ -166,34 +176,34 @@ me.process_entity = function(entity, target_entity, build_type, queue)
             position = chunk_util.position_from_chunk(chunk),
             area = chunk_util.get_area_from_chunk(chunk),
             minimum = {
-                x = entity.position.x,
-                y = entity.position.y
+                x = entity_pos_x,
+                y = entity_pos_y
             },
             maximum = {
-                x = entity.position.x,
-                y = entity.position.y
+                x = entity_pos_x,
+                y = entity_pos_y
             },
             required_items = {},
             trash_items = {}
         }
     else -- add to existing queued_chunk
-        queue[entity_surface][key][entity_key] = entity
-        if entity.position.x < queue[entity_surface][key]['minimum'].x then
-            queue[entity_surface][key]['minimum'].x = entity.position.x
-        elseif entity.position.x > queue[entity_surface][key]['maximum'].x then
-            queue[entity_surface][key]['maximum'].x = entity.position.x
+        queue_surface_key[entity_key] = entity
+        if entity_pos_x < queue_surface_key['minimum'].x then
+            queue_surface_key['minimum'].x = entity_pos_x
+        elseif entity_pos_x > queue_surface_key['maximum'].x then
+            queue_surface_key['maximum'].x = entity_pos_x
         end
-        if entity.position.y < queue[entity_surface][key]['minimum'].y then
-            queue[entity_surface][key]['minimum'].y = entity.position.y
-        elseif entity.position.y > queue[entity_surface][key]['maximum'].y then
-            queue[entity_surface][key]['maximum'].y = entity.position.y
+        if entity_pos_y < queue_surface_key['minimum'].y then
+            queue_surface_key['minimum'].y = entity_pos_y
+        elseif entity_pos_y > queue_surface_key['maximum'].y then
+            queue_surface_key['maximum'].y = entity_pos_y
         end
     end
     -- ghosts
     if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
         for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
             if me.check_item_allowed(item.name) then
-                queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                queue_surface_key['required_items'][item.name] = (queue_surface_key['required_items'][item.name] or 0) + item.count
             end
         end
     end
@@ -201,24 +211,24 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     if (build_type ~= "deconstruction") and (entity.type == 'entity-ghost' or entity.type == 'item-request-proxy') then
         for name, count in pairs(entity.item_requests) do
             if me.check_item_allowed(name) then
-                queue[entity_surface][key]['required_items'][name] = (queue[entity_surface][key]['required_items'][name] or 0) + count
+                queue_surface_key['required_items'][name] = (queue_surface_key['required_items'][name] or 0) + count
             end
         end
     end
     -- repair
     if (build_type == "repair") then
-        queue[entity_surface][key]['required_items']['repair-pack'] = (queue[entity_surface][key]['required_items']['repair-pack'] or 0) + 3
+        queue_surface_key['required_items']['repair-pack'] = (queue_surface_key['required_items']['repair-pack'] or 0) + 3
     end
     -- cliff demolition
     if (build_type == "deconstruction") and entity.type == "cliff" then
-            queue[entity_surface][key]['required_items']['cliff-explosives'] = (queue[entity_surface][key]['required_items']['cliff-explosives'] or 0) + 1
+            queue_surface_key['required_items']['cliff-explosives'] = (queue_surface_key['required_items']['cliff-explosives'] or 0) + 1
     end
     -- mining/deconstruction results
     if (build_type == "deconstruction") and entity.prototype.mineable_properties.products then
         for _, item in ipairs(entity.prototype.mineable_properties.products) do
             local amount = item.amount or item.amount_max
             if me.check_item_allowed(item.name) then
-                queue[entity_surface][key]['trash_items'][item.name] = (queue[entity_surface][key]['trash_items'][item.name] or 0) + amount
+                queue_surface_key['trash_items'][item.name] = (queue_surface_key['trash_items'][item.name] or 0) + amount
             end
         end
     end
@@ -228,10 +238,11 @@ me.process_entity = function(entity, target_entity, build_type, queue)
         log("target_entity.items_to_place_this" .. serpent.block(target_entity.items_to_place_this))
         for _, item in ipairs(target_entity.items_to_place_this) do
             if me.check_item_allowed(item.name) then
-                queue[entity_surface][key]['required_items'][item.name] = (queue[entity_surface][key]['required_items'][item.name] or 0) + item.count
+                queue_surface_key['required_items'][item.name] = (queue_surface_key['required_items'][item.name] or 0) + item.count
             end
         end
     end
+    queue[entity_surface][key] = queue_surface_key
 end
 
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
@@ -253,10 +264,10 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     elseif build_type == "repair" then
         entities = global.repair_entities -- array, call by ref
         queue = global.repair_queue -- array, call by ref
-        event_tick = global.repair_marked_tick or 0-- call by value, it is used as read_only
+        event_tick = global.repair_marked_tick or 0 -- call by value, it is used as read_only
     end
 
-    if next(entities) and (game.tick - event_tick) > (settings.global["job-start-delay"].value * 60) then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
+    if next(entities) and (game.tick - event_tick) > global.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for entity_key, entity in pairs(entities) do
             local target_entity
 
@@ -355,12 +366,12 @@ me.do_until_leave = function(job)
             end
         elseif (job.action == 'request_items') then
             local timer = game.tick - job.start_tick
-            if timer > (settings.global["construction_mat_alert"].value * 60) then
+            if timer > global.construction_mat_alert then
                 for k, v in pairs(game.players) do
                     v.add_alert(job.constructrons[1], defines.alert_type.no_material_for_construction)
                 end
             end
-            if timer > (settings.global["max-jobtime-per-job"].value * 60 * 60) and (global.stations_count[(job.constructrons[1].surface.index)] > 0) then
+            if timer > global.max_jobtime and (global.stations_count[(job.constructrons[1].surface.index)] > 0) then
                 local closest_station = me.get_closest_service_station(job.constructrons[1])
                 for unit_number, station in pairs(job.unused_stations) do
                     if not station.valid then
@@ -467,8 +478,8 @@ me.actions = {
         debug_lib.DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
-        local desired_robot_count = settings.global["desired_robot_count"].value
-        local desired_robot_name = settings.global["desired_robot_name"].value
+        local desired_robot_count = global.desired_robot_count
+        local desired_robot_name = global.desired_robot_name
         for c, constructron in ipairs(constructrons) do
             if constructron.valid then
                 local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
@@ -717,7 +728,7 @@ me.get_inventory = function(entity,inventory_type)
         inventory = inventory or {}
         for i = 1, #inventory do
             local item = inventory[i]
-            if item.valid_for_read and item.name ~= settings.global["desired_robot_name"].value then
+            if item.valid_for_read and item.name ~= global.desired_robot_name then
                 items[item.name] = (items[item.name] or 0) + item.count
             end
         end
@@ -741,7 +752,7 @@ end
 me.setup_constructrons = function()
     for _, constructron in pairs(global.constructrons) do
         debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
-        local desired_robot_count = settings.global["desired_robot_count"].value
+        local desired_robot_count = global.desired_robot_count
         if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
             if not constructron.logistic_cell then
                 debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
@@ -749,7 +760,7 @@ me.setup_constructrons = function()
                 constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
                 if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
                     debug_lib.DebugLog('ACTION: Stage')
-                    local desired_robot_name = settings.global["desired_robot_name"].value
+                    local desired_robot_name = global.desired_robot_name
                     if game.item_prototypes[desired_robot_name] then
                         if global.stations_count[constructron.surface.index] > 0 then
                             debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
@@ -862,7 +873,7 @@ me.get_job = function(constructrons)
     for _, surface in pairs(managed_surfaces) do -- iterate each surface
         if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
             if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
-                local max_worker = settings.global['max-worker-per-job'].value
+                local max_worker = global.max_worker_per_job
                 local available_constructrons = {}
                 local chunks = {}
                 local job_type
@@ -1084,7 +1095,7 @@ me.is_floor_tile = function(entity_name)
         return false
     end
     local floor_tiles
-    floor_tiles = {"landfill", "se-space-platform-scaffold", "se-space-platform-plating", "se-spaceship-floor"}
+    floor_tiles = { ['landfill'] = true, ['se-space-platform-scaffold'] = true, ['se-space-platform-plating'] = true, ['se-spaceship-floor'] = true }
     -- ToDo:
     --  find landfill-like tiles based on collision layer
     --  this list should be build at loading time not everytime
@@ -1114,6 +1125,18 @@ me.mod_settings_changed = function(event)
         global.debug_toggle = settings.global["constructron-debug-enabled"].value
     elseif setting == "landfill_toggle" then
         global.landfill_job_toggle = settings.global["allow_landfill"].value
+    elseif setting == "job-start-delay" then
+        global.job_start_delay = (settings.global["job-start-delay"].value * 60)
+    elseif setting == "desired_robot_count" then
+        global.desired_robot_count = settings.global["desired_robot_count"].value
+    elseif setting == "desired_robot_name" then
+        global.desired_robot_name = settings.global["desired_robot_name"].value
+    elseif setting == "max-worker-per-job" then
+        global.max_worker_per_job = settings.global['max-worker-per-job'].value
+    elseif setting == "construction_mat_alert" then
+        global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
+    elseif setting == "max-jobtime-per-job" then
+        global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
     end
 end
 

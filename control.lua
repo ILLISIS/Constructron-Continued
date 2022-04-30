@@ -17,7 +17,7 @@ script.on_configuration_changed(init)
 
 -- Possibly do this at a 10x lower frequency or controlled by a mod setting
 script.on_nth_tick(1, (function(event)
-    if event.tick % 300 == 0 then
+    if event.tick % 600 == 0 then
         ctron.setup_constructrons()
     elseif event.tick % 20 == 0 then
         ctron.add_entities_to_chunks("deconstruction")
@@ -86,9 +86,6 @@ local function reset(player, parameters)
         cmd.reset_settings()
 
     elseif parameters[1] == "all" then
-        -- reset settings
-        cmd.reset_settings()
-
         -- Clear jobs/queues/entities
         game.print('Clear jobs/queues/entities')
         global.job_bundles = {}
@@ -141,6 +138,9 @@ local function clear(player, parameters)
         cmd.reload_ctron_color()
         global.job_bundles = {}
         cmd.recall_ctrons()
+
+    elseif parameters[1] == "inventory" then
+        cmd.clear_ctron_inventory()
 
     else
         game.print('Command parameter does not exist.')

@@ -181,8 +181,8 @@ end
 
 me.clear_ctron_inventory = function(event)
     local slot = 1
-    local desired_robot_count = settings.global["desired_robot_count"].value
-    local desired_robot_name = settings.global["desired_robot_name"].value
+    local desired_robot_count = global.desired_robot_count
+    local desired_robot_name = global.desired_robot_name
 
     for c, constructron in pairs(global.constructrons) do
         local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
