@@ -386,7 +386,7 @@ me.do_until_leave = function(job)
                 end
                 local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
                 for _, constructron in ipairs(job.constructrons) do
-                    me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
+                    me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
                 end
                 job.start_tick = game.tick
                 debug_lib.DebugLog('request_items action timed out, moving to new station')
@@ -405,7 +405,7 @@ me.actions = {
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         if find_path then
-            return me.pathfinder:request_path(constructrons, "constructron_pathing_dummy" , position)
+            return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
                 constructron.autopilot_destination = position -- does not use path finder!
@@ -451,7 +451,7 @@ me.actions = {
         if global.stations_count[constructrons[1].surface.index] > 0 then
             local closest_station = me.get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
             for c, constructron in ipairs(constructrons) do
-                me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                 local merged_items = table.deepcopy(request_items)
                 for _, inv in pairs({"spider_trash", "spider_trunk"}) do
                     local inventory_items = me.get_inventory(constructron,inv)
@@ -768,7 +768,7 @@ me.setup_constructrons = function()
                             -- they can be elsewhere though. they don't have to start in the same place.
                             -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
                             local closest_station = me.get_closest_service_station(constructron)
-                            me.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                            me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                             local slot = 1
                             constructron.set_vehicle_logistic_slot(slot, {
                                 name = desired_robot_name,
@@ -1170,7 +1170,7 @@ me.on_built_entity = function(event) -- for entity creation
                         global.ghost_tick = event.tick
                     end
                 end
-            elseif entity.name == 'constructron' then
+            elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
                 local registration_number = script.register_on_entity_destroyed(entity)
                 me.set_constructron_status(entity, 'busy', false)
                 me.paint_constructron(entity, 'idle')
@@ -1288,7 +1288,7 @@ end
 
 me.on_entity_cloned = function(event)
     local entity = event.destination
-    if entity.name == 'constructron' then
+    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
         local registration_number = script.register_on_entity_destroyed(entity)
         debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         me.paint_constructron(entity, 'idle')
@@ -1315,7 +1315,7 @@ end
 me.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
-        if removed_entity.name == "constructron" then
+        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] - 1)
             global.constructrons[event.unit_number] = nil

@@ -3,9 +3,7 @@ local ctron = require("__Constructron-Continued__.script.constructron")
 local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
 local cmd = require("__Constructron-Continued__.script.command_functions")
 
-ctron.pathfinder = Spidertron_Pathfinder({
-    cache_enabled = (settings.startup["pathfinder_cache_enabled"].value == true)
-})
+ctron.pathfinder = Spidertron_Pathfinder
 
 local init = function()
     ctron.ensure_globals()
@@ -39,7 +37,7 @@ end))
 
 local ev = defines.events
 script.on_event(ev.on_script_path_request_finished, (function(event)
-    Spidertron_Pathfinder:on_script_path_request_finished(event)
+    Spidertron_Pathfinder.on_script_path_request_finished(event)
 end))
 
 -- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required
