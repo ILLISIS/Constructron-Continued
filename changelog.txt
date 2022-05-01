@@ -1,6 +1,19 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.19
-Date: 2022-04-10
+Version: 1.0.21
+Date: 2022-05-1
+  New Features:
+    - Rocket Constructron for Space Exporation. This must be enabled in the startup settings and is only placable in space zones. WIP.
+  Improvements:
+    - Commands! enable|disable|reset|clear. Please see the mod portal page for info.
+    - Performance improvements in entity processing and Constructron checks.
+  Fixes:
+    - Minor bugfix with unit status not clearing after it was picked up/destroyed.
+    - Bugfix for Constructrons requesting more than one path at once.
+    - Bugfix for landfill not being constructed after toggling the setting.
+    - Bugfix for LTN like entities that cannot be crafted by the player.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.20
+Date: 2022-04-15
   Fixes:
     - Changed chunk calculation assumptions back to original value to decrease the chance of missing entities.
     - Bugfix in migration script which only occurred in older saves.
@@ -20,7 +33,6 @@ Date: 2022-04-10
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
     - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
-    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.18
 Date: 2022-04-03
@@ -42,7 +54,6 @@ Date: 2022-04-03
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
     - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
-    - The Landfill-like tiles are not constructed as this requires changes to the pathing calculation.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.17
 Date: 2022-03-26

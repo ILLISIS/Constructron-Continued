@@ -46,31 +46,31 @@ data:extend({{
     type = "bool-setting",
     name = "construct_jobs",
     order = "a1",
-    setting_type = "startup",
+    setting_type = "runtime-global",
     default_value = true
 }, {
     type = "bool-setting",
     name = "rebuild_jobs",
     order = "a2",
-    setting_type = "startup",
+    setting_type = "runtime-global",
     default_value = true
 },{
     type = "bool-setting",
     name = "deconstruct_jobs",
     order = "a3",
-    setting_type = "startup",
+    setting_type = "runtime-global",
     default_value = true
 }, {
     type = "bool-setting",
     name = "upgrade_jobs",
     order = "a4",
-    setting_type = "startup",
+    setting_type = "runtime-global",
     default_value = true
 }, {
     type = "bool-setting",
     name = "repair_jobs",
     order = "a5",
-    setting_type = "startup",
+    setting_type = "runtime-global",
     default_value = false
 }, {
     type = "int-setting",
@@ -97,6 +97,19 @@ data:extend({{
     type = "bool-setting",
     name = "decon_ground_items",
     order = "a8",
+    setting_type = "runtime-global",
+    default_value = true
+}, {
+    type = "bool-setting",
+    name = "pathfinder_cache_enabled",
+    order = "a9",
     setting_type = "startup",
     default_value = true
-}})
+}, {
+    type = "bool-setting",
+    name = "enable_rocket_powered_constructron",
+    order = "a9",
+    setting_type = "startup",
+    default_value = false
+}
+})

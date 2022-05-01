@@ -2,7 +2,6 @@ global.registered_entities = global.registered_entities or {}
 global.constructrons_count = global.constructrons_count or {}
 global.stations_count = global.stations_count or {}
 
-global.constructron_pathfinder_requests = {}
 global.construct_queue = {}
 global.deconstruct_queue = {}
 global.upgrade_queue = {}

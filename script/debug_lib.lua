@@ -1,7 +1,7 @@
 local me = {}
 
 me.DebugLog = function(message)
-    if settings.global["constructron-debug-enabled"].value then
+    if global.debug_toggle then
         game.print(message)
         log(message)
     end
@@ -19,7 +19,7 @@ me.VisualDebugText = function(message, entity, offset, ttl)
     else
         ttl = ttl * 60
     end
-    if settings.global["constructron-debug-enabled"].value then
+    if global.debug_toggle then
         rendering.draw_text {
             text = message,
             target = entity,
@@ -40,7 +40,7 @@ me.VisualDebugText = function(message, entity, offset, ttl)
 end
 
 me.VisualDebugCircle = function(position, surface, color, text)
-    if settings.global["constructron-debug-enabled"].value then
+    if global.debug_toggle then
         if position then
             local message = "Circle"
             rendering.draw_circle {
@@ -74,7 +74,7 @@ me.VisualDebugCircle = function(position, surface, color, text)
 end
 
 me.draw_rectangle = function(minimum, maximum, surface, color)
-    if settings.global["constructron-debug-enabled"].value then
+    if global.debug_toggle then
         local message = "rectangle"
         local inner_color = {
             r = color.r,
