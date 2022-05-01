@@ -102,14 +102,16 @@ end
 
 function Spidertron_Pathfinder.request_path(units, _, destination)
     local request_params = {unit = units[1], units = units, goal = destination}
-    if request_params.unit.name == "constructron-rocket-powered" then
-        for _, unit in ipairs(units) do
-            Spidertron_Pathfinder.set_autopilot(unit, {{position = destination}})
+    if units[1].valid then
+        if request_params.unit.name == "constructron-rocket-powered" then
+            for _, unit in ipairs(units) do
+                Spidertron_Pathfinder.set_autopilot(unit, {{position = destination}})
+            end
+        else
+            Spidertron_Pathfinder.request_path2(request_params)
         end
-    else
-        Spidertron_Pathfinder.request_path2(request_params)
+        return destination
     end
-    return destination
 end
 
 function Spidertron_Pathfinder.request_path2(request_params)

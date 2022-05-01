@@ -1,8 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.21
-Date: 2022-04-30
+Date: 2022-05-1
   New Features:
-    - Rocket Constructron for Space Exporation. This is only placable in space zones.
+    - Rocket Constructron for Space Exporation. This must be enabled in the startup settings and is only placable in space zones. WIP.
   Improvements:
     - Commands! enable|disable|reset|clear. Please see the mod portal page for info.
     - Performance improvements in entity processing and Constructron checks.
