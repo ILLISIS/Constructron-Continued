@@ -181,13 +181,10 @@ end
 
 me.clear_ctron_inventory = function()
     local slot = 1
-    local desired_robot_count = global.desired_robot_count
-    local desired_robot_name = global.desired_robot_name
 
     for c, constructron in pairs(global.constructrons) do
         local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
         local filtered_items = {}
-        local robot_count = 0
 
         for i = 1, #inventory do
             local item = inventory[i]

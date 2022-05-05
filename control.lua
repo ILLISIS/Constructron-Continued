@@ -283,8 +283,7 @@ end
 local function stats(player, _ )
     log("control:help")
     log("by player:" .. player.name)
-    log("parameters: " .. serpent.block(parameters))
-    
+
     local stats = cmd.stats()
     log(serpent.block(stats))
     if stats and player then
