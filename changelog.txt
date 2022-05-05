@@ -1,4 +1,19 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.22
+Date: 2022-05-6
+  New Features:
+    - New setting: entities_per_tick - control how many items are processed into jobs per tick. Higher numbers requires more initial compute with large blueprints.
+    - Added /ctron stats command for further diagnostics.
+    - Added /ctron clear inventory command.
+  Improvements:
+    - Optimizations to job assignment process with a significant amount of Constructrons.
+    - Optimizations through out other parts of job assignment process.
+    - Optimizations to on_built event.
+    - Optimizations to inventory calculations.
+  Fixes:
+    - Bugfix in /ctron reset all command whilst recalling the Constructrons.
+    - Bugfix after surface deletion.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.21
 Date: 2022-05-1
   New Features:

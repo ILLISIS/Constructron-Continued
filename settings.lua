@@ -94,6 +94,13 @@ data:extend({{
     minimum_value = 0,
     maximum_value = 3600
 }, {
+    type = "int-setting",
+    name = "entities_per_tick",
+    setting_type = "runtime-global",
+    default_value = 100,
+    minimum_value = 100,
+    maximum_value = 10000
+}, {
     type = "bool-setting",
     name = "decon_ground_items",
     order = "a8",
