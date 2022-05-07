@@ -1217,7 +1217,7 @@ me.on_post_entity_died = function(event) -- for entities that die and need rebui
     if global.rebuild_job_toggle then
         local entity = event.ghost
 
-        if (entity.type == 'entity-ghost') and (entity.force.name == "player") then
+        if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
             local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
             global.ghost_entities[key] = entity
