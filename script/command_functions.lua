@@ -10,6 +10,12 @@ me.reset_settings = function()
     settings.global["upgrade_jobs"] = {value = true}
     settings.global["repair_jobs"] = {value = false}
     settings.global["constructron-debug-enabled"] = {value = false}
+    settings.global["allow_landfill"] = {value = true}
+    settings.global["desired_robot_count"] = {value = 50}
+    settings.global["desired_robot_name"] = {value = "construction-robot"}
+    settings.global['max-worker-per-job'] = {value = 4}
+    settings.global["max-jobtime-per-job"] = {value = 2}
+    settings.global["entities_per_tick"] = {value = 100}
 end
 
 me.clear_queues = function()
@@ -174,60 +180,80 @@ me.recall_ctrons = function()
         for _, constructron in pairs(constructrons) do
             local closest_station = ctron.get_closest_service_station(constructron)
             -- find path to station
-            ctron.pathfinder:request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+            ctron.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
         end
     end
 end
 
 me.clear_ctron_inventory = function()
     local slot = 1
-    local desired_robot_count = global.desired_robot_count
-    local desired_robot_name = global.desired_robot_name
 
     for c, constructron in pairs(global.constructrons) do
         local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
         local filtered_items = {}
-        local robot_count = 0
 
         for i = 1, #inventory do
             local item = inventory[i]
 
             if item.valid_for_read then
-                if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
-                    if not filtered_items[item.name] then
-                        constructron.set_vehicle_logistic_slot(slot, {
-                            name = item.name,
-                            min = 0,
-                            max = 0
-                        })
-                        slot = slot + 1
-                        filtered_items[item.name] = true
-                    end
-                else
-                    robot_count = robot_count + item.count
-                    if robot_count > desired_robot_count then
-                        if not filtered_items[item.name] then
-                            if item.name == desired_robot_name then
-                                constructron.set_vehicle_logistic_slot(slot, {
-                                    name = item.name,
-                                    min = desired_robot_count,
-                                    max = desired_robot_count
-                                })
-                            else
-                                constructron.set_vehicle_logistic_slot(slot, {
-                                    name = item.name,
-                                    min = 0,
-                                    max = 0
-                                })
-                            end
-                            slot = slot + 1
-                            filtered_items[item.name] = true
-                        end
-                    end
+                if not filtered_items[item.name] then
+                    constructron.set_vehicle_logistic_slot(slot, {
+                        name = item.name,
+                        min = 0,
+                        max = 0
+                    })
+                    slot = slot + 1
+                    filtered_items[item.name] = true
                 end
             end
         end
     end
+end
+
+me.stats = function()
+    local queues = {
+        "registered_entities",
+        "constructron_statuses",
+        "ignored_entities",
+        "allowed_items",
+        "ghost_entities",
+        "deconstruction_entities",
+        "upgrade_entities",
+        "repair_entities",
+        "job_bundles",
+        "constructrons",
+        "service_stations",
+    }
+    local global_stats = {
+    }
+    for _, data_name in pairs(queues) do
+        local data = global[data_name]
+        if type(data)=="table" then
+            global_stats[data_name] = table_size(data)
+        else
+            global_stats[data_name] = tostring(data)
+        end
+    end
+    local surface_queues = {
+        "constructrons_count",
+        "stations_count",
+        "construct_queue",
+        "deconstruct_queue",
+        "upgrade_queue",
+        "repair_queue",
+    }
+    for s, surface in pairs(game.surfaces) do
+        for _, data_name in pairs(surface_queues) do
+            local data = global[data_name][surface.index]
+            if type(data)=="table" then
+                -- log(serpent.block(data))
+                global_stats[surface.name .. ":" .. data_name] = table_size(data)
+            else
+                global_stats[surface.name .. ":" .. data_name] = tostring(data)
+            end
+        end
+    end
+    return global_stats
 end
 
 me.help_text = function()
@@ -236,6 +262,7 @@ me.help_text = function()
     game.print('/ctron (enable|disable) (debug|landfill|constructruction|deconstruction|ground_deconstruction|upgrade|repair) - toggle job types.')
     game.print('/ctron reset (settings|queues|entities|all)')
     game.print('/ctron clear all - clears all jobs, queued jobs and unprocessed entities')
+    game.print('/ctron stats for a basic display of queue length')
     game.print('See Factorio mod portal for further assistance https://mods.factorio.com/mod/Constructron-Continued')
 end
 

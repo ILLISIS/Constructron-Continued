@@ -41,7 +41,30 @@ script.on_event(ev.on_script_path_request_finished, (function(event)
 end))
 
 -- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required
-script.on_event({ev.on_built_entity, ev.script_raised_built, ev.on_robot_built_entity}, ctron.on_built_entity)
+script.on_event(ev.on_built_entity, ctron.on_built_entity, {
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"},
+    {filter = "name", name = "service_station", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"},
+    {filter = "name", name = "entity-ghost", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"},
+    {filter = "name", name = "tile-ghost", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"},
+    {filter = "name", name = "item-request-proxy", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"}
+})
+
+script.on_event(ev.on_robot_built_entity, ctron.on_built_entity, {
+    {filter = "name", name = "service_station", mode = "or"}
+})
+
+script.on_event(ev.script_raised_built, ctron.on_built_entity, {
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "service_station", mode = "or"},
+    {filter = "name", name = "entity-ghost", mode = "or"},
+    {filter = "name", name = "tile-ghost", mode = "or"},
+    {filter = "name", name = "item-request-proxy", mode = "or"}
+})
 
 script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
 
@@ -74,25 +97,29 @@ local function reset(player, parameters)
     log("parameters: " .. serpent.block(parameters))
 
     if parameters[1] == "recall" then
+        game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     end
 
     if parameters[1] == "entities" then
+        game.print('Reset entities. Entity detection will now start.')
         cmd.reload_entities()
 
     elseif parameters[1] == "settings" then
+        game.print('Reset settings to default.')
         cmd.reset_settings()
 
     elseif parameters[1] == "all" then
+        game.print('Reset all parameters and queues complete.')
+
         -- Clear jobs/queues/entities
-        game.print('Clear jobs/queues/entities')
         global.job_bundles = {}
         cmd.clear_queues()
 
         -- Clear supporting globals
-        game.print('Clear supporting globals')
         global.ignored_entities = {}
         global.allowed_items = {}
+        global.stack_cache = {}
 
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
@@ -100,22 +127,18 @@ local function reset(player, parameters)
         cmd.reload_ctron_color()
 
         -- Recall Ctrons
-        game.print('Recall Ctrons')
         cmd.recall_ctrons()
 
         -- Clear Constructron inventory
         cmd.clear_ctron_inventory()
 
         -- Reacquire Construction jobs
-        game.print('Reacquire Construction jobs')
         cmd.reacquire_construction_jobs()
 
         -- Reacquire Deconstruction jobs
-        game.print('Reacquire Deconstruction jobs')
         cmd.reacquire_deconstruction_jobs()
 
         -- Reacquire Upgrade jobs
-        game.print('Reacquire Upgrade jobs')
         cmd.reacquire_upgrade_jobs()
 
     else
@@ -137,7 +160,12 @@ local function clear(player, parameters)
         global.job_bundles = {}
         cmd.recall_ctrons()
 
+    elseif parameters[1] == "queues" then
+        game.print('All queued jobs and unprocessed entities cleared.')
+        cmd.clear_queues()
+
     elseif parameters[1] == "inventory" then
+        game.print('All Constructron inventories will be reset')
         cmd.clear_ctron_inventory()
 
     else
@@ -251,8 +279,25 @@ local function disable(player, parameters)
     end
 end
 
-local function help()
-    cmd.help()
+local function stats(player, _ )
+    log("control:help")
+    log("by player:" .. player.name)
+
+    local stats = cmd.stats()
+    log(serpent.block(stats))
+    if stats and player then
+        for k,v in pairs(stats) do
+            player.print(k .. ": " .. tostring(v))
+        end
+    end
+    return stats
+end
+
+local function help(player, parameters)
+    log("control:help")
+    log("by player:" .. player.name)
+    log("parameters: " .. serpent.block(parameters))
+    cmd.help_text()
 end
 
 --===========================================================================--
@@ -265,6 +310,7 @@ local ctron_commands = {
     clear = clear,
     enable = enable,
     disable = disable,
+    stats = stats
 }
 
 -------------------------------------------------------------------------------

@@ -6,8 +6,6 @@ local color_lib = require("__Constructron-Continued__.script.color_lib")
 
 local me = {}
 
-me.entity_per_tick = 100
-
 me.pathfinder = {
     -- just a template, check pathfinder.lua for implementation
     request_path = (function(_,_,_,_) end)
@@ -18,6 +16,7 @@ me.ensure_globals = function()
     global.constructron_statuses = global.constructron_statuses or {}
     global.ignored_entities = {}
     global.allowed_items = {}
+    global.stack_cache = {}
 
     global.ghost_entities = global.ghost_entities or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
@@ -61,6 +60,7 @@ me.ensure_globals = function()
     global.max_worker_per_job = settings.global['max-worker-per-job'].value
     global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
+    global.entities_per_tick = settings.global["entities_per_tick"].value
 end
 
 me.get_service_stations = function(index)
@@ -118,8 +118,15 @@ end
 
 me.calculate_required_inventory_slot_count = function(required_items, divisor)
     local slots = 0
+    local stack_size
+
     for name, count in pairs(required_items) do
-        local stack_size = game.item_prototypes[name].stack_size
+        if not global.stack_cache[name] then
+            stack_size = game.item_prototypes[name].stack_size
+            global.stack_cache[name] = stack_size
+        else
+            stack_size = global.stack_cache[name]
+        end
         slots = slots + math.ceil(count / stack_size / divisor)
     end
     return slots
@@ -288,7 +295,7 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
 
             entities[entity_key] = nil
 
-            if entity_counter >= me.entity_per_tick then
+            if entity_counter >= global.entities_per_tick then
                 break
             else
                 entity_counter = entity_counter + 1
@@ -819,10 +826,12 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
 
                             -- create a new table for remaining chunks
                             local remaining_chunks = {}
-                            table.insert(remaining_chunks, merged_chunk)
+                            local remaining_counter = 1
+                            remaining_chunks[1] = merged_chunk
                             for k, chunk in ipairs(chunks) do
                                 if (not (k == i)) and (not (k == j)) then
-                                    table.insert(remaining_chunks, chunk)
+                                    remaining_counter = remaining_counter + 1
+                                    remaining_chunks[remaining_counter] = chunk
                                 end
                             end
                             -- !!! recursive call
@@ -838,12 +847,14 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
         end
         local my_constructrons = {}
         for c = 1, constructron_count do
-            table.insert(my_constructrons, preselected_constructrons[c])
+            my_constructrons[c] = preselected_constructrons[c]
         end
 
         -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
         local unused_chunks = {}
         local used_chunks = {}
+        local used_chunk_counter = 1
+        local unused_chunk_counter = 1
         requested_items = {}
         total_required_slots = 0
 
@@ -855,9 +866,11 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 for name, count in pairs(chunk['required_items']) do
                     requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
                 end
-                table.insert(used_chunks, chunk)
+                used_chunks[used_chunk_counter] = chunk
+                used_chunk_counter = used_chunk_counter + 1
             else
-                table.insert(unused_chunks, chunk)
+                unused_chunks[unused_chunk_counter] = chunk
+                unused_chunk_counter = unused_chunk_counter + 1
             end
         end
 
@@ -876,34 +889,41 @@ me.get_job = function(constructrons)
                 local available_constructrons = {}
                 local chunks = {}
                 local job_type
+                local constructron_counter = 0
+                local chunk_counter = 0
 
                 for _, constructron in pairs(constructrons) do
-                    if (constructron.surface.index == surface.index) and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) and not me.get_constructron_status(constructron, 'busy') then
-                        table.insert(available_constructrons, constructron)
+                    if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) then
+                        constructron_counter = constructron_counter + 1
+                        available_constructrons[constructron_counter] = constructron
                     end
                 end
-                if #available_constructrons > 0 then
+                if constructron_counter > 0 then
                     if next(global.deconstruct_queue[surface.index]) then -- deconstruction have priority over construction.
                         for key, chunk in pairs(global.deconstruct_queue[surface.index]) do
-                            table.insert(chunks, chunk)
+                            chunk_counter = chunk_counter + 1
+                            chunks[chunk_counter] = chunk
                         end
                         job_type = 'deconstruct'
 
                     elseif next(global.construct_queue[surface.index]) then
                         for key, chunk in pairs(global.construct_queue[surface.index]) do
-                            table.insert(chunks, chunk)
+                            chunk_counter = chunk_counter + 1
+                            chunks[chunk_counter] = chunk
                         end
                         job_type = 'construct'
 
                     elseif next(global.upgrade_queue[surface.index]) then
                         for key, chunk in pairs(global.upgrade_queue[surface.index]) do
-                            table.insert(chunks, chunk)
+                            chunk_counter = chunk_counter + 1
+                            chunks[chunk_counter] = chunk
                         end
                         job_type = 'upgrade'
 
                     elseif next(global.repair_queue[surface.index]) then
                         for key, chunk in pairs(global.repair_queue[surface.index]) do
-                            table.insert(chunks, chunk)
+                            chunk_counter = chunk_counter + 1
+                            chunks[chunk_counter] = chunk
                         end
                         job_type = 'repair'
                     end
@@ -1136,16 +1156,14 @@ me.mod_settings_changed = function(event)
         global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     elseif setting == "max-jobtime-per-job" then
         global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
+    elseif setting == "entities_per_tick" then
+        global.entities_per_tick = settings.global["entities_per_tick"].value
     end
 end
 
 me.on_built_entity = function(event) -- for entity creation
     if global.construction_job_toggle then
         local entity = event.entity or event.created_entity
-
-        if not entity or not entity.force.name == "player" then
-            return
-        end
 
         local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
         local entity_type = entity.type
@@ -1317,13 +1335,13 @@ me.on_entity_destroyed = function(event)
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
             local surface = removed_entity.surface
-            global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] - 1)
+            global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] or 0 - 1)
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
             debug_lib.DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
-            global.stations_count[surface] = math.max(0, global.stations_count[surface] - 1)
+            global.stations_count[surface] = math.max(0, global.stations_count[surface] or 0 - 1)
             global.service_stations[event.unit_number] = nil
             debug_lib.DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
         end
