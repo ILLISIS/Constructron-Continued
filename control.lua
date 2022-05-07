@@ -97,23 +97,26 @@ local function reset(player, parameters)
     log("parameters: " .. serpent.block(parameters))
 
     if parameters[1] == "recall" then
+        game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     end
 
     if parameters[1] == "entities" then
+        game.print('Reset entities. Entity detection will now start.')
         cmd.reload_entities()
 
     elseif parameters[1] == "settings" then
+        game.print('Reset settings to default.')
         cmd.reset_settings()
 
     elseif parameters[1] == "all" then
+        game.print('Reset all parameters and queues complete.')
+
         -- Clear jobs/queues/entities
-        game.print('Clear jobs/queues/entities')
         global.job_bundles = {}
         cmd.clear_queues()
 
         -- Clear supporting globals
-        game.print('Clear supporting globals')
         global.ignored_entities = {}
         global.allowed_items = {}
         global.stack_cache = {}
@@ -124,22 +127,18 @@ local function reset(player, parameters)
         cmd.reload_ctron_color()
 
         -- Recall Ctrons
-        game.print('Recall Ctrons')
         cmd.recall_ctrons()
 
         -- Clear Constructron inventory
         cmd.clear_ctron_inventory()
 
         -- Reacquire Construction jobs
-        game.print('Reacquire Construction jobs')
         cmd.reacquire_construction_jobs()
 
         -- Reacquire Deconstruction jobs
-        game.print('Reacquire Deconstruction jobs')
         cmd.reacquire_deconstruction_jobs()
 
         -- Reacquire Upgrade jobs
-        game.print('Reacquire Upgrade jobs')
         cmd.reacquire_upgrade_jobs()
 
     else
