@@ -135,7 +135,7 @@ me.reacquire_ctrons = function()
     for s, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = 0
         local constructrons = surface.find_entities_filtered {
-            name = "constructron",
+            name = {"constructron", "constructron-rocket-powered"},
             force = "player",
             surface = surface.name
         }
@@ -173,7 +173,7 @@ end
 me.recall_ctrons = function()
     for _, surface in pairs(game.surfaces) do
         local constructrons = surface.find_entities_filtered {
-            name = "constructron",
+            name = {"constructron", "constructron-rocket-powered"},
             force = "player",
             surface = surface.name
         }

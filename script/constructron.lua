@@ -782,6 +782,8 @@ me.setup_constructrons = function()
                                 min = desired_robot_count,
                                 max = desired_robot_count
                             })
+                        else
+                            debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
                         end
                     else
                         debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
@@ -1335,13 +1337,13 @@ me.on_entity_destroyed = function(event)
         local removed_entity = global.registered_entities[event.registration_number]
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
             local surface = removed_entity.surface
-            global.constructrons_count[surface] = math.max(0, global.constructrons_count[surface] or 0 - 1)
+            global.constructrons_count[surface] = math.max(0, (global.constructrons_count[surface] or 0) - 1)
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
             debug_lib.DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
-            global.stations_count[surface] = math.max(0, global.stations_count[surface] or 0 - 1)
+            global.stations_count[surface] = math.max(0, (global.stations_count[surface] or 0) - 1)
             global.service_stations[event.unit_number] = nil
             debug_lib.DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
         end
