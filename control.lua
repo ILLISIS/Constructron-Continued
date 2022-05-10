@@ -44,6 +44,8 @@ end))
 script.on_event(ev.on_built_entity, ctron.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
+    {filter = "force",  force = "player", mode = "and"},
     {filter = "name", name = "service_station", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
     {filter = "name", name = "entity-ghost", mode = "or"},
@@ -60,6 +62,7 @@ script.on_event(ev.on_robot_built_entity, ctron.on_built_entity, {
 
 script.on_event(ev.script_raised_built, ctron.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
     {filter = "name", name = "service_station", mode = "or"},
     {filter = "name", name = "entity-ghost", mode = "or"},
     {filter = "name", name = "tile-ghost", mode = "or"},

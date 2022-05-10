@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.23
+Date: 2022-05-11
+  Fixes:
+    - Bugfix for Rocket Constructrun not responding to scripting due to entity placement filters.
+    - Bugfix for entity counts not subtracting at time of removal which caused a crash when Constructrons performed a check and had no robots in inventory.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.22
 Date: 2022-05-6
   New Features:
