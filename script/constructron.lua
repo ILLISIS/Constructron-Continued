@@ -606,17 +606,18 @@ me.actions = {
     end,
     check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
-        local entity_names = {}
-        for name, _ in pairs(chunk.required_items) do
-            table.insert(entity_names, name)
-        end
+        -- local entity_names = {}
+        -- for name, _ in pairs(chunk.required_items) do
+        --     table.insert(entity_names, name)
+        -- end
         local surface = game.surfaces[chunk.surface]
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
 
         local decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
-            ghost_name = entity_names
+            force = {chunk.force, "neutral"}
+            -- ghost_name = entity_names
         } or {}
         if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
