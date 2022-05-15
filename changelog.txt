@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.25
+Date: 2022-05-15
+  Fixes:
+    - Optimized the get_service_stations function when unit_numbers were extremely high to fix very slow responses in the function and even game freezes.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.24
 Date: 2022-05-14
   Fixes:

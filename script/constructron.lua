@@ -68,7 +68,7 @@ me.get_service_stations = function(index)
     for s, station in pairs(global.service_stations) do
         if station and station.valid then
             if (index == station.surface.index) then
-                table.insert(stations_on_surface, station.unit_number, station)
+                stations_on_surface[station.unit_number] = station
             end
         else
             global.service_stations[s] = nil
@@ -606,10 +606,6 @@ me.actions = {
     end,
     check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
-        -- local entity_names = {}
-        -- for name, _ in pairs(chunk.required_items) do
-        --     table.insert(entity_names, name)
-        -- end
         local surface = game.surfaces[chunk.surface]
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
 
@@ -617,7 +613,6 @@ me.actions = {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
             force = {chunk.force, "neutral"}
-            -- ghost_name = entity_names
         } or {}
         if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
