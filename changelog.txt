@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.25
 Date: 2022-05-15
+  Improvements:
+    - Anti-stuck / waypoint orbiting / pathfinding reattempts added which will find new paths during landfill jobs as they become available.
+    - Prioritized deconstruction jobs after reset command is given.
+    - Added extra validation to go_to_position action.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.25
+Date: 2022-05-15
   Fixes:
     - Optimized the get_service_stations function when unit_numbers were extremely high to fix very slow responses in the function and even game freezes.
 ---------------------------------------------------------------------------------------------------

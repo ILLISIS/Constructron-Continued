@@ -255,14 +255,14 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     local entities, queue, event_tick
     local entity_counter = 0
 
-    if build_type == "ghost" then
-        entities = global.ghost_entities -- array, call by ref
-        queue = global.construct_queue -- array, call by ref
-        event_tick = global.ghost_tick or 0 -- call by value, it is used as read_only
-    elseif build_type == "deconstruction" then
+    if build_type == "deconstruction" then
         entities = global.deconstruction_entities -- array, call by ref
         queue = global.deconstruct_queue -- array, call by ref
         event_tick = global.deconstruct_marked_tick or 0 -- call by value, it is used as read_only
+    elseif build_type == "ghost" then --- =/
+        entities = global.ghost_entities -- array, call by ref
+        queue = global.construct_queue -- array, call by ref
+        event_tick = global.ghost_tick or 0 -- call by value, it is used as read_only
     elseif build_type == "upgrade" then
         entities = global.upgrade_entities -- array, call by ref
         queue = global.upgrade_queue -- array, call by ref
@@ -346,11 +346,10 @@ me.do_until_leave = function(job)
                 local new_pos_goal = me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                 job.leave_args[1] = new_pos_goal
                 job.start_tick = game.tick
-            elseif (job.action == 'request_items') then
-                me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
-                job.start_tick = game.tick
+                job.lastpos = {}
             else
                 me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                job.start_tick = game.tick
             end
         end
         if me.conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {})) then
@@ -365,6 +364,21 @@ me.do_until_leave = function(job)
                     if not constructron.autopilot_destination then
                         me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
                         job.start_tick = game.tick
+                    else -- waypoint orbit & stuck recovery
+                        if not job.lastpos[c] then
+                            job.lastpos[c] = constructron.position
+                        else
+                            local lastpos = job.lastpos[c]
+                            local distance = chunk_util.distance_between(lastpos, constructron.position)
+                            if distance < 5 then
+                                me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                                job.start_tick = game.tick
+                                job.lastpos[c] = nil
+                            else
+                                job.start_tick = game.tick
+                                job.lastpos[c] = nil
+                            end
+                        end
                     end
                 else
                     job.constructrons[c] = nil
@@ -411,11 +425,13 @@ end
 me.actions = {
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
-        if find_path then
+        if find_path and constructrons[1].valid then
             return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
-                constructron.autopilot_destination = position -- does not use path finder!
+                if constructron.valid then
+                    constructron.autopilot_destination = position -- does not use path finder!
+                end
             end
         end
     end,

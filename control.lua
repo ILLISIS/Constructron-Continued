@@ -135,11 +135,11 @@ local function reset(player, parameters)
         -- Clear Constructron inventory
         cmd.clear_ctron_inventory()
 
-        -- Reacquire Construction jobs
-        cmd.reacquire_construction_jobs()
-
         -- Reacquire Deconstruction jobs
         cmd.reacquire_deconstruction_jobs()
+
+        -- Reacquire Construction jobs
+        cmd.reacquire_construction_jobs()
 
         -- Reacquire Upgrade jobs
         cmd.reacquire_upgrade_jobs()
