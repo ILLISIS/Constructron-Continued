@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.26
+Date: 2022-05-22
+  Improvements:
+    - Anti-stuck / waypoint orbiting / pathfinding reattempts added which will find new paths during landfill jobs as they become available.
+    - Prioritized deconstruction jobs after reset command is given.
+    - Added extra validation to go_to_position action.
+  Fixes:
+    - Fixed an issue that prevented landfill from being enabled through the mod settings menu.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.25
 Date: 2022-05-15
   Fixes:
