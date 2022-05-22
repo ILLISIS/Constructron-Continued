@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.28
+Date: 2022-05-23
+  Improvements:
+    - Added better visualisation to single entity chunk checks for deconstruction & upgrades.
+  Fixes:
+    - Fixed a bug that caused build/deconstruction/upgrade checks to miss entities.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.27
 Date: 2022-05-22
   Fixes:
