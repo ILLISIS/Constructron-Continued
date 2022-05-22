@@ -1156,7 +1156,7 @@ me.mod_settings_changed = function(event)
         global.repair_job_toggle = settings.global["repair_jobs"].value
     elseif setting == "constructron-debug-enabled" then
         global.debug_toggle = settings.global["constructron-debug-enabled"].value
-    elseif setting == "landfill_toggle" then
+    elseif setting == "allow_landfill" then
         global.landfill_job_toggle = settings.global["allow_landfill"].value
     elseif setting == "job-start-delay" then
         global.job_start_delay = (settings.global["job-start-delay"].value * 60)
