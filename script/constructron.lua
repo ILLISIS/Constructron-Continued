@@ -578,7 +578,7 @@ me.actions = {
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-            force = {chunk.force}
+            force = "player"
         } or {}
         if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
@@ -609,7 +609,7 @@ me.actions = {
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-            force = {chunk.force}
+            force = "player"
         } or {}
         if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
@@ -623,12 +623,20 @@ me.actions = {
     check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
         local surface = game.surfaces[chunk.surface]
+
+        if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
+            chunk.minimum.x = chunk.minimum.x - 1
+            chunk.minimum.y = chunk.minimum.y - 1
+            chunk.maximum.x = chunk.maximum.x + 1
+            chunk.maximum.y = chunk.maximum.y + 1
+        end
+
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
 
         local decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
-            force = {chunk.force, "neutral"}
+            force = {"player", "neutral"}
         } or {}
         if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
             debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
@@ -642,11 +650,19 @@ me.actions = {
     check_upgrade_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_upgrade_chunk')
         local surface = game.surfaces[chunk.surface]
+
+        if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
+            chunk.minimum.x = chunk.minimum.x - 1
+            chunk.minimum.y = chunk.minimum.y - 1
+            chunk.maximum.x = chunk.maximum.x + 1
+            chunk.maximum.y = chunk.maximum.y + 1
+        end
+
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.green, 0.5))
 
         local upgrades = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
-            force = chunk.force,
+            force = "player",
             to_be_upgraded = true
         }
 
@@ -1050,7 +1066,7 @@ me.get_job = function(constructrons)
                         leave_condition = 'position_done',
                         leave_args = {home_position},
                         constructrons = selected_constructrons,
-                        start_tick = game.tick
+                        returning_home = true
                     })
 
                     me.create_job(global.job_bundle_index, {
