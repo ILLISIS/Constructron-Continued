@@ -68,7 +68,7 @@ me.reacquire_deconstruction_jobs = function()
         game.print('found '.. #decons ..' entities on '.. surface.name ..' to deconstruct.')
         for _, decon in pairs(decons) do
             event["entity"] = decon
-            ctron.on_built_entity(event)
+            ctron.on_entity_marked_for_deconstruction(event)
         end
     end
 end
