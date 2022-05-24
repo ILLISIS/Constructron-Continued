@@ -2,7 +2,7 @@
 Version: 1.0.29
 Date: 2022-05-25
   Fixes:
-    - Fix a bug that caused entities market for deconstruction to not be actioned after a reset all.
+    - Fix a bug that caused entities marked for deconstruction to not be actioned after a reset all.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.28
 Date: 2022-05-23
