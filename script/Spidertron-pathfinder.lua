@@ -11,7 +11,7 @@ local Spidertron_Pathfinder = {
     radius = 1,
     path_resolution_modifier = -2,
     initial_bounding_box = {{-5, -5}, {5, 5}},
-    cache_enabled = (settings.startup["pathfinder_cache_enabled"].value == true)
+    cache_enabled = false
 }
 
 Spidertron_Pathfinder.path_resolution_modifier = math.min(math.max(Spidertron_Pathfinder.path_resolution_modifier, -8), 8)
