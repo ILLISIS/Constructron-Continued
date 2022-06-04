@@ -108,12 +108,6 @@ data:extend({{
     default_value = true
 }, {
     type = "bool-setting",
-    name = "pathfinder_cache_enabled",
-    order = "a9",
-    setting_type = "startup",
-    default_value = true
-}, {
-    type = "bool-setting",
     name = "enable_rocket_powered_constructron",
     order = "a9",
     setting_type = "startup",

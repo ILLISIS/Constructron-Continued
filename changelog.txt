@@ -1,8 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.30
+Date: 2022-06-4
+  Fixes:
+    - Fixed multiplayer desyncs by disabling the pathfinder cache in path requests.
+  Improvements:
+    - Constructrons will now spread out randomly around a station when there are more than 10 Constructrons on a surface.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.29
 Date: 2022-05-25
   Fixes:
-    - Fix a bug that caused entities marked for deconstruction to not be actioned after a reset all.
+    - Fix a bug that caused entities marked for deconstruction to not be actioned after a reset all command.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.28
 Date: 2022-05-23

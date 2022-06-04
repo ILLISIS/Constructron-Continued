@@ -555,6 +555,13 @@ me.actions = {
             if constructron.valid then
                 me.set_constructron_status(constructron, 'busy', false)
                 me.paint_constructron(constructron, 'idle')
+                if (global.constructrons_count[constructron.surface.index] > 10) then
+                    local distance = 5 + math.random(5)
+                    local alpha = math.random(360)
+                    local offset = {x = (math.cos(alpha) * distance), y = (math.sin(alpha) * distance)}
+                    local new_position = {x = (constructron.position.x + offset.x), y = (constructron.position.y + offset.y)}
+                    constructron.autopilot_destination = new_position
+                end
             end
         end
     end,
@@ -881,10 +888,8 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
         end
 
         -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
-        local unused_chunks = {}
         local used_chunks = {}
         local used_chunk_counter = 1
-        local unused_chunk_counter = 1
         requested_items = {}
         total_required_slots = 0
 
@@ -899,13 +904,63 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 used_chunks[used_chunk_counter] = chunk
                 used_chunk_counter = used_chunk_counter + 1
             else
-                unused_chunks[unused_chunk_counter] = chunk
-                unused_chunk_counter = unused_chunk_counter + 1
+                -- some how a chunk has > max inventory slots.. so rescan the chunk area to readd to the queue
+                -- added in 1.0.30 to prevent a job loop.. invalid entities are multiplying in a chunk
+                local surface = game.surfaces[chunk.surface]
+
+                -- recheck & requeue constructions
+                local ghosts = surface.find_entities_filtered {
+                    area = {chunk.minimum, chunk.maximum},
+                    type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+                    force = "player"
+                } or {}
+                if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+                    debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
+
+                    for i, entity in ipairs(ghosts) do
+                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+                        global.ghost_entities[key] = entity
+                    end
+                end
+
+                -- recheck & requeue deconstructions
+                local decons = surface.find_entities_filtered {
+                    area = {chunk.minimum, chunk.maximum},
+                    to_be_deconstructed = true,
+                    force = {"player", "neutral"}
+                } or {}
+                if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
+                    debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
+
+                    for i, entity in ipairs(decons) do
+                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+                        global.deconstruction_entities[key] = entity
+                    end
+                end
+
+                -- recheck & requeue upgrades
+                local upgrades = surface.find_entities_filtered {
+                    area = {chunk.minimum, chunk.maximum},
+                    force = "player",
+                    to_be_upgraded = true
+                }
+
+                if next(upgrades) then
+                    for i, entity in ipairs(upgrades) do
+                        debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
+
+                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
+                        global.upgrade_entities[key] = {
+                            entity = entity,
+                            target = entity.get_upgrade_target()
+                        }
+                    end
+                end
             end
         end
 
         used_chunks.requested_items = requested_items
-        return used_chunks, my_constructrons, unused_chunks
+        return used_chunks, my_constructrons
     end
     return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
 end
@@ -962,7 +1017,7 @@ me.get_job = function(constructrons)
                         return
                     end
 
-                    local combined_chunks, selected_constructrons, unused_chunks = me.get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
+                    local combined_chunks, selected_constructrons = me.get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
 
                     local queue
                     if job_type == 'deconstruct' then
@@ -975,9 +1030,6 @@ me.get_job = function(constructrons)
                         queue = global.repair_queue
                     end
                     queue[surface.index] = {}
-                    for i, chunk in ipairs(unused_chunks) do
-                        queue[surface.index][chunk.key] = chunk
-                    end
 
                     local request_items_job = {
                         action = 'request_items',
