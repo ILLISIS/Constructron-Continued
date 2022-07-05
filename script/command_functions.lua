@@ -172,15 +172,19 @@ end
 
 me.recall_ctrons = function()
     for _, surface in pairs(game.surfaces) do
-        local constructrons = surface.find_entities_filtered {
-            name = {"constructron", "constructron-rocket-powered"},
-            force = "player",
-            surface = surface.name
-        }
-        for _, constructron in pairs(constructrons) do
-            local closest_station = ctron.get_closest_service_station(constructron)
-            -- find path to station
-            ctron.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+        if (global.stations_count[surface.index] > 0) and (global.constructrons_count[surface.index] > 0) then
+            local constructrons = surface.find_entities_filtered {
+                name = {"constructron", "constructron-rocket-powered"},
+                force = "player",
+                surface = surface.name
+            }
+            for _, constructron in pairs(constructrons) do
+                local closest_station = ctron.get_closest_service_station(constructron)
+                -- find path to station
+                ctron.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+            end
+        else
+            game.print('No stations to recall Constructrons to on ' .. surface.name .. '.')
         end
     end
 end
