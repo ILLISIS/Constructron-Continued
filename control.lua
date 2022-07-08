@@ -99,11 +99,6 @@ local function reset(player, parameters)
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
 
-    if parameters[1] == "recall" then
-        game.print('Recalling Constructrons to station(s).')
-        cmd.recall_ctrons()
-    end
-
     if parameters[1] == "entities" then
         game.print('Reset entities. Entity detection will now start.')
         cmd.reload_entities()
@@ -111,6 +106,10 @@ local function reset(player, parameters)
     elseif parameters[1] == "settings" then
         game.print('Reset settings to default.')
         cmd.reset_settings()
+
+    elseif parameters[1] == "recall" then
+        game.print('Recalling Constructrons to station(s).')
+        cmd.recall_ctrons()
 
     elseif parameters[1] == "all" then
         game.print('Reset all parameters and queues complete.')

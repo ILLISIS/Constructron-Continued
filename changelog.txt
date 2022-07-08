@@ -1,8 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.31
+Date: 2022-07-5
+  Fixes:
+    - Fixed a crash when recalling Constructrons when no stations are present on the surface.
+    - Fixed unwanted behaviour with internal troubleshooting commands.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.30
 Date: 2022-06-4
   Fixes:
     - Fixed multiplayer desyncs by disabling the pathfinder cache in path requests.
+    - Fixed a job loop in very specific circumstances.
   Improvements:
     - Constructrons will now spread out randomly around a station when there are more than 10 Constructrons on a surface.
 ---------------------------------------------------------------------------------------------------
