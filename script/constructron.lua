@@ -1310,7 +1310,7 @@ end
 
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     if global.deconstruction_job_toggle then
-        if not event.entity.name == "item-on-ground" then
+        if not (event.entity.name == "item-on-ground") then
             local entity = event.entity
             local force_name = entity.force.name
             local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
