@@ -1,6 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.32
+Date: 2022-07-20
+  Fixes:
+    - Fixed a bug that disabled deconstruction when items-on-ground is disabled.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.31
-Date: 2022-07-5
+Date: 2022-07-9
   Fixes:
     - Fixed a crash when recalling Constructrons when no stations are present on the surface.
     - Fixed unwanted behaviour with internal troubleshooting commands.
