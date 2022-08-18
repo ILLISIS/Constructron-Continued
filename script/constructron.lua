@@ -1351,7 +1351,7 @@ me.on_entity_damaged = function(event)
         local force = entity.force.name
         local key = entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
 
-        if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) < settings.global["repair_percent"].value) then
+        if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) <= settings.global["repair_percent"].value) then
             if not global.repair_entities[key] then
                 global.repair_marked_tick = event.tick
                 global.repair_entities[key] = entity
