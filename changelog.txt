@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.33
+Date: 2022-08-19
+  Changed:
+    - Enabled the ability to repair at any percentage for high health buildings that get damaged only slightly.
+    - Minor setting rename.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.32
 Date: 2022-07-20
   Fixes:
