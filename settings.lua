@@ -79,7 +79,7 @@ data:extend({{
     order = "a6",
     default_value = 75,
     minimum_value = 1,
-    maximum_value = 99
+    maximum_value = 100
 }, {
     type = "bool-setting",
     name = "allow_landfill",
