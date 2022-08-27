@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.34
+Date: 2022-08-27
+  Changed:
+    - New, hopefully more fitting and unique, mod thumbnail.
+    - Added a new setting to control wether a Constructron will clear all bots from it's inventory after a job is done. Bots will get requested at the beginning of a new job with this enabled.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.33
 Date: 2022-08-19
   Changed:
