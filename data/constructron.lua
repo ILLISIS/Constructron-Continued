@@ -83,6 +83,13 @@ local constructron_easy_recipe = {
     energy = 1
 }
 
+-- Add the 'Cannot be placed on:' SE description
+if mods["space-exploration"] then
+    constructron.localised_description = {""}
+    local data_util = require("__space-exploration__/data_util")
+    data_util.collision_description(constructron)
+end
+
 local ctron_classic = {constructron, constructron_item}
 if settings.startup["constructron-easy-recipe-toggle"].value then
     table.insert(ctron_classic, constructron_easy_recipe)
