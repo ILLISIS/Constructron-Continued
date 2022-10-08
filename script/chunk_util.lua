@@ -35,6 +35,17 @@ me.get_area_from_chunk = function(chunk_index)
     return area
 end
 
+me.get_area_from_position = function(position, range)
+    local area = {{
+        y = (position.y) - range,
+        x = (position.x) - range
+    }, {
+        y = position.y + range,
+        x = position.x + range
+    }}
+    return area
+end
+
 me.merge_direct_neighbour = function(a1, a2)
 
     local merge
