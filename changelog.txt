@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.36
+Date: 2022-10-8
+  Changed:
+    - Changed deconstruction_done check behaviour. It now checks if there is more to deconstruct in the area instead of only basing it off the bot statuses.
+    - Jobs will no longer be assigned to Constructrons that are awaiting robots to fly back to them.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.35
 Date: 2022-09-16
   Changed:

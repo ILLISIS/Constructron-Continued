@@ -314,10 +314,8 @@ me.robots_inactive = function(constructron)
         local charging_robots = cell.charging_robots
         local to_charge_robots = cell.to_charge_robots
         local active_bots = (all_construction_robots) - (stationed_bots)
-        local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
-        local empty_stacks = inventory.count_empty_stacks()
 
-        if (network and (active_bots == 0)) or ((active_bots >= 1) and not next(charging_robots) and not next(to_charge_robots) and (empty_stacks == 0)) then
+        if (network and (active_bots == 0)) or ((active_bots >= 1) and not next(charging_robots) and not next(to_charge_robots)) then
             for i, equipment in pairs(constructron.grid.equipment) do -- does not account for only 1 item in grid
                 if equipment.type == 'roboport-equipment' then
                     if (equipment.energy / equipment.max_energy) < 0.95 then
@@ -740,18 +738,58 @@ me.conditions = {
             return true
         end
     end,
+    -- deconstruction_done = function(constructrons)
+    --     debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
+    --     if constructrons[1].valid then
+    --         for c, constructron in ipairs(constructrons) do
+    --             if not me.robots_inactive(constructron) then
+    --                 return false
+    --             end
+    --         end
+    --         if game.tick - me.get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
+    --             return true
+    --         end
+    --     else
+    --         return true
+    --     end
+    -- end,
     deconstruction_done = function(constructrons)
         debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
-            for c, constructron in ipairs(constructrons) do
-                if not me.robots_inactive(constructron) then
-                    return false
+            if game.tick - me.get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
+                for c, constructron in ipairs(constructrons) do
+                    local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
+                    local empty_stacks = inventory.count_empty_stacks()
+                    if empty_stacks == 0 then -- is there empty stacks?
+                        -- need to gracefully quit job here
+                        debug_lib.VisualDebugText("Inventory full!", constructron, -2, 1)
+                        return true
+                    else -- there are still empty stacks, is there more to do?
+                        if constructron.logistic_network then
+                            area = chunk_util.get_area_from_position(constructron.position, constructron.logistic_network.cells[1].construction_radius)
+                            area[1].x = area[1].x + 1
+                            area[1].y = area[1].y + 1
+                            area[2].x = area[2].x - 1
+                            area[2].y = area[2].y - 1
+                            local decons = constructron.surface.find_entities_filtered {
+                                area = area,
+                                to_be_deconstructed = true,
+                                force = {constructron.force.name, "neutral"}
+                            } or {}
+
+                            if next(decons) then -- there is more to do
+                                return false
+                            end
+                            -- there is nothing left to do
+                            if me.robots_inactive(constructron) then -- await bots to recharge
+                                return true
+                            end
+                        end
+                    end
                 end
             end
-            if game.tick - me.get_constructron_status(constructrons[1], 'deconstruct_tick') > 120 then
-                return true
-            end
         else
+            -- need to gracefully quit job here
             return true
         end
     end,
@@ -1003,12 +1041,12 @@ me.get_job = function(constructrons)
 
                 for _, constructron in pairs(constructrons) do
                     if not global.clear_robots_when_idle then
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) then
+                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) and me.robots_inactive(constructron) then
                             constructron_counter = constructron_counter + 1
                             available_constructrons[constructron_counter] = constructron
                         end
                     else
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell then
+                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and me.robots_inactive(constructron) then
                             constructron_counter = constructron_counter + 1
                             available_constructrons[constructron_counter] = constructron
                         end
