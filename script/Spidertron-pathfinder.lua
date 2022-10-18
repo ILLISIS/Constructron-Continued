@@ -127,7 +127,7 @@ function Spidertron_Pathfinder.request_path2(request_params)
     local unit = request_params.unit
     local units = request_params.units
     if unit and unit.valid then
-        log("request_path2.unit " .. tostring(unit.unit_number))
+        -- log("request_path2.unit " .. tostring(unit.unit_number))
         for _, unit2 in ipairs(units) do
             if unit2 and unit2.valid then
                 Spidertron_Pathfinder.set_autopilot(unit2, {})
@@ -161,9 +161,9 @@ function Spidertron_Pathfinder.request_path2(request_params)
         request.request_tick = game.tick -- not used by the factorio-pathfinder
 
         --log("new pathing request" .. serpent.block(request))
-        if request.force.is_pathfinder_busy() then
-            log("warning, pathfinder for force <" .. request.force.name .. "> is busy, request might be dropped")
-        end
+        --if request.force.is_pathfinder_busy() then
+            -- log("warning, pathfinder for force <" .. request.force.name .. "> is busy, request might be dropped")
+        --end
         local request_id = position.surface.request_path(request)
         global.pathfinder_requests[request_id] = request
     end
@@ -175,15 +175,15 @@ function Spidertron_Pathfinder.on_script_path_request_finished(event)
         local path = event.path
         if event.try_again_later then
             if request.try_again_later < 5 then
-                log("try_again_later")
+                -- log("try_again_later")
                 request.request_tick = game.tick
                 request.try_again_later = request.try_again_later + 1
                 Spidertron_Pathfinder.request_path2(request)
             else
-                log("try_again_later: ABORTED, to many retrys")
+                -- log("try_again_later: ABORTED, to many retrys")
             end
         elseif not path then
-            log("on_script_path_request_finished.retry " .. tostring(request.retry))
+            -- log("on_script_path_request_finished.retry " .. tostring(request.retry))
             if request.retry < 6 then
                 if request.retry == 1 then
                     -- 2. Re-Request with normal  bounding box

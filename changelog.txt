@@ -1,8 +1,14 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.37
-Date: 2022-10-??
+Date: 2022-10-20
   Changed:
-    - [SE] Added "Cannot be placed on:" description in spider tooltip.
+    - Additional changes to deconstruct_done behaviour.
+    - Added a graceful wrapup of deconstruction jobs when the inventory has no remaining free slots. Instead of the job carrying on like normal, the Constructron will walk back to the station and queue another job.
+    - Changed build_done check behaviour. It now checks if there is more to build in the area instead of only basing it off the bot statuses.
+    - Changed upgrade_done check behaviour. It now checks if there is more to build in the area instead of only basing it off the bot statuses.
+    - Removed overally verbose logging from pathfinder.
+    - Added Dynamic Robot Queues to optional mods. This is an excelent companion mod to increase bot throughput without any changes to the game and minimal performance loss. https://mods.factorio.com/mod/dynamic-robot-queues
+    - [SE] Added "Cannot be placed on:" description in Constructron tooltip. - Thanks Stringweasel!
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.36
 Date: 2022-10-8
