@@ -762,7 +762,10 @@ me.conditions = {
                         local result
 
                         for _, entity in pairs(ghosts) do
-                            ghosts_compacted[entity.ghost_name] = (ghosts_compacted[entity.ghost_name] or 0) + 1
+                            local items_to_place_this = entity.ghost_prototype.items_to_place_this
+                            for _, v in pairs (items_to_place_this) do
+                                ghosts_compacted[v.name] = (ghosts_compacted[v.name] or 0) + 1
+                            end
                         end
                         for entity, _ in pairs(ghosts_compacted) do
                             result = constructrons[1].logistic_network.can_satisfy_request(entity, 1)
