@@ -179,7 +179,7 @@ function Spidertron_Pathfinder.on_script_path_request_finished(event)
                 request.request_tick = game.tick
                 request.try_again_later = request.try_again_later + 1
                 Spidertron_Pathfinder.request_path2(request)
-            else
+            -- else
                 -- log("try_again_later: ABORTED, to many retrys")
             end
         elseif not path then

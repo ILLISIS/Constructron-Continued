@@ -764,7 +764,7 @@ me.conditions = {
                         for _, entity in pairs(ghosts) do
                             ghosts_compacted[entity.ghost_name] = (ghosts_compacted[entity.ghost_name] or 0) + 1
                         end
-                        for entity, count in pairs(ghosts_compacted) do
+                        for entity, _ in pairs(ghosts_compacted) do
                             result = constructrons[1].logistic_network.can_satisfy_request(entity, 1)
                             if result and ((game_tick - build_tick) < 900) then
                                 return false
@@ -835,17 +835,18 @@ me.conditions = {
                             end
                         end
                     end
+
+                    local robots_inactive
+
+                    for c, constructron in ipairs(constructrons) do
+                        robots_inactive = me.robots_inactive(constructron)
+                    end
+                    if robots_inactive then
+                        return true -- bots are inactive and equipment has recharged
+                    end
+
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
-                end
-
-                local robots_inactive
-
-                for c, constructron in ipairs(constructrons) do
-                    robots_inactive = me.robots_inactive(constructron)
-                end
-                if robots_inactive then
-                    return true -- bots are inactive and equipment has recharged
                 end
             end
             return false
@@ -876,7 +877,7 @@ me.conditions = {
                         for _, entity in pairs(upgrades) do
                             upgrades_compacted[entity.name] = (upgrades_compacted[entity.name] or 0) + 1
                         end
-                        for entity, count in pairs(upgrades_compacted) do
+                        for entity, _ in pairs(upgrades_compacted) do
                             result = constructrons[1].logistic_network.can_satisfy_request(entity, 1)
                             if result and ((game_tick - build_tick) < 900) then
                                 return false
@@ -901,6 +902,7 @@ me.conditions = {
                     if robots_inactive then
                         return true -- bots are inactive and equipment has recharged
                     end
+
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
                 end
