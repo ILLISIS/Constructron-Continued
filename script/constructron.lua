@@ -57,7 +57,7 @@ me.ensure_globals = function()
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.max_worker_per_job = settings.global['max-worker-per-job'].value
+    global.max_worker_per_job = 1
     global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
     global.entities_per_tick = settings.global["entities_per_tick"].value
@@ -748,8 +748,10 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                if constructrons[1].logistic_network then
-                    local range = constructrons[1].logistic_network.cells[1].construction_radius
+                local logistic_network = constructrons[1].logistic_network
+                if logistic_network then
+                    local cell = logistic_network.cells[1]
+                    local range = cell.construction_radius
                     local area = chunk_util.get_area_from_position(constructrons[1].position, range)
                     local ghosts = constructrons[1].surface.find_entities_filtered {
                         area = area,
@@ -758,37 +760,21 @@ me.conditions = {
                     } or {}
 
                     if next(ghosts) then
-                        local ghosts_compacted = {}
-                        local result
-
                         for _, entity in pairs(ghosts) do
-                            local items_to_place_this = entity.ghost_prototype.items_to_place_this
-                            for _, v in pairs (items_to_place_this) do
-                                ghosts_compacted[v.name] = (ghosts_compacted[v.name] or 0) + 1
-                            end
-                        end
-                        for entity, _ in pairs(ghosts_compacted) do
-                            result = constructrons[1].logistic_network.can_satisfy_request(entity, 1)
-                            if result and ((game_tick - build_tick) < 900) then
-                                return false
-                            end
-                        end
-                        if not ((game_tick - build_tick) < 900) then
-                            -- are the entities actually in range?
-                            for _, entity in pairs(ghosts) do
-                                local distance = chunk_util.distance_between(entity.position, constructrons[1].position)
-                                if distance < range then
-                                    return false -- there is more to do that is in range
+                            -- is it in range?
+                            if cell.is_in_construction_range(entity.position) then
+                                -- can it be built?
+                                if logistic_network.can_satisfy_request(entity.ghost_prototype.items_to_place_this[1].name, 1) then
+                                    -- construction not yet complete
+                                    me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                                    return false
                                 end
                             end
                         end
                     end
 
-                    local robots_inactive
+                    local robots_inactive = me.robots_inactive(constructrons[1])
 
-                    for c, constructron in ipairs(constructrons) do
-                        robots_inactive = me.robots_inactive(constructron)
-                    end
                     if robots_inactive then
                         return true -- bots are inactive and equipment has recharged
                     end
@@ -839,15 +825,15 @@ me.conditions = {
                         end
                     end
 
-                    local robots_inactive
+                    local robots_inactive = me.robots_inactive(constructrons[1])
+                    local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
+                    local empty_stacks = inventory.count_empty_stacks()
 
-                    for c, constructron in ipairs(constructrons) do
-                        robots_inactive = me.robots_inactive(constructron)
-                    end
-                    if robots_inactive then
+                    if robots_inactive and (empty_stacks > 0) then
                         return true -- bots are inactive and equipment has recharged
+                    elseif (empty_stacks == 0) then
+                        return "graceful_wrapup" -- there is no inventory space.. leave
                     end
-
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
                 end
@@ -864,8 +850,10 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                if constructrons[1].logistic_network then
-                    local range = constructrons[1].logistic_network.cells[1].construction_radius
+                local logistic_network = constructrons[1].logistic_network
+                if logistic_network then
+                    local cell = logistic_network.cells[1]
+                    local range = cell.construction_radius
                     local area = chunk_util.get_area_from_position(constructrons[1].position, range)
                     local upgrades = constructrons[1].surface.find_entities_filtered {
                         area = area,
@@ -874,38 +862,25 @@ me.conditions = {
                     } or {}
 
                     if next(upgrades) then
-                        local upgrades_compacted = {}
-                        local result
-
                         for _, entity in pairs(upgrades) do
-                            upgrades_compacted[entity.name] = (upgrades_compacted[entity.name] or 0) + 1
-                        end
-                        for entity, _ in pairs(upgrades_compacted) do
-                            result = constructrons[1].logistic_network.can_satisfy_request(entity, 1)
-                            if result and ((game_tick - build_tick) < 900) then
-                                return false
-                            end
-                        end
-                        if not ((game_tick - build_tick) < 900) then
-                            -- are the entities actually in range?
-                            for _, entity in pairs(upgrades) do
-                                local distance = chunk_util.distance_between(entity.position, constructrons[1].position)
-                                if distance < range then
-                                    return false -- there is more to do that is in range
+                            -- is it in range?
+                            if cell.is_in_construction_range(entity.position) then
+                                -- can it be built?
+                                local target = entity.get_upgrade_target()
+                                if logistic_network.can_satisfy_request(target.name, 1) then
+                                    -- construction not yet complete
+                                    me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                                    return false
                                 end
                             end
                         end
                     end
 
-                    local robots_inactive
+                    local robots_inactive = me.robots_inactive(constructrons[1])
 
-                    for c, constructron in ipairs(constructrons) do
-                        robots_inactive = me.robots_inactive(constructron)
-                    end
                     if robots_inactive then
                         return true -- bots are inactive and equipment has recharged
                     end
-
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
                 end
@@ -1116,7 +1091,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                     force = {"player", "neutral"}
                 } or {}
                 if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-                    debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
+                    debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed. (me.get_chunks_and_constructrons)')
 
                     for i, entity in ipairs(decons) do
                         local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
@@ -1156,7 +1131,7 @@ me.get_job = function(constructrons)
     for _, surface in pairs(managed_surfaces) do -- iterate each surface
         if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
             if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
-                local max_worker = global.max_worker_per_job
+                local max_worker = 1
                 local available_constructrons = {}
                 local chunks = {}
                 local job_type
@@ -1436,7 +1411,7 @@ me.mod_settings_changed = function(event)
     elseif setting == "desired_robot_name" then
         global.desired_robot_name = settings.global["desired_robot_name"].value
     elseif setting == "max-worker-per-job" then
-        global.max_worker_per_job = settings.global['max-worker-per-job'].value
+        global.max_worker_per_job = 1
     elseif setting == "construction_mat_alert" then
         global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     elseif setting == "max-jobtime-per-job" then
