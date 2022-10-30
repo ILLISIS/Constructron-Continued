@@ -925,10 +925,10 @@ me.setup_constructrons = function()
     for _, constructron in pairs(global.constructrons) do
         if count < 6 then
             local game_tick = game.tick
-            local setup_tick = ((me.get_constructron_status(constructron, 'setup_tick')))
-            count = count + 1
+            local setup_tick = (me.get_constructron_status(constructron, 'setup_tick'))
             if (game_tick - setup_tick) > 599 then
-                me.set_constructron_status(constructron, 'setup_tick', (game.tick + (global.constructrons_count[constructron.surface.index] * 601)))
+                count = count + 1
+                me.set_constructron_status(constructron, 'setup_tick', (game.tick + (global.constructrons_count[constructron.surface.index] * 600)))
                 debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
                 local desired_robot_count = global.desired_robot_count
                 if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
@@ -968,8 +968,9 @@ me.setup_constructrons = function()
                     end
                 end
             end
+        else
+            return
         end
-        return
     end
 end
 
