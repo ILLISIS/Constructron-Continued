@@ -784,7 +784,7 @@ me.conditions = {
                         local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
                         empty_stacks = empty_stacks + (inventory.count_empty_stacks())
                         if empty_stacks > 0 then
-                            me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                            me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
                             return false -- robots are active
                         else
                             return "graceful_wrapup" -- there is no inventory space.. leave
@@ -803,7 +803,7 @@ me.conditions = {
                             for _, entity in pairs(decons) do
                                 if cell.is_in_construction_range(entity.position) then
                                     -- construction not yet complete
-                                    me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                                    me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
                                     return false
                                 end
                             end
@@ -948,7 +948,7 @@ me.setup_constructrons = function()
                                         -- they can be elsewhere though. they don't have to start in the same place.
                                         -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
                                         local closest_station = me.get_closest_service_station(constructron)
-                                        -- me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                                        me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                                         local slot = 1
                                         constructron.set_vehicle_logistic_slot(slot, {
                                             name = desired_robot_name,
@@ -1062,7 +1062,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
                     debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
 
-                    for i, entity in ipairs(ghosts) do
+                    for _, entity in ipairs(ghosts) do
                         local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
                         global.ghost_entities[key] = entity
                     end
@@ -1077,7 +1077,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
                     debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed. (me.get_chunks_and_constructrons)')
 
-                    for i, entity in ipairs(decons) do
+                    for i_, entity in ipairs(decons) do
                         local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
                         global.deconstruction_entities[key] = entity
                     end
@@ -1091,7 +1091,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 }
 
                 if next(upgrades) then
-                    for i, entity in ipairs(upgrades) do
+                    for _, entity in ipairs(upgrades) do
                         debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
 
                         local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
