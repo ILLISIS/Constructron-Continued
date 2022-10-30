@@ -5,6 +5,7 @@ Date: 2022-10-30
     - Constructrons getting stuck on ghosts that cannot be fulfilled due to missing inventory.
   Changed:
     - Disabled the Constructron job grouping. Whilst a cool feature, this change will make it easier to develop and has no negative impacts to how the mod works.
+    - Optimized frequent check occuring on all Constructrons. Constructrons will now be checked in a queued format eliminating a cpu spike when hundreds of Constructrons were placed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.38
 Date: 2022-10-21
