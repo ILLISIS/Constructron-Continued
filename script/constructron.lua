@@ -921,45 +921,55 @@ me.create_job = function(job_bundle_index, job)
 end
 
 me.setup_constructrons = function()
+    local count = 0
     for _, constructron in pairs(global.constructrons) do
-        debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
-        local desired_robot_count = global.desired_robot_count
-        if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell then
-                debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
-            else
-                constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
-                if not global.clear_robots_when_idle then
-                    if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
-                        debug_lib.DebugLog('ACTION: Stage')
-                        local desired_robot_name = global.desired_robot_name
-                        if game.item_prototypes[desired_robot_name] then
-                            if global.stations_count[constructron.surface.index] > 0 then
-                                debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
-                                constructron.enable_logistics_while_moving = false
-                                -- they must go to the same station even if they are not in the same station.
-                                -- they can be elsewhere though. they don't have to start in the same place.
-                                -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
-                                local closest_station = me.get_closest_service_station(constructron)
-                                me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
-                                local slot = 1
-                                constructron.set_vehicle_logistic_slot(slot, {
-                                    name = desired_robot_name,
-                                    min = desired_robot_count,
-                                    max = desired_robot_count
-                                })
-                            else
-                                debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
+        if count < 6 then
+            local game_tick = game.tick
+            local setup_tick = ((me.get_constructron_status(constructron, 'setup_tick')))
+            count = count + 1
+            if (game_tick - setup_tick) > 599 then
+                me.set_constructron_status(constructron, 'setup_tick', (game.tick + (global.constructrons_count[constructron.surface.index] * 601)))
+                debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
+                local desired_robot_count = global.desired_robot_count
+                if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
+                    if not constructron.logistic_cell then
+                        debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
+                    else
+                        constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
+                        if not global.clear_robots_when_idle then
+                            if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
+                                debug_lib.DebugLog('ACTION: Stage')
+                                local desired_robot_name = global.desired_robot_name
+                                if game.item_prototypes[desired_robot_name] then
+                                    if global.stations_count[constructron.surface.index] > 0 then
+                                        debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
+                                        constructron.enable_logistics_while_moving = false
+                                        -- they must go to the same station even if they are not in the same station.
+                                        -- they can be elsewhere though. they don't have to start in the same place.
+                                        -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
+                                        local closest_station = me.get_closest_service_station(constructron)
+                                        -- me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                                        local slot = 1
+                                        constructron.set_vehicle_logistic_slot(slot, {
+                                            name = desired_robot_name,
+                                            min = desired_robot_count,
+                                            max = desired_robot_count
+                                        })
+                                    else
+                                        debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
+                                    end
+                                else
+                                    debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
+                                end
                             end
                         else
-                            debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
+                            constructron.enable_logistics_while_moving = false
                         end
                     end
-                else
-                    constructron.enable_logistics_while_moving = false
                 end
             end
         end
+        return
     end
 end
 
@@ -1426,6 +1436,7 @@ me.on_built_entity = function(event) -- for entity creation
                 end
             elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
                 local registration_number = script.register_on_entity_destroyed(entity)
+                me.set_constructron_status(entity, 'setup_tick', (game.tick + (global.constructrons_count[entity.surface.index] * 601)))
                 me.set_constructron_status(entity, 'busy', false)
                 me.paint_constructron(entity, 'idle')
                 entity.enable_logistics_while_moving = false
