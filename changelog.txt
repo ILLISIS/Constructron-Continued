@@ -1,8 +1,32 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.37
-Date: 2022-10-??
+Version: 1.0.40
+Date: 2022-10-30
+  Fixed:
+    - A bug that caused only the first Constructron to be checked.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.39
+Date: 2022-10-30
+  Fixed:
+    - Constructrons getting stuck on ghosts that cannot be fulfilled due to missing inventory.
   Changed:
-    - [SE] Added "Cannot be placed on:" description in spider tooltip.
+    - Disabled the Constructron job grouping. Whilst a cool feature, this change will make it easier to develop and has no negative impacts to how the mod works.
+    - Optimized frequent check occuring on all Constructrons. Constructrons will now be checked in a queued format eliminating a cpu spike when hundreds of Constructrons were placed.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.38
+Date: 2022-10-21
+  Fixed:
+    - A crash when train rails were detected in the new build_done check behaviour
+---------------------------------------------------------------------------------------------------
+Version: 1.0.37
+Date: 2022-10-20
+  Changed:
+    - Additional changes to deconstruct_done behaviour.
+    - Added a graceful wrapup of deconstruction jobs when the inventory has no remaining free slots. Instead of the job carrying on like normal, the Constructron will walk back to the station and queue another job.
+    - Changed build_done check behaviour. It now checks if there is more to build in the area instead of only basing it off the bot statuses.
+    - Changed upgrade_done check behaviour. It now checks if there is more to build in the area instead of only basing it off the bot statuses.
+    - Removed overally verbose logging from pathfinder.
+    - Added Dynamic Robot Queues to optional mods. This is an excelent companion mod to increase bot throughput without any changes to the game and minimal performance loss. https://mods.factorio.com/mod/dynamic-robot-queues
+    - [SE] Added "Cannot be placed on:" description in Constructron tooltip. - Thanks Stringweasel!
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.36
 Date: 2022-10-8
