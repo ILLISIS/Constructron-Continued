@@ -305,33 +305,19 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     end
 end
 
-me.robots_inactive = function(constructron)
-    if constructron.valid and constructron.logistic_network then
-        local network = constructron.logistic_network
-        local cell = network.cells[1]
-        local all_construction_robots = network.all_construction_robots
-        local stationed_bots = cell.stationed_construction_robot_count
-        local charging_robots = cell.charging_robots
-        local to_charge_robots = cell.to_charge_robots
-        local active_bots = (all_construction_robots) - (stationed_bots)
+me.robots_active = function(network)
+    local cell = network.cells[1]
+    local all_construction_robots = network.all_construction_robots
+    local stationed_bots = cell.stationed_construction_robot_count
+    local charging_robots = cell.charging_robots
+    local to_charge_robots = cell.to_charge_robots
+    local active_bots = (all_construction_robots) - (stationed_bots)
 
-        if ((active_bots == 0) and not next(charging_robots) and not next(to_charge_robots)) then
-            for i, equipment in pairs(constructron.grid.equipment) do -- fix: this checks all equipment not just roboports
-                if equipment.type == 'roboport-equipment' then
-                    if (equipment.energy / equipment.max_energy) < 0.95 then
-                        debug_lib.VisualDebugText("Charging Roboports", constructron, -2, 1)
-                        return false -- still charging
-                    end
-                end
-            end
-            return true -- charging complete & robots inactive
-        end
+    if ((active_bots == 0) and not next(charging_robots) and not next(to_charge_robots)) then
         return false -- robots are active
-    elseif not constructron.logistic_network then
-        debug_lib.VisualDebugText("Roboport missing!", constructron, -2, 1)
-        return false -- assumed that an expernal influence removed the roboport(s) and manual intervention required
+    else
+        return true -- robots are not active
     end
-    return true -- invalid escape
 end
 
 me.graceful_wrapup = function(job)
@@ -750,20 +736,22 @@ me.conditions = {
             if (game_tick - build_tick) > 120 then
                 local logistic_network = constructrons[1].logistic_network
                 if logistic_network then
-                    local cell = logistic_network.cells[1]
-                    local range = cell.construction_radius
-                    local area = chunk_util.get_area_from_position(constructrons[1].position, range)
-                    local ghosts = constructrons[1].surface.find_entities_filtered {
-                        area = area,
-                        name = {"entity-ghost", "tile-ghost"},
-                        force = constructrons[1].force.name
-                    } or {}
+                    if (me.robots_active(logistic_network)) then
+                        me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                        return false -- robots are active
+                    else
+                        local cell = logistic_network.cells[1]
+                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
+                        local ghosts = constructrons[1].surface.find_entities_filtered {
+                            area = area,
+                            name = {"entity-ghost", "tile-ghost"},
+                            force = constructrons[1].force.name
+                        }
 
-                    if next(ghosts) then
                         for _, entity in pairs(ghosts) do
-                            -- is it in range?
+                            -- is the entity in range?
                             if cell.is_in_construction_range(entity.position) then
-                                -- can it be built?
+                                -- can the entity be built?
                                 if logistic_network.can_satisfy_request(entity.ghost_prototype.items_to_place_this[1].name, 1) then
                                     -- construction not yet complete
                                     me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
@@ -772,12 +760,7 @@ me.conditions = {
                             end
                         end
                     end
-
-                    local robots_inactive = me.robots_inactive(constructrons[1])
-
-                    if robots_inactive then
-                        return true -- bots are inactive and equipment has recharged
-                    end
+                    return true -- condition is satisfied
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
                 end
@@ -794,45 +777,38 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - decon_tick) > 120 then
-                if constructrons[1].logistic_network then
-                    local range = constructrons[1].logistic_network.cells[1].construction_radius
-                    local area = chunk_util.get_area_from_position(constructrons[1].position, range)
-                    local decons = constructrons[1].surface.find_entities_filtered {
-                        area = area,
-                        to_be_deconstructed = true,
-                        force = {constructrons[1].force.name, "neutral"}
-                    } or {}
-
-                    if next(decons) then
-                        -- is there inventory space?
+                local logistic_network = constructrons[1].logistic_network
+                if logistic_network then
+                    if (me.robots_active(logistic_network)) then
                         local empty_stacks = 0
-                        for c, constructron in ipairs(constructrons) do
-                            local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
-                            empty_stacks = empty_stacks + (inventory.count_empty_stacks())
-                        end
-                        if empty_stacks == 0 then
-                            debug_lib.VisualDebugText("Inventory full!", constructrons[1], -2, 1)
+                        local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
+                        empty_stacks = empty_stacks + (inventory.count_empty_stacks())
+                        if empty_stacks > 0 then
+                            me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                            return false -- robots are active
+                        else
                             return "graceful_wrapup" -- there is no inventory space.. leave
                         end
+                    else
+                        local cell = logistic_network.cells[1]
+                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
+                        local decons = constructrons[1].surface.find_entities_filtered {
+                            area = area,
+                            to_be_deconstructed = true,
+                            force = {constructrons[1].force.name, "neutral"}
+                        }
+
+                        -- are the entities actually in range?
                         if not ((game_tick - decon_tick) < 900) then
-                            -- are the entities actually in range?
                             for _, entity in pairs(decons) do
-                                local distance = chunk_util.distance_between(entity.position, constructrons[1].position)
-                                if distance < range then
-                                    return false -- there is more to do that is in range
+                                if cell.is_in_construction_range(entity.position) then
+                                    -- construction not yet complete
+                                    me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                                    return false
                                 end
                             end
                         end
-                    end
-
-                    local robots_inactive = me.robots_inactive(constructrons[1])
-                    local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
-                    local empty_stacks = inventory.count_empty_stacks()
-
-                    if robots_inactive and (empty_stacks > 0) then
-                        return true -- bots are inactive and equipment has recharged
-                    elseif (empty_stacks == 0) then
-                        return "graceful_wrapup" -- there is no inventory space.. leave
+                        return true -- condition is satisfied
                     end
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
@@ -852,20 +828,22 @@ me.conditions = {
             if (game_tick - build_tick) > 120 then
                 local logistic_network = constructrons[1].logistic_network
                 if logistic_network then
-                    local cell = logistic_network.cells[1]
-                    local range = cell.construction_radius
-                    local area = chunk_util.get_area_from_position(constructrons[1].position, range)
-                    local upgrades = constructrons[1].surface.find_entities_filtered {
-                        area = area,
-                        to_be_upgraded = true,
-                        force = constructrons[1].force.name
-                    } or {}
+                    if (me.robots_active(logistic_network)) then
+                        me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                        return false -- robots are active
+                    else
+                        local cell = logistic_network.cells[1]
+                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
+                        local upgrades = constructrons[1].surface.find_entities_filtered {
+                            area = area,
+                            to_be_upgraded = true,
+                            force = constructrons[1].force.name
+                        }
 
-                    if next(upgrades) then
                         for _, entity in pairs(upgrades) do
-                            -- is it in range?
+                            -- is the entity in range?
                             if cell.is_in_construction_range(entity.position) then
-                                -- can it be built?
+                                -- can the entity be built?
                                 local target = entity.get_upgrade_target()
                                 if logistic_network.can_satisfy_request(target.name, 1) then
                                     -- construction not yet complete
@@ -875,12 +853,7 @@ me.conditions = {
                             end
                         end
                     end
-
-                    local robots_inactive = me.robots_inactive(constructrons[1])
-
-                    if robots_inactive then
-                        return true -- bots are inactive and equipment has recharged
-                    end
+                    return true -- condition is satisfied
                 else
                     return "graceful_wrapup" -- missing roboports.. leave
                 end
@@ -1139,13 +1112,14 @@ me.get_job = function(constructrons)
                 local chunk_counter = 0
 
                 for _, constructron in pairs(constructrons) do
+                    local logistic_network = constructron.logistic_network
                     if not global.clear_robots_when_idle then
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (constructron.logistic_network.all_construction_robots > 0) and me.robots_inactive(constructron) then
+                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (logistic_network.all_construction_robots > 0) and not me.robots_active(logistic_network) then
                             constructron_counter = constructron_counter + 1
                             available_constructrons[constructron_counter] = constructron
                         end
                     else
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and me.robots_inactive(constructron) then
+                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and not me.robots_active(logistic_network) then
                             constructron_counter = constructron_counter + 1
                             available_constructrons[constructron_counter] = constructron
                         end
