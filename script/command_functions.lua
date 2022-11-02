@@ -161,6 +161,7 @@ end
 me.reload_ctron_status = function()
     for k, constructron in pairs(global.constructrons) do
         ctron.set_constructron_status(constructron, 'busy', false)
+        ctron.set_constructron_status(constructron, 'setup_tick', (game.tick + (global.constructrons_count[constructron.surface.index] * 601)))
     end
 end
 
