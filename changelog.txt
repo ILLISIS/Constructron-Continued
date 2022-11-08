@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.42
+Date: 2022-11-08
+  Fixed:
+    - A crash upgrading miniloaders and other items with mismatching prototype names.
+---------------------------------------------------------------------------------------------------
+Version: 1.0.41
+Date: 2022-11-03
+  Changed:
+    - Reverted back to pre 1.0.30 method of unused chunk processing for optimization purposes.
+    - Cleaned up a lot of unused information in the chunk tables for optimization purposes.
+    - Added interval reset to the Constructron checks.
+  Fixed:
+    - Pre v1.0.21 save game migration bug.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.40
 Date: 2022-10-30
   Fixed:

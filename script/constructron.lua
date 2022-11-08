@@ -168,7 +168,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     local entity_surface = entity.surface.index
     local entity_pos_y = entity.position.y
     local entity_pos_x = entity.position.x
-    local entity_key = entity_pos_y .. ',' .. entity_pos_x
+    -- local entity_key = entity_pos_y .. ',' .. entity_pos_x
 
     queue[entity_surface] = queue[entity_surface] or {}
 
@@ -178,7 +178,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
         queue_surface_key = {
             key = key,
             surface = entity.surface.index,
-            entity_key = entity,
+            -- entity_key = entity,
             force = entity.force.name,
             position = chunk_util.position_from_chunk(chunk),
             area = chunk_util.get_area_from_chunk(chunk),
@@ -194,7 +194,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
             trash_items = {}
         }
     else -- add to existing queued_chunk
-        queue_surface_key[entity_key] = entity
+        -- queue_surface_key[entity_key] = entity
         if entity_pos_x < queue_surface_key['minimum'].x then
             queue_surface_key['minimum'].x = entity_pos_x
         elseif entity_pos_x > queue_surface_key['maximum'].x then
@@ -252,7 +252,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     queue[entity_surface][key] = queue_surface_key
 end
 
-me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
+me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost, repair
     local entities, queue, event_tick
     local entity_counter = 0
 
@@ -314,9 +314,9 @@ me.robots_active = function(network)
     local active_bots = (all_construction_robots) - (stationed_bots)
 
     if ((active_bots == 0) and not next(charging_robots) and not next(to_charge_robots)) then
-        return false -- robots are active
+        return false -- robots are not active
     else
-        return true -- robots are not active
+        return true -- robots are active
     end
 end
 
@@ -784,7 +784,7 @@ me.conditions = {
                         local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
                         empty_stacks = empty_stacks + (inventory.count_empty_stacks())
                         if empty_stacks > 0 then
-                            me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                            me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
                             return false -- robots are active
                         else
                             return "graceful_wrapup" -- there is no inventory space.. leave
@@ -803,7 +803,7 @@ me.conditions = {
                             for _, entity in pairs(decons) do
                                 if cell.is_in_construction_range(entity.position) then
                                     -- construction not yet complete
-                                    me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+                                    me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
                                     return false
                                 end
                             end
@@ -845,7 +845,7 @@ me.conditions = {
                             if cell.is_in_construction_range(entity.position) then
                                 -- can the entity be built?
                                 local target = entity.get_upgrade_target()
-                                if logistic_network.can_satisfy_request(target.name, 1) then
+                                if logistic_network.can_satisfy_request(target.items_to_place_this[1].name, 1) then
                                     -- construction not yet complete
                                     me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                                     return false
@@ -948,7 +948,7 @@ me.setup_constructrons = function()
                                         -- they can be elsewhere though. they don't have to start in the same place.
                                         -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
                                         local closest_station = me.get_closest_service_station(constructron)
-                                        -- me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                                        me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                                         local slot = 1
                                         constructron.set_vehicle_logistic_slot(slot, {
                                             name = desired_robot_name,
@@ -980,13 +980,16 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
     local empty_stack_count = inventory.count_empty_stacks()
     local function get_job_chunks_and_constructrons(chunks, constructron_count, total_required_slots, requested_items)
         local merged_chunk
+
         for i, chunk1 in ipairs(chunks) do
             for j, chunk2 in ipairs(chunks) do
                 if not (i == j) then
-                    local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area)
+                    local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area) -- checks if chunks are near to each other on the game map
+
                     if merged_area then
                         local required_slots1 = 0
                         local required_slots2 = 0
+
                         if not chunk1.merged then
                             required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items or {}, constructron_count)
                             required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {}, constructron_count)
@@ -1001,7 +1004,8 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                                 requested_items[name] = math.ceil(((requested_items[name] or 0) * constructron_count + count) / constructron_count)
                             end
                         end
-                        if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then
+
+                        if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then -- Actually merge the chunks
                             total_required_slots = total_required_slots + required_slots1 + required_slots2
                             merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
                             merged_chunk.merged = true
@@ -1009,6 +1013,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                             -- create a new table for remaining chunks
                             local remaining_chunks = {}
                             local remaining_counter = 1
+
                             remaining_chunks[1] = merged_chunk
                             for k, chunk in ipairs(chunks) do
                                 if (not (k == i)) and (not (k == j)) then
@@ -1027,19 +1032,27 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 end
             end
         end
+
         local my_constructrons = {}
+
         for c = 1, constructron_count do
             my_constructrons[c] = preselected_constructrons[c]
         end
 
         -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
+
         local used_chunks = {}
         local used_chunk_counter = 1
+
+        local unused_chunks = {}
+        local unused_chunk_counter = 1
+
         requested_items = {}
         total_required_slots = 0
 
         for i, chunk in ipairs(chunks) do
             local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items or {}, constructron_count)
+
             required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {}, constructron_count)
             if ((total_required_slots + required_slots) < empty_stack_count) then
                 total_required_slots = total_required_slots + required_slots
@@ -1049,63 +1062,13 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
                 used_chunks[used_chunk_counter] = chunk
                 used_chunk_counter = used_chunk_counter + 1
             else
-                -- some how a chunk has > max inventory slots.. so rescan the chunk area to readd to the queue
-                -- added in 1.0.30 to prevent a job loop.. invalid entities are multiplying in a chunk
-                local surface = game.surfaces[chunk.surface]
-
-                -- recheck & requeue constructions
-                local ghosts = surface.find_entities_filtered {
-                    area = {chunk.minimum, chunk.maximum},
-                    type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-                    force = "player"
-                } or {}
-                if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-                    debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
-
-                    for i, entity in ipairs(ghosts) do
-                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                        global.ghost_entities[key] = entity
-                    end
-                end
-
-                -- recheck & requeue deconstructions
-                local decons = surface.find_entities_filtered {
-                    area = {chunk.minimum, chunk.maximum},
-                    to_be_deconstructed = true,
-                    force = {"player", "neutral"}
-                } or {}
-                if next(decons) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-                    debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed. (me.get_chunks_and_constructrons)')
-
-                    for i, entity in ipairs(decons) do
-                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                        global.deconstruction_entities[key] = entity
-                    end
-                end
-
-                -- recheck & requeue upgrades
-                local upgrades = surface.find_entities_filtered {
-                    area = {chunk.minimum, chunk.maximum},
-                    force = "player",
-                    to_be_upgraded = true
-                }
-
-                if next(upgrades) then
-                    for i, entity in ipairs(upgrades) do
-                        debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
-
-                        local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                        global.upgrade_entities[key] = {
-                            entity = entity,
-                            target = entity.get_upgrade_target()
-                        }
-                    end
-                end
+                unused_chunks[unused_chunk_counter] = chunk
+                unused_chunk_counter = unused_chunk_counter + 1
             end
         end
 
         used_chunks.requested_items = requested_items
-        return used_chunks, my_constructrons
+        return used_chunks, my_constructrons, unused_chunks
     end
     return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
 end
@@ -1170,7 +1133,7 @@ me.get_job = function(constructrons)
                         return
                     end
 
-                    local combined_chunks, selected_constructrons = me.get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
+                    local combined_chunks, selected_constructrons, unused_chunks = me.get_chunks_and_constructrons(chunks, available_constructrons, max_worker)
 
                     local queue
                     if job_type == 'deconstruct' then
@@ -1182,7 +1145,12 @@ me.get_job = function(constructrons)
                     elseif job_type == 'repair' then
                         queue = global.repair_queue
                     end
+
                     queue[surface.index] = {}
+
+                    for i, chunk in ipairs(unused_chunks) do
+                        queue[surface.index][chunk.key] = chunk
+                    end
 
                     local request_items_job = {
                         action = 'request_items',
