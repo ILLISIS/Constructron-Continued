@@ -252,7 +252,7 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     queue[entity_surface][key] = queue_surface_key
 end
 
-me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost
+me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost, repair
     local entities, queue, event_tick
     local entity_counter = 0
 
@@ -314,9 +314,9 @@ me.robots_active = function(network)
     local active_bots = (all_construction_robots) - (stationed_bots)
 
     if ((active_bots == 0) and not next(charging_robots) and not next(to_charge_robots)) then
-        return false -- robots are active
+        return false -- robots are not active
     else
-        return true -- robots are not active
+        return true -- robots are active
     end
 end
 
@@ -845,7 +845,7 @@ me.conditions = {
                             if cell.is_in_construction_range(entity.position) then
                                 -- can the entity be built?
                                 local target = entity.get_upgrade_target()
-                                if logistic_network.can_satisfy_request(target.name, 1) then
+                                if logistic_network.can_satisfy_request(target.items_to_place_this[1].name, 1) then
                                     -- construction not yet complete
                                     me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                                     return false
@@ -1040,7 +1040,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
         end
 
         -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
-        
+
         local used_chunks = {}
         local used_chunk_counter = 1
 
