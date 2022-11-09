@@ -960,7 +960,6 @@ me.get_worker = function()
     end
 end
 
-end
 
 -- This function is a Mess: refactor - carefull, recursion!!!
 me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructrons, max_constructron)
