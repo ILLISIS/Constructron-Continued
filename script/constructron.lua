@@ -920,59 +920,46 @@ me.create_job = function(job_bundle_index, job)
     global.job_bundles[job_bundle_index][index] = job
 end
 
-me.setup_constructrons = function()
-    local count = 0
+me.get_worker = function()
     for _, constructron in pairs(global.constructrons) do
-        if count < 6 then
-            local game_tick = game.tick
-            local setup_tick = (me.get_constructron_status(constructron, 'setup_tick'))
-            if (game_tick - setup_tick) > 599 then
-                count = count + 1
-                me.set_constructron_status(constructron, 'setup_tick', (game.tick + (global.constructrons_count[constructron.surface.index] * 600)))
-                debug_lib.VisualDebugText("Checking Constructron", constructron, 0, 3)
+        if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
+            if not constructron.logistic_network then
+                debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
+            else
                 local desired_robot_count = global.desired_robot_count
-                if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
-                    if not constructron.logistic_cell then
-                        debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
-                    else
-                        constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
-                        if not global.clear_robots_when_idle then
-                            if (constructron.logistic_network.all_construction_robots < desired_robot_count) and (constructron.autopilot_destination == nil) then
-                                debug_lib.DebugLog('ACTION: Stage')
-                                local desired_robot_name = global.desired_robot_name
-                                if game.item_prototypes[desired_robot_name] then
-                                    if global.stations_count[constructron.surface.index] > 0 then
-                                        debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
-                                        constructron.enable_logistics_while_moving = false
-                                        -- they must go to the same station even if they are not in the same station.
-                                        -- they can be elsewhere though. they don't have to start in the same place.
-                                        -- This needs fixing: It is possible that not every ctron can reach the same station on a surface (example: two islands)
-                                        local closest_station = me.get_closest_service_station(constructron)
-                                        me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
-                                        local slot = 1
-                                        constructron.set_vehicle_logistic_slot(slot, {
-                                            name = desired_robot_name,
-                                            min = desired_robot_count,
-                                            max = desired_robot_count
-                                        })
-                                    else
-                                        debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
-                                    end
+                if (constructron.logistic_network.all_construction_robots == desired_robot_count) then
+                    constructron.enable_logistics_while_moving = false
+                    return constructron
+                else
+                    if not global.clear_robots_when_idle then
+                        if global.stations_count[constructron.surface.index] > 0 then
+                            debug_lib.DebugLog('ACTION: Stage')
+                            local desired_robot_name = global.desired_robot_name
+                            if game.item_prototypes[desired_robot_name] then
+                                if global.stations_count[constructron.surface.index] > 0 then
+                                    debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
+                                    local closest_station = me.get_closest_service_station(constructron)
+                                    me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                                    local slot = 1
+                                    constructron.set_vehicle_logistic_slot(slot, {
+                                        name = desired_robot_name,
+                                        min = desired_robot_count,
+                                        max = desired_robot_count
+                                    })
                                 else
-                                    debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
+                                    debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
                                 end
+                            else
+                                debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                             end
-                        else
-                            constructron.enable_logistics_while_moving = false
                         end
                     end
                 end
             end
-        else
-            return
         end
     end
 end
+
 
 -- This function is a Mess: refactor - carefull, recursion!!!
 me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructrons, max_constructron)
@@ -1079,27 +1066,14 @@ me.get_job = function(constructrons)
         if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
             if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
                 local max_worker = 1
-                local available_constructrons = {}
                 local chunks = {}
                 local job_type
-                local constructron_counter = 0
                 local chunk_counter = 0
+                local worker = me.get_worker()
+                local available_constructrons = {}
 
-                for _, constructron in pairs(constructrons) do
-                    local logistic_network = constructron.logistic_network
-                    if not global.clear_robots_when_idle then
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and (logistic_network.all_construction_robots > 0) and not me.robots_active(logistic_network) then
-                            constructron_counter = constructron_counter + 1
-                            available_constructrons[constructron_counter] = constructron
-                        end
-                    else
-                        if (constructron_counter < max_worker) and (constructron.surface.index == surface.index) and not me.get_constructron_status(constructron, 'busy') and constructron.logistic_cell and not me.robots_active(logistic_network) then
-                            constructron_counter = constructron_counter + 1
-                            available_constructrons[constructron_counter] = constructron
-                        end
-                    end
-                end
-                if constructron_counter > 0 then
+                available_constructrons[1] = worker
+                if available_constructrons[1] and not me.robots_active(available_constructrons[1].logistic_network) then
                     if next(global.deconstruct_queue[surface.index]) then -- deconstruction have priority over construction.
                         for key, chunk in pairs(global.deconstruct_queue[surface.index]) do
                             chunk_counter = chunk_counter + 1
