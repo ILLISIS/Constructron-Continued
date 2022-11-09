@@ -1,8 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.43
-Date: 2022-11-09
+Date: 2022-11-10
   Changed:
-    - Removed periodic Constructron checks, now available Constructrons will be checked at the start of a job.
+    - Removed periodic Constructron checks, now available Constructrons will be checked as needed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.42
 Date: 2022-11-08
