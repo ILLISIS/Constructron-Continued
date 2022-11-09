@@ -15,9 +15,7 @@ script.on_configuration_changed(init)
 
 -- Possibly do this at a 10x lower frequency or controlled by a mod setting
 script.on_nth_tick(1, (function(event)
-    if event.tick % 600 == 0 then
-        ctron.setup_constructrons()
-    elseif event.tick % 20 == 0 then
+    if event.tick % 20 == 0 then
         ctron.add_entities_to_chunks("deconstruction")
     elseif event.tick % 20 == 5 then
         ctron.add_entities_to_chunks("ghost")
