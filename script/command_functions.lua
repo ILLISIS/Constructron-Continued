@@ -161,6 +161,7 @@ end
 me.reload_ctron_status = function()
     for k, constructron in pairs(global.constructrons) do
         ctron.set_constructron_status(constructron, 'busy', false)
+        ctron.set_constructron_status(constructron, 'staged', false)
     end
 end
 

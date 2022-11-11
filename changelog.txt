@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.44
+Date: 2022-11-11
+  Changed:
+    - Made the experience of Constructron staging a bit better when logistic requests were delayed.
+    - Code Cleanup.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.43
 Date: 2022-11-10
   Changed:
