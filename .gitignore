@@ -1,2 +1,5 @@
-.vscode/launch.json
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
 Constructron-Continued.code-workspace
