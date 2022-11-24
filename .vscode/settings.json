@@ -16,5 +16,6 @@
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
-    ]
+    ],
+    "Lua.runtime.version": "Lua 5.2"
 }
