@@ -1,11 +1,11 @@
 -- luacheck: ignore
 -- passing luacheck requires refactoring of spidertron_animations, movement_triggers, sounds and hit_effects
-local hit_effects = require("__base__.prototypes.entity.hit-effects")
-local sounds = require("__base__.prototypes.entity.sounds")
-local movement_triggers = require("__base__.prototypes.entity.movement-triggers")
+local hit_effects = require("__base__/prototypes/entity/hit-effects")
+local sounds = require("__base__/prototypes/entity/sounds")
+local movement_triggers = require("__base__/prototypes/entity/movement-triggers")
 
 local lib_spider = {}
-lib_spider.spidertron_animations = require("__Constructron-Continued__.data.lib.lib_spider_animations")
+lib_spider.spidertron_animations = require("data/lib/lib_spider_animations")
 lib_spider.default_legs = {
     -- right side
     {

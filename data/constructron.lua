@@ -1,4 +1,4 @@
-local lib_spider = require("__Constructron-Continued__.data.lib.lib_spider")
+local lib_spider = require("data/lib/lib_spider")
 
 local constructron_collision_mask = {
     "water-tile",
@@ -7,7 +7,7 @@ local constructron_collision_mask = {
 }
 
 if mods["space-exploration"] then
-    local collision_mask_util_extended = require("__space-exploration__.collision-mask-util-extended.data.collision-mask-util-extended")
+    local collision_mask_util_extended = require("__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
     local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
     table.insert(constructron_collision_mask, spaceship_collision_layer)
 

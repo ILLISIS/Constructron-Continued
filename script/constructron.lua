@@ -1,8 +1,8 @@
 require("util")
 
-local chunk_util = require("__Constructron-Continued__.script.chunk_util")
-local debug_lib = require("__Constructron-Continued__.script.debug_lib")
-local color_lib = require("__Constructron-Continued__.script.color_lib")
+local chunk_util = require("script/chunk_util")
+local debug_lib = require("script/debug_lib")
+local color_lib = require("script/color_lib")
 
 local me = {}
 

@@ -1,4 +1,4 @@
-local ctron = require("__Constructron-Continued__.script.constructron")
+local ctron = require("script/constructron")
 
 local me = {}
 
