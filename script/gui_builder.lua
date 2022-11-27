@@ -8,7 +8,7 @@ gui_builder.mainFrameName = "CT_main_guiFrame"
 gui_builder.preferenceFrameName = "CT_preference_guiFrame"
 
 
-local function titleBar(frame)
+local function titleBar(frame, isMainFrame)
     local bar = frame.add{
         type = "flow"
     }
@@ -16,11 +16,22 @@ local function titleBar(frame)
     bar.style.horizontal_spacing = 8
     bar.style.height = 28
 
+    
+    local title
+    local close_callback
+    if isMainFrame then
+        title = {"gui.main-title"}
+        close_callback = "toggle_main"
+    else
+        title = {"gui.preferences-title"}
+        close_callback = "toggle_preferences"
+    end
+
     -- title
     bar.add{
         type = "label",
         style = "frame_title",
-        caption = {"gui.main-title"},
+        caption = title,
         ignored_by_interaction = true
     }
 
@@ -31,6 +42,7 @@ local function titleBar(frame)
         ignored_by_interaction = true
     }
 
+    if isMainFrame then
     -- surface selection
     bar.add{
         type = "drop-down",
@@ -66,6 +78,7 @@ local function titleBar(frame)
         ignored_by_interaction = true
     }
     seperator.style.height = 24
+    end
 
     -- close button
     bar.add{
@@ -78,7 +91,7 @@ local function titleBar(frame)
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
-            on_gui_click = "toggle_main"
+            on_gui_click = close_callback
         }
     }
 end
@@ -243,7 +256,7 @@ function gui_builder.buildMainGui(player)
     }
     frame.auto_center = true
 
-    titleBar(frame)
+    titleBar(frame, true)
     buildMainContent(frame)
 end
 
@@ -254,6 +267,8 @@ function gui_builder.buildPreferenceGui(player)
         direction = "vertical"
     }
     frame.auto_center = true
+
+    titleBar(frame, false)
 end
 
 function gui_builder.buildModGuiButton(buttonFlow)
