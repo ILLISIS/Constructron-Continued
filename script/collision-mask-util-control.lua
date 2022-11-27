@@ -58,7 +58,7 @@ function collision_mask_util_extended.named_collision_mask_integrity_check()
         end
       end
       if not layer then
-        error("\n\n\nA reserved collision mask object "..mask_name.." has been compromised by 1 or more of your installed mods. Object is missing collision_mask.\n\n")
+        error("\n\n\nA reserved collision mask object has been compromised by 1 or more of your installed mods. Object is missing collision_mask.\n\n")
       end
     end
   end
