@@ -1,7 +1,7 @@
-local custom_lib = require("__Constructron-Continued__.script.custom_lib")
-local ctron = require("__Constructron-Continued__.script.constructron")
-local Spidertron_Pathfinder = require("__Constructron-Continued__.script.Spidertron-pathfinder")
-local cmd = require("__Constructron-Continued__.script.command_functions")
+local custom_lib = require("script/custom_lib")
+local ctron = require("script/constructron")
+local Spidertron_Pathfinder = require("script/Spidertron-pathfinder")
+local cmd = require("script/command_functions")
 
 ctron.pathfinder = Spidertron_Pathfinder
 

@@ -1,5 +1,5 @@
-local cust_lib = require("script.custom_lib")
-local collision_mask_util_extended = require("script.collision-mask-util-control")
+local cust_lib = require("script/custom_lib")
+local collision_mask_util_extended = require("script/collision-mask-util-control")
 
 local Spidertron_Pathfinder = {
     class_name = "Spidertron_Pathfinder",

@@ -4,7 +4,7 @@
 
 
 -- Instantiate setup_tick constructron status value
--- local ctron = require("__Constructron-Continued__.script.constructron")
+-- local ctron = require("script/constructron")
 
 -- global.constructrons = global.constructrons or {}
 
