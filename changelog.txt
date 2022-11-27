@@ -3,6 +3,8 @@ Version: 1.0.46
 Date: 2022-11-27
   Changed:
     - Major changes to landfill behaviour that results in a much better experience. Constructrons will now build landfill as they move toward the construction area creating a path.
+  Fixed:
+    - Constructrons and Stations would not be registered when construction jobs were disabled.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.45
 Date: 2022-11-13

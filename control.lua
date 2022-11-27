@@ -182,6 +182,7 @@ local function enable(player, parameters)
     if parameters[1] == "construction" then
         global.construction_job_toggle = true
         settings.global["construct_jobs"] = {value = true}
+        cmd.reload_entities()
         cmd.reacquire_construction_jobs()
         game.print('Construction jobs enabled.')
 

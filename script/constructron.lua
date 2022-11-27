@@ -440,7 +440,7 @@ me.disable_roboports = function(grid)
     end
 end
 
-me.enable_roboports = function(grid, range)
+me.enable_roboports = function(grid)
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
             me.replace_roboports(grid, eq, eq.prototype.take_result.name)
@@ -1417,7 +1417,7 @@ me.on_built_entity = function(event) -- for entity creation
         elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
             local registration_number = script.register_on_entity_destroyed(entity)
             me.set_constructron_status(entity, 'busy', false)
-            me.set_constructron_status(constructron, 'staged', false)
+            me.set_constructron_status(entity, 'staged', false)
             me.paint_constructron(entity, 'idle')
             entity.enable_logistics_while_moving = false
             global.constructrons[entity.unit_number] = entity
