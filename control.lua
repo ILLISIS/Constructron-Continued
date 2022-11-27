@@ -5,12 +5,23 @@ local cmd = require("script/command_functions")
 local chunk_util = require("script/chunk_util")
 local entity_proc = require("script/entity_processor")
 
+local gui = require("script/gui")
+local gui_handler = require("script/gui_handler")
+
 local init = function()
     ctron.ensure_globals()
     pathfinder.init_globals()
+    
+    gui.init()
+    gui_handler.init(gui)
+end
+
+local load = function()
+    gui_handler.init(gui)
 end
 
 script.on_init(init)
+script.on_load(load)
 script.on_configuration_changed(init)
 
 script.on_nth_tick(15, (function(event)
@@ -66,6 +77,9 @@ script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 
 script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
+
+script.on_event(ev.on_player_created, gui.init)
+script.on_event(ev.on_gui_click, gui_handler.handle)
 
 script.on_event(ev.on_player_used_spider_remote, (function(event)
     if global.spider_remote_toggle and event.vehicle.name == "constructron" then
