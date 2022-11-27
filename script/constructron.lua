@@ -422,6 +422,32 @@ me.do_until_leave = function(job)
     end
 end
 
+me.replace_roboports = function(grid, old_eq, new_eq)
+    local grid_pos = old_eq.position
+    local eq_energy = old_eq.energy
+    grid.take{ position = old_eq.position }
+    local new_set = grid.put{ name = new_eq, position = grid_pos }
+    if new_set then
+        new_set.energy = eq_energy
+    end
+end
+
+me.disable_roboports = function(grid)
+    for _, eq in next, grid.equipment do
+        if eq.type == "roboport-equipment" then
+            me.replace_roboports(grid, eq, "personal-roboport-mk2-equipment-reduced-1" )
+        end
+    end
+end
+
+me.enable_roboports = function(grid, range)
+    for _, eq in next, grid.equipment do
+        if eq.type == "roboport-equipment" then
+            me.replace_roboports(grid, eq, eq.prototype.take_result.name)
+        end
+    end
+end
+
 -------------------------------------------------------------------------------
 --  Actions
 -------------------------------------------------------------------------------
@@ -429,12 +455,23 @@ end
 me.actions = {
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
-        if find_path and constructrons[1].valid then
+        if constructrons[1].valid then
+            me.disable_roboports(constructrons[1].grid)
+            local inventory_items = me.get_inventory(constructrons[1], "spider_trunk")
+            for item_name, _ in pairs(inventory_items) do
+                if item_name == "landfill" then
+                    constructrons[1].enable_logistics_while_moving = true
+                else
+                    constructrons[1].enable_logistics_while_moving = false
+                end
+            end
+            if find_path then
             return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
             for c, constructron in ipairs(constructrons) do
                 if constructron.valid then
                     constructron.autopilot_destination = position -- does not use path finder!
+                    end
                 end
             end
         end
@@ -448,7 +485,6 @@ me.actions = {
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
         if constructrons[1].valid then
             for c, constructron in ipairs(constructrons) do
-                constructron.enable_logistics_while_moving = false
                 me.set_constructron_status(constructron, 'build_tick', game.tick)
             end
         else
@@ -465,7 +501,6 @@ me.actions = {
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
         for c, constructron in ipairs(constructrons) do
             if constructron.valid then
-                constructron.enable_logistics_while_moving = false
                 me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
             else
                 return true
@@ -578,6 +613,7 @@ me.actions = {
             if constructron.valid then
                 me.set_constructron_status(constructron, 'busy', false)
                 me.paint_constructron(constructron, 'idle')
+                me.enable_roboports(constructron.grid)
                 if (global.constructrons_count[constructron.surface.index] > 10) then
                     local distance = 5 + math.random(5)
                     local alpha = math.random(360)
@@ -725,6 +761,7 @@ me.conditions = {
                 return false
             end
         end
+        me.enable_roboports(constructrons[1].grid)
         return true
     end,
     build_done = function(constructrons, _, _, _)
@@ -929,7 +966,6 @@ me.get_worker = function(surface_index)
                 local desired_robot_count = global.desired_robot_count
                 local logistic_network = constructron.logistic_network
                 if (logistic_network.all_construction_robots == desired_robot_count) and not (me.robots_active(logistic_network)) then
-                    constructron.enable_logistics_while_moving = false
                     return constructron
                 else
                     if not global.clear_robots_when_idle then

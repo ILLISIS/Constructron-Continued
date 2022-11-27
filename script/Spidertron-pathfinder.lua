@@ -74,7 +74,6 @@ end
 function Spidertron_Pathfinder.set_autopilot(unit, path)
     if unit and unit.valid then
         unit.autopilot_destination = nil
-        unit.enable_logistics_while_moving = false
         for i, waypoint in ipairs(path) do
             unit.add_autopilot_destination(waypoint.position)
         end
