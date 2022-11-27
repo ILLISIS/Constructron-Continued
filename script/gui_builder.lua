@@ -43,20 +43,28 @@ local function titleBar(frame, isMainFrame)
     }
 
     if isMainFrame then
+
         -- surface selection
-        bar.add{
-            type = "drop-down",
-            name = "surface_select",
-            style = "ct_frame_dropdown",
-            selected_index = 1,
-            items = {
-                "Nauvis"
-            },
-            tags = {
-                mod = "constructron",
-                on_gui_selection_state_changed = "changed_surface"
-            }
-        }
+        if #game.surfaces > 1 then
+            local surfaces = {}
+
+            for s, surface in pairs(game.surfaces) do
+                surfaces[s] = surface.name
+            end
+
+            bar.add{
+                type = "drop-down",
+                name = "surface_select",
+                style = "ct_frame_dropdown",
+                selected_index = 1,
+                items = surfaces,
+                tags = {
+                    mod = "constructron",
+                    on_gui_selection_state_changed = "changed_surface"
+                }
+            } 
+            
+        end
 
         -- preference button
         bar.add{
