@@ -41,6 +41,7 @@ function gui.toggleMain(player)
         end
 
         mainFrame.visible = not mainFrame.visible
+        mainFrame.bring_to_front()
     end
 end
 
