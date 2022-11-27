@@ -135,7 +135,6 @@ end
 
 
 ---@param item_name string
----@param force LuaForce
 ---return boolean
 me.check_item_allowed = function(item_name)
     if not global.allowed_items[item_name] then
