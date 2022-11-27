@@ -22,36 +22,36 @@ function gui.init()
         end
 
         -- destroy settingsFrame if it already exists
-        local preferenceFrame = player.gui.screen[gui_builder.preferenceFrameName]
-        if preferenceFrame then
-            preferenceFrame.destroy()
+        local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
+        if preferencesFrame then
+            preferencesFrame.destroy()
         end
     end
 end
 
 function gui.toggleMain(player)
     local mainFrame = player.gui.screen[gui_builder.mainFrameName]
-    local preferenceFrame = player.gui.screen[gui_builder.preferenceFrameName]
+    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
 
     if not mainFrame then
         gui_builder.buildMainGui(player)
     else
-        if preferenceFrame and preferenceFrame.visible then
-            preferenceFrame.visible = false
+        if preferencesFrame and preferencesFrame.visible then
+            preferencesFrame.visible = false
         end
 
         mainFrame.visible = not mainFrame.visible
     end
 end
 
-function gui.togglePreference(player)
-    local preferenceFrame = player.gui.screen[gui_builder.preferenceFrameName]
+function gui.togglePreferences(player)
+    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
 
-    if not preferenceFrame then
-        gui_builder.buildPreferenceGui(player)
+    if not preferencesFrame then
+        gui_builder.buildPreferencesGui(player)
     else
-        preferenceFrame.visible = not preferenceFrame.visible
-        preferenceFrame.bring_to_front()
+        preferencesFrame.visible = not preferencesFrame.visible
+        preferencesFrame.bring_to_front()
     end
 end
 

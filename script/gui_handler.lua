@@ -10,8 +10,8 @@ function handlers.toggle_main(player)
     gui.toggleMain(player)
 end
 
-function handlers.toggle_preference(player)
-    gui.togglePreference(player)
+function handlers.toggle_preferences(player)
+    gui.togglePreferences(player)
 end
 
 function gui_handler.init(guiInstance)

@@ -5,7 +5,7 @@ local gui_builder = {}
 -- CONSTANTS
 gui_builder.flowButtonName = "CT_toggle_gui"
 gui_builder.mainFrameName = "CT_main_guiFrame"
-gui_builder.preferenceFrameName = "CT_preference_guiFrame"
+gui_builder.preferencesFrameName = "CT_preferences_guiFrame"
 
 
 local function titleBar(frame, isMainFrame)
@@ -43,41 +43,41 @@ local function titleBar(frame, isMainFrame)
     }
 
     if isMainFrame then
-    -- surface selection
-    bar.add{
-        type = "drop-down",
-        name = "surface_select",
-        style = "ct_frame_dropdown",
-        selected_index = 1,
-        items = {
-            "Nauvis"
-        },
-        tags = {
-            mod = "constructron",
-            on_gui_selection_state_changed = "update_surface"
+        -- surface selection
+        bar.add{
+            type = "drop-down",
+            name = "surface_select",
+            style = "ct_frame_dropdown",
+            selected_index = 1,
+            items = {
+                "Nauvis"
+            },
+            tags = {
+                mod = "constructron",
+                on_gui_selection_state_changed = "update_surface"
+            }
         }
-    }
 
-    -- preference button
-    bar.add{
-        type = "button",
-        style = "ct_frame_button",
-        name = "title_preference",
-        caption = {"gui.preferences"},
-        mouse_button_filter = {"left"},
-        tags = {
-            mod = "constructron",
-            on_gui_click = "toggle_preference"
+        -- preference button
+        bar.add{
+            type = "button",
+            style = "ct_frame_button",
+            name = "title_preference",
+            caption = {"gui.preferences"},
+            mouse_button_filter = {"left"},
+            tags = {
+                mod = "constructron",
+                on_gui_click = "toggle_preferences"
+            }
         }
-    }
     
-    -- seperator line
-    local seperator = bar.add{
-        type = "line",
-        direction = "vertical",
-        ignored_by_interaction = true
-    }
-    seperator.style.height = 24
+        -- seperator line
+        local seperator = bar.add{
+            type = "line",
+            direction = "vertical",
+            ignored_by_interaction = true
+        }
+        seperator.style.height = 24
     end
 
     -- close button
@@ -260,10 +260,10 @@ function gui_builder.buildMainGui(player)
     buildMainContent(frame)
 end
 
-function gui_builder.buildPreferenceGui(player)
+function gui_builder.buildPreferencesGui(player)
     local frame = player.gui.screen.add{
         type = "frame",
-        name = gui_builder.preferenceFrameName,
+        name = gui_builder.preferencesFrameName,
         direction = "vertical"
     }
     frame.auto_center = true
