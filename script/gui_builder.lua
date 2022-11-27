@@ -54,7 +54,7 @@ local function titleBar(frame, isMainFrame)
             },
             tags = {
                 mod = "constructron",
-                on_gui_selection_state_changed = "update_surface"
+                on_gui_selection_state_changed = "changed_surface"
             }
         }
 

@@ -1,5 +1,6 @@
 local gui_event_type = {
-    [defines.events.on_gui_click] = "on_gui_click"
+    [defines.events.on_gui_click] = "on_gui_click",
+    [defines.events.on_gui_selection_state_changed] = "on_gui_selection_state_changed"
 }
 
 local gui = {}
@@ -12,6 +13,10 @@ end
 
 function handlers.toggle_preferences(player)
     gui.togglePreferences(player)
+end
+
+function handlers.changed_surface(player)
+
 end
 
 function gui_handler.init(guiInstance)
