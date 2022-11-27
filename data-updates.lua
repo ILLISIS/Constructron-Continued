@@ -1,2 +1,2 @@
-require("__Constructron-Continued__.data.compatibility.krastorio2")
-require("__Constructron-Continued__.data.roboports")
+require("data/compatibility/krastorio2")
+require("data/roboports")

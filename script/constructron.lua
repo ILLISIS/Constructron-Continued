@@ -1,8 +1,8 @@
 require("util")
 
-local chunk_util = require("__Constructron-Continued__.script.chunk_util")
-local debug_lib = require("__Constructron-Continued__.script.debug_lib")
-local color_lib = require("__Constructron-Continued__.script.color_lib")
+local chunk_util = require("script/chunk_util")
+local debug_lib = require("script/debug_lib")
+local color_lib = require("script/color_lib")
 
 local me = {}
 
@@ -957,9 +957,9 @@ me.create_job = function(job_bundle_index, job)
     global.job_bundles[job_bundle_index][index] = job
 end
 
-me.get_worker = function(surface_index)
+me.get_worker = function()
     for _, constructron in pairs(global.constructrons) do
-        if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
+        if constructron and constructron.valid and not me.get_constructron_status(constructron, 'busy') then
             if not constructron.logistic_network then
                 debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
             else
@@ -1107,7 +1107,7 @@ me.get_job = function(constructrons)
                 local chunks = {}
                 local job_type
                 local chunk_counter = 0
-                local worker = me.get_worker(surface.index)
+                local worker = me.get_worker()
                 local available_constructrons = {}
 
                 available_constructrons[1] = worker
