@@ -60,7 +60,7 @@ local function titleBar(frame, isMainFrame)
                 items = surfaces,
                 tags = {
                     mod = "constructron",
-                    on_gui_selection_state_changed = "changed_surface"
+                    on_gui_selection_state_changed = "selected_new_surface"
                 }
             } 
             

@@ -3,6 +3,8 @@ local mod_gui = require("mod-gui")
 
 local gui = {}
 
+gui.selected_surface = 1
+
 function gui.init()
     for _, player in pairs(game.connected_players) do
         local buttonFlow = mod_gui.get_button_flow(player)
@@ -58,6 +60,12 @@ function gui.togglePreferences(player, _)
         preferencesFrame.visible = not preferencesFrame.visible
         preferencesFrame.bring_to_front()
     end
+end
+
+---@param player LuaPlayer
+---@param dropdown LuaGuiElement
+function gui.selectedNewSurface(player, dropdown)
+    gui.selected_surface = dropdown.selected_index
 end
 
 return gui

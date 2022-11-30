@@ -19,8 +19,10 @@ function handlers.toggle_preferences(player, _)
     gui.togglePreferences(player)
 end
 
-function handlers.changed_surface(player)
-
+---@param player LuaPlayer
+---@param dropdown LuaGuiElement
+function handlers.selected_new_surface(player, dropdown)
+    gui.selectedNewSurface(player, dropdown)
 end
 
 function gui_handler.init(guiInstance)
