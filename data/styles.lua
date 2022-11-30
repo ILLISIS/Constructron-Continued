@@ -23,7 +23,10 @@ styles.ct_frame_button = {
     right_padding = 8,
 
     font = "heading-2",
-    default_font_color = {0.9, 0.9, 0.9}
+    default_font_color = {0.9, 0.9, 0.9},
+    hovered_font_color = {0, 0, 0},
+    selected_font_color = {0, 0, 0},
+    disabled_font_color = {0.701961, 0.701961, 0.701961}
 }
 
 styles.ct_frame_dropdown = {
@@ -40,10 +43,14 @@ styles.ct_frame_dropdown = {
     button_style = {
         type = "button_style",
         parent = "ct_frame_button",
+    },
 
---        hovered_font_color = {0, 0, 0},
---        clicked_hovered_font_color = {0, 0, 0},
---        clicked_selected_font_color = {0, 0, 0},
---        disabled_font_color = {0.701961, 0.701961, 0.701961}
+    list_box_style = {
+        type = "list_box_style",
+
+        item_style = {
+            type = "button_style",
+            parent = "ct_frame_button"
+        }
     }
 }
