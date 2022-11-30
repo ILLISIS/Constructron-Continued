@@ -27,6 +27,12 @@ function gui_handler.init(guiInstance)
     gui = guiInstance
 end
 
+function gui_handler.register()
+    for ev, _ in pairs(gui_event_type) do
+        script.on_event(ev, gui_handler.handle)
+    end
+end
+
 ---@param event 
 ---| EventData.on_gui_click 
 ---| EventData.on_gui_selection_state_changed

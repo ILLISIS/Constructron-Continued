@@ -79,7 +79,7 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_ent
 script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
 
 script.on_event(ev.on_player_created, gui.init)
-script.on_event(ev.on_gui_click, gui_handler.handle)
+gui_handler.register()
 
 script.on_event(ev.on_player_used_spider_remote, (function(event)
     if global.spider_remote_toggle and event.vehicle.name == "constructron" then
