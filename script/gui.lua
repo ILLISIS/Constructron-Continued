@@ -29,7 +29,9 @@ function gui.init()
     end
 end
 
-function gui.toggleMain(player)
+---@param player LuaPlayer
+---@param _ LuaGuiElement
+function gui.toggleMain(player, _)
     local mainFrame = player.gui.screen[gui_builder.mainFrameName]
     local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
 
@@ -45,7 +47,9 @@ function gui.toggleMain(player)
     end
 end
 
-function gui.togglePreferences(player)
+---@param player LuaPlayer
+---@param _ LuaGuiElement
+function gui.togglePreferences(player, _)
     local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
 
     if not preferencesFrame then

@@ -7,11 +7,15 @@ local gui = {}
 local gui_handler = {}
 local handlers = {}
 
-function handlers.toggle_main(player)
+---@param player LuaPlayer
+---@param _ LuaGuiElement
+function handlers.toggle_main(player, _)
     gui.toggleMain(player)
 end
 
-function handlers.toggle_preferences(player)
+---@param player LuaPlayer
+---@param _ LuaGuiElement
+function handlers.toggle_preferences(player, _)
     gui.togglePreferences(player)
 end
 
@@ -23,6 +27,9 @@ function gui_handler.init(guiInstance)
     gui = guiInstance
 end
 
+---@param event 
+---| EventData.on_gui_click 
+---| EventData.on_gui_selection_state_changed
 function gui_handler.handle(event)
     if not event.element then return end
 
@@ -31,6 +38,7 @@ function gui_handler.handle(event)
 
     -- GUI events always have an associated player
     local player = game.get_player(event.player_index)
+    if not player then return end
 
     local event_name = gui_event_type[event.name]
     local action_name = tags[event_name]
@@ -41,7 +49,7 @@ function gui_handler.handle(event)
 
     if not event_handler then return end
 
-    event_handler(player)
+    event_handler(player, event.element)
 end
 
 return gui_handler
