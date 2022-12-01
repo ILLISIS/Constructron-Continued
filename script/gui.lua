@@ -34,8 +34,8 @@ end
 ---@param player LuaPlayer
 ---@param _ LuaGuiElement
 function gui.toggleMain(player, _)
-    local mainFrame = player.gui.screen[gui_builder.mainFrameName]
-    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
+    local mainFrame = player.gui.screen[gui_builder.mainFrameName] --[[@as LuaGuiElement]]
+    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName] --[[@as LuaGuiElement]]
 
     if not mainFrame then
         gui_builder.buildMainGui(player)
@@ -46,19 +46,21 @@ function gui.toggleMain(player, _)
 
         mainFrame.visible = not mainFrame.visible
         mainFrame.bring_to_front()
+        mainFrame.force_auto_center()
     end
 end
 
 ---@param player LuaPlayer
 ---@param _ LuaGuiElement
 function gui.togglePreferences(player, _)
-    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName]
+    local preferencesFrame = player.gui.screen[gui_builder.preferencesFrameName] --[[@as LuaGuiElement]]
 
     if not preferencesFrame then
         gui_builder.buildPreferencesGui(player)
     else
         preferencesFrame.visible = not preferencesFrame.visible
         preferencesFrame.bring_to_front()
+        preferencesFrame.force_auto_center()
     end
 end
 
