@@ -7,7 +7,8 @@ gui_builder.flowButtonName = "CT_toggle_gui"
 gui_builder.mainFrameName = "CT_main_guiFrame"
 gui_builder.preferencesFrameName = "CT_preferences_guiFrame"
 
-
+---@param frame LuaGuiElement
+---@param isMainFrame boolean
 local function titleBar(frame, isMainFrame)
     local bar = frame.add{
         type = "flow"
@@ -104,6 +105,8 @@ local function titleBar(frame, isMainFrame)
     }
 end
 
+---@param name string
+---@param tab_flow LuaGuiElement
 local function buildTabContent(name, tab_flow)
     local entityListFrame = tab_flow.add{
         type = "frame",
@@ -171,6 +174,9 @@ local function buildTabContent(name, tab_flow)
     }
 end
 
+---@param name string
+---@param count uint
+---@param tabbed_pane LuaGuiElement
 local function buildTab(name, count, tabbed_pane)
     local tab = tabbed_pane.add{
         type = "tab",
@@ -195,6 +201,7 @@ local function buildTab(name, count, tabbed_pane)
     buildTabContent(name, tabFlow)
 end
 
+---@param frame LuaGuiElement
 local function buildMainContent(frame)
     local mainFlow = frame.add{
         type = "flow",
@@ -256,6 +263,7 @@ local function buildMainContent(frame)
     buildTab("repair", 42, tabbedPane)
 end
 
+---@param player LuaPlayer
 function gui_builder.buildMainGui(player)
     local frame = player.gui.screen.add{
         type = "frame",
@@ -268,6 +276,7 @@ function gui_builder.buildMainGui(player)
     buildMainContent(frame)
 end
 
+---@param player LuaPlayer
 function gui_builder.buildPreferencesGui(player)
     local frame = player.gui.screen.add{
         type = "frame",
@@ -279,6 +288,7 @@ function gui_builder.buildPreferencesGui(player)
     titleBar(frame, false)
 end
 
+---@param buttonFlow LuaGuiElement
 function gui_builder.buildModGuiButton(buttonFlow)
     buttonFlow.add{
         type = "button",
