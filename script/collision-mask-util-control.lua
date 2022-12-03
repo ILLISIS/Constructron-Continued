@@ -21,6 +21,8 @@ function find_flying_entities(surface)
 end
 ]]
 
+---@param mask_name string
+---@return CollisionMaskLayer
 function collision_mask_util_extended.get_named_collision_mask(mask_name)
   local prototype = game.entity_prototypes["collision-mask-"..mask_name]
   if prototype then

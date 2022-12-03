@@ -28,11 +28,17 @@ function me.merge(a, b)
     return a
 end
 
+---@param position1 MapPosition
+---@param position2 MapPosition
+---@return number
 me.distance_between = function(position1, position2)
     return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
 end
 
-me.string_split = function(to_split,sep)
+---@param to_split string
+---@param sep string
+---@return string[]
+me.string_split = function(to_split, sep)
     local values = {}
     for str in string.gmatch(to_split, '([^'..sep..']+)') do
         table.insert(values, str)

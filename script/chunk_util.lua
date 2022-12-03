@@ -1,11 +1,16 @@
 local me = {}
 
+---@param position1 MapPosition
+---@param position2 MapPosition
+---@return number?
 me.distance_between = function(position1, position2)
     if position1 and position2 then
         return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
     end
 end
 
+---@param position MapPosition
+---@return ChunkPosition
 me.chunk_from_position = function(position)
     -- if a ghost entity found anywhere in the surface, we want to get the corresponding chunk
     -- so that we can fill constructron with all the other ghosts
@@ -16,6 +21,8 @@ me.chunk_from_position = function(position)
     return chunk_index
 end
 
+---@param chunk_index ChunkPosition
+---@return MapPosition
 me.position_from_chunk = function(chunk_index)
     local position = {
         y = chunk_index.y * 80,
@@ -24,6 +31,8 @@ me.position_from_chunk = function(chunk_index)
     return position
 end
 
+---@param chunk_index ChunkPosition
+---@return Area
 me.get_area_from_chunk = function(chunk_index)
     local area = {{
         y = chunk_index.y * 80,
@@ -35,6 +44,9 @@ me.get_area_from_chunk = function(chunk_index)
     return area
 end
 
+---@param position MapPosition
+---@param range number
+---@return Area
 me.get_area_from_position = function(position, range)
     local area = {{
         y = (position.y) - range,
@@ -46,6 +58,9 @@ me.get_area_from_position = function(position, range)
     return area
 end
 
+---@param a1 Area
+---@param a2 Area
+---@return Area?
 me.merge_direct_neighbour = function(a1, a2)
 
     local merge
@@ -75,6 +90,10 @@ me.merge_direct_neighbour = function(a1, a2)
     end
 end
 
+---@param merged_area Area
+---@param chunk1 Chunk
+---@param chunk2 Chunk
+---@return Chunk
 me.merge_neighbour_chunks = function(merged_area, chunk1, chunk2)
     -- must be called if chunks are direct neighbors. area is what is returned from merge_direct_neighbour function.
     local new_chunk = {
@@ -103,6 +122,8 @@ me.merge_neighbour_chunks = function(merged_area, chunk1, chunk2)
     return new_chunk
 end
 
+---@param chunks Chunk[]
+---@return Chunk[]
 me.combine_chunks = function(chunks)
     for i, chunk1 in ipairs(chunks) do
         for j, chunk2 in ipairs(chunks) do
@@ -125,6 +146,9 @@ me.combine_chunks = function(chunks)
     return chunks
 end
 
+---@param area Area
+---@param radius float
+---@return MapPosition[]
 me.calculate_construct_positions = function(area, radius)
     local height = math.max(area[2].y - area[1].y, 1) -- a single object has no width or height. which makes xpoint_count and ypoint_count zero. which means it won't be build.
     local width = math.max(area[2].x - area[1].x, 1) -- so, if either height or width are zero. they must be set to at least 1.
@@ -194,17 +218,20 @@ me.calculate_construct_positions = function(area, radius)
     return points
 end
 
+---@param objects LuaEntity[]
+---@param position MapPosition
+---@return integer?
 me.get_closest_object = function(objects, position)
     -- actually returns object index or key rather than object.
-    local min_distance
-    local object_index
+    local min_distance ---@type number?
+    local object_index ---@type integer?
     local iterator
     if not objects[1] then
         iterator = pairs
     else
         iterator = ipairs
     end
-    for i, object in iterator(objects) do
+    for i, object in iterator(objects) do --[[@as integer]]
         local distance = me.distance_between(object.position, position)
         if not min_distance or (distance < min_distance) then
             min_distance = distance

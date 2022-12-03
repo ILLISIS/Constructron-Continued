@@ -1,5 +1,6 @@
 local me = {}
 
+---@param message LocalisedString
 me.DebugLog = function(message)
     if global.debug_toggle then
         game.print(message)
@@ -7,6 +8,10 @@ me.DebugLog = function(message)
     end
 end
 
+---@param message LocalisedString
+---@param entity LuaEntity
+---@param offset float
+---@param ttl uint
 me.VisualDebugText = function(message, entity, offset, ttl)
     if not entity or not entity.valid then
         return
@@ -39,6 +44,10 @@ me.VisualDebugText = function(message, entity, offset, ttl)
     end
 end
 
+---@param position MapPosition
+---@param surface LuaSurface 
+---@param color Color
+---@param text LocalisedString
 me.VisualDebugCircle = function(position, surface, color, text)
     if global.debug_toggle then
         if position then
@@ -73,6 +82,10 @@ me.VisualDebugCircle = function(position, surface, color, text)
     end
 end
 
+---@param minimum MapPosition | LuaEntity
+---@param maximum MapPosition | LuaEntity
+---@param surface SurfaceIdentification
+---@param color Color
 me.draw_rectangle = function(minimum, maximum, surface, color)
     if global.debug_toggle then
         local message = "rectangle"

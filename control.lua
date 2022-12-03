@@ -92,6 +92,9 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_ent
 
 script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
 -------------------------------------------------------------------------------
+
+---@param player LuaPlayer
+---@param parameters string[]
 local function reset(player, parameters)
     log("control:reset")
     log("by player:" .. player.name)
@@ -147,6 +150,8 @@ local function reset(player, parameters)
     end
 end
 
+---@param player LuaPlayer
+---@param parameters string[]
 local function clear(player, parameters)
     log("control:clear")
     log("by player:" .. player.name)
@@ -174,6 +179,8 @@ local function clear(player, parameters)
     end
 end
 
+---@param player LuaPlayer
+---@param parameters string[]
 local function enable(player, parameters)
     log("control:enable")
     log("by player:" .. player.name)
@@ -229,6 +236,8 @@ local function enable(player, parameters)
     end
 end
 
+---@param player LuaPlayer
+---@param parameters string[]
 local function disable(player, parameters)
     log("control:disable")
     log("by player:" .. player.name)
@@ -280,7 +289,9 @@ local function disable(player, parameters)
     end
 end
 
-local function stats(player, _ )
+---@param player LuaPlayer
+---@param _ string[]
+local function stats(player, _)
     log("control:help")
     log("by player:" .. player.name)
 
@@ -294,6 +305,8 @@ local function stats(player, _ )
     return stats
 end
 
+---@param player LuaPlayer
+---@param parameters string[]
 local function help(player, parameters)
     log("control:help")
     log("by player:" .. player.name)
@@ -306,12 +319,12 @@ end
 --===========================================================================--
 
 local ctron_commands = {
-    help = help,
-    reset = reset,
-    clear = clear,
-    enable = enable,
-    disable = disable,
-    stats = stats
+    ["help"] = help,
+    ["reset"] = reset,
+    ["clear"] = clear,
+    ["enable"] = enable,
+    ["disable"] = disable,
+    ["stats"] = stats
 }
 
 -------------------------------------------------------------------------------
@@ -323,9 +336,9 @@ commands.add_command(
     function(param)
         log("/ctron " .. (param.parameter or ""))
         if param.parameter then
-            local player = game.players[param.player_index]
+            local player = game.players[param.player_index] --[[@as LuaPlayer]]
             local params = custom_lib.string_split(param.parameter, " ")
-            local command = table.remove(params, 1)
+            local command = table.remove(params, 1) --[[@as string]]
             if command and ctron_commands[command] then
                 ctron_commands[command](player,params)
             else
