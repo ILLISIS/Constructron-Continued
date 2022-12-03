@@ -28,6 +28,8 @@ Spidertron_Pathfinder.check_pathfinder_requests_timeout = function()
     end
 end
 
+---@param path PathfinderWaypoint[]
+---@return PathfinderWaypoint[]
 function Spidertron_Pathfinder.clean_linear_path(path)
     -- removes points on the same line except the start and the end.
     local new_path = {}
@@ -45,6 +47,9 @@ function Spidertron_Pathfinder.clean_linear_path(path)
     return new_path
 end
 
+---@param path PathfinderWaypoint[]
+---@param min_distance integer
+---@return PathfinderWaypoint[]
 function Spidertron_Pathfinder.clean_path_steps(path, min_distance)
     if #path == 1 then
         return path
@@ -71,6 +76,8 @@ function Spidertron_Pathfinder.clean_path_steps(path, min_distance)
     return new_path
 end
 
+---@param unit LuaEntity
+---@param path PathfinderWaypoint[]
 function Spidertron_Pathfinder.set_autopilot(unit, path)
     if unit and unit.valid then
         unit.autopilot_destination = nil
@@ -80,6 +87,9 @@ function Spidertron_Pathfinder.set_autopilot(unit, path)
     end
 end
 
+---@param surface LuaSurface
+---@param position MapPosition
+---@return MapPosition?
 function Spidertron_Pathfinder.find_non_colliding_position(surface, position)
     for _, param in pairs(
         {
@@ -99,7 +109,12 @@ function Spidertron_Pathfinder.find_non_colliding_position(surface, position)
     end
 end
 
+---@param units LuaEntity[]
+---@param _ any
+---@param destination MapPosition
+---@return MapPosition?
 function Spidertron_Pathfinder.request_path(units, _, destination)
+    ---@type LuaSurface.request_path_param
     local request_params = {unit = units[1], units = units, goal = destination}
     if units[1].valid then
         if request_params.unit.name == "constructron-rocket-powered" then
@@ -113,6 +128,7 @@ function Spidertron_Pathfinder.request_path(units, _, destination)
     end
 end
 
+---@param request_params LuaSurface.request_path_param
 function Spidertron_Pathfinder.request_path2(request_params)
     --log("request_path2")
     local pathing_collision_mask = {"water-tile", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"}
@@ -168,6 +184,7 @@ function Spidertron_Pathfinder.request_path2(request_params)
     end
 end
 
+---@param event EventData.on_script_path_request_finished
 function Spidertron_Pathfinder.on_script_path_request_finished(event)
     local request = global.pathfinder_requests[event.id]
     if request and request.unit and request.unit.valid then

@@ -4,11 +4,19 @@ local chunk_util = require("script/chunk_util")
 local debug_lib = require("script/debug_lib")
 local color_lib = require("script/color_lib")
 
+---@module "chunk_util"
+---@module "debug_lib"
+---@module "color_lib"
+
 local me = {}
 
 me.pathfinder = {
     -- just a template, check pathfinder.lua for implementation
-    request_path = (function(_,_,_,_) end)
+    ---@param units LuaEntity[]
+    ---@param _ any
+    ---@param destination MapPosition
+    ---@return MapPosition?
+    request_path = (function(units,_,destination) end)
 }
 
 me.ensure_globals = function()
@@ -59,12 +67,15 @@ me.ensure_globals = function()
     global.desired_robot_name = settings.global["desired_robot_name"].value
     global.max_worker_per_job = 1
     global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-    global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
-    global.entities_per_tick = settings.global["entities_per_tick"].value
-    global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value
+    global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
+    global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
+    global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
 end
 
+---@param index uint
+---@return table<uint, LuaEntity>
 me.get_service_stations = function(index)
+    ---@type table<uint, LuaEntity>
     local stations_on_surface = {}
     for s, station in pairs(global.service_stations) do
         if station and station.valid then
@@ -92,6 +103,8 @@ end
 --     return constructrons_on_surface
 -- end
 
+---@param constructrons LuaEntity[]
+---@return boolean?
 me.constructrons_need_reload = function(constructrons)
     for c, constructron in ipairs(constructrons) do
         if not constructron.valid then
@@ -105,7 +118,7 @@ me.constructrons_need_reload = function(constructrons)
                 trunk[item.name] = (trunk[item.name] or 0) + item.count
             end
         end
-        for i = 1, constructron.request_slot_count do
+        for i = 1, constructron.request_slot_count do ---@cast i uint
             local request = constructron.get_vehicle_logistic_slot(i)
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
@@ -117,6 +130,9 @@ me.constructrons_need_reload = function(constructrons)
     return false
 end
 
+---@param required_items ItemCounts
+---@param divisor integer
+---@return integer
 me.calculate_required_inventory_slot_count = function(required_items, divisor)
     local slots = 0
     local stack_size
@@ -135,7 +151,7 @@ end
 
 
 ---@param item_name string
----return boolean
+---@return boolean
 me.check_item_allowed = function(item_name)
     if not global.allowed_items[item_name] then
         if not game.item_prototypes[item_name].has_flag("hidden") then
@@ -161,6 +177,10 @@ me.check_item_allowed = function(item_name)
     end
 end
 
+---@param entity LuaEntity | UpgradeEntity
+---@param target_entity LuaEntityPrototype?
+---@param build_type BuildType
+---@param queue EntityQueue
 me.process_entity = function(entity, target_entity, build_type, queue)
     local chunk = chunk_util.chunk_from_position(entity.position)
     local key = chunk.y .. ',' .. chunk.x
@@ -251,8 +271,11 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     queue[entity_surface][key] = queue_surface_key
 end
 
+---@param build_type BuildType
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost, repair
-    local entities, queue, event_tick
+    local entities      --[[@type table<string, LuaEntity | UpgradeEntity>]]
+    local queue         --[[@type EntityQueue]]
+    local event_tick
     local entity_counter = 0
 
     if build_type == "deconstruction" then
@@ -304,6 +327,8 @@ me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, 
     end
 end
 
+---@param network LuaLogisticNetwork
+---@return boolean
 me.robots_active = function(network)
     local cell = network.cells[1]
     local all_construction_robots = network.all_construction_robots
@@ -319,6 +344,7 @@ me.robots_active = function(network)
     end
 end
 
+---@param job Job
 me.graceful_wrapup = function(job)
     for k, value in pairs(global.job_bundles[job.bundle_index]) do
         if not value.returning_home and not (value.action == "clear_items") and not (value.action == "retire") and not (value.action == "check_build_chunk") and not (value.action == "check_decon_chunk") then
@@ -334,6 +360,8 @@ me.graceful_wrapup = function(job)
     global.job_bundles[job.bundle_index] = new_t
 end
 
+---@param job Job
+---@return boolean?
 me.do_until_leave = function(job)
     -- action is what to do, a function.
     -- action_args is going to be unpacked to action function. first argument of action must be constructron.
@@ -421,6 +449,9 @@ me.do_until_leave = function(job)
     end
 end
 
+---@param grid LuaEquipmentGrid
+---@param old_eq LuaEquipment
+---@param new_eq string
 me.replace_roboports = function(grid, old_eq, new_eq)
     local grid_pos = old_eq.position
     local eq_energy = old_eq.energy
@@ -431,6 +462,7 @@ me.replace_roboports = function(grid, old_eq, new_eq)
     end
 end
 
+---@param grid LuaEquipmentGrid
 me.disable_roboports = function(grid)
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
@@ -439,6 +471,7 @@ me.disable_roboports = function(grid)
     end
 end
 
+---@param grid LuaEquipmentGrid
 me.enable_roboports = function(grid)
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
@@ -452,6 +485,10 @@ end
 -------------------------------------------------------------------------------
 
 me.actions = {
+    ---@param constructrons LuaEntity[]
+    ---@param position MapPosition
+    ---@param find_path boolean
+    ---@return MapPosition?
     go_to_position = function(constructrons, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         if constructrons[1].valid then
@@ -475,6 +512,8 @@ me.actions = {
             end
         end
     end,
+    ---@param constructrons LuaEntity[]
+    ---@return boolean?
     build = function(constructrons)
         debug_lib.DebugLog('ACTION: build')
         -- I want to enable construction only when in the construction area
@@ -491,6 +530,8 @@ me.actions = {
         end
         -- enable construct
     end,
+    ---@param constructrons LuaEntity[]
+    ---@return boolean?
     deconstruct = function(constructrons)
         debug_lib.DebugLog('ACTION: deconstruct')
         -- I want to enable construction only when in the construction area
@@ -507,6 +548,8 @@ me.actions = {
         end
         -- enable construct
     end,
+    ---@param constructrons LuaEntity[]
+    ---@param request_items ItemCounts
     request_items = function(constructrons, request_items)
         debug_lib.DebugLog('ACTION: request_items')
         if global.stations_count[constructrons[1].surface.index] > 0 then
@@ -533,14 +576,16 @@ me.actions = {
                 end
                 if global.clear_robots_when_idle then
                     constructron.set_vehicle_logistic_slot(slot, {
-                        name = global.desired_robot_name,
-                        min = global.desired_robot_count,
-                        max = global.desired_robot_count
+                        name = global.desired_robot_name --[[@as string]],
+                        min = global.desired_robot_count --[[@as uint]],
+                        max = global.desired_robot_count --[[@as uint]]
                     })
                 end
             end
         end
     end,
+    ---@param constructrons LuaEntity[]
+    ---@return boolean?
     clear_items = function(constructrons)
         debug_lib.DebugLog('ACTION: clear_items')
         -- for when the constructron returns to service station and needs to empty it's inventory.
@@ -573,8 +618,8 @@ me.actions = {
                                         if item.name == desired_robot_name then
                                             constructron.set_vehicle_logistic_slot(slot, {
                                                 name = item.name,
-                                                min = desired_robot_count,
-                                                max = desired_robot_count
+                                                min = desired_robot_count --[[@as uint]],
+                                                max = desired_robot_count --[[@as uint]]
                                             })
                                         else
                                             constructron.set_vehicle_logistic_slot(slot, {
@@ -606,6 +651,7 @@ me.actions = {
             end
         end
     end,
+    ---@param constructrons LuaEntity[]
     retire = function(constructrons)
         debug_lib.DebugLog('ACTION: retire')
         for c, constructron in ipairs(constructrons) do
@@ -623,6 +669,9 @@ me.actions = {
             end
         end
     end,
+    ---@param _ LuaEntity[]
+    ---@param chunk Chunk
+    ---@deprecated
     add_to_check_chunk_done_queue = function(_, chunk) -- legacy, remove after 20/4/22
         debug_lib.DebugLog('ACTION: check_build_chunk')
         local entity_names = {}
@@ -654,6 +703,8 @@ me.actions = {
             end
         end
     end,
+    ---@param _ LuaEntity[]
+    ---@param chunk Chunk
     check_build_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_build_chunk')
         local entity_names = {}
@@ -685,6 +736,8 @@ me.actions = {
             end
         end
     end,
+    ---@param _ LuaEntity[]
+    ---@param chunk Chunk
     check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
         local surface = game.surfaces[chunk.surface]
@@ -712,6 +765,8 @@ me.actions = {
             end
         end
     end,
+    ---@param _ LuaEntity[]
+    ---@param chunk Chunk
     check_upgrade_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_upgrade_chunk')
         local surface = game.surfaces[chunk.surface]
@@ -750,6 +805,9 @@ me.actions = {
 -------------------------------------------------------------------------------
 
 me.conditions = {
+    ---@param constructrons LuaEntity[]
+    ---@param position MapPosition
+    ---@return boolean
     position_done = function(constructrons, position) -- this is condition for action "go_to_position"
         debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
         for c, constructron in ipairs(constructrons) do
@@ -763,6 +821,9 @@ me.conditions = {
         me.enable_roboports(constructrons[1].grid)
         return true
     end,
+    ---@param constructrons LuaEntity[]
+    ---@param _ any
+    ---@return boolean | string
     build_done = function(constructrons, _, _, _)
         debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
@@ -806,6 +867,8 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
+    ---@param constructrons LuaEntity[]
+    ---@return boolean | string
     deconstruction_done = function(constructrons)
         debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
@@ -855,6 +918,9 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
+    ---@param constructrons LuaEntity[]
+    ---@param _ any
+    ---@return boolean | string
     upgrade_done = function(constructrons, _, _, _)
         debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
@@ -899,6 +965,8 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
+    ---@param constructrons LuaEntity[]
+    ---@return boolean
     request_done = function(constructrons)
         debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3, 1)
         if me.constructrons_need_reload(constructrons) then
@@ -906,7 +974,7 @@ me.conditions = {
         else
             for c, constructron in ipairs(constructrons) do
                 if constructron.valid then
-                    for i = 1, constructron.request_slot_count do
+                    for i = 1, constructron.request_slot_count do --[[@cast i uint]]
                         constructron.clear_vehicle_logistic_slot(i)
                     end
                 else
@@ -916,6 +984,8 @@ me.conditions = {
         end
         return true
     end,
+    ---@param _ LuaEntity[]
+    ---@return boolean
     pass = function(_)
         return true
     end
@@ -923,7 +993,11 @@ me.conditions = {
 
 -------------------------------------------------------------------------------
 
-me.get_inventory = function(entity,inventory_type)
+---@param entity LuaEntity
+---@param inventory_type defines.inventory | string
+---@return ItemCounts
+me.get_inventory = function(entity, inventory_type)
+    ---@type ItemCounts
     local items = {}
     if entity.valid then
         local inventory
@@ -943,6 +1017,8 @@ me.get_inventory = function(entity,inventory_type)
     return items
 end
 
+---@param job_bundle_index uint
+---@param job Job
 me.create_job = function(job_bundle_index, job)
     if not global.job_bundles then
         global.job_bundles = {}
@@ -950,12 +1026,14 @@ me.create_job = function(job_bundle_index, job)
     if not global.job_bundles[job_bundle_index] then
         global.job_bundles[job_bundle_index] = {}
     end
-    local index = #global.job_bundles[job_bundle_index] + 1
+    local index = #global.job_bundles[job_bundle_index] + 1 --[[@as uint]]
     job.index = index
     job.bundle_index = job_bundle_index
     global.job_bundles[job_bundle_index][index] = job
 end
 
+---@param surface_index uint
+---@return LuaEntity?
 me.get_worker = function(surface_index)
     for _, constructron in pairs(global.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
@@ -971,6 +1049,9 @@ me.get_worker = function(surface_index)
                         if global.stations_count[constructron.surface.index] > 0 then
                             debug_lib.DebugLog('ACTION: Stage')
                             local desired_robot_name = global.desired_robot_name
+
+                            ---@cast desired_robot_name string
+                            ---@cast desired_robot_count uint
                             if game.item_prototypes[desired_robot_name] then
                                 if global.stations_count[constructron.surface.index] > 0 then
                                     debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
@@ -997,11 +1078,24 @@ me.get_worker = function(surface_index)
     end
 end
 
-
--- This function is a Mess: refactor - carefull, recursion!!!
+--- This function is a Mess: refactor - carefull, recursion!!!
+---@param queued_chunks any
+---@param preselected_constructrons LuaEntity[]
+---@param max_constructron any
+---@return {[integer]: Chunk, requested_items: ItemCounts}
+---@return LuaEntity[]
+---@return Chunk[]
 me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructrons, max_constructron)
     local inventory = preselected_constructrons[1].get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
     local empty_stack_count = inventory.count_empty_stacks()
+
+    ---@param chunks Chunk[]
+    ---@param constructron_count integer
+    ---@param total_required_slots integer
+    ---@param requested_items ItemCounts
+    ---@return {[integer]: Chunk, requested_items: ItemCounts}
+    ---@return LuaEntity[]
+    ---@return Chunk[]
     local function get_job_chunks_and_constructrons(chunks, constructron_count, total_required_slots, requested_items)
         local merged_chunk
 
@@ -1057,6 +1151,7 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
             end
         end
 
+        ---@type LuaEntity[]
         local my_constructrons = {}
 
         for c = 1, constructron_count do
@@ -1065,12 +1160,15 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
 
         -- if the chunks didn't merge. there are unmerged chunks. they should be added as job if they can be.
 
+        ---@type Chunk[]
         local used_chunks = {}
         local used_chunk_counter = 1
 
+        ---@type Chunk[]
         local unused_chunks = {}
         local unused_chunk_counter = 1
 
+        ---@type ItemCounts
         requested_items = {}
         total_required_slots = 0
 
@@ -1097,17 +1195,18 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
     return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
 end
 
+---@param constructrons LuaEntity[]
 me.get_job = function(constructrons)
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
     for _, surface in pairs(managed_surfaces) do -- iterate each surface
         if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
             if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
                 local max_worker = 1
-                local chunks = {}
+                local chunks = {} --[=[@type Chunk[]]=]
                 local job_type
                 local chunk_counter = 0
                 local worker = me.get_worker(surface.index)
-                local available_constructrons = {}
+                local available_constructrons = {} --[=[@type LuaEntity[]]=]
 
                 available_constructrons[1] = worker
                 if available_constructrons[1] then
@@ -1141,6 +1240,8 @@ me.get_job = function(constructrons)
                         job_type = 'repair'
                     end
 
+                    ---@cast job_type JobType
+
                     if not next(chunks) then
                         return
                     end
@@ -1164,6 +1265,7 @@ me.get_job = function(constructrons)
                         queue[surface.index][chunk.key] = chunk
                     end
 
+                    ---@type Job
                     local request_items_job = {
                         action = 'request_items',
                         action_args = {combined_chunks.requested_items},
@@ -1281,6 +1383,8 @@ me.get_job = function(constructrons)
     end
 end
 
+---@param job_bundles JobBundle
+---@return boolean?
 me.do_job = function(job_bundles)
     if not next(job_bundles) then return end
 
@@ -1323,6 +1427,7 @@ me.perform_surface_cleanup = function(_)
     end
 end
 
+---@param surface LuaSurface
 me.force_surface_cleanup = function(surface)
     debug_lib.DebugLog('All job queues on '.. surface.name ..' cleared!')
     global.construct_queue[surface.index] = {}
@@ -1331,7 +1436,8 @@ me.force_surface_cleanup = function(surface)
     global.repair_queue[surface.index] = {}
 end
 
-
+---@param entity_name string
+---@return boolean
 me.is_floor_tile = function(entity_name)
     if global.landfill_job_toggle then
         return false
@@ -1348,6 +1454,7 @@ me.is_floor_tile = function(entity_name)
     end
 end
 
+---@param event EventData.on_runtime_mod_setting_changed
 me.mod_settings_changed = function(event)
     log("mod setting change: " .. event.setting)
     local setting = event.setting
@@ -1380,12 +1487,16 @@ me.mod_settings_changed = function(event)
     elseif setting == "max-jobtime-per-job" then
         global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
     elseif setting == "entities_per_tick" then
-        global.entities_per_tick = settings.global["entities_per_tick"].value
+        global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "clear_robots_when_idle" then
-        global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value
+        global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
     end
 end
 
+---@param event 
+---| EventData.on_built_entity
+---| EventData.on_robot_built_entity
+---| EventData.script_raised_built
 me.on_built_entity = function(event) -- for entity creation
     if not global.construction_job_toggle then return end
     local entity = event.entity or event.created_entity
@@ -1438,6 +1549,7 @@ me.on_built_entity = function(event) -- for entity creation
     end
 end
 
+---@param event EventData.on_post_entity_died
 me.on_post_entity_died = function(event) -- for entities that die and need rebuilding
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
@@ -1450,6 +1562,7 @@ me.on_post_entity_died = function(event) -- for entities that die and need rebui
     end
 end
 
+---@param event EventData.on_marked_for_deconstruction
 me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstruction
     if not global.deconstruction_job_toggle then return end
     if not (event.entity.name == "item-on-ground") then
@@ -1471,6 +1584,7 @@ me.on_entity_marked_for_deconstruction = function(event) -- for entity deconstru
     end
 end
 
+---@param event EventData.on_marked_for_upgrade
 me.on_marked_for_upgrade = function(event) -- for entity upgrade
     if not global.upgrade_job_toggle then return end
     local entity = event.entity
@@ -1485,6 +1599,7 @@ me.on_marked_for_upgrade = function(event) -- for entity upgrade
     end
 end
 
+---@param event EventData.on_entity_damaged
 me.on_entity_damaged = function(event)
     if not global.repair_job_toggle then return end
     local entity = event.entity
@@ -1501,6 +1616,7 @@ me.on_entity_damaged = function(event)
     end
 end
 
+---@param event EventData.on_surface_created
 me.on_surface_created = function(event)
     local index = event.surface_index
 
@@ -1513,6 +1629,7 @@ me.on_surface_created = function(event)
     global.stations_count[index] = 0
 end
 
+---@param event EventData.on_surface_deleted
 me.on_surface_deleted = function(event)
     local index = event.surface_index
 
@@ -1525,6 +1642,7 @@ me.on_surface_deleted = function(event)
     global.stations_count[index] = nil
 end
 
+---@param event EventData.on_entity_cloned
 me.on_entity_cloned = function(event)
     local entity = event.destination
     if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
@@ -1551,6 +1669,9 @@ me.on_entity_cloned = function(event)
     end
 end
 
+---@param event 
+---| EventData.on_entity_destroyed
+---| EventData.script_raised_destroy
 me.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
@@ -1570,6 +1691,10 @@ me.on_entity_destroyed = function(event)
     end
 end
 
+---@param constructron LuaEntity
+---@param state ConstructronStatus
+---@param value uint | boolean
+---@return boolean?
 me.set_constructron_status = function(constructron, state, value)
     if constructron and constructron.valid then
         if global.constructron_statuses[constructron.unit_number] then
@@ -1583,6 +1708,9 @@ me.set_constructron_status = function(constructron, state, value)
     end
 end
 
+---@param constructron LuaEntity
+---@param state ConstructronStatus
+---@return uint | boolean?
 me.get_constructron_status = function(constructron, state)
     if constructron and constructron.valid then
         if global.constructron_statuses[constructron.unit_number] then
@@ -1594,6 +1722,8 @@ me.get_constructron_status = function(constructron, state)
     end
 end
 
+---@param constructron LuaEntity
+---@return LuaEntity?
 me.get_closest_service_station = function(constructron)
     local service_stations = me.get_service_stations(constructron.surface.index)
     if service_stations then
@@ -1607,6 +1737,9 @@ me.get_closest_service_station = function(constructron)
     end
 end
 
+---@param constructron LuaEntity
+---@param unused_stations LuaEntity[]
+---@return LuaEntity?
 me.get_closest_unused_service_station = function(constructron, unused_stations)
     if unused_stations then
         local unused_stations_index = chunk_util.get_closest_object(unused_stations, constructron.position)
@@ -1614,6 +1747,8 @@ me.get_closest_unused_service_station = function(constructron, unused_stations)
     end
 end
 
+---@param constructron LuaEntity
+---@param color_state "idle" | "construct" | "deconstruct" | "upgrade" | "repair"
 me.paint_constructron = function(constructron, color_state)
     if color_state == 'idle' then
         constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)

@@ -32,6 +32,9 @@ me.colors.charcoal = {
     b = 0.1
 }
 
+---@param color Color
+---@param alpha float
+---@return Color
 me.color_alpha = function(color, alpha)
     color.a = alpha
     return color
