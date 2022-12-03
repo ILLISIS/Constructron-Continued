@@ -290,7 +290,7 @@ local function disable(player, parameters)
 end
 
 ---@param player LuaPlayer
----@param _ any
+---@param _ string[]
 local function stats(player, _)
     log("control:help")
     log("by player:" .. player.name)
