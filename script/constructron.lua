@@ -1042,7 +1042,7 @@ me.get_worker = function(surface_index)
             else
                 local desired_robot_count = global.desired_robot_count
                 local logistic_network = constructron.logistic_network
-                if (logistic_network.all_construction_robots == desired_robot_count) and not (me.robots_active(logistic_network)) then
+                if ((logistic_network.all_construction_robots == desired_robot_count) and not (me.robots_active(logistic_network))) or global.clear_robots_when_idle then
                     return constructron
                 else
                     if not global.clear_robots_when_idle then

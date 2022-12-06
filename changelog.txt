@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.47
+Date: 2022-12-06
+  Fixed:
+    - A bug where which caused jobs not to trigger when clear_robots_when_idle was enabled.
+  Other:
+    - Added type annotations to functions. Thanks BrainGamer!
+---------------------------------------------------------------------------------------------------
 Version: 1.0.46
 Date: 2022-12-01
   Changed:
