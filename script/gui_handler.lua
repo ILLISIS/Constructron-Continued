@@ -31,14 +31,14 @@ end
 
 function gui_handler.register()
     for ev, _ in pairs(gui_event_type) do
-        script.on_event(ev, gui_handler.handle)
+        script.on_event(ev, gui_handler.gui_event)
     end
 end
 
 ---@param event 
 ---| EventData.on_gui_click 
 ---| EventData.on_gui_selection_state_changed
-function gui_handler.handle(event)
+function gui_handler.gui_event(event)
     if not event.element then return end
 
     local tags = event.element.tags
