@@ -70,15 +70,21 @@ script.on_nth_tick(54000, (function(event)
 end))
 
 local ev = defines.events
-script.on_event(ev.on_surface_created, ctron.on_surface_created)
+script.on_event(ev.on_surface_created, (function(event)
+    ctron.on_surface_created(event)
+    gui_handler.surface_created(event)
+end))
+script.on_event(ev.on_pre_surface_deleted, gui_handler.surface_deleted)
 script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
+script.on_event(ev.on_surface_renamed, gui_handler.surface_renamed)
 
 script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 
 script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
 
-script.on_event(ev.on_player_created, gui.init)
+script.on_event(ev.on_player_changed_surface, gui_handler.player_changed_surfaces)
+
 gui_handler.register()
 
 script.on_event(ev.on_player_used_spider_remote, (function(event)
