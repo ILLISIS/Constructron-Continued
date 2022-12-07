@@ -162,3 +162,6 @@ __Constructron_Continued__global = {}
 ---@field builder GUIBuilder
 -- FUNCTIONS
 ---@field init function
+---@field toggleMain function
+---@field togglePreferences function
+---@field selectedNewSurface function
