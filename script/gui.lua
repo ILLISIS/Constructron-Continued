@@ -1,7 +1,9 @@
 local mod_gui = require("mod-gui")
 
+---@type GUI
 local gui = {}
 
+gui.selected_surface = {}
 gui.builder = require("gui_builder")
 
 ---@param player LuaPlayer
@@ -67,7 +69,12 @@ end
 ---@param player LuaPlayer
 ---@param dropdown LuaGuiElement
 function gui.selectedNewSurface(player, dropdown)
-    gui.selected_surface = dropdown.selected_index
+    local name = dropdown.items[dropdown.selected_index] --[[@as string]]
+    local surface = game.get_surface(name)
+
+    if surface and surface.valid then
+        gui.selected_surface[player.index] = surface.index
+    end
 end
 
 return gui
