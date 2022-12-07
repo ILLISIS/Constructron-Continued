@@ -11,13 +11,13 @@ gui_builder.preferencesFrameName = "CT_preferences_guiFrame"
 ---@param isMainFrame boolean
 local function titleBar(frame, isMainFrame)
     local bar = frame.add{
-        type = "flow"
+        type = "flow",
+        name = "title_bar"
     }
     bar.drag_target = frame
     bar.style.horizontal_spacing = 8
     bar.style.height = 28
 
-    
     local title
     local close_callback
     if isMainFrame then
@@ -46,32 +46,30 @@ local function titleBar(frame, isMainFrame)
     if isMainFrame then
 
         -- surface selection
-        if #game.surfaces > 1 then
-            local surfaces = {}
+        local surfaces = {}
 
-            for s, surface in pairs(game.surfaces) do
-                surfaces[s] = surface.name
-            end
-
-            bar.add{
-                type = "drop-down",
-                name = "surface_select",
-                style = "ct_frame_dropdown",
-                selected_index = 1,
-                items = surfaces,
-                tags = {
-                    mod = "constructron",
-                    on_gui_selection_state_changed = "selected_new_surface"
-                }
-            } 
-            
+        for _, surface in pairs(game.surfaces) do
+            surfaces[#surfaces+1] = surface.name
         end
+
+        bar.add{
+            type = "drop-down",
+            name = "surface_select",
+            style = "ct_frame_dropdown",
+            selected_index = 1,
+            visible = (#surfaces > 1),
+            items = surfaces,
+            tags = {
+                mod = "constructron",
+                on_gui_selection_state_changed = "selected_new_surface"
+            }
+        }
 
         -- preference button
         bar.add{
             type = "button",
             style = "ct_frame_button",
-            name = "title_preference",
+            name = "preference_button",
             caption = {"gui.preferences"},
             mouse_button_filter = {"left"},
             tags = {
@@ -79,7 +77,7 @@ local function titleBar(frame, isMainFrame)
                 on_gui_click = "toggle_preferences"
             }
         }
-    
+
         -- seperator line
         local seperator = bar.add{
             type = "line",
@@ -92,7 +90,7 @@ local function titleBar(frame, isMainFrame)
     -- close button
     bar.add{
         type = "sprite-button",
-        name = "title_close",
+        name = "close_button",
         style = "frame_action_button",
         sprite = "utility/close_white",
         hovered_sprite = "utility/close_black",
