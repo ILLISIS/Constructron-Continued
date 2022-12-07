@@ -140,3 +140,25 @@
 -- set type of global (this will never get executed, only intellisense will see this)
 ---@type Global
 __Constructron_Continued__global = {}
+
+-- [GUI]
+
+---@class GUIBuilder
+-- CONSTANTS
+---@field flowButtonName "CT_toggle_gui"
+---@field mainFrameName "CT_main_guiFrame"
+---@field preferencesFrameName "CT_preferences_guiFrame"
+-- FUNCTIONS
+---@field titleBar function
+---@field buildTabContent function
+---@field buildTab function
+---@field buildMainContent function
+---@field buildMainGui function
+---@field buildPreferencesGui function
+---@field buildModGuiButton function
+
+---@class GUI
+---@field selected_surface table<uint, uint>
+---@field builder GUIBuilder
+-- FUNCTIONS
+---@field init function
