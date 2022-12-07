@@ -12,7 +12,10 @@ local init = function()
     ctron.ensure_globals()
     pathfinder.init_globals()
     
-    gui.init()
+    for _, player in pairs(game.players) do
+        gui.init(player)
+    end
+
     gui_handler.init(gui)
 end
 
