@@ -90,6 +90,7 @@ script.on_event(ev.on_player_created, (function(event) --[[@cast event EventData
     gui.init(game.players[event.player_index])
 end))
 script.on_event(ev.on_player_changed_surface, gui_handler.player_changed_surfaces)
+script.on_event(ev.on_player_removed, gui_handler.player_removed)
 
 gui_handler.register()
 

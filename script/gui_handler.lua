@@ -164,4 +164,9 @@ function gui_handler.player_changed_surfaces(event)
     handlers.selected_new_surface(player, surface_selection)
 end
 
+---@param event EventData.on_player_removed
+function gui_handler.player_removed(event)
+    gui.selected_surface[event.player_index] = nil
+end
+
 return gui_handler
