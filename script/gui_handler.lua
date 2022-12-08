@@ -2,7 +2,8 @@
 
 local gui_event_type = {
     [defines.events.on_gui_click] = "on_gui_click",
-    [defines.events.on_gui_selection_state_changed] = "on_gui_selection_state_changed"
+    [defines.events.on_gui_selection_state_changed] = "on_gui_selection_state_changed",
+    [defines.events.on_gui_selected_tab_changed] = "on_gui_selected_tab_changed"
 }
 
 ---@type GUI
@@ -26,6 +27,24 @@ end
 ---@param dropdown LuaGuiElement
 function handlers.selected_new_surface(player, dropdown)
     gui.selectedNewSurface(player, dropdown)
+
+    local mainFrame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement]]
+    local tab_pane = mainFrame["main"]["tab_pane"] --[[@as LuaGuiElement]]
+
+    handlers.update_tab_content(player, tab_pane)
+end
+
+---@param player LuaPlayer
+---@param tab_pane LuaGuiElement
+function handlers.update_tab_content(player, tab_pane)
+    local content = tab_pane.tabs[tab_pane.selected_tab_index].content
+
+    local selected_surface = gui.selected_surface[player.index]
+    local surface = game.surfaces[selected_surface]
+
+    local no_entity = content["frame"]["no_entity"] --[[@as LuaGuiElement]]
+    no_entity["flow"]["label"].caption = {"gui.tab-empty-warn", {"gui." .. content.tags["tab_type"]}, surface.name}
+    no_entity.visible = global.constructrons_count[surface.index] == 0
 end
 
 function gui_handler.init(guiInstance)
@@ -41,6 +60,7 @@ end
 ---@param event 
 ---| EventData.on_gui_click 
 ---| EventData.on_gui_selection_state_changed
+---| EventData.on_gui_selected_tab_changed
 function gui_handler.gui_event(event)
     if not event.element then return end
 

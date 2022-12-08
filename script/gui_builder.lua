@@ -191,7 +191,10 @@ local function buildTab(name, count, tabbed_pane)
         type = "flow",
         name = name .. "_flow",
         direction = "horizontal",
-        style = "inset_frame_container_horizontal_flow_in_tabbed_pane"
+        style = "inset_frame_container_horizontal_flow_in_tabbed_pane",
+        tags = {
+            tab_type = name
+        }
     }
 
     tabbed_pane.add_tab(tab, tabFlow)
@@ -250,6 +253,10 @@ local function buildMainContent(frame)
     local tabbedPane = tabPaneFrame.add{
         type = "tabbed-pane",
         name = "tab_pane",
+        tags = {
+            mod = "constructron",
+            on_gui_selected_tab_changed  = "update_tab_content"
+        }
     }
     --tabbedPane.style.vertically_stretchable = true
     --tabbedPane.style.horizontally_stretchable = true
