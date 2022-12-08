@@ -108,7 +108,7 @@ end
 local function buildTabContent(name, tab_flow)
     local entityListFrame = tab_flow.add{
         type = "frame",
-        name = "entity_list_frame",
+        name = "frame",
         direction = "vertical",
         style = "deep_frame_in_shallow_frame"
     }
@@ -117,13 +117,13 @@ local function buildTabContent(name, tab_flow)
 
     local noEntityFrame = entityListFrame.add{
         type = "frame",
-        name = "no_entity_frame",
+        name = "no_entity",
         style = "negative_subheader_frame"
     }
 
     local noEntityFlow = noEntityFrame.add{
         type = "flow",
-        name = "no_entity_flow",
+        name = "flow",
         direction = "horizontal",
         style = "centering_horizontal_flow"
     }
@@ -131,13 +131,13 @@ local function buildTabContent(name, tab_flow)
 
     noEntityFlow.add{
         type = "label",
-        name = "no_entity_label",
-        caption = {"gui.tab-empty-warn", {"gui." .. name}, "Nauvis"}
+        name = "label",
+        caption = {"gui.tab-empty-warn", {"gui." .. name}, "nauvis"}
     }
 
     local entityScroll = entityListFrame.add{
         type = "scroll-pane",
-        name = "entity_scroll",
+        name = "scroll",
         style = "technology_list_scroll_pane"
     }
     entityScroll.style.vertically_stretchable = true
@@ -145,7 +145,7 @@ local function buildTabContent(name, tab_flow)
 
     local entityTable = entityScroll.add{
         type = "table",
-        name = "entity_table",
+        name = "table",
         column_count = 4,
         style = "technology_slot_table"
     }
@@ -201,11 +201,11 @@ end
 
 ---@param frame LuaGuiElement
 local function buildMainContent(frame)
-    local mainFlow = frame.add{
-        type = "flow",
-        name = "main_flow",
-        direction = "horizontal"
-    }
+    -- local mainFlow = frame.add{
+    --     type = "flow",
+    --     name = "main",
+    --     direction = "horizontal"
+    -- }
     --mainFlow.style.horizontal_spacing = 12
     --mainFlow.style.vertically_stretchable = true
     --mainFlow.style.horizontally_stretchable = true
@@ -238,9 +238,9 @@ local function buildMainContent(frame)
     bottomSideFrame.style.height = 200
     --]]
 
-    local tabPaneFrame = mainFlow.add{
+    local tabPaneFrame = frame.add{
         type = "frame",
-        name = "tab_pane_frame",
+        name = "main",
         style = "inside_deep_frame_for_tabs"
     }
     tabPaneFrame.style.height = 350
@@ -249,7 +249,7 @@ local function buildMainContent(frame)
 
     local tabbedPane = tabPaneFrame.add{
         type = "tabbed-pane",
-        name = "tabbed_pane"
+        name = "tab_pane",
     }
     --tabbedPane.style.vertically_stretchable = true
     --tabbedPane.style.horizontally_stretchable = true
