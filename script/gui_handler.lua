@@ -189,4 +189,22 @@ function gui_handler.player_removed(event)
     gui.selected_surface[event.player_index] = nil
 end
 
+---@param event EventData.on_gui_closed
+function gui_handler.close(event)
+    if not event.element then
+        return
+    end
+
+    if event.element.name == gui.builder.mainFrameName then
+        event.element.visible = false
+
+        local player = game.players[event.player_index]
+        local preferences = player.gui.screen[gui.builder.preferencesFrameName] --[[@as LuaGuiElement]]
+
+        if preferences then
+            preferences.visible = false
+        end
+    end
+end
+
 return gui_handler

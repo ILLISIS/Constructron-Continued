@@ -41,14 +41,22 @@ function gui.toggleMain(player, _)
 
     if not mainFrame then
         gui.builder.buildMainGui(player)
+
+        player.opened = player.gui.screen[gui.builder.mainFrameName]
     else
-        if preferencesFrame and preferencesFrame.visible then
+        if preferencesFrame then
             preferencesFrame.visible = false
         end
 
-        mainFrame.visible = not mainFrame.visible
-        mainFrame.bring_to_front()
-        mainFrame.force_auto_center()
+        if not mainFrame.visible then
+            mainFrame.visible = true
+            mainFrame.bring_to_front()
+            mainFrame.force_auto_center()
+
+            player.opened = mainFrame
+        else
+            mainFrame.visible = false
+        end
     end
 end
 

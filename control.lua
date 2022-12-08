@@ -92,6 +92,8 @@ end))
 script.on_event(ev.on_player_changed_surface, gui_handler.player_changed_surfaces)
 script.on_event(ev.on_player_removed, gui_handler.player_removed)
 
+script.on_event(ev.on_gui_closed, gui_handler.close)
+
 gui_handler.register()
 
 script.on_event(ev.on_player_used_spider_remote, (function(event)
