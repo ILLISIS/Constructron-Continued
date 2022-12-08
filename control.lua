@@ -123,7 +123,7 @@ local function reset(player, parameters)
     
     elseif parameters[1] == "gui" then
         game.print('Reset GUI.')
-        gui.init()
+        gui.init(player)
         gui_handler.init(gui)
 
     elseif parameters[1] == "all" then
@@ -158,7 +158,7 @@ local function reset(player, parameters)
         cmd.reacquire_upgrade_jobs()
 
         -- Reinitialize GUI
-        gui.init()
+        gui.init(player)
         gui_handler.init(gui)
 
     else
