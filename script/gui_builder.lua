@@ -113,14 +113,16 @@ local function buildTabContent(name, tab_flow)
         direction = "vertical",
         style = "deep_frame_in_shallow_frame"
     }
-    entityListFrame.style.maximal_height = 750
-    entityListFrame.style.vertically_stretchable = true
+    --entityListFrame.style.maximal_height = 750
+    --entityListFrame.style.horizontally_stretchable = true
+    --entityListFrame.style.vertically_stretchable = true
 
     local noEntityFrame = entityListFrame.add{
         type = "frame",
         name = "no_entity",
         style = "negative_subheader_frame"
     }
+    noEntityFrame.style.bottom_margin = -36
 
     local noEntityFlow = noEntityFrame.add{
         type = "flow",
@@ -139,38 +141,26 @@ local function buildTabContent(name, tab_flow)
     local entityScroll = entityListFrame.add{
         type = "scroll-pane",
         name = "scroll",
-        style = "technology_list_scroll_pane"
+        --style = "technology_list_scroll_pane"
     }
-    entityScroll.style.vertically_stretchable = true
-    entityScroll.style.horizontally_stretchable = true
+    --entityScroll.style.vertically_stretchable = true
+    --entityScroll.style.horizontally_stretchable = true
+    entityScroll.style.height = 710
+    entityScroll.horizontal_scroll_policy = "never"
+    entityScroll.vertical_scroll_policy = "auto-and-reserve-space"
+    entityScroll.style.extra_padding_when_activated = 0
 
     local entityTable = entityScroll.add{
         type = "table",
         name = "table",
         column_count = 4,
-        style = "technology_slot_table"
+        --style = "technology_slot_table"
     }
     entityTable.style.vertically_stretchable = true
     entityTable.style.horizontally_stretchable = true
-    --entityTable.style.width = 600
-    --entityTable.style.height = 1000
-
-    entityTable.add{
-        type = "label",
-        caption = "test A"
-    }
-    entityTable.add{
-        type = "label",
-        caption = "test B"
-    }
-    entityTable.add{
-        type = "label",
-        caption = "test C"
-    }
-    entityTable.add{
-        type = "label",
-        caption = "test D"
-    }
+    entityTable.style.horizontal_spacing = 0
+    entityTable.style.vertical_spacing = 0
+    entityTable.style.width = 1136
 end
 
 ---@param name string
@@ -180,10 +170,13 @@ local function buildTab(name, count, tabbed_pane)
     local tab = tabbed_pane.add{
         type = "tab",
         name = name .. "_tab",
-        caption = {"gui.tab-" .. name}
+        caption = {"gui.tab-" .. name},
+        tags = {
+            tab_type = name
+        }
     }
     if count < 1000 then
-        tab.badge_text = "" .. count
+        tab.badge_text = count
     else
         tab.badge_text = "999+"
     end
@@ -192,11 +185,10 @@ local function buildTab(name, count, tabbed_pane)
         type = "flow",
         name = name .. "_flow",
         direction = "horizontal",
-        style = "inset_frame_container_horizontal_flow_in_tabbed_pane",
-        tags = {
-            tab_type = name
-        }
+        style = "inset_frame_container_horizontal_flow_in_tabbed_pane"
     }
+    tabFlow.style.horizontally_stretchable = true
+    tabFlow.style.vertically_stretchable = true
 
     tabbed_pane.add_tab(tab, tabFlow)
 
@@ -205,51 +197,14 @@ end
 
 ---@param frame LuaGuiElement
 local function buildMainContent(frame)
-    -- local mainFlow = frame.add{
-    --     type = "flow",
-    --     name = "main",
-    --     direction = "horizontal"
-    -- }
-    --mainFlow.style.horizontal_spacing = 12
-    --mainFlow.style.vertically_stretchable = true
-    --mainFlow.style.horizontally_stretchable = true
-
-    --[[
-    local sideFlow = mainFlow.add{
-        type = "flow",
-        name = "side_flow",
-        direction = "vertical"
-    }
-    sideFlow.style.vertical_spacing = 12
-
-    local topSideFrame = sideFlow.add{
-        type = "frame",
-        name = "top_side_frame",
-        direction = "vertical",
-        style = "inside_shallow_frame_with_padding"
-    }
-    topSideFrame.style.width = 250
-    topSideFrame.style.height = 150
-    topSideFrame.style.vertically_stretchable = true
-
-    local bottomSideFrame = sideFlow.add{
-        type = "frame",
-        name = "bottom_side_frame",
-        direction = "vertical",
-        style = "inside_shallow_frame_with_padding"
-    }
-    bottomSideFrame.style.horizontally_stretchable = true
-    bottomSideFrame.style.height = 200
-    --]]
-
     local tabPaneFrame = frame.add{
         type = "frame",
         name = "main",
         style = "inside_deep_frame_for_tabs"
     }
-    tabPaneFrame.style.height = 350
-    --tabPaneFrame.style.vertically_stretchable = true
-    --tabPaneFrame.style.horizontally_stretchable = true
+    --tabPaneFrame.style.height = 350
+    tabPaneFrame.style.vertically_stretchable = true
+    tabPaneFrame.style.horizontally_stretchable = true
 
     local tabbedPane = tabPaneFrame.add{
         type = "tabbed-pane",
@@ -259,14 +214,16 @@ local function buildMainContent(frame)
             on_gui_selected_tab_changed  = "update_tab_content"
         }
     }
-    --tabbedPane.style.vertically_stretchable = true
-    --tabbedPane.style.horizontally_stretchable = true
+    tabbedPane.style.vertically_stretchable = true
+    tabbedPane.style.horizontally_stretchable = true
 
     buildTab("idle", 0, tabbedPane)
     buildTab("construct", 420, tabbedPane)
     buildTab("deconstruct", 1337, tabbedPane)
     buildTab("upgrade", 69, tabbedPane)
     buildTab("repair", 42, tabbedPane)
+
+    tabbedPane.selected_tab_index = 1
 end
 
 ---@param player LuaPlayer
@@ -277,6 +234,8 @@ function gui_builder.buildMainGui(player)
         direction = "vertical"
     }
     frame.auto_center = true
+    frame.style.horizontally_stretchable = true
+    frame.style.vertically_stretchable = true
 
     titleBar(frame, true)
     buildMainContent(frame)
