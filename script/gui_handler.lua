@@ -340,4 +340,29 @@ function gui_handler.close(event)
     end
 end
 
+---@param _ NthTickEventData
+function gui_handler.update_all(_)
+    for _, player in pairs(game.players) do
+        local frame = gui.get_main(player)
+
+        if not frame or not frame.visible then
+            goto continue
+        end
+
+        handlers.update_tab_content(player, frame["main"]["tab_pane"])
+
+        ::continue::
+    end
+end
+
+function gui_handler.update(player)
+    local frame = gui.get_main(player)
+
+    if not frame or not frame.visible then
+        return
+    end
+
+    handlers.update_tab_content(player, frame["main"]["tab_pane"])
+end
+
 return gui_handler

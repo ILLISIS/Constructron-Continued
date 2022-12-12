@@ -15,16 +15,9 @@ local init = function()
     for _, player in pairs(game.players) do
         gui.init(player)
     end
-
-    gui_handler.init(gui)
-end
-
-local load = function()
-    gui_handler.init(gui)
 end
 
 script.on_init(init)
-script.on_load(load)
 script.on_configuration_changed(init)
 
 script.on_nth_tick(15, (function(event)
@@ -64,8 +57,10 @@ script.on_nth_tick(1, (function()
 end))
 
 -- main worker
-script.on_nth_tick(60, ctron.process_job_queue)
-
+script.on_nth_tick(60, (function(event)
+    ctron.process_job_queue()
+    gui_handler.update_all(event)
+end))
 -- cleanup
 script.on_nth_tick(54000, (function(event)
     ctron.perform_surface_cleanup(event)
@@ -127,7 +122,6 @@ local function reset(player, parameters)
     elseif parameters[1] == "gui" then
         game.print('Reset GUI.')
         gui.init(player)
-        gui_handler.init(gui)
 
     elseif parameters[1] == "all" then
         game.print('Reset all parameters and queues complete.')
@@ -162,8 +156,6 @@ local function reset(player, parameters)
 
         -- Reinitialize GUI
         gui.init(player)
-        gui_handler.init(gui)
-
     else
         game.print('Command parameter does not exist.')
         cmd.help_text()
