@@ -270,4 +270,73 @@ function gui_builder.buildModGuiButton(buttonFlow)
     }
 end
 
+---@param entity_list LuaGuiElement
+---@param constructron LuaEntity
+---@param is_idle boolean
+function gui_builder.buildItem(entity_list, constructron, is_idle)
+    local frame = entity_list.add{
+        type = "frame",
+        name = "ctron_" .. constructron.unit_number,
+        style = "train_with_minimap_frame",
+        direction = "horizontal",
+    }
+
+    local left = frame.add{
+        type = "flow",
+        name = "left",
+        direction = "vertical",
+    }
+
+    local button = left.add{
+        type = "button",
+        name = "map-button",
+        style = "locomotive_minimap_button",
+        tags = {
+            mod = "constructron",
+            on_gui_click = "open_ctron_map",
+            unit = constructron.unit_number,
+        }
+    }
+
+    local minimap = button.add{
+        type = "minimap",
+        name = "map",
+        ignored_by_interaction = true
+    }
+    minimap.entity = constructron
+    minimap.zoom = 1.25
+    minimap.style.size = 260
+
+    local left_bottom = left.add{
+        type = "flow",
+        direction = "horizontal",
+        name = "bottom"
+    }
+
+    left_bottom.add{
+        type = "sprite-button",
+        name = "remote-button",
+        sprite = "item/spidertron-remote",
+        tags = {
+            mod = "constructron",
+            on_gui_click = "get_ctron_remote",
+            unit = constructron.unit_number,
+        }
+    }
+
+    left_bottom.add{
+        type = "sprite-button",
+        name = "recall-button",
+        sprite = "item/service_station",
+        tags = {
+            mod = "constructron",
+            on_gui_click = "recall_ctron",
+            unit = constructron.unit_number,
+        },
+        enabled = false,
+        tooltip = "work in progress. coming soon.",
+    }
+
+end
+
 return gui_builder

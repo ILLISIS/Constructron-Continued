@@ -1,4 +1,5 @@
 require("data/constructron")
+require("data/constructron_remote")
 require("data/constructron_pathing_proxy")
 require("data/service_station")
 require("data/styles")
