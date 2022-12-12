@@ -1282,8 +1282,8 @@ me.on_entity_destroyed = function(event)
 end
 
 ---@param constructron LuaEntity
----@param state ConstructronStatus
----@param value uint | boolean
+---@param state ConstructronStatus | "color"
+---@param value uint | boolean | ConstructronColorStatus
 me.set_constructron_status = function(constructron, state, value)
     if global.constructron_statuses[constructron.unit_number] then
         global.constructron_statuses[constructron.unit_number][state] = value
@@ -1294,8 +1294,8 @@ me.set_constructron_status = function(constructron, state, value)
 end
 
 ---@param constructron LuaEntity
----@param state ConstructronStatus
----@return uint | boolean?
+---@param state ConstructronStatus | "color"
+---@return uint | boolean | ConstructronColorStatus?
 me.get_constructron_status = function(constructron, state)
     if global.constructron_statuses[constructron.unit_number] then
         return global.constructron_statuses[constructron.unit_number][state]
@@ -1346,8 +1346,10 @@ me.get_closest_unused_service_station = function(constructron, unused_stations)
 end
 
 ---@param constructron LuaEntity
----@param color_state "idle" | "construct" | "deconstruct" | "upgrade" | "repair"
+---@param color_state ConstructronColorStatus
 me.paint_constructron = function(constructron, color_state)
+    me.set_constructron_status(constructron, "color", color_state)
+
     if color_state == 'idle' then
         constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
     elseif color_state == 'construct' then

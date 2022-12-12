@@ -14,6 +14,13 @@
 ---| "busy"
 ---| "deconstruct_tick"
 
+---@alias ConstructronColorStatus 
+---| "idle"
+---| "construct"
+---| "deconstruct"
+---| "upgrade"
+---| "repair"
+
 ---@alias BuildType
 ---| "deconstruction"
 ---| "construction"
