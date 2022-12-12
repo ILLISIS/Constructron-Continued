@@ -13,15 +13,48 @@ local gui_handler = {}
 local handlers = {}
 
 ---@param player LuaPlayer
----@param _ LuaGuiElement
+---@param _ LuaGuiElement | nil
 function handlers.toggle_main(player, _)
-    gui.toggleMain(player)
+    local mainFrame = gui.get_main(player)
+    local preferencesFrame = gui.get_preferences(player)
+
+    if not mainFrame then
+        gui.builder.buildMainGui(player)
+
+        player.opened = gui.get_main(player)
+    else
+        if preferencesFrame then
+            preferencesFrame.visible = false
+        end
+
+        if not mainFrame.visible then
+            mainFrame.visible = true
+            mainFrame.bring_to_front()
+            mainFrame.force_auto_center()
+
+            gui_handler.update(player)
+
+            player.opened = mainFrame
+        else
+            mainFrame.visible = false
+
+            player.opened = nil
+        end
+    end
 end
 
 ---@param player LuaPlayer
----@param _ LuaGuiElement
+---@param _ LuaGuiElement | nil
 function handlers.toggle_preferences(player, _)
-    gui.togglePreferences(player)
+    local preferencesFrame = gui.get_preferences(player)
+
+    if not preferencesFrame then
+        gui.builder.buildPreferencesGui(player)
+    else
+        preferencesFrame.visible = not preferencesFrame.visible
+        preferencesFrame.bring_to_front()
+        preferencesFrame.force_auto_center()
+    end
 end
 
 ---@param player LuaPlayer
@@ -29,7 +62,12 @@ end
 function handlers.selected_new_surface(player, dropdown)
     gui.selectedNewSurface(player, dropdown)
 
-    local mainFrame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement]]
+    local mainFrame = gui.get_main(player)
+
+    if not mainFrame then
+        return
+    end
+
     local tab_pane = mainFrame["main"]["tab_pane"] --[[@as LuaGuiElement]]
 
     handlers.update_tab_content(player, tab_pane)
@@ -38,9 +76,9 @@ end
 ---@param player LuaPlayer
 ---@param tab_pane LuaGuiElement
 function handlers.update_tab_content(player, tab_pane)
-    local content = tab_pane.tabs[tab_pane.selected_tab_index].content
+    local surface = gui.get_selected_surface(player)
 
-    local selected_surface = gui.selected_surface[player.index]
+    local selected_surface = global.gui_selected_surface[player.index]
     local surface = game.surfaces[selected_surface]
 
     local no_entity = content["frame"]["no_entity"] --[[@as LuaGuiElement]]
@@ -51,6 +89,7 @@ end
 function gui_handler.init(guiInstance)
     gui = guiInstance
 end
+
 
 function gui_handler.register()
     for ev, _ in pairs(gui_event_type) do
@@ -89,7 +128,7 @@ function gui_handler.surface_created(event)
     local name = game.surfaces[event.surface_index].name
 
     for _, player in pairs(game.players) do
-        local frame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement?]]
+        local frame = gui.get_main(player)
 
         if not frame or not frame.valid then
             goto continue
@@ -109,7 +148,7 @@ function gui_handler.surface_deleted(event)
     local removed_name = game.surfaces[event.surface_index].name
 
     for _, player in pairs(game.players) do
-        local frame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement?]]
+        local frame = gui.get_main(player)
 
         if not frame or not frame.valid then
             goto continue
@@ -144,7 +183,7 @@ end
 ---@param event EventData.on_surface_renamed
 function gui_handler.surface_renamed(event)
     for _, player in pairs(game.players) do
-        local frame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement?]]
+        local frame = gui.get_main(player)
 
         if not frame or not frame.valid then
             goto continue
@@ -166,7 +205,7 @@ end
 ---@param event EventData.on_player_changed_surface
 function gui_handler.player_changed_surfaces(event)
     local player = game.players[event.player_index]
-    local frame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement?]]
+    local frame = gui.get_main(player)
 
     if not frame or not frame.valid then
         return
@@ -187,7 +226,7 @@ end
 
 ---@param event EventData.on_player_removed
 function gui_handler.player_removed(event)
-    gui.selected_surface[event.player_index] = nil
+    global.gui_selected_surface[event.player_index] = nil
 end
 
 ---@param event EventData.on_gui_closed
@@ -200,7 +239,7 @@ function gui_handler.close(event)
         event.element.visible = false
 
         local player = game.players[event.player_index]
-        local preferences = player.gui.screen[gui.builder.preferencesFrameName] --[[@as LuaGuiElement]]
+        local preferences = gui.get_preferences(player)
 
         if preferences then
             preferences.visible = false

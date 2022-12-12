@@ -3,12 +3,12 @@ local mod_gui = require("mod-gui")
 ---@class GUI
 local gui = {}
 
-gui.selected_surface = {}
-gui.builder = require("gui_builder")
+gui.builder = require("script/gui_builder")
 
 ---@param player LuaPlayer
 function gui.init(player)
-    gui.selected_surface[player.index] = 1
+    global.gui_selected_surface = global.gui_selected_surface or {}
+    global.gui_selected_surface[player.index] = 1
 
     local buttonFlow = mod_gui.get_button_flow(player)
 
@@ -34,44 +34,21 @@ function gui.init(player)
 end
 
 ---@param player LuaPlayer
----@param _ LuaGuiElement
-function gui.toggleMain(player, _)
-    local mainFrame = player.gui.screen[gui.builder.mainFrameName] --[[@as LuaGuiElement]]
-    local preferencesFrame = player.gui.screen[gui.builder.preferencesFrameName] --[[@as LuaGuiElement]]
-
-    if not mainFrame then
-        gui.builder.buildMainGui(player)
-
-        player.opened = player.gui.screen[gui.builder.mainFrameName]
-    else
-        if preferencesFrame then
-            preferencesFrame.visible = false
-        end
-
-        if not mainFrame.visible then
-            mainFrame.visible = true
-            mainFrame.bring_to_front()
-            mainFrame.force_auto_center()
-
-            player.opened = mainFrame
-        else
-            mainFrame.visible = false
-        end
-    end
+---@return LuaGuiElement?
+function gui.get_main(player)
+    return player.gui.screen[gui.builder.mainFrameName]
 end
 
 ---@param player LuaPlayer
----@param _ LuaGuiElement
-function gui.togglePreferences(player, _)
-    local preferencesFrame = player.gui.screen[gui.builder.preferencesFrameName] --[[@as LuaGuiElement]]
+---@return LuaGuiElement?
+function gui.get_preferences(player)
+    return player.gui.screen[gui.builder.preferencesFrameName]
+end
 
-    if not preferencesFrame then
-        gui.builder.buildPreferencesGui(player)
-    else
-        preferencesFrame.visible = not preferencesFrame.visible
-        preferencesFrame.bring_to_front()
-        preferencesFrame.force_auto_center()
-    end
+---@param player LuaPlayer
+---@return LuaSurface
+function gui.get_selected_surface(player)
+    return game.surfaces[global.gui_selected_surface[player.index]]
 end
 
 ---@param player LuaPlayer
@@ -81,7 +58,7 @@ function gui.selectedNewSurface(player, dropdown)
     local surface = game.get_surface(name)
 
     if surface and surface.valid then
-        gui.selected_surface[player.index] = surface.index
+        global.gui_selected_surface[player.index] = surface.index
     end
 end
 

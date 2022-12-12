@@ -101,6 +101,8 @@
 ---@field target LuaEntityPrototype?
 
 ---@class Global
+--- GUI
+---@field gui_selected_surface table<uint, uint>
 --- PATHFINDER
 ---@field pathfinder_requests table<uint, LuaSurface.request_path_param>
 --- MISC
