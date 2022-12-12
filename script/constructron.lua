@@ -9,6 +9,7 @@ local pathfinder = require("script/pathfinder")
 ---@module "debug_lib"
 ---@module "color_lib"
 
+---@class CtronUtil
 local me = {}
 
 me.ensure_globals = function()

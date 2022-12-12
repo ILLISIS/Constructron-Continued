@@ -6,9 +6,10 @@ local gui_event_type = {
     [defines.events.on_gui_selected_tab_changed] = "on_gui_selected_tab_changed"
 }
 
----@type GUI
-local gui = {}
+local gui = require("script/gui")
+---@class GUIHandler
 local gui_handler = {}
+---@class GUIHandlerFunctions
 local handlers = {}
 
 ---@param player LuaPlayer

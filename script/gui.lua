@@ -1,6 +1,6 @@
 local mod_gui = require("mod-gui")
 
----@type GUI
+---@class GUI
 local gui = {}
 
 gui.selected_surface = {}

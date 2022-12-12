@@ -1,5 +1,6 @@
 mod_gui = require("mod-gui")
 
+---@class GUIBuilder
 local gui_builder = {}
 
 -- CONSTANTS
