@@ -262,8 +262,8 @@ local function buildMainContent(frame)
     --tabbedPane.style.horizontally_stretchable = true
 
     buildTab("idle", 0, tabbedPane)
-    buildTab("construction", 420, tabbedPane)
-    buildTab("deconstruction", 1337, tabbedPane)
+    buildTab("construct", 420, tabbedPane)
+    buildTab("deconstruct", 1337, tabbedPane)
     buildTab("upgrade", 69, tabbedPane)
     buildTab("repair", 42, tabbedPane)
 end
