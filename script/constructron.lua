@@ -466,7 +466,10 @@ end
 me.disable_roboports = function(grid)
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
-            me.replace_roboports(grid, eq, "personal-roboport-mk2-equipment-reduced-1" )
+            -- me.replace_roboports(grid, eq, "personal-roboport-mk2-equipment-reduced-1" )
+            if not string.find(eq.name, "%-reduced%-1") then
+                me.replace_roboports(grid, eq, (eq.name .. "-reduced-1" ))
+            end
         end
     end
 end
@@ -831,8 +834,8 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                local logistic_network = constructrons[1].logistic_network
-                if logistic_network then
+                if constructrons[1].logistic_cell then
+                    local logistic_network = constructrons[1].logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
                         me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                         return false -- robots are active
@@ -876,8 +879,8 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - decon_tick) > 120 then
-                local logistic_network = constructrons[1].logistic_network
-                if logistic_network then
+                if constructrons[1].logistic_cell then
+                    local logistic_network = constructrons[1].logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
                         local empty_stacks = 0
                         local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
@@ -928,8 +931,8 @@ me.conditions = {
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                local logistic_network = constructrons[1].logistic_network
-                if logistic_network then
+                if constructrons[1].logistic_cell then
+                    local logistic_network = constructrons[1].logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
                         me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                         return false -- robots are active
@@ -1037,11 +1040,11 @@ end
 me.get_worker = function(surface_index)
     for _, constructron in pairs(global.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_network then
+            if not constructron.logistic_cell then
                 debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
             else
                 local desired_robot_count = global.desired_robot_count
-                local logistic_network = constructron.logistic_network
+                local logistic_network = constructron.logistic_cell.logistic_network
                 if ((logistic_network.all_construction_robots == desired_robot_count) and not (me.robots_active(logistic_network))) or global.clear_robots_when_idle then
                     return constructron
                 else

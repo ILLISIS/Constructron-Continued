@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.48
+Date: 2022-12-15
+  Fixed:
+    - Modded roboports being removed.
+    - A bug that caused a crash when the Constructron could not reach its destination.
+    - A bug that caused a crash when a Constructron was standing in a logistic network but did not have a roboport itself.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.47
 Date: 2022-12-06
   Fixed:
