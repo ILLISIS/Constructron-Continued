@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.49
+Date: 2022-12-23
+  Changed:
+    - Defaulted max entities per tick to 1000 instead of 100.
+  Fixed:
+    - Required item count is now correctly factored in when identifying if a Constructron has inventory to build a ghost.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.48
 Date: 2022-12-15
   Fixed:

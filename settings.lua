@@ -97,7 +97,7 @@ data:extend({{
     type = "int-setting",
     name = "entities_per_tick",
     setting_type = "runtime-global",
-    default_value = 100,
+    default_value = 1000,
     minimum_value = 100,
     maximum_value = 10000
 }, {

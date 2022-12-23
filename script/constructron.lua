@@ -852,7 +852,8 @@ me.conditions = {
                             -- is the entity in range?
                             if cell.is_in_construction_range(entity.position) then
                                 -- can the entity be built?
-                                if logistic_network.can_satisfy_request(entity.ghost_prototype.items_to_place_this[1].name, 1) then
+                                local entity = entity.ghost_prototype.items_to_place_this[1]
+                                if logistic_network.can_satisfy_request(entity.name, (entity.count or 1)) then
                                     -- construction not yet complete
                                     me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                                     return false
