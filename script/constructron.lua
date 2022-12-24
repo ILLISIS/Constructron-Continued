@@ -823,7 +823,7 @@ me.conditions = {
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructrons = job.constructrons
         debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
-        if not (job.attempt >= 3) then
+        if not ((job.attempt or 0) >= 3) then
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
                 return true

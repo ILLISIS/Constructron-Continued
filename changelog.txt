@@ -1,8 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.51
+Date: 2022-12-24
+  Fixed:
+    - A crash on load when jobs were in progress after 1.0.50.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.50
 Date: 2022-12-24
   Changed:
-    - [internal] expose job to actions and conditions for later use
+    - [internal] expose job to actions and conditions for later use.
     - Job retry after 3 failures of attempting to move to a position.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.49
