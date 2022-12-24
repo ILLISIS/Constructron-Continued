@@ -371,16 +371,16 @@ me.do_until_leave = function(job)
     if job.constructrons[1] then
         if not job.active then
             if (job.action == 'go_to_position') then
-                local new_pos_goal = me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                local new_pos_goal = me.actions[job.action](job, table.unpack(job.action_args or {}))
                 job.leave_args[1] = new_pos_goal
                 job.start_tick = game.tick
                 job.lastpos = {}
             else
-                me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                me.actions[job.action](job, table.unpack(job.action_args or {}))
                 job.start_tick = game.tick
             end
         end
-        local status = me.conditions[job.leave_condition](job.constructrons, table.unpack(job.leave_args or {}))
+        local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
         if status == true then
             table.remove(global.job_bundles[job.bundle_index], 1)
             -- for c, constructron in ipairs(constructrons) do
@@ -393,7 +393,7 @@ me.do_until_leave = function(job)
             for c, constructron in ipairs(job.constructrons) do
                 if constructron.valid then
                     if not constructron.autopilot_destination then
-                        me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                        me.actions[job.action](job, table.unpack(job.action_args or {}))
                         job.start_tick = game.tick
                     else -- waypoint orbit & stuck recovery
                         if not job.lastpos[c] then
@@ -402,7 +402,7 @@ me.do_until_leave = function(job)
                             local lastpos = job.lastpos[c]
                             local distance = chunk_util.distance_between(lastpos, constructron.position)
                             if distance < 5 then
-                                me.actions[job.action](job.constructrons, table.unpack(job.action_args or {}))
+                                me.actions[job.action](job, table.unpack(job.action_args or {}))
                                 job.start_tick = game.tick
                                 job.lastpos[c] = nil
                             else
@@ -488,12 +488,15 @@ end
 -------------------------------------------------------------------------------
 
 me.actions = {
-    ---@param constructrons LuaEntity[]
+    ---@param job Job
     ---@param position MapPosition
     ---@param find_path boolean
     ---@return MapPosition?
-    go_to_position = function(constructrons, position, find_path)
+    go_to_position = function(job, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
+        local constructrons = job.constructrons
+        if job.attempt == nil then job.attempt = 1 end
+        job.attempt = job.attempt + 1
         if constructrons[1].valid then
             me.disable_roboports(constructrons[1].grid)
             local inventory_items = me.get_inventory(constructrons[1], "spider_trunk")
@@ -515,10 +518,12 @@ me.actions = {
             end
         end
     end,
-    ---@param constructrons LuaEntity[]
+
+    ---@param job Job
     ---@return boolean?
-    build = function(constructrons)
+    build = function(job)
         debug_lib.DebugLog('ACTION: build')
+        local constructrons = job.constructrons
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -533,10 +538,11 @@ me.actions = {
         end
         -- enable construct
     end,
-    ---@param constructrons LuaEntity[]
+    ---@param job Job
     ---@return boolean?
-    deconstruct = function(constructrons)
+    deconstruct = function(job)
         debug_lib.DebugLog('ACTION: deconstruct')
+        local constructrons = job.constructrons
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
@@ -551,10 +557,11 @@ me.actions = {
         end
         -- enable construct
     end,
-    ---@param constructrons LuaEntity[]
+    ---@param job Job
     ---@param request_items ItemCounts
-    request_items = function(constructrons, request_items)
+    request_items = function(job, request_items)
         debug_lib.DebugLog('ACTION: request_items')
+        local constructrons = job.constructrons
         if global.stations_count[constructrons[1].surface.index] > 0 then
             local closest_station = me.get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
             for c, constructron in ipairs(constructrons) do
@@ -587,10 +594,11 @@ me.actions = {
             end
         end
     end,
-    ---@param constructrons LuaEntity[]
+    ---@param job Job
     ---@return boolean?
-    clear_items = function(constructrons)
+    clear_items = function(job)
         debug_lib.DebugLog('ACTION: clear_items')
+        local constructrons = job.constructrons
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
         local desired_robot_count = global.desired_robot_count
@@ -654,9 +662,10 @@ me.actions = {
             end
         end
     end,
-    ---@param constructrons LuaEntity[]
-    retire = function(constructrons)
+    ---@param job Job
+    retire = function(job)
         debug_lib.DebugLog('ACTION: retire')
+        local constructrons = job.constructrons
         for c, constructron in ipairs(constructrons) do
             if constructron.valid then
                 me.set_constructron_status(constructron, 'busy', false)
@@ -808,11 +817,13 @@ me.actions = {
 -------------------------------------------------------------------------------
 
 me.conditions = {
-    ---@param constructrons LuaEntity[]
+    ---@param job Job
     ---@param position MapPosition
     ---@return boolean
-    position_done = function(constructrons, position) -- this is condition for action "go_to_position"
+    position_done = function(job, position) -- this is condition for action "go_to_position"
+        local constructrons = job.constructrons
         debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
+        if not (job.attempt >= 3) then
         for c, constructron in ipairs(constructrons) do
             if (constructron.valid == false) then
                 return true
@@ -823,11 +834,16 @@ me.conditions = {
         end
         me.enable_roboports(constructrons[1].grid)
         return true
+        else
+            return "graceful_wrapup" -- unable to reach detination
+        end
     end,
-    ---@param constructrons LuaEntity[]
+
+    ---@param job Job
     ---@param _ any
     ---@return boolean | string
-    build_done = function(constructrons, _, _, _)
+    build_done = function(job, _, _, _)
+        local constructrons = job.constructrons
         debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             local build_tick = me.get_constructron_status(constructrons[1], 'build_tick')
@@ -871,9 +887,11 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
-    ---@param constructrons LuaEntity[]
+
+    ---@param job Job
     ---@return boolean | string
-    deconstruction_done = function(constructrons)
+    deconstruction_done = function(job)
+        local constructrons = job.constructrons
         debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             local decon_tick = me.get_constructron_status(constructrons[1], 'deconstruct_tick')
@@ -922,10 +940,12 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
-    ---@param constructrons LuaEntity[]
+
+    ---@param job Job
     ---@param _ any
     ---@return boolean | string
-    upgrade_done = function(constructrons, _, _, _)
+    upgrade_done = function(job, _, _, _)
+        local constructrons = job.constructrons
         debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
         if constructrons[1].valid then
             local build_tick = me.get_constructron_status(constructrons[1], 'build_tick')
@@ -969,9 +989,11 @@ me.conditions = {
             return true -- leader is invalidated.. skip action
         end
     end,
-    ---@param constructrons LuaEntity[]
+
+    ---@param job Job
     ---@return boolean
-    request_done = function(constructrons)
+    request_done = function(job)
+        local constructrons = job.constructrons
         debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3, 1)
         if me.constructrons_need_reload(constructrons) then
             return false

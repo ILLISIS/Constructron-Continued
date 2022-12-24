@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.50
+Date: 2022-12-24
+  Changed:
+    - [internal] expose job to actions and conditions for later use
+    - Job retry after 3 failures of attempting to move to a position.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.49
 Date: 2022-12-23
   Changed:
