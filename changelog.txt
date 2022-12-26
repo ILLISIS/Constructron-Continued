@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.52
+Date: 2022-12-26
+  Fixed:
+    - An issue where Constructrons would get stuck in perpetual 'moving to position'.
+  Improvements:
+    - Overshoot prevention. Constructrons will now slow to base speed within 3 map chunks of the destination.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.51
-Date: 2022-12-24
+Date: 2022-12-25
   Fixed:
     - A crash on load when jobs were in progress after 1.0.50.
 ---------------------------------------------------------------------------------------------------

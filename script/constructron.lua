@@ -387,7 +387,7 @@ me.do_until_leave = function(job)
             --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
             -- end
             return true -- returning true means you can remove this job from job list
-        elseif status == "graceful_wrapup" then
+        elseif status == "graceful_wrapup" and not job.returning_home == true then
             me.graceful_wrapup(job)
         elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
             for c, constructron in ipairs(job.constructrons) do
@@ -402,9 +402,10 @@ me.do_until_leave = function(job)
                             local lastpos = job.lastpos[c]
                             local distance = chunk_util.distance_between(lastpos, constructron.position)
                             if distance < 5 then
-                                me.actions[job.action](job, table.unpack(job.action_args or {}))
+                                math.max(0, (job.attempt - 1))
                                 job.start_tick = game.tick
                                 job.lastpos[c] = nil
+                                me.actions[job.action](job, table.unpack(job.action_args or {}))
                             else
                                 job.start_tick = game.tick
                                 job.lastpos[c] = nil
@@ -495,10 +496,15 @@ me.actions = {
     go_to_position = function(job, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         local constructrons = job.constructrons
-        if job.attempt == nil then job.attempt = 1 end
+        if job.attempt == nil then job.attempt = 0 end
         job.attempt = job.attempt + 1
         if constructrons[1].valid then
             me.disable_roboports(constructrons[1].grid)
+            if (chunk_util.distance_between(constructrons[1].position, position) < 96) then
+                constructrons[1].grid.inhibit_movement_bonus = true
+            else
+                constructrons[1].grid.inhibit_movement_bonus = false
+            end
             local inventory_items = me.get_inventory(constructrons[1], "spider_trunk")
             for item_name, _ in pairs(inventory_items) do
                 if item_name == "landfill" then
@@ -510,11 +516,7 @@ me.actions = {
             if find_path then
             return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
         else
-            for c, constructron in ipairs(constructrons) do
-                if constructron.valid then
-                    constructron.autopilot_destination = position -- does not use path finder!
-                    end
-                end
+                constructrons[1].autopilot_destination = position -- does not use path finder!
             end
         end
     end,
@@ -538,6 +540,7 @@ me.actions = {
         end
         -- enable construct
     end,
+
     ---@param job Job
     ---@return boolean?
     deconstruct = function(job)
@@ -557,6 +560,7 @@ me.actions = {
         end
         -- enable construct
     end,
+
     ---@param job Job
     ---@param request_items ItemCounts
     request_items = function(job, request_items)
@@ -594,6 +598,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param job Job
     ---@return boolean?
     clear_items = function(job)
@@ -662,6 +667,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param job Job
     retire = function(job)
         debug_lib.DebugLog('ACTION: retire')
@@ -681,6 +687,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     ---@deprecated
@@ -715,6 +722,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     check_build_chunk = function(_, chunk)
@@ -748,6 +756,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     check_decon_chunk = function(_, chunk)
@@ -777,6 +786,7 @@ me.actions = {
             end
         end
     end,
+
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     check_upgrade_chunk = function(_, chunk)
@@ -823,20 +833,21 @@ me.conditions = {
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructrons = job.constructrons
         debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
-        if not ((job.attempt or 0) >= 3) then
-        for c, constructron in ipairs(constructrons) do
-            if (constructron.valid == false) then
+        if (constructrons[1].valid == false) then
                 return true
             end
-            if (chunk_util.distance_between(constructron.position, position) > 5) then
+        if (chunk_util.distance_between(constructrons[1].position, position) > 5) then
+            if (chunk_util.distance_between(constructrons[1].position, position) < 96) then
+                constructrons[1].grid.inhibit_movement_bonus = true
+            end
+            if not ((job.attempt or 0) >= 3) then
                 return false
+            else
+                return "graceful_wrapup" -- unable to reach detination
             end
         end
         me.enable_roboports(constructrons[1].grid)
         return true
-        else
-            return "graceful_wrapup" -- unable to reach detination
-        end
     end,
 
     ---@param job Job
