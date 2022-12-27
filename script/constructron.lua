@@ -1530,7 +1530,7 @@ me.mod_settings_changed = function(event)
     end
 end
 
----@param event 
+---@param event
 ---| EventData.on_built_entity
 ---| EventData.on_robot_built_entity
 ---| EventData.script_raised_built
@@ -1706,7 +1706,7 @@ me.on_entity_cloned = function(event)
     end
 end
 
----@param event 
+---@param event
 ---| EventData.on_entity_destroyed
 ---| EventData.script_raised_destroy
 me.on_entity_destroyed = function(event)

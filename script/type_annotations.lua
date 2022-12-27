@@ -9,42 +9,42 @@
 
 ---@alias EntityQueue table<uint, table<string, Chunk>>
 
----@alias ConstructronStatus 
----| "build_tick" 
----| "busy" 
----| "deconstruct_tick" 
----| "staged" 
+---@alias ConstructronStatus
+---| "build_tick"
+---| "busy"
+---| "deconstruct_tick"
+---| "staged"
 ---| "setup_tick"
 
----@alias BuildType 
----| "deconstruction" 
----| "ghost" 
----| "repair" 
+---@alias BuildType
+---| "deconstruction"
+---| "ghost"
+---| "repair"
 ---| "upgrade"
 
 ---@alias JobType 
----| "deconstruct" 
----| "construct" 
----| "upgrade" 
+---| "deconstruct"
+---| "construct"
+---| "upgrade"
 ---| "repair"
 
 ---@alias JobAction
----| "request_items" 
----| "go_to_position" 
----| "build" 
----| "deconstruct" 
----| "check_build_chunk" 
----| "check_decon_chunk" 
----| "check_upgrade_chunk" 
----| "clear_items" 
+---| "request_items"
+---| "go_to_position"
+---| "build"
+---| "deconstruct"
+---| "check_build_chunk"
+---| "check_decon_chunk"
+---| "check_upgrade_chunk"
+---| "clear_items"
 ---| "retire"
 
----@alias JobLeaveCondition 
----| "request_done" 
----| "position_done" 
----| "build_done" 
----| "upgrade_done" 
----| "deconstruction_done" 
+---@alias JobLeaveCondition
+---| "request_done"
+---| "position_done"
+---| "build_done"
+---| "upgrade_done"
+---| "deconstruction_done"
 ---| "pass"
 
 ---@alias JobBundle table<uint, Job[]>
