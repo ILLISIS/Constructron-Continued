@@ -879,8 +879,8 @@ me.conditions = {
                             -- is the entity in range?
                             if cell.is_in_construction_range(entity.position) then
                                 -- can the entity be built?
-                                local entity = entity.ghost_prototype.items_to_place_this[1]
-                                if logistic_network.can_satisfy_request(entity.name, (entity.count or 1)) then
+                                local item = entity.ghost_prototype.items_to_place_this[1]
+                                if logistic_network.can_satisfy_request(item.name, (item.count or 1)) then
                                     -- construction not yet complete
                                     me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
                                     return false
@@ -1232,8 +1232,8 @@ me.get_chunks_and_constructrons = function(queued_chunks, preselected_constructr
     return get_job_chunks_and_constructrons(queued_chunks, 1, 0, {})
 end
 
----@param constructrons LuaEntity[]
-me.get_job = function(constructrons)
+
+me.get_job = function()
     local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
     for _, surface in pairs(managed_surfaces) do -- iterate each surface
         if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
@@ -1446,7 +1446,7 @@ me.do_job = function(job_bundles)
 end
 
 me.process_job_queue = function(_)
-    me.get_job(global.constructrons)
+    me.get_job()
     me.do_job(global.job_bundles)
 end
 

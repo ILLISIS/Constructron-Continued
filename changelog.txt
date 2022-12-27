@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.53
+Date: 2022-12-27
+  Fixed:
+    - A crash when /ctron reset settings was used.
+    - Some settings were not being reset to defaults when using /ctron reset settings.
+  Changed:
+    - Various internal CI improvements.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.52
 Date: 2022-12-26
   Fixed:

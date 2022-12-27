@@ -3,7 +3,7 @@ local roboports = {}
 for name, eq in pairs(data.raw["roboport-equipment"]) do
    roboports[name] = eq
 end
-for name, eq in pairs(roboports) do
+for _, eq in pairs(roboports) do
    local radius = eq.construction_radius
    for i=0, radius do
       local robocopy = table.deepcopy(eq)

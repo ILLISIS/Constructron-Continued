@@ -295,14 +295,14 @@ local function stats(player, _)
     log("control:help")
     log("by player:" .. player.name)
 
-    local stats = cmd.stats()
-    log(serpent.block(stats))
-    if stats and player then
-        for k,v in pairs(stats) do
+    local global_stats = cmd.stats()
+    log(serpent.block(global_stats))
+    if global_stats and player then
+        for k,v in pairs(global_stats) do
             player.print(k .. ": " .. tostring(v))
         end
     end
-    return stats
+    return global_stats
 end
 
 ---@param player LuaPlayer
