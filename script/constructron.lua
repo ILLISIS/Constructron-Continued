@@ -500,7 +500,7 @@ me.actions = {
         job.attempt = job.attempt + 1
         if constructrons[1].valid then
             me.disable_roboports(constructrons[1].grid)
-            if (chunk_util.distance_between(constructrons[1].position, position) < 96) then
+            if (chunk_util.distance_between(constructrons[1].position, position) < 32) then
                 constructrons[1].grid.inhibit_movement_bonus = true
             else
                 constructrons[1].grid.inhibit_movement_bonus = false
@@ -514,8 +514,8 @@ me.actions = {
                 end
             end
             if find_path then
-            return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
-        else
+                return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
+            else
                 constructrons[1].autopilot_destination = position -- does not use path finder!
             end
         end
@@ -567,9 +567,7 @@ me.actions = {
         debug_lib.DebugLog('ACTION: request_items')
         local constructrons = job.constructrons
         if global.stations_count[constructrons[1].surface.index] > 0 then
-            local closest_station = me.get_closest_service_station(constructrons[1]) -- they must go to the same station even if they are not in the same station.
             for c, constructron in ipairs(constructrons) do
-                me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
                 local merged_items = table.deepcopy(request_items)
                 for _, inv in pairs({"spider_trash", "spider_trunk"}) do
                     local inventory_items = me.get_inventory(constructron,inv)
@@ -833,21 +831,19 @@ me.conditions = {
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructrons = job.constructrons
         debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
-        if (constructrons[1].valid == false) then
-                return true
+        if constructrons[1].valid then
+            if (chunk_util.distance_between(constructrons[1].position, position) > 5) then -- the condition
+                if not ((job.attempt or 0) >= 3) then
+                    return false  -- condition is not met
+                else
+                    return "graceful_wrapup" -- unable to reach destination
+                end
             end
-        if (chunk_util.distance_between(constructrons[1].position, position) > 5) then
-            if (chunk_util.distance_between(constructrons[1].position, position) < 96) then
-                constructrons[1].grid.inhibit_movement_bonus = true
-            end
-            if not ((job.attempt or 0) >= 3) then
-                return false
-            else
-                return "graceful_wrapup" -- unable to reach detination
-            end
+        else
+            return true  -- leader is invalidated.. skip action
         end
         me.enable_roboports(constructrons[1].grid)
-        return true
+        return true -- condition is satisfied
     end,
 
     ---@param job Job
@@ -1302,17 +1298,27 @@ me.get_job = function()
                         queue[surface.index][chunk.key] = chunk
                     end
 
-                    ---@type Job
-                    local request_items_job = {
+                    global.job_bundle_index = (global.job_bundle_index or 0) + 1
+
+                    -- go to service station
+                    local closest_station = me.get_closest_service_station(selected_constructrons[1])
+                    me.create_job(global.job_bundle_index, {
+                        action = 'go_to_position',
+                        action_args = {closest_station.position, true},
+                        leave_condition = 'position_done',
+                        leave_args = {closest_station.position},
+                        constructrons = selected_constructrons
+                    })
+
+                    -- request items
+                    me.create_job(global.job_bundle_index, {
                         action = 'request_items',
                         action_args = {combined_chunks.requested_items},
                         leave_condition = 'request_done',
                         constructrons = selected_constructrons,
                         unused_stations = me.get_service_stations(selected_constructrons[1].surface.index)
-                    }
+                    })
 
-                    global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                    me.create_job(global.job_bundle_index, request_items_job)
                     for i, chunk in ipairs(combined_chunks) do
                         chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, selected_constructrons[1].logistic_cell.construction_radius * 0.85) -- 15% tolerance
                         chunk['surface'] = surface.index
@@ -1321,6 +1327,7 @@ me.get_job = function()
                             if p == 1 then
                                 find_path = true
                             end
+                            -- move to position
                             me.create_job(global.job_bundle_index, {
                                 action = 'go_to_position',
                                 action_args = {position, find_path},
@@ -1328,6 +1335,7 @@ me.get_job = function()
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
                             })
+                            -- do actions
                             if not (job_type == 'deconstruct') then
                                 if not (job_type == 'upgrade') then
                                     me.create_job(global.job_bundle_index, {
@@ -1403,11 +1411,14 @@ me.get_job = function()
                         returning_home = true
                     })
 
+                    -- clear items
                     me.create_job(global.job_bundle_index, {
                         action = 'clear_items',
                         leave_condition = 'request_done',
                         constructrons = selected_constructrons
                     })
+
+                    -- ready for next job
                     me.create_job(global.job_bundle_index, {
                         action = 'retire',
                         leave_condition = 'pass',

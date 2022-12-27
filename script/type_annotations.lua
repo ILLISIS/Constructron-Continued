@@ -22,7 +22,7 @@
 ---| "repair"
 ---| "upgrade"
 
----@alias JobType 
+---@alias JobType
 ---| "deconstruct"
 ---| "construct"
 ---| "upgrade"

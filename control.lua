@@ -2,6 +2,7 @@ local custom_lib = require("script/custom_lib")
 local ctron = require("script/constructron")
 local Spidertron_Pathfinder = require("script/Spidertron-pathfinder")
 local cmd = require("script/command_functions")
+local chunk_util = require("script/chunk_util")
 
 ctron.pathfinder = Spidertron_Pathfinder
 
@@ -25,6 +26,23 @@ script.on_nth_tick(1, (function(event)
         ctron.add_entities_to_chunks("repair")
     end
 end))
+
+script.on_nth_tick(5, (function(event)
+    for i, job in pairs(global.job_bundles) do
+        if job[1] and job[1].action == "go_to_position" then
+            if job[1].constructrons and job[1].constructrons[1].valid then
+                local constructron = job[1].constructrons[1]
+                if constructron.autopilot_destination then
+                    distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
+                    if distance < 6 and constructron.speed > 0.3 then
+                        constructron.stop_spider()
+                    end
+                end
+            end
+        end
+    end
+end))
+
 -- main worker
 script.on_nth_tick(60, ctron.process_job_queue)
 -- cleanup

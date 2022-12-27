@@ -1,11 +1,18 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.53
-Date: 2022-12-27
+Date: 2022-12-28
   Fixed:
     - A crash when /ctron reset settings was used.
     - Some settings were not being reset to defaults when using /ctron reset settings.
+    - Fixed pathfinder.initial_bounding_box being inadvertenly changed during path requests.
+  Improvements:
+    - Added a constant waypoint overshoot and waypoint orbit check when Constructrons are active and are moving faster than intended due to other mods.
+    - Tweaked path finder to use very skinny paths.
   Changed:
     - Various internal CI improvements.
+    - Various code comments added.
+    - Added better formatting in pathfinder code for readability.
+    - Added initial go_to_position job to get to the service station before request_items job.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.52
 Date: 2022-12-26
