@@ -14,26 +14,25 @@ end
 script.on_init(init)
 script.on_configuration_changed(init)
 
--- Possibly do this at a 10x lower frequency or controlled by a mod setting
-script.on_nth_tick(1, (function(event)
-    if event.tick % 20 == 0 then
+script.on_nth_tick(15, (function(event)
+    if event.tick % 20 == 15 then
         ctron.add_entities_to_chunks("deconstruction")
-    elseif event.tick % 20 == 5 then
-        ctron.add_entities_to_chunks("ghost")
     elseif event.tick % 20 == 10 then
+        ctron.add_entities_to_chunks("ghost")
+    elseif event.tick % 20 == 5 then
         ctron.add_entities_to_chunks("upgrade")
-    elseif event.tick % 20 == 15 then
+    elseif event.tick % 20 == 0 then
         ctron.add_entities_to_chunks("repair")
     end
 end))
 
-script.on_nth_tick(5, (function(event)
+script.on_nth_tick(5, (function()
     for i, job in pairs(global.job_bundles) do
         if job[1] and job[1].action == "go_to_position" then
             if job[1].constructrons and job[1].constructrons[1].valid then
                 local constructron = job[1].constructrons[1]
                 if constructron.autopilot_destination then
-                    distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
+                    local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
                     if distance < 6 and constructron.speed > 0.3 then
                         constructron.stop_spider()
                     end

@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.54
+Date: 2022-12-28
+  Improvements:
+    - Constructrons no longer respond to entites within roboport range that robots have already been dispathed to fulfill.
+    - Slight optimization to entity processing.
+    - Tweaked upgrade jobs to follow standard processing.
+  Changed:
+    - Entity processing is now every 15 ticks instead of every tick.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.53
 Date: 2022-12-28
   Fixed:

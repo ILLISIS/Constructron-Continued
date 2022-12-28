@@ -178,10 +178,9 @@ me.check_item_allowed = function(item_name)
 end
 
 ---@param entity LuaEntity | UpgradeEntity
----@param target_entity LuaEntityPrototype?
 ---@param build_type BuildType
 ---@param queue EntityQueue
-me.process_entity = function(entity, target_entity, build_type, queue)
+me.process_entity = function(entity, build_type, queue)
     local chunk = chunk_util.chunk_from_position(entity.position)
     local key = chunk.y .. ',' .. chunk.x
     local entity_surface = entity.surface.index
@@ -259,9 +258,8 @@ me.process_entity = function(entity, target_entity, build_type, queue)
         end
     end
     -- entity upgrades
-    if target_entity then
-        -- log("target_entity.name" .. serpent.block(target_entity.name))
-        -- log("target_entity.items_to_place_this" .. serpent.block(target_entity.items_to_place_this))
+    if build_type == "upgrade" then
+        local target_entity = entity.get_upgrade_target()
         for _, item in ipairs(target_entity.items_to_place_this) do
             if me.check_item_allowed(item.name) then
                 queue_surface_key['required_items'][item.name] = (queue_surface_key['required_items'][item.name] or 0) + item.count
@@ -271,58 +269,68 @@ me.process_entity = function(entity, target_entity, build_type, queue)
     queue[entity_surface][key] = queue_surface_key
 end
 
+local build_types = {
+    deconstruction = {
+        entities = "deconstruction_entities",   -- array, call by ref
+        queue = "deconstruct_queue",            -- array, call by ref
+        event_tick = "deconstruct_marked_tick", -- call by value, it is used as read_only
+        process_entity = function(entity, build_type, queue)
+            if entity.is_registered_for_deconstruction(game.forces.player) then
+                me.process_entity(entity, build_type, queue)
+            end
+        end,
+    },
+    ghost = {
+        entities = "ghost_entities",
+        queue = "construct_queue",
+        event_tick = "ghost_tick",
+        process_entity = function(entity, build_type, queue)
+            if entity.is_registered_for_construction() then
+                me.process_entity(entity, build_type, queue)
+            end
+        end,
+    },
+    upgrade = {
+        entities = "upgrade_entities",
+        queue = "upgrade_queue",
+        event_tick = "upgrade_marked_tick",
+        process_entity = function(entity, build_type, queue)
+            local test = entity.is_registered_for_upgrade()
+            if test then
+                me.process_entity(entity, build_type, queue)
+            end
+        end,
+    },
+    repair = {
+        entities = "repair_entities",
+        queue = "repair_queue",
+        event_tick = "repair_marked_tick",
+        process_entity = function(entity, build_type, queue)
+            if entity.is_registered_for_repair() then
+                me.process_entity(entity, build_type, queue)
+            end
+        end,
+    },
+}
+
 ---@param build_type BuildType
 me.add_entities_to_chunks = function(build_type) -- build_type: deconstruction, upgrade, ghost, repair
-    local entities      --[[@type table<string, LuaEntity | UpgradeEntity>]]
-    local queue         --[[@type EntityQueue]]
-    local event_tick
-    local entity_counter = 0
-
-    if build_type == "deconstruction" then
-        entities = global.deconstruction_entities -- array, call by ref
-        queue = global.deconstruct_queue -- array, call by ref
-        event_tick = global.deconstruct_marked_tick or 0 -- call by value, it is used as read_only
-    elseif build_type == "ghost" then --- =/
-        entities = global.ghost_entities -- array, call by ref
-        queue = global.construct_queue -- array, call by ref
-        event_tick = global.ghost_tick or 0 -- call by value, it is used as read_only
-    elseif build_type == "upgrade" then
-        entities = global.upgrade_entities -- array, call by ref
-        queue = global.upgrade_queue -- array, call by ref
-        event_tick = global.upgrade_marked_tick or 0 -- call by value, it is used as read_only
-    elseif build_type == "repair" then
-        entities = global.repair_entities -- array, call by ref
-        queue = global.repair_queue -- array, call by ref
-        event_tick = global.repair_marked_tick or 0 -- call by value, it is used as read_only
-    end
+    local t = build_types[build_type]
+    local entities = global[t.entities]
+    local queue = global[t.queue]
+    local event_tick = global[t.event_tick] or 0
+    local entity_counter = global.entities_per_tick
 
     if next(entities) and (game.tick - event_tick) > global.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         for entity_key, entity in pairs(entities) do
-            local target_entity
-
-            if build_type == "upgrade" then
-                target_entity = entity.target
-                entity = entity.entity
-                if entity.valid and not entity.to_be_upgraded() then
-                    entity = nil
-                end
-            end
-
-            if build_type == "deconstruction" and entity.valid and not entity.to_be_deconstructed() then
-                entity = nil
-            end
-
-            if entity and entity.valid then
-                me.process_entity(entity, target_entity, build_type, queue)
+            if entity.valid then
+                t.process_entity(entity, build_type, queue)
             end
 
             entities[entity_key] = nil
 
-            if entity_counter >= global.entities_per_tick then
-                break
-            else
-                entity_counter = entity_counter + 1
-            end
+            entity_counter = entity_counter - 1
+            if entity_counter <= 0 then break end
         end
     end
 end
@@ -811,10 +819,7 @@ me.actions = {
                 debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
 
                 local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.upgrade_entities[key] = {
-                    entity = entity,
-                    target = entity.get_upgrade_target()
-                }
+                global.upgrade_entities[key] = entity
             end
         end
     end
@@ -1299,9 +1304,9 @@ me.get_job = function()
                     end
 
                     global.job_bundle_index = (global.job_bundle_index or 0) + 1
+                    local closest_station = me.get_closest_service_station(selected_constructrons[1])
 
                     -- go to service station
-                    local closest_station = me.get_closest_service_station(selected_constructrons[1])
                     me.create_job(global.job_bundle_index, {
                         action = 'go_to_position',
                         action_args = {closest_station.position, true},
@@ -1327,6 +1332,7 @@ me.get_job = function()
                             if p == 1 then
                                 find_path = true
                             end
+
                             -- move to position
                             me.create_job(global.job_bundle_index, {
                                 action = 'go_to_position',
@@ -1335,6 +1341,7 @@ me.get_job = function()
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
                             })
+
                             -- do actions
                             if not (job_type == 'deconstruct') then
                                 if not (job_type == 'upgrade') then
@@ -1399,14 +1406,13 @@ me.get_job = function()
                             })
                         end
                     end
+
                     -- go back to a service_station when job is done.
-                    local closest_station = me.get_closest_service_station(selected_constructrons[1])
-                    local home_position = closest_station.position
                     me.create_job(global.job_bundle_index, {
                         action = 'go_to_position',
-                        action_args = {home_position, true},
+                        action_args = {closest_station.position, true},
                         leave_condition = 'position_done',
-                        leave_args = {home_position},
+                        leave_args = {closest_station.position},
                         constructrons = selected_constructrons,
                         returning_home = true
                     })
@@ -1422,7 +1428,7 @@ me.get_job = function()
                     me.create_job(global.job_bundle_index, {
                         action = 'retire',
                         leave_condition = 'pass',
-                        leave_args = {home_position},
+                        leave_args = {closest_station.position},
                         constructrons = selected_constructrons
                     })
                 end
@@ -1562,9 +1568,6 @@ me.on_built_entity = function(event) -- for entity creation
             if global.ignored_entities[entity_name] == nil then
                 local items_to_place_this = entity.ghost_prototype.items_to_place_this
                 global.ignored_entities[entity_name] = (me.check_item_allowed(items_to_place_this[1].name) == false)
-                -- if me.is_floor_tile(entity_name) then -- we need to find a way to improve pathing before floor tiles can be built. So ignore landfill and similiar tiles.
-                --     global.ignored_entities[entity_name] = true
-                -- end
             end
             if not global.ignored_entities[entity_name] == true then
                 if not me.is_floor_tile(entity_name) then
@@ -1640,10 +1643,7 @@ me.on_marked_for_upgrade = function(event) -- for entity upgrade
 
     if entity.force.name == "player" then
         global.upgrade_marked_tick = event.tick
-        global.upgrade_entities[key] = {
-            entity = entity,
-            target = event.target
-        }
+        global.upgrade_entities[key] = entity
     end
 end
 
