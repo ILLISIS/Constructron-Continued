@@ -696,41 +696,6 @@ me.actions = {
 
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
-    ---@deprecated
-    add_to_check_chunk_done_queue = function(_, chunk) -- legacy, remove after 20/4/22
-        debug_lib.DebugLog('ACTION: check_build_chunk')
-        local entity_names = {}
-        for name, _ in pairs(chunk.required_items) do
-            table.insert(entity_names, name)
-        end
-        local surface = game.surfaces[chunk.surface]
-
-        if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
-            chunk.minimum.x = chunk.minimum.x - 1
-            chunk.minimum.y = chunk.minimum.y - 1
-            chunk.maximum.x = chunk.maximum.x + 1
-            chunk.maximum.y = chunk.maximum.y + 1
-        end
-
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
-
-        local ghosts = surface.find_entities_filtered {
-            area = {chunk.minimum, chunk.maximum},
-            type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-            force = "player"
-        } or {}
-        if next(ghosts) then -- if there are ghosts because inventory doesn't have the items for them, add them to be built for the next job
-            debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
-
-            for i, entity in ipairs(ghosts) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.ghost_entities[key] = entity
-            end
-        end
-    end,
-
-    ---@param _ LuaEntity[]
-    ---@param chunk Chunk
     check_build_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_build_chunk')
         local entity_names = {}

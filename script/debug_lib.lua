@@ -40,7 +40,7 @@ me.VisualDebugText = function(message, entity, offset, ttl)
                 a = 255
             }
         }
-        log("surface " .. (entity.surface.name or entity.surface.index) .. " - " .. entity.name .. " #" .. entity.unit_number .. " (x:" .. (entity.position.x) .. ",y:" .. (entity.position.y) .. "):" .. message)
+        -- log("surface " .. (entity.surface.name or entity.surface.index) .. " - " .. entity.name .. " #" .. entity.unit_number .. " (x:" .. (entity.position.x) .. ",y:" .. (entity.position.y) .. "):" .. message)
     end
 end
 
@@ -77,7 +77,7 @@ me.VisualDebugCircle = function(position, surface, color, text)
                     }
                 }
             end
-            log("surface " .. (surface.name or surface.index) .. " (x:" .. (position.x) .. ",y:" .. (position.y) .. "):" .. message)
+            -- log("surface " .. (surface.name or surface.index) .. " (x:" .. (position.x) .. ",y:" .. (position.y) .. "):" .. message)
         end
     end
 end
@@ -115,8 +115,8 @@ me.draw_rectangle = function(minimum, maximum, surface, color)
             color = color
         }
 
-        log("surface " .. (surface.name or surface.index) .. message)
-        log("minimum:" .. serpent.block(minimum) .. ", maximum:" .. serpent.block(maximum))
+        -- log("surface " .. (surface.name or surface.index) .. message)
+        -- log("minimum:" .. serpent.block(minimum) .. ", maximum:" .. serpent.block(maximum))
     end
 end
 
