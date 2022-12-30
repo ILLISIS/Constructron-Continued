@@ -15,6 +15,7 @@ me.table_has_value = function(tab, val)
     return false
 end
 
+-- [unused] previously used by pathfinder to merge tables
 function me.merge(a, b)
     if type(a) == "table" and type(b) == "table" then
         for k, v in pairs(b) do

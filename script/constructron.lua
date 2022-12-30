@@ -425,7 +425,7 @@ me.do_until_leave = function(job)
                 end
                 local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
                 for _, constructron in ipairs(job.constructrons) do
-                    me.pathfinder.init_path_request(constructron, next_station.position)
+                    pathfinder.init_path_request(constructron, next_station.position)
                 end
                 job.start_tick = game.tick
                 debug_lib.DebugLog('request_items action timed out, moving to new station')
