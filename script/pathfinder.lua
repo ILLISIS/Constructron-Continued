@@ -12,7 +12,7 @@ local clean_path_steps_enabled = false
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
-pathfinder = {}
+local pathfinder = {}
 
 pathfinder.init_globals = function()
     global.pathfinder_requests = global.pathfinder_requests or {}
