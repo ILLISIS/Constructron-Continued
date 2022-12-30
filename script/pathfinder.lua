@@ -32,6 +32,7 @@ function pathfinder.init_path_request(unit, destination)
     if request_params.unit.name == "constructron-rocket-powered" then
         pathfinder.set_autopilot(unit, {{position = destination}})
     else
+        global.path_retrys = global.path_retrys or {}
         pathfinder.request_path(request_params)
     end
     return destination
@@ -49,39 +50,38 @@ function pathfinder.request_path(request_params)
     end
     request_params = request_params or {}
 
-    local unit = request_params.unit
-
-    if unit and unit.valid then
-        pathfinder.set_autopilot(unit, {}) -- stop walking if walking
+    if request_params.unit and request_params.unit.valid then
+        pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
         local request = { -- template
-            unit = nil, -- not used by the factorio-pathfinder
-            surface = unit.surface, -- not used by the factorio-pathfinder
-            bounding_box = {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
+            unit = request_params.unit, -- not used by the factorio-pathfinder
+            surface = request_params.unit.surface, -- not used by the factorio-pathfinder
+            bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
             collision_mask = pathing_collision_mask,
-            start = unit.position,
-            goal = nil,
-            force = unit.force,
+            start = request_params.unit.position,
+            goal = request_params.goal,
+            force = request_params.unit.force,
             radius = 1,
             path_resolution_modifier = 0,
             pathfinding_flags = {
                 cache = false,
                 low_priority = true
             },
-            attempt = 1, -- not used by the factorio-pathfinder
+            attempt = request_params.attempt or 1, -- not used by the factorio-pathfinder
             try_again_later = 0 -- not used by the factorio-pathfinder
         }
 
-        cust_lib.merge(request, request_params) -- merge template with the request_params
+        -- cust_lib.merge(request, request_params) -- merge template with the request_params
         request.initial_target = request.initial_target or request.goal -- not used by the factorio-pathfinder
         request.request_tick = game.tick -- not used by the factorio-pathfinder
 
-        local request_id = request.surface.request_path(request) -- request the path from the game
+        local new_req = table.deepcopy(request)
+        local request_id = request.surface.request_path(new_req) -- request the path from the game
         global.pathfinder_requests[request_id] = request
     end
 end
 
 -------------------------------------------------------------------------------
---  Path returned
+--  Path request finished
 -------------------------------------------------------------------------------
 
 ---@param event EventData.on_script_path_request_finished
@@ -98,28 +98,8 @@ function pathfinder.on_script_path_request_finished(event)
                 pathfinder.request_path(request)
             end
         elseif not path then
-            request.attempt = request.attempt + 1
-            if request.attempt < 7 then
-                if request.attempt == 2 then -- 2. Re-Request with normal bounding box
-                    request.bounding_box = {{-1, -1}, {1, 1}}
-                elseif request.attempt == 3 then -- 3. Re-Request with increased radius (just for this try)
-                    request.radius = 5
-                elseif request.attempt == 4 then -- 4. Re-Request with tiny bounding box
-                    request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
-                elseif request.attempt == 5 then -- 5. find_non_colliding_positions and Re-Request
-                    request.radius = pathfinder.radius
-                    request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal) or request.goal
-                elseif request.attempt == 6 then -- 6. Re-Request with even more increased radius again
-                    request.path_resolution_modifier = 2
-                    request.radius = 10
-                end
-                request.request_tick = game.tick
-                pathfinder.request_path(request) -- try again
-            else -- 7. f*ck it... just try to walk there in a straight line
-                -- debug_lib.VisualDebugText("No path", request.unit, 0, 3)
-                pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
-            end
+            request.retry = true
+            global.path_retrys[#global.path_retrys] = table.deepcopy(request)
         else
             if clean_linear_path_enabled then
                 path = pathfinder.clean_linear_path(path)
@@ -132,9 +112,9 @@ function pathfinder.on_script_path_request_finished(event)
                 path = pathfinder.clean_path_steps(path, 2.5)
             end
             pathfinder.set_autopilot(request.unit, path)
+            global.pathfinder_requests[event.id] = nil
         end
     end
-    global.pathfinder_requests[event.id] = nil
 end
 
 -------------------------------------------------------------------------------
@@ -148,6 +128,40 @@ function pathfinder.set_autopilot(unit, path) -- set path
         unit.autopilot_destination = nil
         for i, waypoint in ipairs(path) do
             unit.add_autopilot_destination(waypoint.position)
+        end
+    end
+end
+
+-- this function was incepted because attempting these operations from the handler would not return a path - possible game bug
+function pathfinder.retry_paths()
+    if global.path_retrys then
+        for k, request in pairs(global.path_retrys) do
+            if request.retry then
+                request.attempt = request.attempt + 1
+                if request.attempt < 7 then
+                    if request.attempt == 2 then -- 2. Re-Request with normal bounding box
+                        request.bounding_box = {{-1, -1}, {1, 1}}
+                    elseif request.attempt == 3 then -- 3. Re-Request with increased radius
+                        request.radius = 5
+                    elseif request.attempt == 4 then -- 4. Re-Request with tiny bounding box
+                        request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
+                    elseif request.attempt == 5 then -- 5. find_non_colliding_positions and Re-Request
+                        request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
+                        request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal) or request.goal
+                    elseif request.attempt == 6 then -- 6. Re-Request with even more increased radius again
+                        request.path_resolution_modifier = 2
+                        request.radius = 10
+                    end
+                    request.request_tick = game.tick
+                    request.retry = nil
+                    global.path_retrys[k] = nil
+                    local new_request = table.deepcopy(request)
+                    pathfinder.request_path(new_request) -- try again
+                else -- 7. f*ck it... just try to walk there in a straight line
+                    -- debug_lib.VisualDebugText("No path", request.unit, 0, 3)
+                    pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
+                end
+            end
         end
     end
 end
