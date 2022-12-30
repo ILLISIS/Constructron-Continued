@@ -106,6 +106,14 @@ script.on_event(ev.on_entity_cloned, ctron.on_entity_cloned)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, ctron.on_entity_destroyed)
 
 script.on_event(ev.on_runtime_mod_setting_changed, ctron.mod_settings_changed)
+
+script.on_event(ev.on_player_used_spider_remote, (function(event)
+    if global.spider_remote_toggle and event.vehicle.name == "constructron" then
+        pathfinder.set_autopilot(event.vehicle, {})
+        local request_params = {unit = event.vehicle, goal = event.position}
+        pathfinder.request_path(request_params)
+    end
+end))
 -------------------------------------------------------------------------------
 
 ---@param player LuaPlayer
@@ -245,6 +253,15 @@ local function enable(player, parameters)
         settings.global["allow_landfill"] = {value = true}
         game.print('Landfill enabled.')
 
+    elseif parameters[1] == "remote" then
+        global.spider_remote_toggle = true
+        game.print('Spider remote enabled.')
+        if game.map_settings.path_finder.use_path_cache then
+            game.print('use_path_cache = true')
+        else
+            game.print('use_path_cache = false')
+        end
+
     else
         game.print('Command parameter does not exist.')
         cmd.help_text()
@@ -297,6 +314,10 @@ local function disable(player, parameters)
         global.landfill_job_toggle = false
         settings.global["allow_landfill"] = {value = false}
         game.print('Landfill disabled.')
+
+    elseif parameters[1] == "remote" then
+        global.spider_remote_toggle = false
+        game.print('Spider remote disabled.')
 
     else
         game.print('Command parameter does not exist.')

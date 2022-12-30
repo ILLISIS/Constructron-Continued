@@ -6,7 +6,7 @@ local collision_mask_util_extended = require("script/collision-mask-util-control
 -------------------------------------------------------------------------------
 
 local clean_linear_path_enabled = false
-local clean_path_steps_enabled = false
+local clean_path_steps_enabled = true
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
@@ -14,6 +14,13 @@ local pathfinder = {}
 
 pathfinder.init_globals = function()
     global.pathfinder_requests = global.pathfinder_requests or {}
+
+    --So, when path cache is enabled, negative path cache is also enabled.
+    --The problem is, when a single unit inside a nest can't get to the silo,
+    --He tells all other biters nearby that they also can't get to the silo.
+    --Which causes whole groups of them just to chillout and idle...
+    --This applies to all paths as the pathfinder is generic - Klonan
+    game.map_settings.path_finder.use_path_cache = false
 end
 
 -------------------------------------------------------------------------------

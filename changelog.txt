@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.55
+Date: 2022-12-31
+  Fixes:
+    - Pathfinder retries failing which prevented traversal of land 1 tile wide.
+  Changed:
+    - Pathfinder was refactored for better readability & less complexity.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.54
-Date: 2022-12-28
+Date: 2022-12-29
   Improvements:
     - Constructrons no longer respond to entites within roboport range that robots have already been dispathed to fulfill.
     - Slight optimization to entity processing.
