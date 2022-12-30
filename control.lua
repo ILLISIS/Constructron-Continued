@@ -1,14 +1,12 @@
 local custom_lib = require("script/custom_lib")
 local ctron = require("script/constructron")
-local Spidertron_Pathfinder = require("script/Spidertron-pathfinder")
+local pathfinder = require("script/pathfinder")
 local cmd = require("script/command_functions")
 local chunk_util = require("script/chunk_util")
 
-ctron.pathfinder = Spidertron_Pathfinder
-
 local init = function()
     ctron.ensure_globals()
-    Spidertron_Pathfinder.init_globals()
+    pathfinder.init_globals()
 end
 
 script.on_init(init)
@@ -47,12 +45,12 @@ script.on_nth_tick(60, ctron.process_job_queue)
 -- cleanup
 script.on_nth_tick(54000, (function(event)
     ctron.perform_surface_cleanup(event)
-    Spidertron_Pathfinder.check_pathfinder_requests_timeout()
+    pathfinder.check_pathfinder_requests_timeout()
 end))
 
 local ev = defines.events
 script.on_event(ev.on_script_path_request_finished, (function(event)
-    Spidertron_Pathfinder.on_script_path_request_finished(event)
+    pathfinder.on_script_path_request_finished(event)
 end))
 
 -- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required

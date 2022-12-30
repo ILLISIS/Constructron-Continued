@@ -3,21 +3,13 @@ require("util")
 local chunk_util = require("script/chunk_util")
 local debug_lib = require("script/debug_lib")
 local color_lib = require("script/color_lib")
+local pathfinder = require("script/pathfinder")
 
 ---@module "chunk_util"
 ---@module "debug_lib"
 ---@module "color_lib"
 
 local me = {}
-
-me.pathfinder = {
-    -- just a template, check pathfinder.lua for implementation
-    ---@param units LuaEntity[]
-    ---@param _ any
-    ---@param destination MapPosition
-    ---@return MapPosition?
-    request_path = (function(units,_,destination) end)
-}
 
 me.ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
@@ -88,20 +80,6 @@ me.get_service_stations = function(index)
     end
     return stations_on_surface or {}
 end
-
---- Unused Function
--- Explain ...
--- me.get_constructrons = function()
---     local constructrons_on_surface = {}
---     for c, constructron in pairs(global.constructrons) do
---         if constructron and constructron.valid then
---             table.insert(constructrons_on_surface, constructron)
---         else
---             global.constructrons[c] = nil
---         end
---     end
---     return constructrons_on_surface
--- end
 
 ---@param constructrons LuaEntity[]
 ---@return boolean?
@@ -447,7 +425,7 @@ me.do_until_leave = function(job)
                 end
                 local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
                 for _, constructron in ipairs(job.constructrons) do
-                    me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , next_station.position)
+                    me.pathfinder.init_path_request(constructron, next_station.position)
                 end
                 job.start_tick = game.tick
                 debug_lib.DebugLog('request_items action timed out, moving to new station')
@@ -522,7 +500,7 @@ me.actions = {
                 end
             end
             if find_path then
-                return me.pathfinder.request_path(constructrons, "constructron_pathing_dummy" , position)
+                return pathfinder.init_path_request(constructrons[1], position)
             else
                 constructrons[1].autopilot_destination = position -- does not use path finder!
             end
@@ -1065,7 +1043,7 @@ me.get_worker = function(surface_index)
                                     })
                                     if me.get_constructron_status(constructron, 'staged') then return end
                                     local closest_station = me.get_closest_service_station(constructron)
-                                    me.pathfinder.request_path({constructron}, "constructron_pathing_dummy" , closest_station.position)
+                                    pathfinder.init_path_request(constructron, closest_station.position)
                                     me.set_constructron_status(constructron, 'staged', true)
                                 else
                                     debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
