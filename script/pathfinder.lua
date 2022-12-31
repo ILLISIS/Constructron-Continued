@@ -5,8 +5,8 @@ local collision_mask_util_extended = require("script/collision-mask-util-control
 --  Init
 -------------------------------------------------------------------------------
 
-local clean_linear_path_enabled = false
-local clean_path_steps_enabled = true
+local clean_linear_path_enabled = true
+local clean_path_steps_enabled = false
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
@@ -52,35 +52,32 @@ function pathfinder.request_path(request_params)
         table.insert(pathing_collision_mask, spaceship_collision_layer)
         table.insert(pathing_collision_mask, empty_space_collision_layer)
     end
-    request_params = request_params or {}
 
-    if request_params.unit and request_params.unit.valid then
-        pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
-        local request = { -- template
-            unit = request_params.unit, -- not used by the factorio-pathfinder
-            surface = request_params.unit.surface, -- not used by the factorio-pathfinder
-            bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
-            -- bounding_box = request_params.bounding_box or {{-0.015, -0.015}, {0.015, 0.015}},
-            collision_mask = pathing_collision_mask,
-            start = request_params.unit.position,
-            goal = request_params.goal,
-            force = request_params.unit.force,
-            radius = 1,
-            path_resolution_modifier = 0,
-            pathfinding_flags = {
-                cache = false,
-                low_priority = true
-            },
-            attempt = request_params.attempt or 1, -- not used by the factorio-pathfinder
-            try_again_later = 0 -- not used by the factorio-pathfinder
-        }
+    pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
+    local request = { -- template
+        unit = request_params.unit, -- not used by the factorio-pathfinder
+        surface = request_params.unit.surface, -- not used by the factorio-pathfinder
+        bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
+        -- bounding_box = request_params.bounding_box or {{-0.015, -0.015}, {0.015, 0.015}},
+        collision_mask = pathing_collision_mask,
+        start = request_params.unit.position,
+        goal = request_params.goal,
+        force = request_params.unit.force,
+        radius = 1,
+        path_resolution_modifier = -2,
+        pathfinding_flags = {
+            cache = false,
+            low_priority = true
+        },
+        attempt = request_params.attempt or 1, -- not used by the factorio-pathfinder
+        try_again_later = 0 -- not used by the factorio-pathfinder
+    }
 
-        request.initial_target = request.initial_target or request_params.goal -- not used by the factorio-pathfinder
-        request.request_tick = game.tick -- not used by the factorio-pathfinder
+    request.initial_target = request.initial_target or request_params.goal -- not used by the factorio-pathfinder
+    request.request_tick = game.tick -- not used by the factorio-pathfinder
 
-        local request_id = request.surface.request_path(request) -- request the path from the game
-        global.pathfinder_requests[request_id] = request
-    end
+    local request_id = request.surface.request_path(request) -- request the path from the game
+    global.pathfinder_requests[request_id] = request
 end
 
 -------------------------------------------------------------------------------
@@ -129,7 +126,7 @@ function pathfinder.on_script_path_request_finished(event)
             if clean_path_steps_enabled then
                 path = pathfinder.clean_path_steps(path, clean_path_steps_distance)
             end
-            table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}})
+            table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}}) -- add the desired destination after the walkable path
             if clean_path_steps_enabled then
                 path = pathfinder.clean_path_steps(path, 2.5)
             end
