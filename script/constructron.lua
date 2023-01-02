@@ -737,23 +737,22 @@ me.conditions = {
                         me.actions[job.action](job, table.unpack(job.action_args or {}))
                     elseif constructron.speed < 0.2 and ((game.tick - job.start_tick) > 600) then -- stuck recovery
                         if ((job.attempt or 1) < 4) or job.returning_home then
-                            job.last_position = job.last_position or constructron.position
                             if job.landfill_job then -- is this a landfill job?
                                 if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
+                                    -- !! Logic gap - Constructrons will return home even if there is other entities to build.
                                     me.graceful_wrapup(job) -- no landfill left.. leave
                                     return
-                                -- else -- NFI what I was doing here
-                                --     if not job.last_position == constructron.position then
-                                --         me.actions[job.action](job, table.unpack(job.action_args or {}))
-                                --     end
                                 end
                             end
-                            if ((chunk_util.distance_between(job.last_position, constructron.position) < 1) and (constructron.speed == 0)) then
-                                job.last_position = constructron.position
+                            local mvmt_last_distance = job.mvmt_last_distance
+                            local distance
+                            distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
+                            if mvmt_last_distance and (mvmt_last_distance - distance < 2) and constructron.speed < 0.1 then -- check that movement has progressed at least two tiles in the last 10 seconds.
+                                job.mvmt_last_distance = nil
                                 job.start_tick = game.tick
                                 me.actions[job.action](job, table.unpack(job.action_args or {}))
                             else
-                                job.last_position = constructron.position
+                                job.mvmt_last_distance = distance
                                 job.start_tick = game.tick
                             end
                         else
@@ -770,6 +769,7 @@ me.conditions = {
         else
             return true  -- leader is invalidated.. skip action
         end
+        -- possibly should check that the Constructron is stopped
         me.enable_roboports(constructron.grid)
         return true -- condition is satisfied
     end,

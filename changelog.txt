@@ -1,10 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.55
-Date: 2022-12-31
+Date: 2023-01-09
   Fixes:
     - Pathfinder retries failing which prevented traversal of land 1 tile wide.
+  Improvements:
+    - Pathfinder will now search for the mainland and start building from a fairly close point rather than trying to path through the whole lake.
   Changed:
+    - Overhaul of Constructron movement actions/conditions.
+    - Renvations to job actions and job conditions code.
     - Pathfinder was refactored for better readability & less complexity.
+    - Pathfinder was overhauled in general.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.54
 Date: 2022-12-29

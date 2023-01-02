@@ -24,14 +24,15 @@ script.on_nth_tick(15, (function(event)
     end
 end))
 
--- Spidertron waypoint orbit watcher
-script.on_nth_tick(5, (function()
-    for i, job in pairs(global.job_bundles) do
-        if job[1] and job[1].action == "go_to_position" then
-            if job[1].constructrons and job[1].constructrons[1].valid then
-                local constructron = job[1].constructrons[1]
+-- Spidertron waypoint orbit countermeasure
+script.on_nth_tick(1, (function()
+    for i, job_bundle in pairs(global.job_bundles) do
+        local job = job_bundle[1]
+        if job and job.action == "go_to_position" then
+            if job.constructrons and job.constructrons[1].valid then
+                local constructron = job.constructrons[1]
                 if constructron.autopilot_destination then
-                    if (constructron.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 Exoskeletons.
+                    if (constructron.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 vanilla Exoskeletons.
                         local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
                         local last_distance = job.wp_last_distance
                         if distance < 1 or (last_distance and distance > last_distance) then

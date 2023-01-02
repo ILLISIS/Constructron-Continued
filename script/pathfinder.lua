@@ -143,31 +143,31 @@ function pathfinder.on_script_path_request_finished(event)
                     debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
                 elseif request.attempt == 4 then -- 4. Re-Reqest with normal path granularity
                     request.path_resolution_modifier = 0
-                elseif request.attempt == 5 then 
+                elseif request.attempt == 5 then -- 5. Re-Request with tiny bounding box
                     request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
-                elseif request.attempt == 6 then -- 5. Re-Request ensuring the goal of the path is not colliding
+                elseif request.attempt == 6 then -- 6. Re-Request ensuring the goal of the path is not colliding
                     debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, job) or request.goal
                     debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
-            else -- 6. f*ck it... just try to walk there in a straight line
+            else -- 7. f*ck it... just try to walk there in a straight line
                 pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
             end
         else
             -- testing
             if request.attempt == 1 then
                 game.print('Attempt 1')
-            elseif request.attempt == 2 then -- 2. Re-Request with normal bounding box
+            elseif request.attempt == 2 then
                 game.print('Attempt 2')
-            elseif request.attempt == 3 then -- 3. Re-Request with increased radius (just for this try)
+            elseif request.attempt == 3 then
                 game.print('Attempt 3')
-            elseif request.attempt == 4 then -- 4. Re-Request with tiny bounding box
+            elseif request.attempt == 4 then
                 game.print('Attempt 4')
-            elseif request.attempt == 5 then -- 5. find_non_colliding_positions and Re-Request
+            elseif request.attempt == 5 then
                 game.print('Attempt 5')
-            elseif request.attempt == 6 then -- 6. Re-Request with even more increased radius again
+            elseif request.attempt == 6 then
                 game.print('Attempt 6')
             end
             if clean_linear_path_enabled then
