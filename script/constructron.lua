@@ -356,52 +356,13 @@ me.do_until_leave = function(job)
 
     if job.constructrons[1] then
         if not job.active then
-            if (job.action == 'go_to_position') then
-                local new_pos_goal = me.actions[job.action](job, table.unpack(job.action_args or {}))
-                job.leave_args[1] = new_pos_goal
-                job.start_tick = game.tick
-                job.lastpos = {}
-            else
-                me.actions[job.action](job, table.unpack(job.action_args or {}))
-                job.start_tick = game.tick
-            end
+            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            job.start_tick = game.tick
         end
         local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
         if status == true then
             table.remove(global.job_bundles[job.bundle_index], 1)
-            -- for c, constructron in ipairs(constructrons) do
-            --     table.remove(global.constructron_jobs[constructron.unit_number], 1)
-            -- end
             return true -- returning true means you can remove this job from job list
-        elseif status == "graceful_wrapup" and not job.returning_home == true then
-            me.graceful_wrapup(job)
-        elseif (job.action == 'go_to_position') and (game.tick - job.start_tick) > 600 then
-            for c, constructron in ipairs(job.constructrons) do
-                if constructron.valid then
-                    if not constructron.autopilot_destination then
-                        me.actions[job.action](job, table.unpack(job.action_args or {}))
-                        job.start_tick = game.tick
-                    else -- waypoint orbit & stuck recovery
-                        if not job.lastpos[c] then
-                            job.lastpos[c] = constructron.position
-                        else
-                            local lastpos = job.lastpos[c]
-                            local distance = chunk_util.distance_between(lastpos, constructron.position)
-                            if distance < 5 then
-                                math.max(0, (job.attempt - 1))
-                                job.start_tick = game.tick
-                                job.lastpos[c] = nil
-                                me.actions[job.action](job, table.unpack(job.action_args or {}))
-                            else
-                                job.start_tick = game.tick
-                                job.lastpos[c] = nil
-                            end
-                        end
-                    end
-                else
-                    job.constructrons[c] = nil
-                end
-            end
         elseif (job.action == 'request_items') then
             local timer = game.tick - job.start_tick
             if timer > global.construction_mat_alert then
@@ -424,9 +385,7 @@ me.do_until_leave = function(job)
                     end
                 end
                 local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
-                for _, constructron in ipairs(job.constructrons) do
-                    pathfinder.init_path_request(constructron, next_station.position)
-                end
+                pathfinder.init_path_request(job.constructrons[1], next_station.position, job)
                 job.start_tick = game.tick
                 debug_lib.DebugLog('request_items action timed out, moving to new station')
             end
@@ -481,28 +440,23 @@ me.actions = {
     ---@return MapPosition?
     go_to_position = function(job, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
-        local constructrons = job.constructrons
+        local constructron = job.constructrons[1]
         if job.attempt == nil then job.attempt = 0 end
         job.attempt = job.attempt + 1
-        if constructrons[1].valid then
-            me.disable_roboports(constructrons[1].grid)
-            if (chunk_util.distance_between(constructrons[1].position, position) < 32) then
-                constructrons[1].grid.inhibit_movement_bonus = true
-            else
-                constructrons[1].grid.inhibit_movement_bonus = false
-            end
-            local inventory_items = me.get_inventory(constructrons[1], "spider_trunk")
-            for item_name, _ in pairs(inventory_items) do
-                if item_name == "landfill" then
-                    constructrons[1].enable_logistics_while_moving = true
-                else
-                    constructrons[1].enable_logistics_while_moving = false
+        if constructron.valid then
+            me.disable_roboports(constructron.grid)
+            constructron.grid.inhibit_movement_bonus = (chunk_util.distance_between(constructron.position, position) < 32)
+            constructron.enable_logistics_while_moving = job.landfill_job
+            if job.landfill_job then -- is this a landfill job?
+                if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
+                    me.graceful_wrapup(job) -- no landfill left.. leave
+                    return
                 end
             end
             if find_path then
-                return pathfinder.init_path_request(constructrons[1], position)
+                pathfinder.init_path_request(constructron, position, job)
             else
-                constructrons[1].autopilot_destination = position -- does not use path finder!
+                constructron.autopilot_destination = position -- does not use path finder!
             end
         end
     end,
@@ -511,16 +465,14 @@ me.actions = {
     ---@return boolean?
     build = function(job)
         debug_lib.DebugLog('ACTION: build')
-        local constructrons = job.constructrons
+        local constructron = job.constructrons[1]
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
         -- whether or not logistics was enabled. there doesn't seem to be a way.
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
-        if constructrons[1].valid then
-            for c, constructron in ipairs(constructrons) do
-                me.set_constructron_status(constructron, 'build_tick', game.tick)
-            end
+        if constructron.valid then
+            me.set_constructron_status(constructron, 'build_tick', game.tick)
         else
             return true
         end
@@ -551,34 +503,32 @@ me.actions = {
     ---@param request_items ItemCounts
     request_items = function(job, request_items)
         debug_lib.DebugLog('ACTION: request_items')
-        local constructrons = job.constructrons
-        if global.stations_count[constructrons[1].surface.index] > 0 then
-            for c, constructron in ipairs(constructrons) do
-                local merged_items = table.deepcopy(request_items)
-                for _, inv in pairs({"spider_trash", "spider_trunk"}) do
-                    local inventory_items = me.get_inventory(constructron,inv)
-                    for item_name, _ in pairs(inventory_items) do
-                        if not merged_items[item_name] then
-                            merged_items[item_name] = 0
-                        end
+        local constructron = job.constructrons[1]
+        if global.stations_count[constructron.surface.index] > 0 then
+            local merged_items = table.deepcopy(request_items)
+            for _, inv in pairs({"spider_trash", "spider_trunk"}) do
+                local inventory_items = me.get_inventory(constructron,inv)
+                for item_name, _ in pairs(inventory_items) do
+                    if not merged_items[item_name] then
+                        merged_items[item_name] = 0
                     end
                 end
-                local slot = 1
-                for name, count in pairs(merged_items) do
-                    constructron.set_vehicle_logistic_slot(slot, {
-                        name = name,
-                        min = count,
-                        max = count
-                    })
-                    slot = slot + 1
-                end
-                if global.clear_robots_when_idle then
-                    constructron.set_vehicle_logistic_slot(slot, {
-                        name = global.desired_robot_name --[[@as string]],
-                        min = global.desired_robot_count --[[@as uint]],
-                        max = global.desired_robot_count --[[@as uint]]
-                    })
-                end
+            end
+            local slot = 1
+            for name, count in pairs(merged_items) do
+                constructron.set_vehicle_logistic_slot(slot, {
+                    name = name,
+                    min = count,
+                    max = count
+                })
+                slot = slot + 1
+            end
+            if global.clear_robots_when_idle then
+                constructron.set_vehicle_logistic_slot(slot, {
+                    name = global.desired_robot_name --[[@as string]],
+                    min = global.desired_robot_count --[[@as uint]],
+                    max = global.desired_robot_count --[[@as uint]]
+                })
             end
         end
     end,
@@ -777,20 +727,50 @@ me.conditions = {
     ---@param position MapPosition
     ---@return boolean
     position_done = function(job, position) -- this is condition for action "go_to_position"
-        local constructrons = job.constructrons
-        debug_lib.VisualDebugText("Moving to position", constructrons[1], -3, 1)
-        if constructrons[1].valid then
-            if (chunk_util.distance_between(constructrons[1].position, position) > 5) then -- the condition
-                if not ((job.attempt or 0) >= 3) then
+        local constructron = job.constructrons[1]
+        debug_lib.VisualDebugText("Moving to position", constructron, -3, 1)
+        if constructron.valid then
+            if job.path_active and ((game.tick - job.start_tick) > 120) then
+                if (chunk_util.distance_between(constructron.position, position) > 5) then -- the condition
+                    if not constructron.autopilot_destination then -- path lost recovery
+                        job.start_tick = game.tick
+                        me.actions[job.action](job, table.unpack(job.action_args or {}))
+                    elseif constructron.speed < 0.2 and ((game.tick - job.start_tick) > 600) then -- stuck recovery
+                        if ((job.attempt or 1) < 4) or job.returning_home then
+                            job.last_position = job.last_position or constructron.position
+                            if job.landfill_job then -- is this a landfill job?
+                                if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
+                                    me.graceful_wrapup(job) -- no landfill left.. leave
+                                    return
+                                -- else -- NFI what I was doing here
+                                --     if not job.last_position == constructron.position then
+                                --         me.actions[job.action](job, table.unpack(job.action_args or {}))
+                                --     end
+                                end
+                            end
+                            if ((chunk_util.distance_between(job.last_position, constructron.position) < 1) and (constructron.speed == 0)) then
+                                job.last_position = constructron.position
+                                job.start_tick = game.tick
+                                me.actions[job.action](job, table.unpack(job.action_args or {}))
+                            else
+                                job.last_position = constructron.position
+                                job.start_tick = game.tick
+                            end
+                        else
+                            me.graceful_wrapup(job) -- unable to reach destination
+                            return
+                        end
+                    end
                     return false  -- condition is not met
-                else
-                    return "graceful_wrapup" -- unable to reach destination
                 end
+            else
+                game.print('path not yet started') --testing
+                return false
             end
         else
             return true  -- leader is invalidated.. skip action
         end
-        me.enable_roboports(constructrons[1].grid)
+        me.enable_roboports(constructron.grid)
         return true -- condition is satisfied
     end,
 
@@ -798,25 +778,25 @@ me.conditions = {
     ---@param _ any
     ---@return boolean | string
     build_done = function(job, _, _, _)
-        local constructrons = job.constructrons
-        debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
-        if constructrons[1].valid then
-            local build_tick = me.get_constructron_status(constructrons[1], 'build_tick')
+        local constructron = job.constructrons[1]
+        debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
+        if constructron.valid then
+            local build_tick = me.get_constructron_status(constructron, 'build_tick')
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                if constructrons[1].logistic_cell then
-                    local logistic_network = constructrons[1].logistic_cell.logistic_network
+                if constructron.logistic_cell then
+                    local logistic_network = constructron.logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
-                        me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                        me.set_constructron_status(constructron, 'build_tick', game.tick)
                         return false -- robots are active
                     else
                         local cell = logistic_network.cells[1]
-                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
-                        local ghosts = constructrons[1].surface.find_entities_filtered {
+                        local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
+                        local ghosts = constructron.surface.find_entities_filtered {
                             area = area,
                             name = {"entity-ghost", "tile-ghost"},
-                            force = constructrons[1].force.name
+                            force = constructron.force.name
                         }
 
                         for _, entity in pairs(ghosts) do
@@ -826,7 +806,7 @@ me.conditions = {
                                 local item = entity.ghost_prototype.items_to_place_this[1]
                                 if logistic_network.can_satisfy_request(item.name, (item.count or 1)) then
                                     -- construction not yet complete
-                                    me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                                    me.set_constructron_status(constructron, 'build_tick', game.tick)
                                     return false
                                 end
                             end
@@ -834,7 +814,8 @@ me.conditions = {
                     end
                     return true -- condition is satisfied
                 else
-                    return "graceful_wrapup" -- missing roboports.. leave
+                    me.graceful_wrapup(job) -- missing roboports.. leave
+                    return
                 end
             end
             return false
@@ -846,32 +827,33 @@ me.conditions = {
     ---@param job Job
     ---@return boolean | string
     deconstruction_done = function(job)
-        local constructrons = job.constructrons
-        debug_lib.VisualDebugText("Deconstructing", constructrons[1], -3, 1)
-        if constructrons[1].valid then
-            local decon_tick = me.get_constructron_status(constructrons[1], 'deconstruct_tick')
+        local constructron = job.constructrons[1]
+        debug_lib.VisualDebugText("Deconstructing", constructron, -3, 1)
+        if constructron.valid then
+            local decon_tick = me.get_constructron_status(constructron, 'deconstruct_tick')
             local game_tick = game.tick
 
             if (game_tick - decon_tick) > 120 then
-                if constructrons[1].logistic_cell then
-                    local logistic_network = constructrons[1].logistic_cell.logistic_network
+                if constructron.logistic_cell then
+                    local logistic_network = constructron.logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
                         local empty_stacks = 0
-                        local inventory = constructrons[1].get_inventory(defines.inventory.spider_trunk)
+                        local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
                         empty_stacks = empty_stacks + (inventory.count_empty_stacks())
                         if empty_stacks > 0 then
-                            me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
+                            me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
                             return false -- robots are active
                         else
-                            return "graceful_wrapup" -- there is no inventory space.. leave
+                            me.graceful_wrapup(job) -- there is no inventory space.. leave
+                            return
                         end
                     else
                         local cell = logistic_network.cells[1]
-                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
-                        local decons = constructrons[1].surface.find_entities_filtered {
+                        local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
+                        local decons = constructron.surface.find_entities_filtered {
                             area = area,
                             to_be_deconstructed = true,
-                            force = {constructrons[1].force.name, "neutral"}
+                            force = {constructron.force.name, "neutral"}
                         }
 
                         -- are the entities actually in range?
@@ -879,7 +861,7 @@ me.conditions = {
                             for _, entity in pairs(decons) do
                                 if cell.is_in_construction_range(entity.position) then
                                     -- construction not yet complete
-                                    me.set_constructron_status(constructrons[1], 'deconstruct_tick', game.tick)
+                                    me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
                                     return false
                                 end
                             end
@@ -887,7 +869,8 @@ me.conditions = {
                         return true -- condition is satisfied
                     end
                 else
-                    return "graceful_wrapup" -- missing roboports.. leave
+                    me.graceful_wrapup(job) -- missing roboports.. leave
+                    return
                 end
             end
             return false
@@ -900,25 +883,25 @@ me.conditions = {
     ---@param _ any
     ---@return boolean | string
     upgrade_done = function(job, _, _, _)
-        local constructrons = job.constructrons
-        debug_lib.VisualDebugText("Constructing", constructrons[1], -3, 1)
-        if constructrons[1].valid then
-            local build_tick = me.get_constructron_status(constructrons[1], 'build_tick')
+        local constructron = job.constructrons[1]
+        debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
+        if constructron.valid then
+            local build_tick = me.get_constructron_status(constructron, 'build_tick')
             local game_tick = game.tick
 
             if (game_tick - build_tick) > 120 then
-                if constructrons[1].logistic_cell then
-                    local logistic_network = constructrons[1].logistic_cell.logistic_network
+                if constructron.logistic_cell then
+                    local logistic_network = constructron.logistic_cell.logistic_network
                     if (me.robots_active(logistic_network)) then
-                        me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                        me.set_constructron_status(constructron, 'build_tick', game.tick)
                         return false -- robots are active
                     else
                         local cell = logistic_network.cells[1]
-                        local area = chunk_util.get_area_from_position(constructrons[1].position, cell.construction_radius)
-                        local upgrades = constructrons[1].surface.find_entities_filtered {
+                        local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
+                        local upgrades = constructron.surface.find_entities_filtered {
                             area = area,
                             to_be_upgraded = true,
-                            force = constructrons[1].force.name
+                            force = constructron.force.name
                         }
 
                         for _, entity in pairs(upgrades) do
@@ -928,7 +911,7 @@ me.conditions = {
                                 local target = entity.get_upgrade_target()
                                 if logistic_network.can_satisfy_request(target.items_to_place_this[1].name, 1) then
                                     -- construction not yet complete
-                                    me.set_constructron_status(constructrons[1], 'build_tick', game.tick)
+                                    me.set_constructron_status(constructron, 'build_tick', game.tick)
                                     return false
                                 end
                             end
@@ -936,7 +919,8 @@ me.conditions = {
                     end
                     return true -- condition is satisfied
                 else
-                    return "graceful_wrapup" -- missing roboports.. leave
+                    me.graceful_wrapup(job) -- missing roboports.. leave
+                    return
                 end
             end
             return false
@@ -948,19 +932,17 @@ me.conditions = {
     ---@param job Job
     ---@return boolean
     request_done = function(job)
-        local constructrons = job.constructrons
-        debug_lib.VisualDebugText("Processing logistics", constructrons[1], -3, 1)
-        if me.constructrons_need_reload(constructrons) then
+        local constructron = job.constructrons[1]
+        debug_lib.VisualDebugText("Processing logistics", constructron, -3, 1)
+        if me.constructrons_need_reload(job.constructrons) then
             return false
         else
-            for c, constructron in ipairs(constructrons) do
-                if constructron.valid then
-                    for i = 1, constructron.request_slot_count do --[[@cast i uint]]
-                        constructron.clear_vehicle_logistic_slot(i)
-                    end
-                else
-                    return true
+            if constructron.valid then
+                for i = 1, constructron.request_slot_count do --[[@cast i uint]]
+                    constructron.clear_vehicle_logistic_slot(i)
                 end
+            else
+                return true
             end
         end
         return true
@@ -1023,7 +1005,7 @@ me.get_worker = function(surface_index)
             else
                 local desired_robot_count = global.desired_robot_count
                 local logistic_network = constructron.logistic_cell.logistic_network
-                if ((logistic_network.all_construction_robots == desired_robot_count) and not (me.robots_active(logistic_network))) or global.clear_robots_when_idle then
+                if ((logistic_network.all_construction_robots >= desired_robot_count) and not (me.robots_active(logistic_network))) or global.clear_robots_when_idle then
                     return constructron
                 else
                     if not global.clear_robots_when_idle then
@@ -1276,6 +1258,11 @@ me.get_job = function()
                                 find_path = true
                             end
 
+                            local landfill_check
+                            if combined_chunks.requested_items["landfill"] then
+                                landfill_check = true
+                            end
+
                             -- move to position
                             me.create_job(global.job_bundle_index, {
                                 action = 'go_to_position',
@@ -1283,6 +1270,7 @@ me.get_job = function()
                                 leave_condition = 'position_done',
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
+                                landfill_job = landfill_check or false
                             })
 
                             -- do actions
@@ -1388,10 +1376,8 @@ me.do_job = function(job_bundles)
     for i, job_bundle in pairs(job_bundles) do
         local job = job_bundle[1]
         if job then
-            for c, constructron in ipairs(job.constructrons) do
-                if not job.active then
-                    me.set_constructron_status(constructron, 'busy', true)
-                end
+            if not job.active then
+                me.set_constructron_status(job.constructrons[1], 'busy', true)
             end
             if job.constructrons[1] then
                 me.do_until_leave(job)

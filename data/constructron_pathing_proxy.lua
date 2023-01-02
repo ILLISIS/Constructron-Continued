@@ -45,7 +45,7 @@ local template_item = {
   stack_size = 1
 }
 
-for _, size in pairs({12, 8, 6, 4, 2, 1}) do
+for _, size in pairs({64, 32, 16, 12, 10, 8, 6, 5, 4, 2, 1}) do
   local proxy_entity = table.deepcopy(template_entity)
   proxy_entity.collision_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
   proxy_entity.selection_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}

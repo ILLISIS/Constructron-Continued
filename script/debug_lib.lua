@@ -1,10 +1,11 @@
+local color_lib = require("script/color_lib")
 local me = {}
 
 ---@param message LocalisedString
 me.DebugLog = function(message)
     if global.debug_toggle then
         game.print(message)
-        log(message)
+        -- log(message)
     end
 end
 
@@ -47,37 +48,18 @@ end
 ---@param position MapPosition
 ---@param surface LuaSurface
 ---@param color Color
----@param text LocalisedString
-me.VisualDebugCircle = function(position, surface, color, text)
+me.VisualDebugCircle = function(position, surface, color, radius, alpha, ttl)
     if global.debug_toggle then
         if position then
             local message = "Circle"
             rendering.draw_circle {
                 target = position,
-                radius = 0.5,
+                radius = radius,
                 filled = true,
                 surface = surface,
-                time_to_live = 900,
-                color = color
+                time_to_live = ttl,
+                color = (color_lib.color_alpha(color_lib.colors[color], alpha))
             }
-            if text then
-                message = message .. "(" .. text .. ")"
-                rendering.draw_text {
-                    text = text,
-                    target = {position.x,position.y-0.25},
-                    filled = true,
-                    surface = surface,
-                    time_to_live = 900,
-                    alignment = "center",
-                    color = {
-                        r = 255,
-                        g = 255,
-                        b = 255,
-                        a = 255
-                    }
-                }
-            end
-            -- log("surface " .. (surface.name or surface.index) .. " (x:" .. (position.x) .. ",y:" .. (position.y) .. "):" .. message)
         end
     end
 end

@@ -82,6 +82,8 @@
 ---@field returning_home boolean?
 ---@field index uint
 ---@field bundle_index uint
+---@field landfill_job boolean?
+---@field attempt uint
 
 ---@class RegisteredEntity
 ---@field name string

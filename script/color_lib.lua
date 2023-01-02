@@ -16,6 +16,11 @@ me.colors.blue = {
     g = 0.35,
     b = 0.65
 }
+me.colors.purple = {
+    r = 255,
+    g = 0,
+    b = 255
+} --check
 me.colors.pink = {
     r = 0,
     g = 0.65,

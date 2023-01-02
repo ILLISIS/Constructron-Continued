@@ -182,9 +182,9 @@ me.recall_ctrons = function()
                 surface = surface.name
             }
             for _, constructron in pairs(constructrons) do
+                constructron.grid.inhibit_movement_bonus = false
                 local closest_station = ctron.get_closest_service_station(constructron)
-                -- find path to station
-                pathfinder.init_path_request(constructron, closest_station.position)
+                pathfinder.init_path_request(constructron, closest_station.position) -- find path to station
             end
         else
             game.print('No stations to recall Constructrons to on ' .. surface.name .. '.')
