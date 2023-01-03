@@ -36,6 +36,9 @@ function pathfinder.init_path_request(unit, destination, job)
     local request_params = {unit = unit, goal = destination, job = job}
 
     if request_params.unit.name == "constructron-rocket-powered" then
+        if request_params.job then
+            global.job_bundles[job.bundle_index][1]["path_active"] = true
+        end
         pathfinder.set_autopilot(unit, {{position = destination}})
     else
         if job and job.landfill_job then
@@ -112,6 +115,9 @@ function pathfinder.request_path(request_params)
 
     local request_id = request.surface.request_path(request) -- request the path from the game
     global.pathfinder_requests[request_id] = request
+    if request_params.job then -- if there is a job update the job with the path request id so we can track it
+        global.job_bundles[request_params.job.bundle_index][1]["request_pathid"] = request_id
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -123,7 +129,6 @@ function pathfinder.on_script_path_request_finished(event)
     local request = global.pathfinder_requests[event.id]
 
     if request and request.unit and request.unit.valid then
-        local job = request.job
         local path = event.path
 
         if event.try_again_later then -- try_again_later is a return of the event handler
@@ -147,7 +152,7 @@ function pathfinder.on_script_path_request_finished(event)
                     request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
                 elseif request.attempt == 6 then -- 6. Re-Request ensuring the goal of the path is not colliding
                     -- debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
-                    request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, job) or request.goal
+                    request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
                     -- debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
                 end
                 request.request_tick = game.tick
@@ -157,19 +162,19 @@ function pathfinder.on_script_path_request_finished(event)
             end
         else
             -- testing
-            -- if request.attempt == 1 then
-            --     game.print('Attempt 1')
-            -- elseif request.attempt == 2 then
-            --     game.print('Attempt 2')
-            -- elseif request.attempt == 3 then
-            --     game.print('Attempt 3')
-            -- elseif request.attempt == 4 then
-            --     game.print('Attempt 4')
-            -- elseif request.attempt == 5 then
-            --     game.print('Attempt 5')
-            -- elseif request.attempt == 6 then
-            --     game.print('Attempt 6')
-            -- end
+            if request.attempt == 1 then
+                game.print('Attempt 1')
+            elseif request.attempt == 2 then
+                game.print('Attempt 2')
+            elseif request.attempt == 3 then
+                game.print('Attempt 3')
+            elseif request.attempt == 4 then
+                game.print('Attempt 4')
+            elseif request.attempt == 5 then
+                game.print('Attempt 5')
+            elseif request.attempt == 6 then
+                game.print('Attempt 6')
+            end
             if clean_linear_path_enabled then
                 path = pathfinder.clean_linear_path(path)
             end
@@ -189,6 +194,11 @@ function pathfinder.on_script_path_request_finished(event)
                 global.job_bundles[request.job.bundle_index][1]["path_active"] = true
             end
             pathfinder.set_autopilot(request.unit, path)
+        end
+    end
+    if request.job then
+        if not request.job.request_pathid == event.id then
+            game.print('WTF!!!!')
         end
     end
     global.pathfinder_requests[event.id] = nil
@@ -229,7 +239,7 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
         end
     end
     if new_position then
-        if job and (job.action == "go_to_position") then -- update the job for condition check
+        if job then -- update the job for condition check
             global.job_bundles[job.bundle_index][1]["leave_args"][1] = new_position
         end
         -- game.print('bounding_box:'.. serpent.block(bb) ..'')

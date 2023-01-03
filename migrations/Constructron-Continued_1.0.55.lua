@@ -5,4 +5,7 @@
 --This applies to all paths as the pathfinder is generic - Klonan
 game.map_settings.path_finder.use_path_cache = false
 global.spider_remote_toggle = false
+
+-- add path re-requests
+-- add job.attempt migration
 game.print('Constructron-Continued: v1.0.55 migration complete!')

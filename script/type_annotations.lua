@@ -84,6 +84,8 @@
 ---@field bundle_index uint
 ---@field landfill_job boolean?
 ---@field attempt uint
+---@field path_active boolean?
+---@field path_requestid uint
 
 ---@class RegisteredEntity
 ---@field name string
@@ -137,7 +139,7 @@
 ---@field max_jobtime uint
 ---@field entities_per_tick uint
 ---@field clear_robots_when_idle boolean
-
+---@field spider_remote_toggle boolean
 
 -- set type of global (this will never get executed, only intellisense will see this)
 ---@type Global

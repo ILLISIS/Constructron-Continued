@@ -53,7 +53,7 @@ script.on_nth_tick(60, ctron.process_job_queue)
 -- cleanup
 script.on_nth_tick(54000, (function(event)
     ctron.perform_surface_cleanup(event)
-    pathfinder.check_pathfinder_requests_timeout()
+    -- pathfinder.check_pathfinder_requests_timeout()
 end))
 
 local ev = defines.events

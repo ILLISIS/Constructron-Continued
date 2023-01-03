@@ -356,8 +356,9 @@ me.do_until_leave = function(job)
 
     if job.constructrons[1] then
         if not job.active then
-            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            job.attempt = 0
             job.start_tick = game.tick
+            me.actions[job.action](job, table.unpack(job.action_args or {}))
         end
         local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
         if status == true then
@@ -409,7 +410,8 @@ me.replace_roboports = function(grid, old_eq, new_eq)
 end
 
 ---@param grid LuaEquipmentGrid
-me.disable_roboports = function(grid, size)
+---@param size integer
+me.disable_roboports = function(grid, size) -- doesn't really disable them, it sets the size of that cell
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
             if not string.find(eq.name, "%-reduced%-") then
@@ -420,7 +422,7 @@ me.disable_roboports = function(grid, size)
 end
 
 ---@param grid LuaEquipmentGrid
-me.enable_roboports = function(grid)
+me.enable_roboports = function(grid) -- doesn't relaly enable roboports, it resets the equipment back to the original
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
             me.replace_roboports(grid, eq, eq.prototype.take_result.name)
@@ -440,11 +442,11 @@ me.actions = {
     go_to_position = function(job, position, find_path)
         debug_lib.DebugLog('ACTION: go_to_position')
         local constructron = job.constructrons[1]
-        if job.attempt == nil then job.attempt = 0 end
         job.attempt = job.attempt + 1
         if constructron.valid then
             me.disable_roboports(constructron.grid, "1")
-            constructron.grid.inhibit_movement_bonus = (chunk_util.distance_between(constructron.position, position) < 32)
+            local distance = chunk_util.distance_between(constructron.position, position)
+            constructron.grid.inhibit_movement_bonus = (distance < 32)
             constructron.enable_logistics_while_moving = job.landfill_job
             if job.landfill_job then -- is this a landfill job?
                 if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
@@ -452,9 +454,10 @@ me.actions = {
                     return
                 end
             end
-            if find_path then
+            if find_path and distance > 12 then
                 pathfinder.init_path_request(constructron, position, job)
             else
+                job.path_active = true
                 constructron.autopilot_destination = position -- does not use path finder!
             end
         end
@@ -655,7 +658,7 @@ me.actions = {
         end
     end,
 
-    ---@param _ LuaEntity[]
+    ---@param job Job
     ---@param chunk Chunk
     check_decon_chunk = function(job, chunk)
         me.disable_roboports(job.constructrons[1].grid, "0")
@@ -762,8 +765,12 @@ me.conditions = {
                     end
                     return false  -- condition is not met
                 end
+            elseif not job.path_active then
+                if not global.pathfinder_requests[job.path_requestid] then
+                    me.actions[job.action](job, table.unpack(job.action_args or {}))
+                end
+                debug_lib.VisualDebugText("Path not active", constructron, 0.4, 3)
             else
-                -- game.print('path not yet started') --testing
                 return false
             end
         else
