@@ -836,7 +836,7 @@ me.get_worker = function(surface_index)
     end
 end
 
---- This function is a Mess: refactor - carefull, recursion!!!
+-- This function is a Mess: refactor - carefull, recursion!!!
 ---@param queued_chunks any
 ---@param worker LuaEntity[]
 ---@return {[integer]: Chunk, requested_items: ItemCounts}
