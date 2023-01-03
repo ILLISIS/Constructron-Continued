@@ -763,7 +763,7 @@ me.conditions = {
                     return false  -- condition is not met
                 end
             else
-                game.print('path not yet started') --testing
+                -- game.print('path not yet started') --testing
                 return false
             end
         else

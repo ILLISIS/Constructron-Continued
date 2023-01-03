@@ -138,17 +138,17 @@ function pathfinder.on_script_path_request_finished(event)
                 if request.attempt == 2 then -- 2. Re-Request with normal bounding box
                     request.bounding_box = {{-1, -1}, {1, 1}}
                 elseif request.attempt == 3 then -- 3. Re-Request ensuring the start of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
+                    -- debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
                     request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
+                    -- debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
                 elseif request.attempt == 4 then -- 4. Re-Reqest with normal path granularity
                     request.path_resolution_modifier = 0
                 elseif request.attempt == 5 then -- 5. Re-Request with tiny bounding box
                     request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
                 elseif request.attempt == 6 then -- 6. Re-Request ensuring the goal of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
+                    -- debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, job) or request.goal
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
+                    -- debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
@@ -157,19 +157,19 @@ function pathfinder.on_script_path_request_finished(event)
             end
         else
             -- testing
-            if request.attempt == 1 then
-                game.print('Attempt 1')
-            elseif request.attempt == 2 then
-                game.print('Attempt 2')
-            elseif request.attempt == 3 then
-                game.print('Attempt 3')
-            elseif request.attempt == 4 then
-                game.print('Attempt 4')
-            elseif request.attempt == 5 then
-                game.print('Attempt 5')
-            elseif request.attempt == 6 then
-                game.print('Attempt 6')
-            end
+            -- if request.attempt == 1 then
+            --     game.print('Attempt 1')
+            -- elseif request.attempt == 2 then
+            --     game.print('Attempt 2')
+            -- elseif request.attempt == 3 then
+            --     game.print('Attempt 3')
+            -- elseif request.attempt == 4 then
+            --     game.print('Attempt 4')
+            -- elseif request.attempt == 5 then
+            --     game.print('Attempt 5')
+            -- elseif request.attempt == 6 then
+            --     game.print('Attempt 6')
+            -- end
             if clean_linear_path_enabled then
                 path = pathfinder.clean_linear_path(path)
             end
@@ -232,7 +232,7 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
         if job and (job.action == "go_to_position") then -- update the job for condition check
             global.job_bundles[job.bundle_index][1]["leave_args"][1] = new_position
         end
-        game.print('bounding_box:'.. serpent.block(bb) ..'')
+        -- game.print('bounding_box:'.. serpent.block(bb) ..'')
         return new_position -- return for the new request
     end
 end
