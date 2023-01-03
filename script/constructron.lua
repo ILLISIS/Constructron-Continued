@@ -409,12 +409,11 @@ me.replace_roboports = function(grid, old_eq, new_eq)
 end
 
 ---@param grid LuaEquipmentGrid
-me.disable_roboports = function(grid)
+me.disable_roboports = function(grid, size)
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
-            -- me.replace_roboports(grid, eq, "personal-roboport-mk2-equipment-reduced-1" )
-            if not string.find(eq.name, "%-reduced%-1") then
-                me.replace_roboports(grid, eq, (eq.name .. "-reduced-1" ))
+            if not string.find(eq.name, "%-reduced%-") then
+                me.replace_roboports(grid, eq, (eq.name .. "-reduced-" .. size ))
             end
         end
     end
@@ -444,7 +443,7 @@ me.actions = {
         if job.attempt == nil then job.attempt = 0 end
         job.attempt = job.attempt + 1
         if constructron.valid then
-            me.disable_roboports(constructron.grid)
+            me.disable_roboports(constructron.grid, "1")
             constructron.grid.inhibit_movement_bonus = (chunk_util.distance_between(constructron.position, position) < 32)
             constructron.enable_logistics_while_moving = job.landfill_job
             if job.landfill_job then -- is this a landfill job?
@@ -658,7 +657,8 @@ me.actions = {
 
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
-    check_decon_chunk = function(_, chunk)
+    check_decon_chunk = function(job, chunk)
+        me.disable_roboports(job.constructrons[1].grid, "0")
         debug_lib.DebugLog('ACTION: check_decon_chunk')
         local surface = game.surfaces[chunk.surface]
 
