@@ -48,6 +48,9 @@ end
 ---@param position MapPosition
 ---@param surface LuaSurface
 ---@param color Color
+---@param radius integer
+---@param alpha integer
+---@param ttl integer
 me.VisualDebugCircle = function(position, surface, color, radius, alpha, ttl)
     if global.debug_toggle then
         if position then

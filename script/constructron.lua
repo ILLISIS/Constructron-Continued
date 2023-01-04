@@ -728,7 +728,7 @@ me.actions = {
 me.conditions = {
     ---@param job Job
     ---@param position MapPosition
-    ---@return boolean
+    ---@return boolean?
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructron = job.constructrons[1]
         debug_lib.VisualDebugText("Moving to position", constructron, -3, 1)
@@ -783,7 +783,7 @@ me.conditions = {
 
     ---@param job Job
     ---@param _ any
-    ---@return boolean | string
+    ---@return boolean?
     build_done = function(job, _, _, _)
         local constructron = job.constructrons[1]
         debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
@@ -832,7 +832,7 @@ me.conditions = {
     end,
 
     ---@param job Job
-    ---@return boolean | string
+    ---@return boolean?
     deconstruction_done = function(job)
         local constructron = job.constructrons[1]
         debug_lib.VisualDebugText("Deconstructing", constructron, -3, 1)
@@ -888,7 +888,7 @@ me.conditions = {
 
     ---@param job Job
     ---@param _ any
-    ---@return boolean | string
+    ---@return boolean?
     upgrade_done = function(job, _, _, _)
         local constructron = job.constructrons[1]
         debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
@@ -1265,7 +1265,7 @@ me.get_job = function()
                                 find_path = true
                             end
 
-                            local landfill_check
+                            local landfill_check = false
                             if combined_chunks.requested_items["landfill"] then
                                 landfill_check = true
                             end
@@ -1277,8 +1277,7 @@ me.get_job = function()
                                 leave_condition = 'position_done',
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
-                                landfill_job = landfill_check or false
-                            })
+                                landfill_job = landfill_check
 
                             -- do actions
                             if not (job_type == 'deconstruct') then

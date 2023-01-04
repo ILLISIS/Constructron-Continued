@@ -30,7 +30,7 @@ end
 
 ---@param unit LuaEntity[]
 ---@param destination MapPosition
----@return MapPosition?
+---@param job Job
 function pathfinder.init_path_request(unit, destination, job)
     ---@type LuaSurface.request_path_param
     local request_params = {unit = unit, goal = destination, job = job}
@@ -88,30 +88,29 @@ function pathfinder.request_path(request_params)
 
     pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
     local request = { -- template
-        job = request_params.job or nil, -- not used by the factorio-pathfinder
-        unit = request_params.unit, -- not used by the factorio-pathfinder
-        surface = request_params.unit.surface, -- not used by the factorio-pathfinder
-        landfill_job = request_params.landfill_job or false, -- not used by the factorio-pathfinder
+        job = request_params.job or nil, -- The job that initiated this request. Used to update the job. Not used by the factorio-pathfinder
+        unit = request_params.unit, -- Unit that this path request is for. Used to add waypoints to the unit and surface id. not used by the factorio-pathfinder
+        surface = request_params.unit.surface, -- The surface this path request is for. Not used by the factorio-pathfinder
+        landfill_job = request_params.landfill_job or false, -- Identifies if this path request is for a landfill job. Not used by the factorio-pathfinder
         bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
         collision_mask = pathing_collision_mask,
         start = request_params.start or request_params.unit.position,
         goal = request_params.goal,
         force = request_params.unit.force,
         radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        path_resolution_modifier = request_params.path_resolution_modifier or -2, -- 1st Reuest: fast path calculation
+        path_resolution_modifier = request_params.path_resolution_modifier or -2, -- 1st Request: fast path calculation
         pathfinding_flags = {
             cache = true,
             low_priority = true
         },
-        attempt = request_params.attempt or 1, -- not used by the factorio-pathfinder
-        try_again_later = 0 -- not used by the factorio-pathfinder
+        attempt = request_params.attempt or 1, -- The count of path attemps. Not used by the factorio-pathfinder
+        try_again_later = 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
     }
 
     if request_params.initial_target then -- landfill goal
         request.initial_target = request_params.initial_target
     end
-    request.initial_target = request.initial_target or request_params.goal -- not used by the factorio-pathfinder
-    request.request_tick = game.tick -- not used by the factorio-pathfinder
+    request.initial_target = request.initial_target or request_params.goal -- The initial goal of the job request. Not used by the factorio-pathfinder
 
     local request_id = request.surface.request_path(request) -- request the path from the game
     global.pathfinder_requests[request_id] = request
@@ -133,7 +132,6 @@ function pathfinder.on_script_path_request_finished(event)
 
         if event.try_again_later then -- try_again_later is a return of the event handler
             if request.try_again_later < 5 then
-                request.request_tick = game.tick
                 request.try_again_later = request.try_again_later + 1
                 pathfinder.request_path(request)
             end
@@ -187,9 +185,6 @@ function pathfinder.on_script_path_request_finished(event)
             -- table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}}) -- add the desired destination after the walkable path
             -- we currently cannot do this as the job condition will not match. Additionally, if we account for that it could result in a waypoint loop with FNCP.
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
-            if clean_path_steps_enabled then
-                path = pathfinder.clean_path_steps(path, 2.5)
-            end
             if request.job then
                 global.job_bundles[request.job.bundle_index][1]["path_active"] = true
             end
@@ -221,10 +216,10 @@ end
 
 ---@param surface LuaSurface
 ---@param position MapPosition
+---@param job Job
 ---@return MapPosition?
 function pathfinder.find_non_colliding_position(surface, position, job) -- find a position to stand / walk to
     local new_position
-    local bb
     local params = {
         {size = 12, radius = 64},
         {size = 5, radius = 16},
@@ -242,7 +237,6 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
         if job then -- update the job for condition check
             global.job_bundles[job.bundle_index][1]["leave_args"][1] = new_position
         end
-        -- game.print('bounding_box:'.. serpent.block(bb) ..'')
         return new_position -- return for the new request
     end
 end
