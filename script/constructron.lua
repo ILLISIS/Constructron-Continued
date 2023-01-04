@@ -332,14 +332,21 @@ end
 
 ---@param job Job
 me.graceful_wrapup = function(job)
-    for k, value in pairs(global.job_bundles[job.bundle_index]) do
-        if not value.returning_home and not (value.action == "clear_items") and not (value.action == "retire") and not (value.action == "check_build_chunk") and not (value.action == "check_decon_chunk") then
+    local allowed_actions = {
+        "clear_items",
+        "retire",
+        "check_build_chunk",
+        "check_decon_chunk",
+        "check_upgrade_chunk"
+    }
+    for k, value in pairs(global.job_bundles[job.bundle_index]) do -- clear unwanted actions
+        if not value.returning_home and not allowed_actions[value.action] then
             global.job_bundles[job.bundle_index][k] = nil
         end
     end
     local new_t = {}
     local i = 1
-    for _,v in pairs(global.job_bundles[job.bundle_index]) do
+    for _, v in pairs(global.job_bundles[job.bundle_index]) do -- reindex the job_bundle
         new_t[i] = v
         i = i + 1
     end
@@ -347,52 +354,51 @@ me.graceful_wrapup = function(job)
 end
 
 ---@param job Job
----@return boolean?
 me.do_until_leave = function(job)
     -- action is what to do, a function.
     -- action_args is going to be unpacked to action function. first argument of action must be constructron.
     -- leave_condition is a function, leave_args is a table to unpack to leave_condition as arguments
     -- leave_condition should have constructron as first argument
 
-    if job.constructrons[1] then
-        if not job.active then
-            job.attempt = 0
+    if not job.active then
+        job.attempt = 0
+        job.active = true
+        job.start_tick = game.tick
+        me.set_constructron_status(job.constructrons[1], 'busy', true)
+        me.actions[job.action](job, table.unpack(job.action_args or {}))
+    end
+
+    local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
+
+    if status == true then
+        table.remove(global.job_bundles[job.bundle_index], 1)
+        return true -- returning true means you can remove this job from job list
+    elseif (job.action == 'request_items') then
+        local timer = game.tick - job.start_tick
+        if timer > global.construction_mat_alert then
+            for k, v in pairs(game.players) do
+                v.add_alert(job.constructrons[1], defines.alert_type.no_material_for_construction)
+            end
+        end
+        if timer > global.max_jobtime and (global.stations_count[(job.constructrons[1].surface.index)] > 0) then
+            local closest_station = me.get_closest_service_station(job.constructrons[1])
+            for unit_number, station in pairs(job.unused_stations) do
+                if not station.valid then
+                    job.unused_stations[unit_number] = nil
+                end
+            end
+            job.unused_stations[closest_station.unit_number] = nil
+            if not (next(job.unused_stations)) then
+                job.unused_stations = me.get_service_stations(job.constructrons[1].surface.index)
+                if not #job.unused_stations == 1 then
+                    job.unused_stations[closest_station.unit_number] = nil
+                end
+            end
+            local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
+            pathfinder.init_path_request(job.constructrons[1], next_station.position, job)
             job.start_tick = game.tick
-            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            debug_lib.DebugLog('request_items action timed out, moving to new station')
         end
-        local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
-        if status == true then
-            table.remove(global.job_bundles[job.bundle_index], 1)
-            return true -- returning true means you can remove this job from job list
-        elseif (job.action == 'request_items') then
-            local timer = game.tick - job.start_tick
-            if timer > global.construction_mat_alert then
-                for k, v in pairs(game.players) do
-                    v.add_alert(job.constructrons[1], defines.alert_type.no_material_for_construction)
-                end
-            end
-            if timer > global.max_jobtime and (global.stations_count[(job.constructrons[1].surface.index)] > 0) then
-                local closest_station = me.get_closest_service_station(job.constructrons[1])
-                for unit_number, station in pairs(job.unused_stations) do
-                    if not station.valid then
-                        job.unused_stations[unit_number] = nil
-                    end
-                end
-                job.unused_stations[closest_station.unit_number] = nil
-                if not (next(job.unused_stations)) then
-                    job.unused_stations = me.get_service_stations(job.constructrons[1].surface.index)
-                    if not #job.unused_stations == 1 then
-                        job.unused_stations[closest_station.unit_number] = nil
-                    end
-                end
-                local next_station = me.get_closest_unused_service_station(job.constructrons[1], job.unused_stations)
-                pathfinder.init_path_request(job.constructrons[1], next_station.position, job)
-                job.start_tick = game.tick
-                debug_lib.DebugLog('request_items action timed out, moving to new station')
-            end
-        end
-    else
-        return true
     end
 end
 
@@ -474,6 +480,7 @@ me.actions = {
         -- whether or not logistics was enabled. there doesn't seem to be a way.
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
         if constructron.valid then
+            me.enable_roboports(constructron.grid)
             me.set_constructron_status(constructron, 'build_tick', game.tick)
         else
             return true
@@ -485,18 +492,17 @@ me.actions = {
     ---@return boolean?
     deconstruct = function(job)
         debug_lib.DebugLog('ACTION: deconstruct')
-        local constructrons = job.constructrons
+        local constructron = job.constructrons[1]
         -- I want to enable construction only when in the construction area
         -- however there doesn't seem to be a way to do this with the current api
         -- enable_logistic_while_moving is doing somewhat what I want however I wish there was a way to check
         -- whether or not logistics was enabled. there doesn't seem to be a way.
         -- so I'm counting on robots that they will be triggered in two second or 120 ticks.
-        for c, constructron in ipairs(constructrons) do
-            if constructron.valid then
-                me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
-            else
-                return true
-            end
+        if constructron.valid then
+            me.enable_roboports(constructron.grid)
+            me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
+        else
+            return true
         end
         -- enable construct
     end,
@@ -658,10 +664,8 @@ me.actions = {
         end
     end,
 
-    ---@param job Job
     ---@param chunk Chunk
-    check_decon_chunk = function(job, chunk)
-        me.disable_roboports(job.constructrons[1].grid, "0")
+    check_decon_chunk = function(_, chunk)
         debug_lib.DebugLog('ACTION: check_decon_chunk')
         local surface = game.surfaces[chunk.surface]
 
@@ -728,57 +732,56 @@ me.actions = {
 me.conditions = {
     ---@param job Job
     ---@param position MapPosition
-    ---@return boolean?
+    ---@return boolean
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructron = job.constructrons[1]
         debug_lib.VisualDebugText("Moving to position", constructron, -3, 1)
-        if constructron.valid then
-            if job.path_active and ((game.tick - job.start_tick) > 120) then
-                if (chunk_util.distance_between(constructron.position, position) > 5) then -- the condition
-                    if not constructron.autopilot_destination then -- path lost recovery
-                        job.start_tick = game.tick
-                        me.actions[job.action](job, table.unpack(job.action_args or {}))
-                    elseif constructron.speed < 0.2 and ((game.tick - job.start_tick) > 600) then -- stuck recovery
-                        if ((job.attempt or 1) < 4) or job.returning_home then
-                            if job.landfill_job then -- is this a landfill job?
-                                if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
-                                    -- !! Logic gap - Constructrons will return home even if there is other entities to build.
-                                    me.graceful_wrapup(job) -- no landfill left.. leave
-                                    return
-                                end
-                            end
-                            local mvmt_last_distance = job.mvmt_last_distance
-                            local distance
-                            distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
-                            if mvmt_last_distance and (mvmt_last_distance - distance < 2) and constructron.speed < 0.1 then -- check that movement has progressed at least two tiles in the last 10 seconds.
-                                job.mvmt_last_distance = nil
-                                job.start_tick = game.tick
-                                me.actions[job.action](job, table.unpack(job.action_args or {}))
-                            else
-                                job.mvmt_last_distance = distance
-                                job.start_tick = game.tick
-                            end
-                        else
-                            me.graceful_wrapup(job) -- unable to reach destination
-                            return
-                        end
-                    end
-                    return false  -- condition is not met
-                end
-            elseif not job.path_active then
-                if not global.pathfinder_requests[job.path_requestid] then
-                    me.actions[job.action](job, table.unpack(job.action_args or {}))
-                end
-                debug_lib.VisualDebugText("Path not active", constructron, 0.4, 3)
-            else
+
+        local ticks = (game.tick - job.start_tick)
+        if ticks > 119 then return false end -- not enough time (two seconds) since last check
+
+        local distance_from_pos = chunk_util.distance_between(constructron.position, position)
+        if (distance_from_pos < 5) then return true end -- condition is satisfied
+
+        if not job.path_active then -- check if the path is active
+            if job.request_pathid and not global.pathfinder_requests[job.request_pathid] then -- check that there is a request
+                me.actions[job.action](job, table.unpack(job.action_args or {})) -- there is no request, request a path.
+            end
+            debug_lib.VisualDebugText("Path not active", constructron, 0.4, 3)
+            return false -- condition is not met
+        end
+
+        if job.landfill_job then -- is this a landfill job?
+            if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
+                -- !! Logic gap - Constructrons will return home even if there is other entities to build.
+                me.graceful_wrapup(job) -- no landfill left.. leave
                 return false
             end
-        else
-            return true  -- leader is invalidated.. skip action
         end
-        -- possibly should check that the Constructron is stopped
-        me.enable_roboports(constructron.grid)
-        return true -- condition is satisfied
+
+        if job.attempt > 3 then
+            me.graceful_wrapup(job)
+            return false
+        end
+
+        if not constructron.autopilot_destination then -- path lost recovery
+            job.start_tick = game.tick
+            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            return false
+        end
+
+        local mvmt_last_distance = job.mvmt_last_distance
+        local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
+        if mvmt_last_distance and (mvmt_last_distance - distance < 2) and constructron.speed < 0.1 then -- check that movement has progressed at least two tiles in the last 10 seconds.
+            job.mvmt_last_distance = nil
+            job.start_tick = game.tick
+            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            return false
+        end
+
+        job.mvmt_last_distance = distance
+        job.start_tick = game.tick
+        return false -- condition is not met
     end,
 
     ---@param job Job
@@ -873,6 +876,7 @@ me.conditions = {
                                 end
                             end
                         end
+                        me.disable_roboports(job.constructrons[1].grid, "0")
                         return true -- condition is satisfied
                     end
                 else
@@ -997,7 +1001,6 @@ me.create_job = function(job_bundle_index, job)
         global.job_bundles[job_bundle_index] = {}
     end
     local index = #global.job_bundles[job_bundle_index] + 1 --[[@as uint]]
-    job.index = index
     job.bundle_index = job_bundle_index
     global.job_bundles[job_bundle_index][index] = job
 end
@@ -1278,7 +1281,7 @@ me.get_job = function()
                                 leave_args = {position},
                                 constructrons = selected_constructrons,
                                 landfill_job = landfill_check
-
+                            })
                             -- do actions
                             if not (job_type == 'deconstruct') then
                                 if not (job_type == 'upgrade') then
@@ -1375,21 +1378,21 @@ me.get_job = function()
 end
 
 ---@param job_bundles JobBundle
----@return boolean?
 me.do_job = function(job_bundles)
     if not next(job_bundles) then return end
 
     for i, job_bundle in pairs(job_bundles) do
         local job = job_bundle[1]
         if job then
-            if not job.active then
-                me.set_constructron_status(job.constructrons[1], 'busy', true)
-            end
-            if job.constructrons[1] then
+            if job.constructrons and job.constructrons[1] and job.constructrons[1].valid then
                 me.do_until_leave(job)
-                job.active = true
-            else
-                return true
+            else -- cleanup job, check chunks and reprocess entities
+                for _, value in pairs(global.job_bundles[job.bundle_index]) do  -- do check actions
+                    if (value.action == "check_build_chunk") or (value.action == "check_decon_chunk") or (value.action == "check_upgrade_chunk") then
+                        me.actions[value.action](value, table.unpack(value.action_args or {}))
+                    end
+                end
+                job_bundles[i] = nil -- remove job
             end
         else
             job_bundles[i] = nil
@@ -1397,7 +1400,7 @@ me.do_job = function(job_bundles)
     end
 end
 
-me.process_job_queue = function(_)
+me.process_job_queue = function()
     me.get_job()
     me.do_job(global.job_bundles)
 end
