@@ -165,11 +165,11 @@ function pathfinder.on_script_path_request_finished(event)
             -- table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}}) -- add the desired destination after the walkable path
             -- we currently cannot do this as the job condition will not match. Additionally, if we account for that it could result in a waypoint loop with FNCP.
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
-            if request.job then
-                request.job.path_active = true
-            end
             pathfinder.set_autopilot(request.unit, path)
         end
+    end
+    if request.job then
+        request.job.path_active = true
     end
     global.pathfinder_requests[event.id] = nil
 end
@@ -204,9 +204,6 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
         }
     for _, param in pairs(params) do
         new_position = surface.find_non_colliding_position("constructron_pathing_proxy_" .. param.size, position, param.radius, non_colliding_position_accuracy, false)
-        if new_position then
-            bb = param
-        end
     end
     if new_position then
         if job then -- update the job for condition check

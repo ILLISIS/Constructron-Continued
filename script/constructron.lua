@@ -697,7 +697,7 @@ me.conditions = {
             end
         end
 
-        if job.attempt > 3 then
+        if job.attempt > 3 and not job.returning_home then
             me.graceful_wrapup(job)
             return false
         end
@@ -869,7 +869,7 @@ me.conditions = {
     ---@return boolean
     request_done = function(job)
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Processing logistics", constructron, -3, 1)
+        debug_lib.VisualDebugText("Awaiting logistics", constructron, -3, 1)
 
         -- check status of logisitc requests
         local trunk_inventory = constructron.get_inventory(defines.inventory.spider_trunk)
@@ -1004,7 +1004,6 @@ end
 ---@param queued_chunks any
 ---@param worker LuaEntity[]
 ---@return {[integer]: Chunk, requested_items: ItemCounts}
----@return LuaEntity[]
 ---@return Chunk[]
 me.get_chunks_and_constructrons = function(queued_chunks, worker)
     local inventory = worker.get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
