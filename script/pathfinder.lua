@@ -37,7 +37,7 @@ function pathfinder.init_path_request(unit, destination, job)
 
     if request_params.unit.name == "constructron-rocket-powered" then
         if request_params.job then
-            global.job_bundles[job.bundle_index][1]["path_active"] = true
+            request_params.job.path_active = true
         end
         pathfinder.set_autopilot(unit, {{position = destination}})
     else
@@ -92,13 +92,13 @@ function pathfinder.request_path(request_params)
         unit = request_params.unit, -- Unit that this path request is for. Used to add waypoints to the unit and surface id. not used by the factorio-pathfinder
         surface = request_params.unit.surface, -- The surface this path request is for. Not used by the factorio-pathfinder
         landfill_job = request_params.landfill_job or false, -- Identifies if this path request is for a landfill job. Not used by the factorio-pathfinder
-        bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}, -- 1st Request: use huge bounding box to avoid pathing near sketchy areas
+        bounding_box = {{-0.015, -0.015}, {0.015, 0.015}},
         collision_mask = pathing_collision_mask,
         start = request_params.start or request_params.unit.position,
         goal = request_params.goal,
         force = request_params.unit.force,
         radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        path_resolution_modifier = request_params.path_resolution_modifier or -2, -- 1st Request: fast path calculation
+        path_resolution_modifier = 0,
         pathfinding_flags = {
             cache = true,
             low_priority = true
@@ -115,7 +115,7 @@ function pathfinder.request_path(request_params)
     local request_id = request.surface.request_path(request) -- request the path from the game
     global.pathfinder_requests[request_id] = request
     if request_params.job then -- if there is a job update the job with the path request id so we can track it
-        global.job_bundles[request_params.job.bundle_index][1]["request_pathid"] = request_id
+        request_params.job.request_pathid = request_id
     end
 end
 
@@ -137,42 +137,22 @@ function pathfinder.on_script_path_request_finished(event)
             end
         elseif not path then
             request.attempt = request.attempt + 1
-            if request.attempt < 7 then
-                if request.attempt == 2 then -- 2. Re-Request with normal bounding box
-                    request.bounding_box = {{-1, -1}, {1, 1}}
-                elseif request.attempt == 3 then -- 3. Re-Request ensuring the start of the path is not colliding
-                    -- debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
+            if request.attempt < 4 then
+                if request.attempt == 2 then -- 2. Re-Request ensuring the start of the path is not colliding
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
                     request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    -- debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
-                elseif request.attempt == 4 then -- 4. Re-Reqest with normal path granularity
-                    request.path_resolution_modifier = 0
-                elseif request.attempt == 5 then -- 5. Re-Request with tiny bounding box
-                    request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}} -- leg collision_box = {{-0.01, -0.01}, {0.01, 0.01}},
-                elseif request.attempt == 6 then -- 6. Re-Request ensuring the goal of the path is not colliding
-                    -- debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
+                elseif request.attempt == 3 then -- 3. Re-Request ensuring the goal of the path is not colliding
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
-                    -- debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
-            else -- 7. f*ck it... just try to walk there in a straight line
+            else -- 4. f*ck it... just try to walk there in a straight line
                 pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
             end
         else
-            -- testing
-            if request.attempt == 1 then
-                game.print('Attempt 1')
-            elseif request.attempt == 2 then
-                game.print('Attempt 2')
-            elseif request.attempt == 3 then
-                game.print('Attempt 3')
-            elseif request.attempt == 4 then
-                game.print('Attempt 4')
-            elseif request.attempt == 5 then
-                game.print('Attempt 5')
-            elseif request.attempt == 6 then
-                game.print('Attempt 6')
-            end
             if clean_linear_path_enabled then
                 path = pathfinder.clean_linear_path(path)
             end
@@ -186,14 +166,9 @@ function pathfinder.on_script_path_request_finished(event)
             -- we currently cannot do this as the job condition will not match. Additionally, if we account for that it could result in a waypoint loop with FNCP.
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
             if request.job then
-                global.job_bundles[request.job.bundle_index][1]["path_active"] = true
+                request.job.path_active = true
             end
             pathfinder.set_autopilot(request.unit, path)
-        end
-    end
-    if request.job then
-        if not request.job.request_pathid == event.id then
-            game.print('WTF!!!!')
         end
     end
     global.pathfinder_requests[event.id] = nil
@@ -235,7 +210,7 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
     end
     if new_position then
         if job then -- update the job for condition check
-            global.job_bundles[job.bundle_index][1]["leave_args"][1] = new_position
+            job.leave_args[1] = new_position
         end
         return new_position -- return for the new request
     end

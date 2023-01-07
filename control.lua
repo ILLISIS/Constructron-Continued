@@ -29,8 +29,8 @@ script.on_nth_tick(1, (function()
     for i, job_bundle in pairs(global.job_bundles) do
         local job = job_bundle[1]
         if job and job.action == "go_to_position" then
-            if job.constructrons and job.constructrons[1].valid then
-                local constructron = job.constructrons[1]
+            if job.constructron and job.constructron.valid then
+                local constructron = job.constructron
                 if constructron.autopilot_destination then
                     if (constructron.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 vanilla Exoskeletons.
                         local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)

@@ -73,10 +73,10 @@
 ---@class Job
 ---@field active boolean?
 ---@field action JobAction
----@field action_args table<any>?
+---@field action_args table, <any>?
 ---@field leave_condition JobLeaveCondition
----@field leave_args table<any>?
----@field constructrons LuaEntity[]
+---@field leave_args table, <any>?
+---@field constructron LuaEntity
 ---@field unused_stations table<uint, LuaEntity>?
 ---@field job_class JobType?
 ---@field returning_home boolean?

@@ -154,6 +154,10 @@ me.reacquire_ctrons = function()
                 surface = surface.index
             }
 
+            -- Reset Hardcodes
+            ctron.enable_roboports(constructron.grid)
+            constructron.grid.inhibit_movement_bonus = false
+
             global.constructrons_count[surface.index] = global.constructrons_count[surface.index] + 1
         end
         game.print('Registered ' .. global.constructrons_count[surface.index] .. ' constructrons on ' .. surface.name .. '.')
@@ -182,7 +186,6 @@ me.recall_ctrons = function()
                 surface = surface.name
             }
             for _, constructron in pairs(constructrons) do
-                constructron.grid.inhibit_movement_bonus = false
                 local closest_station = ctron.get_closest_service_station(constructron)
                 pathfinder.init_path_request(constructron, closest_station.position) -- find path to station
             end
