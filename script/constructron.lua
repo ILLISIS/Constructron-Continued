@@ -175,7 +175,7 @@ me.process_entity = function(entity, build_type, queue)
     -- ghosts
     if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
         local items_to_place = entity.ghost_prototype.items_to_place_this
-        if items_to_place and #items_to_place > 0 then
+        if items_to_place and items_to_place[1] then
             local item = items_to_place[1] -- bots will only ever use the first item from this list
 
             if me.check_item_allowed(item.name) then
@@ -213,7 +213,7 @@ me.process_entity = function(entity, build_type, queue)
         local target_entity = entity.get_upgrade_target()
         local items_to_place = target_entity.items_to_place_this
 
-        if items_to_place and #items_to_place > 0 then
+        if items_to_place and items_to_place[1] then
             local item = items_to_place[1] -- bots will only ever use the first item from this list
 
             if me.check_item_allowed(item.name) then
