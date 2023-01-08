@@ -174,7 +174,10 @@ me.process_entity = function(entity, build_type, queue)
     end
     -- ghosts
     if (build_type == "ghost") and not (entity.type == 'item-request-proxy') then
-        for _, item in ipairs(entity.ghost_prototype.items_to_place_this) do
+        local items_to_place = entity.ghost_prototype.items_to_place_this
+        if items_to_place and items_to_place[1] then
+            local item = items_to_place[1] -- bots will only ever use the first item from this list
+
             if me.check_item_allowed(item.name) then
                 queue_surface_key['required_items'][item.name] = (queue_surface_key['required_items'][item.name] or 0) + item.count
             end
@@ -208,7 +211,11 @@ me.process_entity = function(entity, build_type, queue)
     -- entity upgrades
     if build_type == "upgrade" then
         local target_entity = entity.get_upgrade_target()
-        for _, item in ipairs(target_entity.items_to_place_this) do
+        local items_to_place = target_entity.items_to_place_this
+
+        if items_to_place and items_to_place[1] then
+            local item = items_to_place[1] -- bots will only ever use the first item from this list
+
             if me.check_item_allowed(item.name) then
                 queue_surface_key['required_items'][item.name] = (queue_surface_key['required_items'][item.name] or 0) + item.count
             end
