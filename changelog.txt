@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.55
 Date: 2023-01-09
+  Notes:
+    - 1 Year anniversary update!
   Fixed:
     - Pathfinder retries failing which prevented traversal of land 1 tile wide.
     - Containers that were not completely emptied/picked up during deconstruction jobs would not be added as a new job in the chunk checks.

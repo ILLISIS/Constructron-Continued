@@ -397,7 +397,7 @@ me.disable_roboports = function(grid, size) -- doesn't really disable them, it s
 end
 
 ---@param grid LuaEquipmentGrid
-me.enable_roboports = function(grid) -- doesn't relaly enable roboports, it resets the equipment back to the original
+me.enable_roboports = function(grid) -- doesn't really enable roboports, it resets the equipment back to the original
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
             me.replace_roboports(grid, eq, eq.prototype.take_result.name)
@@ -704,16 +704,16 @@ me.conditions = {
 
         if not constructron.autopilot_destination then -- path lost recovery
             job.start_tick = game.tick
-            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            me.actions[job.action](job, table.unpack(job.action_args or {})) -- retry
             return false
         end
 
         local mvmt_last_distance = job.mvmt_last_distance
         local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
-        if mvmt_last_distance and ((mvmt_last_distance - distance) < 2) and constructron.speed < 0.1 then -- check that movement has progressed at least two tiles in the last 10 seconds.
+        if (constructron.speed < 0.1) and mvmt_last_distance and ((mvmt_last_distance - distance) < 2) then -- stuck check: if movement has not progressed at least two tiles
             job.mvmt_last_distance = nil
             job.start_tick = game.tick
-            me.actions[job.action](job, table.unpack(job.action_args or {}))
+            me.actions[job.action](job, table.unpack(job.action_args or {})) -- retry
             return false
         end
 
