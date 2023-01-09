@@ -1,3 +1,4 @@
+---@class ColorUtil
 local me = {}
 
 me.colors = {}

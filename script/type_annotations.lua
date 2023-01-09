@@ -59,9 +59,12 @@
 -- extends vanilla pathfinder request parameters
 ---@class LuaSurface.request_path_param
 ---@field unit LuaEntity?
----@field units LuaEntity[]
 ---@field request_tick uint?
 ---@field initial_target MapPosition?
+---@field job Job?
+---@field landfill_job boolean?
+---@field attempt uint?
+---@field surface LuaSurface
 
 ---@class Chunk
 ---@field area Area
@@ -90,15 +93,11 @@
 ---@field landfill_job boolean?
 ---@field attempt uint
 ---@field path_active boolean?
----@field path_requestid uint
+---@field request_pathid uint
 
 ---@class RegisteredEntity
 ---@field name string
 ---@field surface uint
-
----@class UpgradeEntity
----@field entity LuaEntity
----@field target LuaEntityPrototype?
 
 ---@class Global
 --- GUI
@@ -113,7 +112,7 @@
 --- ENTITIES
 ---@field ghost_entities table<string, LuaEntity>
 ---@field deconstruction_entities table<string, LuaEntity>
----@field upgrade_entities table<string, UpgradeEntity>
+---@field upgrade_entities table<string, LuaEntity>
 ---@field repair_entities table<string, LuaEntity>
 --- QUEUES
 ---@field construct_queue EntityQueue

@@ -1,3 +1,4 @@
+---@class ChunkUtil
 local me = {}
 
 ---@param position1 MapPosition

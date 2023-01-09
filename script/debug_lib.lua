@@ -1,4 +1,5 @@
 local color_lib = require("script/color_lib")
+---@class DebugUtil
 local me = {}
 
 ---@param message LocalisedString
@@ -35,10 +36,10 @@ end
 
 ---@param position MapPosition
 ---@param surface LuaSurface
----@param color Color
----@param radius integer
----@param alpha integer
----@param ttl integer
+---@param color string
+---@param radius double
+---@param alpha float
+---@param ttl uint?
 me.VisualDebugCircle = function(position, surface, color, radius, alpha, ttl)
     if global.debug_toggle then
         if position then

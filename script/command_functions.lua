@@ -1,6 +1,7 @@
 local ctron = require("script/constructron")
 local pathfinder = require("script/pathfinder")
 
+---@class Commands
 local me = {}
 
 me.reset_settings = function()

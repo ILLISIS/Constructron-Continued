@@ -11,6 +11,7 @@ local clean_path_steps_enabled = false
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
+---@class Pathfinder
 local pathfinder = {}
 
 pathfinder.init_globals = function()
@@ -195,7 +196,7 @@ end
 
 ---@param surface LuaSurface
 ---@param position MapPosition
----@param job Job
+---@param job Job?
 ---@return MapPosition?
 function pathfinder.find_non_colliding_position(surface, position, job) -- find a position to stand / walk to
     local new_position

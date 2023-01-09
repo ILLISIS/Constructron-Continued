@@ -292,7 +292,7 @@ me.actions = {
                 end
             end
             local slot = 1
-            for name, count in pairs(merged_items) do
+            for name, count in pairs(merged_items) do --[[@cast count uint]]
                 if (global.allowed_items[name] == true) then
                     constructron.set_vehicle_logistic_slot(slot, {
                         name = name,
@@ -838,7 +838,7 @@ end
 
 -- This function is a Mess: refactor - carefull, recursion!!!
 ---@param queued_chunks any
----@param worker LuaEntity[]
+---@param worker LuaEntity
 ---@return {[integer]: Chunk, requested_items: ItemCounts}
 ---@return Chunk[]
 me.get_chunks_and_constructrons = function(queued_chunks, worker)

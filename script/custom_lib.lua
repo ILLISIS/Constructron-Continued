@@ -1,3 +1,4 @@
+---@class CustomUtil
 local me = {}
 
 me.table_has_value = function(tab, val)
