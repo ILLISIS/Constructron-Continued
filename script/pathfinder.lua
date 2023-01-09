@@ -167,9 +167,9 @@ function pathfinder.on_script_path_request_finished(event)
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
             pathfinder.set_autopilot(request.unit, path)
         end
-    end
-    if request.job then
-        request.job.path_active = true
+        if request.job then
+            request.job.path_active = true
+        end
     end
     global.pathfinder_requests[event.id] = nil
 end
