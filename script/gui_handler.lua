@@ -165,7 +165,7 @@ function handlers.open_ctron_map(player, button)
 
     -- TODO: update this to follow the ctron entity (coming in 1.1.75)
     handlers.toggle_main(player)
-    player.open_map(global.constructrons[button.tags["unit"] --[[@as uint]]].position, 0.25)
+    player.open_map(constructron.position, 0.25, constructron)
 end
 
 ---@param player LuaPlayer
