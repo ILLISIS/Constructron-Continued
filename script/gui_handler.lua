@@ -173,10 +173,17 @@ function handlers.get_ctron_remote(player, button)
     -- can not open map with player on different surface -> using remote makes 0 sense.
     if player.surface_index ~= constructron.surface_index then return end
 
-    if player.clear_cursor() then
-        player.cursor_stack.set_stack({name = "constructron-remote", count = 1})
-        player.cursor_stack.connected_entity = constructron
-    end
+    -- check if cursor can be cleared
+    if not player.clear_cursor() then return end
+
+    local remote_item = {name = "constructron-remote", count = 1}
+
+    -- check if cursor stack can be set
+    if not player.cursor_stack.can_set_stack(remote_item) then return end
+
+    -- set cursor stack to remote and connect it to the ctron
+    player.cursor_stack.set_stack(remote_item)
+    player.cursor_stack.connected_entity = constructron
 end
 
 ---@param player LuaPlayer
