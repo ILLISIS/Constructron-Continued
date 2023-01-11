@@ -7,7 +7,7 @@
   "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map with items from your logistic network for the ultimate fire and forget automation experience and unmatched scaling potential.",
   "factorio_version": "1.1",
   "dependencies": [
-    "base",
+    "base >= 1.1.75",
     "! Constructron",
     "(?) space-exploration",
     "? dynamic-robot-queues"
