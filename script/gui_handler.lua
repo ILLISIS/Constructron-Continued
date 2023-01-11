@@ -159,11 +159,8 @@ function handlers.open_ctron_map(player, button)
     local constructron = global.constructrons[button.tags["unit"] --[[@as uint]]]
 
     -- can not open map on different surface (engine limitation)
-    if player.surface ~= constructron.surface then
-        return
-    end
+    if player.surface_index ~= constructron.surface_index then return end
 
-    -- TODO: update this to follow the ctron entity (coming in 1.1.75)
     handlers.toggle_main(player)
     player.open_map(constructron.position, 0.25, constructron)
 end
@@ -174,9 +171,7 @@ function handlers.get_ctron_remote(player, button)
     local constructron = global.constructrons[button.tags["unit"] --[[@as uint]]]
 
     -- can not open map with player on different surface -> using remote makes 0 sense.
-    if player.surface ~= constructron.surface then
-        return
-    end
+    if player.surface_index ~= constructron.surface_index then return end
 
     if player.clear_cursor() then
         player.cursor_stack.set_stack({name = "constructron-remote", count = 1})
