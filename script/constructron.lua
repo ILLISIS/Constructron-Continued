@@ -1435,7 +1435,9 @@ me.on_built_entity = function(event) -- for entity creation
                     global.ghost_tick = event.tick
                 end
             end
-        elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
+        elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered"
+        or entity.name == "constructron-ss-space-spidertron" 
+        or entity.name == "constructron-spidertronmk2" or entity.name == "constructron-spidertronmk3" then
             local registration_number = script.register_on_entity_destroyed(entity)
             me.set_constructron_status(entity, 'busy', false)
             me.paint_constructron(entity, 'idle')
@@ -1552,7 +1554,9 @@ end
 ---@param event EventData.on_entity_cloned
 me.on_entity_cloned = function(event)
     local entity = event.destination
-    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
+    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered"
+    or entity.name == "constructron-ss-space-spidertron" 
+    or entity.name == "constructron-spidertronmk2" or entity.name == "constructron-spidertronmk3" then
         local registration_number = script.register_on_entity_destroyed(entity)
         debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         me.paint_constructron(entity, 'idle')
@@ -1582,7 +1586,9 @@ end
 me.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
-        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
+        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" 
+        or removed_entity.name == "constructron-ss-space-spidertron" 
+        or removed_entity.name == "constructron-spidertronmk2" or removed_entity.name == "constructron-spidertronmk3" then
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0, (global.constructrons_count[surface] or 0) - 1)
             global.constructrons[event.unit_number] = nil

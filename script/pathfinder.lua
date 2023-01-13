@@ -35,7 +35,8 @@ function pathfinder.init_path_request(unit, destination, job)
     ---@type LuaSurface.request_path_param
     local request_params = {unit = unit, goal = destination, job = job}
 
-    if request_params.unit.name == "constructron-rocket-powered" then
+    if request_params.unit.name == "constructron-rocket-powered" 
+    or request_params.unit.name == "constructron-ss-space-spidertron" then
         if request_params.job then
             request_params.job.path_active = true
         end
