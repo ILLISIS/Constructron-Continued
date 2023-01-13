@@ -161,9 +161,9 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                 if registered then -- check if robots are not already performing the job
                     local required_items = {}
                     local trash_items = {}
+                    local entity_type = entity.type
                     -- construction
                     if (build_type == "construction") then
-                        local entity_type = entity.type
                         if not (entity_type == 'item-request-proxy') then
                             local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
                             required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
@@ -176,12 +176,14 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         end
                     -- deconstruction
                     elseif (build_type == "deconstruction") then
-                        if not (entity.type == "cliff") then
+                        if not (entity_type == "cliff") and not (entity_type == "item-entity") then
                             for _, item in ipairs(entity.prototype.mineable_properties.products) do
                                 local amount = item.amount or item.amount_max
                                 trash_items[item.name] = (trash_items[item.name] or 0) + amount
                             end
-                        else -- cliff demolition
+                        elseif (entity_type == "item-entity") then -- ground items
+                            trash_items[entity.stack.name] = (trash_items[entity.stack.name] or 0) + (entity.stack.count or 1)
+                        elseif (entity_type == "cliff") then -- cliff demolition
                             required_items['cliff-explosives'] = (required_items['cliff-explosives'] or 0) + 1
                         end
                     -- upgrade
