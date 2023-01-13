@@ -1,5 +1,6 @@
 local ctron = require("script/constructron")
 local pathfinder = require("script/pathfinder")
+local config = require("script/config")
 
 local me = {}
 
@@ -141,8 +142,7 @@ me.reacquire_ctrons = function()
     for s, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = 0
         local constructrons = surface.find_entities_filtered {
-            name = {"constructron", "constructron-rocket-powered",
-            "constructron-ss-space-spidertron", "constructron-spidertronmk2", "constructron-spidertronmk3"},
+            name = config.constructron_names,
             force = "player",
             surface = surface.name
         }
@@ -186,8 +186,7 @@ me.recall_ctrons = function()
     for _, surface in pairs(game.surfaces) do
         if (global.stations_count[surface.index] > 0) and (global.constructrons_count[surface.index] > 0) then
             local constructrons = surface.find_entities_filtered {
-                name = {"constructron", "constructron-rocket-powered",
-                "constructron-ss-space-spidertron", "constructron-spidertronmk2", "constructron-spidertronmk3"},
+                name = config.constructron_names,
                 force = "player",
                 surface = surface.name
             }

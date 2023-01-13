@@ -2,16 +2,11 @@ function create_copy_spidertron(spidertron_name)
     local constructron_name = "constructron-" .. spidertron_name
     local constructron = table.deepcopy(data.raw["spider-vehicle"][spidertron_name])
     constructron.name = constructron_name
-    constructron.collision_mask = {
-        "water-tile",
-        "colliding-with-tiles-only",
-        "not-colliding-with-itself"
-    }
     constructron.minable.result = constructron_name
 
     local constructron_item = {
         name = constructron_name,
-        order = "b[personal-transport]-c[spidertron]-a[spider]b",
+        order = "b[personal-transport]-c[spidertron]-a["..constructron_name.."]b",
         place_result = constructron_name,
         stack_size = 1,
         subgroup = "transport",
@@ -19,15 +14,13 @@ function create_copy_spidertron(spidertron_name)
     }
 
     if constructron.icons then
-        local item_icons = constructron.icons
-        table.insert(item_icons, 1, {
+        table.insert(constructron.icons, 1, {
             icon = "__Constructron-Continued__/graphics/icon_texture.png",
             icon_size = 256,
             scale = 0.25
         })
-        constructron_item.icons = item_icons
     else
-        constructron_item.icons = {
+        constructron.icons = {
             {
                 icon = "__Constructron-Continued__/graphics/icon_texture.png",
                 icon_size = 256,
@@ -41,6 +34,7 @@ function create_copy_spidertron(spidertron_name)
             }
         }
     end
+    constructron_item.icons = constructron.icons
 
     local constructron_recipe = {
         type = "recipe",
@@ -53,13 +47,6 @@ function create_copy_spidertron(spidertron_name)
         result_count = 1,
         energy = 1
     }
-
-    -- Add the 'Cannot be placed on:' SE description
-    if mods["space-exploration"] then
-        constructron.localised_description = {""}
-        local data_util = require("__space-exploration__/data_util")
-        data_util.collision_description(constructron)
-    end
 
     return constructron_name, {constructron, constructron_item, constructron_recipe}
 end

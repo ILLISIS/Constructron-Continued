@@ -4,6 +4,7 @@ local chunk_util = require("script/chunk_util")
 local debug_lib = require("script/debug_lib")
 local color_lib = require("script/color_lib")
 local pathfinder = require("script/pathfinder")
+local config = require("script/config")
 
 ---@module "chunk_util"
 ---@module "debug_lib"
@@ -1261,9 +1262,7 @@ end
 ---@param event EventData.on_entity_cloned
 me.on_entity_cloned = function(event)
     local entity = event.destination
-    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered"
-    or entity.name == "constructron-ss-space-spidertron" 
-    or entity.name == "constructron-spidertronmk2" or entity.name == "constructron-spidertronmk3" then
+    if config.is_valid_constructron[entity.name] then
         local registration_number = script.register_on_entity_destroyed(entity)
         debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         me.paint_constructron(entity, 'idle')
@@ -1293,9 +1292,7 @@ end
 me.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
-        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" 
-        or removed_entity.name == "constructron-ss-space-spidertron" 
-        or removed_entity.name == "constructron-spidertronmk2" or removed_entity.name == "constructron-spidertronmk3" then
+        if config.is_valid_constructron[removed_entity.name] then
             local surface = removed_entity.surface
             global.constructrons_count[surface] = math.max(0, (global.constructrons_count[surface] or 0) - 1)
             global.constructrons[event.unit_number] = nil

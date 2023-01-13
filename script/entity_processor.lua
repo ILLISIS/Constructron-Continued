@@ -1,5 +1,6 @@
 local ctron = require("script/constructron")
 local chunk_util = require("script/chunk_util")
+local config = require("script/config")
 
 local entity_proc = {}
 
@@ -21,7 +22,7 @@ entity_proc.on_built_entity = function(event)
         global.ghost_index = global.ghost_index + 1
         global.ghost_entities[global.ghost_index] = entity
         global.ghost_tick = event.tick
-    elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
+    elseif config.is_valid_constructron[entity.name] then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
         ctron.set_constructron_status(entity, 'busy', false)
         ctron.paint_constructron(entity, 'idle')
@@ -43,11 +44,7 @@ entity_proc.on_built_entity = function(event)
     end
 end
 
-script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
-    {filter = "name", name = "constructron", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
+local on_built_entity_filter = {
     {filter = "name", name = "service_station", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
     {filter = "name", name = "entity-ghost", mode = "or"},
@@ -56,16 +53,25 @@ script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "force",  force = "player", mode = "and"},
     {filter = "name", name = "item-request-proxy", mode = "or"},
     {filter = "force",  force = "player", mode = "and"}
-})
+}
 
-script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
-    {filter = "name", name = "constructron", mode = "or"},
-    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
+local script_raised_built_filter = {
     {filter = "name", name = "service_station", mode = "or"},
     {filter = "name", name = "entity-ghost", mode = "or"},
     {filter = "name", name = "tile-ghost", mode = "or"},
     {filter = "name", name = "item-request-proxy", mode = "or"}
-})
+}
+
+for _,ctron_name in pairs(config.constructron_names) do
+    on_built_entity_filter[#on_built_entity_filter + 1] = {filter = "name", name = ctron_name, mode = "or"}
+    on_built_entity_filter[#on_built_entity_filter + 1] = {filter = "force",  force = "player", mode = "and"}
+
+    script_raised_built_filter[#script_raised_built_filter + 1] = {filter = "name", name = ctron_name, mode = "or"}
+end
+
+script.on_event(ev.on_built_entity, entity_proc.on_built_entity, on_built_entity_filter)
+
+script.on_event(ev.script_raised_built, entity_proc.on_built_entity, script_raised_built_filter)
 
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "service_station", mode = "or"}
