@@ -24,6 +24,10 @@ pathfinder.init_globals = function()
     game.map_settings.path_finder.use_path_cache = false
 end
 
+script.on_event(defines.events.on_script_path_request_finished, (function(event)
+    pathfinder.on_script_path_request_finished(event)
+end))
+
 -------------------------------------------------------------------------------
 --  Request path
 -------------------------------------------------------------------------------

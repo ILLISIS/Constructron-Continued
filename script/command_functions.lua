@@ -11,7 +11,6 @@ me.reset_settings = function()
     settings.global["upgrade_jobs"] = {value = true}
     settings.global["repair_jobs"] = {value = false}
     settings.global["constructron-debug-enabled"] = {value = false}
-    settings.global["allow_landfill"] = {value = true}
     settings.global["desired_robot_count"] = {value = 50}
     settings.global["desired_robot_name"] = {value = "construction-robot"}
     settings.global["max-jobtime-per-job"] = {value = 2}
@@ -25,6 +24,11 @@ me.clear_queues = function()
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
     global.repair_entities = {}
+
+    global.ghost_index = 0
+    global.decon_index = 0
+    global.updgrade_index = 0
+    global.repair_index = 0
 
     global.construct_queue = {}
     global.deconstruct_queue = {}
@@ -271,7 +275,7 @@ end
 me.help_text = function()
     game.print('Constructron-Continued command help:')
     game.print('/ctron help - show this help message')
-    game.print('/ctron (enable|disable) (debug|landfill|constructruction|deconstruction|ground_deconstruction|upgrade|repair) - toggle job types.')
+    game.print('/ctron (enable|disable) (debug|constructruction|deconstruction|ground_deconstruction|upgrade|repair) - toggle job types.')
     game.print('/ctron reset (settings|queues|entities|all)')
     game.print('/ctron clear all - clears all jobs, queued jobs and unprocessed entities')
     game.print('/ctron stats for a basic display of queue length')

@@ -1,11 +1,4 @@
 data:extend({{
---     type = "int-setting",
---     name = "max-worker-per-job",
---     setting_type = "runtime-global",
---     default_value = 1,
---     minimum_value = 1,
---     maximum_value = 1
--- }, {
     type = "bool-setting",
     name = "constructron-debug-enabled",
     setting_type = "runtime-global",
@@ -80,12 +73,6 @@ data:extend({{
     default_value = 75,
     minimum_value = 1,
     maximum_value = 100
-}, {
-    type = "bool-setting",
-    name = "allow_landfill",
-    order = "a7",
-    setting_type = "runtime-global",
-    default_value = true
 }, {
     type = "int-setting",
     name = "construction_mat_alert",

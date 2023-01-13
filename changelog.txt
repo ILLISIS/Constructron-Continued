@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.57
+Date: 2023-01-13
+  Fixed:
+    - [SE] Spidertrons despawn when ordered to place spaceship tiles.
+    - Miniloaders not being upgraded.
+  Improvements:
+    - Large amounts of optimization to entity processing.
+    - Code/file restructuring for better readability and navigation.
+  Changed:
+    - Landfill now cannot be disabled and all settings have been removed (due to entity processing optimizations).
+---------------------------------------------------------------------------------------------------
 Version: 1.0.56
 Date: 2023-01-09
   Fixed:

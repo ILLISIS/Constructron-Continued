@@ -13,12 +13,10 @@
 ---| "build_tick"
 ---| "busy"
 ---| "deconstruct_tick"
----| "staged"
----| "setup_tick"
 
 ---@alias BuildType
 ---| "deconstruction"
----| "ghost"
+---| "construction"
 ---| "repair"
 ---| "upgrade"
 
@@ -101,7 +99,6 @@
 --- MISC
 ---@field registered_entities table<uint, RegisteredEntity>
 ---@field constructron_statuses table<uint, table<ConstructronStatus, uint | boolean>>
----@field ignored_entities table<string,boolean>
 ---@field allowed_items table<string,boolean>
 ---@field stack_cache table<string,uint>
 --- ENTITIES
@@ -130,7 +127,6 @@
 ---@field upgrade_job_toggle boolean
 ---@field repair_job_toggle boolean
 ---@field debug_toggle boolean
----@field landfill_job_toggle boolean
 ---@field job_start_delay uint
 ---@field desired_robot_count uint
 ---@field desired_robot_name string
