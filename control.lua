@@ -3,6 +3,7 @@ local ctron = require("script/constructron")
 local pathfinder = require("script/pathfinder")
 local cmd = require("script/command_functions")
 local chunk_util = require("script/chunk_util")
+local entity_proc = require("script/entity_processor")
 
 local init = function()
     ctron.ensure_globals()
@@ -14,13 +15,13 @@ script.on_configuration_changed(init)
 
 script.on_nth_tick(15, (function(event)
     if event.tick % 20 == 15 then
-        ctron.add_entities_to_chunks("deconstruction")
+        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruct_queue, global.deconstruct_marked_tick)
     elseif event.tick % 20 == 10 then
-        ctron.add_entities_to_chunks("ghost")
+        entity_proc.add_entities_to_chunks("construction", global.ghost_entities, global.construct_queue, global.ghost_tick)
     elseif event.tick % 20 == 5 then
-        ctron.add_entities_to_chunks("upgrade")
+        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_marked_tick)
     elseif event.tick % 20 == 0 then
-        ctron.add_entities_to_chunks("repair")
+        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_marked_tick)
     end
 end))
 
@@ -50,6 +51,7 @@ end))
 
 -- main worker
 script.on_nth_tick(60, ctron.process_job_queue)
+
 -- cleanup
 script.on_nth_tick(54000, (function(event)
     ctron.perform_surface_cleanup(event)
@@ -57,56 +59,6 @@ script.on_nth_tick(54000, (function(event)
 end))
 
 local ev = defines.events
-script.on_event(ev.on_script_path_request_finished, (function(event)
-    pathfinder.on_script_path_request_finished(event)
-end))
-
--- ToDo check if upgrade, built and deconstruct can be handled by the same logic, possibly a common processing function with 2 different preprocessors/wrappers for each event if required
-script.on_event(ev.on_built_entity, ctron.on_built_entity, {
-    {filter = "name", name = "constructron", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "service_station", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "entity-ghost", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "tile-ghost", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "item-request-proxy", mode = "or"},
-    {filter = "force",  force = "player", mode = "and"}
-})
-
-script.on_event(ev.on_robot_built_entity, ctron.on_built_entity, {
-    {filter = "name", name = "service_station", mode = "or"}
-})
-
-script.on_event(ev.script_raised_built, ctron.on_built_entity, {
-    {filter = "name", name = "constructron", mode = "or"},
-    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
-    {filter = "name", name = "service_station", mode = "or"},
-    {filter = "name", name = "entity-ghost", mode = "or"},
-    {filter = "name", name = "tile-ghost", mode = "or"},
-    {filter = "name", name = "item-request-proxy", mode = "or"}
-})
-
-script.on_event(ev.on_post_entity_died, ctron.on_post_entity_died)
-
-
-script.on_event(ev.on_marked_for_deconstruction, ctron.on_entity_marked_for_deconstruction)
-
-
-script.on_event(ev.on_marked_for_upgrade, ctron.on_marked_for_upgrade)
-
-script.on_event(ev.on_entity_damaged, ctron.on_entity_damaged, {
-    {filter = "final-health", comparison = ">", value = 0, mode = "and"},
-    {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
-    {filter = "vehicle", invert = true, mode = "and"},
-    {filter = "rolling-stock", invert = true, mode = "and"},
-    {filter = "type", type = "character", invert = true, mode = "and"},
-    {filter = "type", type = "fish", invert = true, mode = "and"}
-})
-
 script.on_event(ev.on_surface_created, ctron.on_surface_created)
 script.on_event(ev.on_surface_deleted, ctron.on_surface_deleted)
 
@@ -257,9 +209,7 @@ local function enable(player, parameters)
         game.print('Debug view enabled.')
 
     elseif parameters[1] == "landfill" then
-        global.landfill_job_toggle = true
-        settings.global["allow_landfill"] = {value = true}
-        game.print('Landfill enabled.')
+        game.print('Landfill is now permanently enabled.')
 
     elseif parameters[1] == "remote" then
         global.spider_remote_toggle = true
@@ -319,9 +269,7 @@ local function disable(player, parameters)
         game.print('Debug view disabled.')
 
     elseif parameters[1] == "landfill" then
-        global.landfill_job_toggle = false
-        settings.global["allow_landfill"] = {value = false}
-        game.print('Landfill disabled.')
+        game.print('Landfill is now permanently enabled.')
 
     elseif parameters[1] == "remote" then
         global.spider_remote_toggle = false

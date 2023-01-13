@@ -8,8 +8,10 @@ local constructron_collision_mask = {
 
 if mods["space-exploration"] then
     local collision_mask_util_extended = require("__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
-    local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-    table.insert(constructron_collision_mask, spaceship_collision_layer)
+
+    -- removed becuase it caused despawns when constructrons built space ship tiles. (pathfinder still collides)
+    -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
+    -- table.insert(constructron_collision_mask, spaceship_collision_layer)
 
     if settings.startup["enable_rocket_powered_constructron"].value then
         --collide with all of "space"
