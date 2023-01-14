@@ -27,10 +27,10 @@ function gui.init(player)
     end
 
     -- destroy settingsFrame if it already exists
-    local preferencesFrame = player.gui.screen[gui.builder.preferencesFrameName]
+    --[[local preferencesFrame = player.gui.screen[gui.builder.preferencesFrameName]
     if preferencesFrame then
         preferencesFrame.destroy()
-    end
+    --end]]
 end
 
 ---@param player LuaPlayer
@@ -39,11 +39,11 @@ function gui.get_main(player)
     return player.gui.screen[gui.builder.mainFrameName]
 end
 
----@param player LuaPlayer
----@return LuaGuiElement?
-function gui.get_preferences(player)
+--@param player LuaPlayer
+--@return LuaGuiElement?
+--[[function gui.get_preferences(player)
     return player.gui.screen[gui.builder.preferencesFrameName]
-end
+end]]
 
 ---@param player LuaPlayer
 ---@return LuaSurface

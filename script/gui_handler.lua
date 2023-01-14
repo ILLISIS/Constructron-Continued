@@ -16,7 +16,7 @@ local handlers = {}
 ---@param _ LuaGuiElement | nil
 function handlers.toggle_main(player, _)
     local mainFrame = gui.get_main(player)
-    local preferencesFrame = gui.get_preferences(player)
+    --local preferencesFrame = gui.get_preferences(player)
 
     if not mainFrame then
         gui.builder.buildMainGui(player)
@@ -24,9 +24,9 @@ function handlers.toggle_main(player, _)
 
         player.opened = gui.get_main(player)
     else
-        if preferencesFrame then
-            preferencesFrame.visible = false
-        end
+        --if preferencesFrame then
+        --    preferencesFrame.visible = false
+        --end
 
         if not mainFrame.visible then
             mainFrame.visible = true
@@ -44,9 +44,9 @@ function handlers.toggle_main(player, _)
     end
 end
 
----@param player LuaPlayer
----@param _ LuaGuiElement | nil
-function handlers.toggle_preferences(player, _)
+--@param player LuaPlayer
+--@param _ LuaGuiElement | nil
+--[[function handlers.toggle_preferences(player, _)
     local preferencesFrame = gui.get_preferences(player)
 
     if not preferencesFrame then
@@ -56,7 +56,7 @@ function handlers.toggle_preferences(player, _)
         preferencesFrame.bring_to_front()
         preferencesFrame.force_auto_center()
     end
-end
+end]]
 
 ---@param player LuaPlayer
 ---@param dropdown LuaGuiElement
@@ -363,11 +363,11 @@ function gui_handler.close(event)
         event.element.visible = false
 
         local player = game.players[event.player_index]
-        local preferences = gui.get_preferences(player)
+        --[[local preferences = gui.get_preferences(player)
 
         if preferences then
             preferences.visible = false
-        end
+        end]]
 
     end
 end

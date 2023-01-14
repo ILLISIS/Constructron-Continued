@@ -6,7 +6,7 @@ local gui_builder = {}
 -- CONSTANTS
 gui_builder.flowButtonName = "CTRON_toggle_gui"
 gui_builder.mainFrameName = "CTRON_main_guiFrame"
-gui_builder.preferencesFrameName = "CTRON_preferences_guiFrame"
+--gui_builder.preferencesFrameName = "CTRON_preferences_guiFrame"
 
 ---@param frame LuaGuiElement
 ---@param isMainFrame boolean
@@ -24,9 +24,9 @@ local function titleBar(frame, isMainFrame)
     if isMainFrame then
         title = {"gui.main-title"}
         close_callback = "toggle_main"
-    else
-        title = {"gui.preferences-title"}
-        close_callback = "toggle_preferences"
+--    else
+--        title = {"gui.preferences-title"}
+--        close_callback = "toggle_preferences"
     end
 
     -- title
@@ -67,7 +67,7 @@ local function titleBar(frame, isMainFrame)
         }
 
         -- preference button
-        bar.add{
+        --[[bar.add{
             type = "button",
             style = "ctron_frame_button",
             name = "preference_button",
@@ -77,7 +77,7 @@ local function titleBar(frame, isMainFrame)
                 mod = "constructron",
                 on_gui_click = "toggle_preferences"
             }
-        }
+        }]]
 
         -- seperator line
         local seperator = bar.add{
@@ -254,8 +254,8 @@ function gui_builder.buildMainGui(player)
     buildMainContent(frame)
 end
 
----@param player LuaPlayer
-function gui_builder.buildPreferencesGui(player)
+--@param player LuaPlayer
+--[[function gui_builder.buildPreferencesGui(player)
     local frame = player.gui.screen.add{
         type = "frame",
         name = gui_builder.preferencesFrameName,
@@ -264,7 +264,7 @@ function gui_builder.buildPreferencesGui(player)
     frame.auto_center = true
 
     titleBar(frame, false)
-end
+end]]
 
 ---@param buttonFlow LuaGuiElement
 function gui_builder.buildModGuiButton(buttonFlow)
