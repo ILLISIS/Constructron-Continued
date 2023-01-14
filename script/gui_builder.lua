@@ -321,7 +321,8 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
             mod = "constructron",
             on_gui_click = "get_ctron_remote",
             unit = constructron.unit_number,
-        }
+        },
+        tooltip = "get a temporary remote\nfor this constructron"
     }
 
     left_bottom.add{
@@ -333,8 +334,8 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
             on_gui_click = "recall_ctron",
             unit = constructron.unit_number,
         },
-        enabled = false,
-        tooltip = "work in progress. coming soon.",
+        enabled = not is_idle,
+        tooltip = "cancel job and return home"
     }
 
 end

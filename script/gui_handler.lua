@@ -189,6 +189,20 @@ end
 ---@param player LuaPlayer
 ---@param button LuaGuiElement
 function handlers.recall_ctron(player, button)
+    local constructron = global.constructrons[button.tags["unit"] --[[@as uint]]]
+
+    local current_job
+
+    for _, jobs in pairs(global.job_bundles) do
+        if jobs and jobs[1] and jobs[1].constructron == constructron then
+            current_job = jobs[1]
+            break
+        end
+    end
+
+    if not current_job then return end
+
+    ctron.graceful_wrapup(current_job)
 end
 
 
