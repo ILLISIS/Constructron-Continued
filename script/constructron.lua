@@ -234,7 +234,7 @@ me.replace_roboports = function(grid, old_eq, new_eq)
 end
 
 ---@param grid LuaEquipmentGrid
----@param size integer
+---@param size string
 me.disable_roboports = function(grid, size) -- doesn't really disable them, it sets the size of that cell
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
@@ -262,7 +262,6 @@ me.actions = {
     ---@param job Job
     ---@param position MapPosition
     go_to_position = function(job, position)
-        debug_lib.DebugLog('ACTION: go_to_position')
         local constructron = job.constructron
         job.attempt = job.attempt + 1
         me.disable_roboports(constructron.grid, "1")
@@ -285,7 +284,6 @@ me.actions = {
 
     ---@param job Job
     build = function(job)
-        debug_lib.DebugLog('ACTION: build')
         local constructron = job.constructron
         me.enable_roboports(constructron.grid)
         me.set_constructron_status(constructron, 'build_tick', game.tick)
@@ -293,7 +291,6 @@ me.actions = {
 
     ---@param job Job
     deconstruct = function(job)
-        debug_lib.DebugLog('ACTION: deconstruct')
         local constructron = job.constructron
         me.enable_roboports(constructron.grid)
         me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
@@ -302,7 +299,6 @@ me.actions = {
     ---@param job Job
     ---@param request_items ItemCounts
     request_items = function(job, request_items)
-        debug_lib.DebugLog('ACTION: request_items')
         local constructron = job.constructron
         if global.stations_count[constructron.surface.index] > 0 then
             local merged_items = table.deepcopy(request_items)
@@ -337,7 +333,6 @@ me.actions = {
 
     ---@param job Job
     clear_items = function(job)
-        debug_lib.DebugLog('ACTION: clear_items')
         local constructron = job.constructron
         -- for when the constructron returns to service station and needs to empty it's inventory.
         local slot = 1
@@ -399,7 +394,6 @@ me.actions = {
 
     ---@param job Job
     retire = function(job)
-        debug_lib.DebugLog('ACTION: retire')
         local constructron = job.constructron
         me.enable_roboports(constructron.grid)
         me.paint_constructron(constructron, 'idle')
@@ -416,7 +410,6 @@ me.actions = {
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     check_build_chunk = function(_, chunk)
-        debug_lib.DebugLog('ACTION: check_build_chunk')
         local entity_names = {}
         for name, _ in pairs(chunk.required_items) do
             table.insert(entity_names, name)
@@ -450,7 +443,6 @@ me.actions = {
 
     ---@param chunk Chunk
     check_decon_chunk = function(_, chunk)
-        debug_lib.DebugLog('ACTION: check_decon_chunk')
         local surface = game.surfaces[chunk.surface]
 
         if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
@@ -481,7 +473,6 @@ me.actions = {
     ---@param _ LuaEntity[]
     ---@param chunk Chunk
     check_upgrade_chunk = function(_, chunk)
-        debug_lib.DebugLog('ACTION: check_upgrade_chunk')
         local surface = game.surfaces[chunk.surface]
 
         if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
@@ -521,7 +512,7 @@ me.conditions = {
     ---@return boolean
     position_done = function(job, position) -- this is condition for action "go_to_position"
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Moving to position", constructron, -3, 1)
+        debug_lib.VisualDebugText("Moving to position", constructron, -1, 1)
 
         local ticks = (game.tick - job.start_tick)
         if not (ticks > 119) then return false end -- not enough time (two seconds) since last check
@@ -536,19 +527,25 @@ me.conditions = {
                     me.actions[job.action](job, table.unpack(job.action_args or {})) -- there is no request, request a path.
                 end
             end
-            debug_lib.VisualDebugText("Path not active", constructron, 0.4, 3)
+            debug_lib.VisualDebugText("Waiting for pathfinder", constructron, -0.5, 1)
             return false -- condition is not met
         end
 
         if job.landfill_job then -- is this a landfill job?
             if not constructron.logistic_cell or not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
                 -- !! Logic gap - Constructrons will return home even if there is other entities to build.
+                if not constructron.logistic_cell then
+                    debug_lib.VisualDebugText("Job wrapup: Roboports removed", constructron, -0.5, 5)
+                else
+                    debug_lib.VisualDebugText("Job wrapup: No landfill", constructron, -0.5, 5)
+                end
                 me.graceful_wrapup(job) -- no landfill left.. leave
                 return false
             end
         end
 
         if job.attempt > 3 and not job.returning_home then
+            debug_lib.VisualDebugText("Job wrapup: Too many failed attempts", constructron, -0.5, 5)
             me.graceful_wrapup(job)
             return false
         end
@@ -577,7 +574,7 @@ me.conditions = {
     ---@return boolean
     build_done = function(job)
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
+        debug_lib.VisualDebugText("Constructing", constructron, -1, 1)
         local build_tick = me.get_constructron_status(constructron, 'build_tick')
         local game_tick = game.tick
 
@@ -622,7 +619,7 @@ me.conditions = {
     ---@return boolean
     deconstruction_done = function(job)
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Deconstructing", constructron, -3, 1)
+        debug_lib.VisualDebugText("Deconstructing", constructron, -1, 1)
         local decon_tick = me.get_constructron_status(constructron, 'deconstruct_tick')
         local game_tick = game.tick
 
@@ -675,7 +672,7 @@ me.conditions = {
     ---@return boolean
     upgrade_done = function(job)
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Constructing", constructron, -3, 1)
+        debug_lib.VisualDebugText("Constructing", constructron, -1, 1)
         local build_tick = me.get_constructron_status(constructron, 'build_tick')
         local game_tick = game.tick
 
@@ -720,7 +717,7 @@ me.conditions = {
     ---@return boolean
     request_done = function(job)
         local constructron = job.constructron
-        debug_lib.VisualDebugText("Awaiting logistics", constructron, -3, 1)
+        debug_lib.VisualDebugText("Awaiting logistics", constructron, -1, 1)
 
         -- check status of logisitc requests
         local trunk_inventory = constructron.get_inventory(defines.inventory.spider_trunk)
@@ -796,8 +793,17 @@ end
 me.get_worker = function(surface_index)
     for _, constructron in pairs(global.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell then
-                debug_lib.VisualDebugText("Needs Equipment", constructron, 0.4, 3)
+            if not constructron.logistic_cell or not (constructron.grid.generator_energy > 0) then
+                rendering.draw_text {
+                    text = "Needs Equipment",
+                    target = constructron,
+                    filled = true,
+                    surface = constructron.surface,
+                    time_to_live = 180,
+                    target_offset = {0, -1},
+                    alignment = "center",
+                    color = {r = 255, g = 255, b = 255, a = 255}
+                }
             else
                 local desired_robot_count = global.desired_robot_count
                 local logistic_network = constructron.logistic_cell.logistic_network
@@ -806,14 +812,13 @@ me.get_worker = function(surface_index)
                 else
                     if not global.clear_robots_when_idle then
                         if global.stations_count[constructron.surface.index] > 0 then
-                            debug_lib.DebugLog('ACTION: Stage')
                             local desired_robot_name = global.desired_robot_name
 
                             ---@cast desired_robot_name string
                             ---@cast desired_robot_count uint
                             if game.item_prototypes[desired_robot_name] then
                                 if global.stations_count[constructron.surface.index] > 0 then
-                                    debug_lib.VisualDebugText("Requesting Construction Robots", constructron, 0.4, 3)
+                                    debug_lib.VisualDebugText("Requesting Construction Robots", constructron, -1, 3)
                                     constructron.set_vehicle_logistic_slot(1, {
                                         name = desired_robot_name,
                                         min = desired_robot_count,
@@ -838,7 +843,7 @@ me.get_worker = function(surface_index)
                                         constructron = constructron
                                     })
                                 else
-                                    debug_lib.VisualDebugText("No Stations", constructron, 0.4, 3)
+                                    debug_lib.VisualDebugText("No Stations", constructron, -1, 3)
                                 end
                             else
                                 debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
@@ -1263,9 +1268,7 @@ me.on_entity_cloned = function(event)
     local entity = event.destination
     if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
         local registration_number = script.register_on_entity_destroyed(entity)
-        debug_lib.DebugLog('constructron ' .. event.destination.unit_number .. ' Cloned!')
         me.paint_constructron(entity, 'idle')
-
         global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "constructron",
@@ -1274,8 +1277,6 @@ me.on_entity_cloned = function(event)
         global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
     elseif entity.name == "service_station" then
         local registration_number = script.register_on_entity_destroyed(entity)
-        debug_lib.DebugLog('service_station ' .. event.destination.unit_number .. ' Cloned!')
-
         global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "service_station",
@@ -1296,12 +1297,10 @@ me.on_entity_destroyed = function(event)
             global.constructrons_count[surface] = math.max(0, (global.constructrons_count[surface] or 0) - 1)
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
-            debug_lib.DebugLog('constructron ' .. event.unit_number .. ' Destroyed!')
         elseif removed_entity.name == "service_station" then
             local surface = removed_entity.surface
             global.stations_count[surface] = math.max(0, (global.stations_count[surface] or 0) - 1)
             global.service_stations[event.unit_number] = nil
-            debug_lib.DebugLog('service_station ' .. event.unit_number .. ' Destroyed!')
         end
         global.registered_entities[event.registration_number] = nil
     end

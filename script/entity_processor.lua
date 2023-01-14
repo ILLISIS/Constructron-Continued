@@ -176,15 +176,11 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         end
                     -- deconstruction
                     elseif (build_type == "deconstruction") then
-                        if not (entity_type == "cliff") and not (entity_type == "item-entity") then
-                            for _, item in ipairs(entity.prototype.mineable_properties.products) do
-                                local amount = item.amount or item.amount_max
-                                trash_items[item.name] = (trash_items[item.name] or 0) + amount
-                            end
-                        elseif (entity_type == "item-entity") then -- ground items
-                            trash_items[entity.stack.name] = (trash_items[entity.stack.name] or 0) + (entity.stack.count or 1)
-                        elseif (entity_type == "cliff") then -- cliff demolition
+                        if (entity_type == "cliff") then -- cliff demolition
                             required_items['cliff-explosives'] = (required_items['cliff-explosives'] or 0) + 1
+                        else
+                            trash_items["iron-plate"] = (trash_items["iron-plate"] or 0) + 4
+                            -- !! assuming 4 generic items to pickup as calculating all the different prototypes and inventories would be very expensive.
                         end
                     -- upgrade
                     elseif build_type == "upgrade" then
