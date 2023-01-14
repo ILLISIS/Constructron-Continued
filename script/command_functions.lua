@@ -47,8 +47,6 @@ end
 
 me.reacquire_construction_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local ghosts = surface.find_entities_filtered {
             name = {"entity-ghost", "tile-ghost"},
             force = {"player", "neutral"},
@@ -65,8 +63,6 @@ end
 
 me.reacquire_deconstruction_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local decons = surface.find_entities_filtered {
             to_be_deconstructed = true,
             force = {"player", "neutral"},
@@ -83,8 +79,6 @@ end
 
 me.reacquire_upgrade_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local upgrades = surface.find_entities_filtered {
             to_be_upgraded = true,
             force = "player",
