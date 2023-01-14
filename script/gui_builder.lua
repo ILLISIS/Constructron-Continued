@@ -4,9 +4,9 @@ mod_gui = require("mod-gui")
 local gui_builder = {}
 
 -- CONSTANTS
-gui_builder.flowButtonName = "CT_toggle_gui"
-gui_builder.mainFrameName = "CT_main_guiFrame"
-gui_builder.preferencesFrameName = "CT_preferences_guiFrame"
+gui_builder.flowButtonName = "CTRON_toggle_gui"
+gui_builder.mainFrameName = "CTRON_main_guiFrame"
+gui_builder.preferencesFrameName = "CTRON_preferences_guiFrame"
 
 ---@param frame LuaGuiElement
 ---@param isMainFrame boolean
@@ -40,7 +40,7 @@ local function titleBar(frame, isMainFrame)
     -- drag area
     bar.add{
         type = "empty-widget",
-        style = "ct_title_dragbar",
+        style = "ctron_title_dragbar",
         ignored_by_interaction = true
     }
 
@@ -56,7 +56,7 @@ local function titleBar(frame, isMainFrame)
         bar.add{
             type = "drop-down",
             name = "surface_select",
-            style = "ct_frame_dropdown",
+            style = "ctron_frame_dropdown",
             selected_index = 1,
             visible = (#surfaces > 1),
             items = surfaces,
@@ -69,7 +69,7 @@ local function titleBar(frame, isMainFrame)
         -- preference button
         bar.add{
             type = "button",
-            style = "ct_frame_button",
+            style = "ctron_frame_button",
             name = "preference_button",
             caption = {"gui.preferences"},
             mouse_button_filter = {"left"},

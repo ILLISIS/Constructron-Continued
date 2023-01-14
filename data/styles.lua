@@ -1,6 +1,6 @@
 local styles = data.raw['gui-style'].default
 
-styles.ct_title_dragbar = {
+styles.ctron_title_dragbar = {
     type = "empty_widget_style",
     parent = "draggable_space_header",
 
@@ -12,7 +12,7 @@ styles.ct_title_dragbar = {
     horizontally_stretchable = "on"
 }
 
-styles.ct_frame_button = {
+styles.ctron_frame_button = {
     type = "button_style",
     parent = "frame_button",
 
@@ -29,7 +29,7 @@ styles.ct_frame_button = {
     disabled_font_color = {0.701961, 0.701961, 0.701961}
 }
 
-styles.ct_frame_dropdown = {
+styles.ctron_frame_dropdown = {
     type = "dropdown_style",
     parent = "dropdown",
     
@@ -42,7 +42,7 @@ styles.ct_frame_dropdown = {
     
     button_style = {
         type = "button_style",
-        parent = "ct_frame_button",
+        parent = "ctron_frame_button",
     },
 
     list_box_style = {
@@ -50,7 +50,7 @@ styles.ct_frame_dropdown = {
 
         item_style = {
             type = "button_style",
-            parent = "ct_frame_button"
+            parent = "ctron_frame_button"
         }
     }
 }
