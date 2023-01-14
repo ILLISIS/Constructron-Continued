@@ -122,7 +122,7 @@ local function buildTabContent(name, tab_flow)
         name = "no_entity",
         style = "negative_subheader_frame"
     }
-    noEntityFrame.style.bottom_margin = -36
+    --noEntityFrame.style.bottom_margin = -36
 
     local noEntityFlow = noEntityFrame.add{
         type = "flow",
@@ -138,16 +138,24 @@ local function buildTabContent(name, tab_flow)
         caption = {"gui.tab-empty-warn", {"gui." .. name}, "nauvis"}
     }
 
+    local scroll_style = "ctron_entity_scroll"
+    if name == "idle" then
+        scroll_style = "ctron_idle_entity_scroll"
+    end
     local entityScroll = entityListFrame.add{
         type = "scroll-pane",
         name = "scroll",
-        --style = "technology_list_scroll_pane"
+        style = scroll_style
     }
     --entityScroll.style.vertically_stretchable = true
     --entityScroll.style.horizontally_stretchable = true
-    entityScroll.style.height = 710
+    --entityScroll.style.height = 912
+    --entityScroll.style.minimal_height = 710
     entityScroll.horizontal_scroll_policy = "never"
     entityScroll.vertical_scroll_policy = "auto-and-reserve-space"
+    --entityScroll.style.vertically_squashable = true
+    --entityScroll.style.extra_padding_when_activated = 0
+
     local col_count = 2 ---@type uint
     if name == "idle" then
         col_count = 4
@@ -157,13 +165,13 @@ local function buildTabContent(name, tab_flow)
         type = "table",
         name = "table",
         column_count = col_count,
-        --style = "technology_slot_table"
+        style = "ctron_entity_table"
     }
-    entityTable.style.vertically_stretchable = true
-    entityTable.style.horizontally_stretchable = true
-    entityTable.style.horizontal_spacing = 0
-    entityTable.style.vertical_spacing = 0
-    entityTable.style.width = 1168 -- 4 * 292 (width of 1 idle item)
+    --entityTable.style.vertically_stretchable = true
+    --entityTable.style.horizontally_stretchable = true
+    --entityTable.style.horizontal_spacing = 0
+    --entityTable.style.vertical_spacing = 0
+    --entityTable.style.width = 1168 -- 4 * 292 (width of 1 idle item)
 end
 
 ---@param name string
@@ -237,8 +245,10 @@ function gui_builder.buildMainGui(player)
         direction = "vertical"
     }
     frame.auto_center = true
-    frame.style.horizontally_stretchable = true
-    frame.style.vertically_stretchable = true
+    --frame.style.horizontally_stretchable = true
+    --frame.style.vertically_stretchable = true
+    frame.style.width = 1228
+    frame.style.height = 834
 
     titleBar(frame, true)
     buildMainContent(frame)
