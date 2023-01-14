@@ -205,6 +205,15 @@ function handlers.recall_ctron(player, button)
     ctron.graceful_wrapup(current_job)
 end
 
+---@param player LuaPlayer
+---@param button LuaGuiElement
+function handlers.remove_logistic_request(player, button)
+    local constructron = global.constructrons[button.tags["unit"] --[[@as uint]]]
+    local slot = button.tags["slot"] --[[@as uint]]
+
+    constructron.clear_vehicle_logistic_slot(slot)
+end
+
 
 function gui_handler.register()
     for ev, _ in pairs(gui_event_type) do

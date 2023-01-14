@@ -148,19 +148,22 @@ local function buildTabContent(name, tab_flow)
     entityScroll.style.height = 710
     entityScroll.horizontal_scroll_policy = "never"
     entityScroll.vertical_scroll_policy = "auto-and-reserve-space"
-    entityScroll.style.extra_padding_when_activated = 0
+    local col_count = 2 ---@type uint
+    if name == "idle" then
+        col_count = 4
+    end
 
     local entityTable = entityScroll.add{
         type = "table",
         name = "table",
-        column_count = 4,
+        column_count = col_count,
         --style = "technology_slot_table"
     }
     entityTable.style.vertically_stretchable = true
     entityTable.style.horizontally_stretchable = true
     entityTable.style.horizontal_spacing = 0
     entityTable.style.vertical_spacing = 0
-    entityTable.style.width = 1136
+    entityTable.style.width = 1168 -- 4 * 292 (width of 1 idle item)
 end
 
 ---@param name string
@@ -297,6 +300,8 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
             unit = constructron.unit_number,
         }
     }
+    button.style.height = 260 + 16 - 40
+    button.style.width = 260 + 8
 
     local minimap = button.add{
         type = "minimap",
@@ -305,7 +310,8 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
     }
     minimap.entity = constructron
     minimap.zoom = 1.25
-    minimap.style.size = 260
+    minimap.style.height = 260 + 16 - 40
+    minimap.style.width = 260 + 8
 
     local left_bottom = left.add{
         type = "flow",
@@ -337,6 +343,104 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
         enabled = not is_idle,
         tooltip = "cancel job and return home"
     }
+
+    local right = frame.add{
+        type = "frame",
+        name = "right",
+        direction = "vertical",
+        visible = is_idle == false,
+        style = "slot_button_deep_frame"
+    }
+    right.style.width = 280 -- 7 * 40 --260 + 12
+    right.style.height = 280 -- 7 * 40 --304
+
+    local inventory = right.add{
+        type = "table",
+        name = "inventory",
+        column_count = 7
+    }
+    inventory.style.horizontal_spacing = 0
+    inventory.style.vertical_spacing = 0
+
+    local c_inv = constructron.get_inventory(defines.inventory.spider_trunk)
+
+    if c_inv then
+        local items = c_inv.get_contents()
+        local c_req = {}
+
+        for slot = 1, constructron.request_slot_count do --[[@cast slot uint]]
+            local req_slot = constructron.get_vehicle_logistic_slot(slot)
+
+            if req_slot.name ~= nil then
+                local tmp = {}
+                tmp.count = req_slot.min
+                tmp.tags = {
+                    mod = "constructron",
+                    on_gui_click = "remove_logistic_request",
+                    unit = constructron.unit_number,
+                    slot = slot,
+                }
+
+                c_req[req_slot.name] = tmp
+            end
+        end
+
+        for item, count in pairs(items) do
+            local slot_style = "slot_button"
+            local tags = {
+                mod = "constructron"
+            }
+
+            if c_req[item] then
+                local req_count = c_req[item].count
+                slot_style = "red_slot_button"
+
+                if req_count > 0 then
+                    tags = c_req[item].tags
+                    slot_style = "yellow_slot_button"
+                end
+
+                count = count - req_count
+                c_req[item] = nil
+            end
+
+            inventory.add{
+                type = "sprite-button",
+                name = item,
+                sprite = "item/" .. item,
+                number = count,
+                style = slot_style,
+                tags = tags
+            }
+
+            if #inventory.children_names == (7*7) then
+                goto inventory_complete
+            end
+        end
+
+        for item, req in pairs(c_req) do
+            local slot_style = "yellow_slot_button"
+
+            if req.count == 0 then
+                slot_style = "red_slot_button"
+            end
+
+            inventory.add{
+                type = "sprite-button",
+                name = item,
+                sprite = "item/" .. item,
+                number = -req.count,
+                style = slot_style,
+                tags = req.tags
+            }
+
+            if #inventory.children_names == (7*7) then
+                goto inventory_complete
+            end
+        end
+    end
+
+    ::inventory_complete::
 
 end
 
