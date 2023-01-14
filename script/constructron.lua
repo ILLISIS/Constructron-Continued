@@ -541,7 +541,7 @@ me.conditions = {
         end
 
         if job.landfill_job then -- is this a landfill job?
-            if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
+            if not constructron.logistic_cell or not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
                 -- !! Logic gap - Constructrons will return home even if there is other entities to build.
                 me.graceful_wrapup(job) -- no landfill left.. leave
                 return false
