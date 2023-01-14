@@ -230,10 +230,10 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         elseif entity_pos_y > queue_surface_key['maximum'].y then
                             queue_surface_key['maximum'].y = entity_pos_y -- expand chunk area
                         end
-                        for item, count in pairs(required_items) do 
+                        for item, count in pairs(required_items) do
                             queue_surface_key['required_items'][item] = (queue_surface_key['required_items'][item] or 0) + count
                         end
-                        for item, count in pairs(trash_items) do 
+                        for item, count in pairs(trash_items) do
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
                     end

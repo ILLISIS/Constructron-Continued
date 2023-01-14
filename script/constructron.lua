@@ -491,9 +491,8 @@ me.actions = {
         }
 
         if next(upgrades) then
+            debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
             for i, entity in ipairs(upgrades) do
-                debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
-
                 local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
                 global.upgrade_entities[key] = entity
             end
