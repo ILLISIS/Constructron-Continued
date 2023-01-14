@@ -83,14 +83,12 @@ me.ensure_globals = function()
     global.construction_job_toggle = settings.global["construct_jobs"].value
     global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
     global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
-    global.ground_decon_job_toggle = settings.global["decon_ground_items"].value
     global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
     global.repair_job_toggle = settings.global["repair_jobs"].value
     global.debug_toggle = settings.global["constructron-debug-enabled"].value
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.max_worker_per_job = 1
     global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
@@ -1209,8 +1207,6 @@ me.mod_settings_changed = function(event)
         global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
     elseif setting == "deconstruct_jobs" then
         global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
-    elseif setting == "decon_ground_items" then
-        global.ground_decon_job_toggle = settings.global["decon_ground_items"].value
     elseif setting == "upgrade_jobs" then
         global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
     elseif setting == "repair_jobs" then
@@ -1223,8 +1219,6 @@ me.mod_settings_changed = function(event)
         global.desired_robot_count = settings.global["desired_robot_count"].value
     elseif setting == "desired_robot_name" then
         global.desired_robot_name = settings.global["desired_robot_name"].value
-    elseif setting == "max-worker-per-job" then
-        global.max_worker_per_job = 1
     elseif setting == "construction_mat_alert" then
         global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
     elseif setting == "max-jobtime-per-job" then

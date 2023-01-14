@@ -89,12 +89,6 @@ data:extend({{
     maximum_value = 10000
 }, {
     type = "bool-setting",
-    name = "decon_ground_items",
-    order = "a8",
-    setting_type = "runtime-global",
-    default_value = true
-}, {
-    type = "bool-setting",
     name = "enable_rocket_powered_constructron",
     order = "a9",
     setting_type = "startup",
