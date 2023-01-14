@@ -167,9 +167,9 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                 if registered then -- check if robots are not already performing the job
                     local required_items = {}
                     local trash_items = {}
+                    local entity_type = entity.type
                     -- construction
                     if (build_type == "construction") then
-                        local entity_type = entity.type
                         if not (entity_type == 'item-request-proxy') then
                             local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
                             required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
@@ -182,13 +182,11 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         end
                     -- deconstruction
                     elseif (build_type == "deconstruction") then
-                        if not (entity.type == "cliff") then
-                            for _, item in ipairs(entity.prototype.mineable_properties.products) do
-                                local amount = item.amount or item.amount_max
-                                trash_items[item.name] = (trash_items[item.name] or 0) + amount
-                            end
-                        else -- cliff demolition
+                        if (entity_type == "cliff") then -- cliff demolition
                             required_items['cliff-explosives'] = (required_items['cliff-explosives'] or 0) + 1
+                        else
+                            trash_items["iron-plate"] = (trash_items["iron-plate"] or 0) + 4
+                            -- !! assuming 4 generic items to pickup as calculating all the different prototypes and inventories would be very expensive.
                         end
                     -- upgrade
                     elseif build_type == "upgrade" then
@@ -238,10 +236,10 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         elseif entity_pos_y > queue_surface_key['maximum'].y then
                             queue_surface_key['maximum'].y = entity_pos_y -- expand chunk area
                         end
-                        for item, count in pairs(required_items) do 
+                        for item, count in pairs(required_items) do
                             queue_surface_key['required_items'][item] = (queue_surface_key['required_items'][item] or 0) + count
                         end
-                        for item, count in pairs(trash_items) do 
+                        for item, count in pairs(trash_items) do
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
                     end

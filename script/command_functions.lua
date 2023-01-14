@@ -48,53 +48,49 @@ end
 
 me.reacquire_construction_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local ghosts = surface.find_entities_filtered {
             name = {"entity-ghost", "tile-ghost"},
             force = {"player", "neutral"},
             surface = surface.name
         }
         game.print('found '.. #ghosts ..' entities on '.. surface.name ..' to construct.')
-        for _, ghost in pairs(ghosts) do
-            event["entity"] = ghost
-            ctron.on_built_entity(event)
+        for _, entity in ipairs(ghosts) do
+            global.ghost_index = global.ghost_index + 1
+            global.ghost_entities[global.ghost_index] = entity
         end
+        global.ghost_tick = game.tick
     end
 end
 
 me.reacquire_deconstruction_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local decons = surface.find_entities_filtered {
             to_be_deconstructed = true,
             force = {"player", "neutral"},
             surface = surface.name
         }
         game.print('found '.. #decons ..' entities on '.. surface.name ..' to deconstruct.')
-        for _, decon in pairs(decons) do
-            event["entity"] = decon
-            ctron.on_entity_marked_for_deconstruction(event)
+        for _, entity in ipairs(decons) do
+            global.decon_index = global.decon_index + 1
+            global.deconstruction_entities[global.decon_index] = entity
         end
+        global.deconstruct_marked_tick = game.tick
     end
 end
 
 me.reacquire_upgrade_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local event = {}
-        event["tick"] = game.tick
         local upgrades = surface.find_entities_filtered {
             to_be_upgraded = true,
             force = "player",
             surface = surface.name
         }
         game.print('found '.. #upgrades ..' entities on '.. surface.name ..' to upgrade.')
-        for _, upgrade in pairs(upgrades) do
-            event["entity"] = upgrade
-            event["target"] = "something"
-            ctron.on_built_entity(event)
+        for _, entity in ipairs(upgrades) do
+            global.upgrade_index = global.upgrade_index + 1
+            global.upgrade_entities[global.upgrade_index] = entity
         end
+        global.upgrade_marked_tick = game.tick
     end
 end
 
@@ -274,7 +270,7 @@ end
 me.help_text = function()
     game.print('Constructron-Continued command help:')
     game.print('/ctron help - show this help message')
-    game.print('/ctron (enable|disable) (debug|constructruction|deconstruction|ground_deconstruction|upgrade|repair) - toggle job types.')
+    game.print('/ctron (enable|disable) (debug|construction|deconstruction|ground_deconstruction|upgrade|repair) - toggle job types.')
     game.print('/ctron reset (settings|queues|entities|all)')
     game.print('/ctron clear all - clears all jobs, queued jobs and unprocessed entities')
     game.print('/ctron stats for a basic display of queue length')

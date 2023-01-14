@@ -1,14 +1,24 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.58
+Date: 2023-01-20
+  Changed:
+    - Removed toggle setting for items-on-ground. (due to entity processing optimizations).
+---------------------------------------------------------------------------------------------------
 Version: 1.0.57
-Date: 2023-01-13
+Date: 2023-01-14
   Fixed:
     - [SE] Spidertrons despawn when ordered to place spaceship tiles.
     - Miniloaders not being upgraded.
+    - A crash if roboports were removed whilst on a landfill job.
   Improvements:
     - Large amounts of optimization to entity processing.
     - Code/file restructuring for better readability and navigation.
+    - Improvements to Debug mode to show more information about what is happening.
   Changed:
+    - Added a power source as an equipment requirement instead of just roboports. Which prevents Constructrons walking off while being setup.
+    - The "equipment needed" message will be draw on Constructrons even without debug mode enable if equipment requirements are not met.
     - Landfill now cannot be disabled and all settings have been removed (due to entity processing optimizations).
+    - Removed action messages in debug mode due to not being specific to a Constructron. Instead, see text drawn on the Constructrons.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.56
 Date: 2023-01-09

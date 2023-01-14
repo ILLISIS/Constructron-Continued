@@ -14,25 +14,14 @@ end
 ---@param offset float
 ---@param ttl uint
 me.VisualDebugText = function(message, entity, offset, ttl)
-    if not entity or not entity.valid then
-        return
-    end
-    if not offset then
-        offset = 0
-    end
-    if not ttl then
-        ttl = 1
-    else
-        ttl = ttl * 60
-    end
     if global.debug_toggle then
         rendering.draw_text {
-            text = message,
+            text = message or "",
             target = entity,
             filled = true,
             surface = entity.surface,
-            time_to_live = ttl,
-            target_offset = {0, offset},
+            time_to_live = (ttl * 60) or 60,
+            target_offset = {0, (offset or 0)},
             alignment = "center",
             color = {
                 r = 255,
@@ -41,7 +30,6 @@ me.VisualDebugText = function(message, entity, offset, ttl)
                 a = 255
             }
         }
-        -- log("surface " .. (entity.surface.name or entity.surface.index) .. " - " .. entity.name .. " #" .. entity.unit_number .. " (x:" .. (entity.position.x) .. ",y:" .. (entity.position.y) .. "):" .. message)
     end
 end
 
