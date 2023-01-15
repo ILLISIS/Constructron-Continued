@@ -774,7 +774,7 @@ end
 me.get_worker = function(surface_index)
     for _, constructron in pairs(global.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell or not (constructron.grid.generator_energy > 0) then
+            if not constructron.logistic_cell or not ((constructron.grid.generator_energy > 0) or (constructron.grid.max_solar_energy > 0)) then
                 rendering.draw_text {
                     text = "Needs Equipment",
                     target = constructron,
