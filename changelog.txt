@@ -1,6 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.59
+Date: 2023-01-15
+  Fixed:
+    - Constructrons powered by solar energy were not being considered for jobs.
+    - Migration script issue causing a crash when loading older game saves.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.58
-Date: 2023-01-20
+Date: 2023-01-15
+  Fixed:
+    - Constructrons and Stations not being correctly counted if /ctron clear all command was used.
+    - Allowed_items cache was being cleared but not rebuilt if /ctron reset all was used.
   Changed:
     - Removed toggle setting for items-on-ground. (due to entity processing optimizations).
 ---------------------------------------------------------------------------------------------------

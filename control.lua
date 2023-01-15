@@ -103,9 +103,8 @@ local function reset(player, parameters)
         cmd.clear_queues()
 
         -- Clear supporting globals
-        global.ignored_entities = {}
-        global.allowed_items = {}
         global.stack_cache = {}
+        cmd.rebuild_caches()
 
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()

@@ -1,6 +1,6 @@
 {
   "name": "Constructron-Continued",
-  "version": "1.0.58",
+  "version": "1.0.59",
   "title": "Constructron-Continued",
   "author": "ILLISIS",
   "homepage": "https://github.com/ILLISIS/Constructron-continued/",
@@ -12,6 +12,6 @@
     "(?) space-exploration",
     "(?) space-spidertron",
     "(?) spidertron-extended",
-    "? dynamnic-robot-queues"
+    "? dynamic-robot-queues"
   ]
 }

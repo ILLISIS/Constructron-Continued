@@ -15,7 +15,7 @@ local me = {}
 me.ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
-    global.allowed_items = {}
+
     global.stack_cache = {}
 
     global.ghost_index = global.ghost_index or 0
@@ -51,6 +51,7 @@ me.ensure_globals = function()
     end
 
     -- build allowed items cache (used in add_entities_to_chunks)
+    global.allowed_items = {}
     for item_name, _ in pairs(game.item_prototypes) do
         local recipes = game.get_filtered_recipe_prototypes({
                 {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}},
@@ -94,23 +95,6 @@ me.ensure_globals = function()
     global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
-end
-
----@param index uint
----@return table<uint, LuaEntity>
-me.get_service_stations = function(index)
-    ---@type table<uint, LuaEntity>
-    local stations_on_surface = {}
-    for s, station in pairs(global.service_stations) do
-        if station and station.valid then
-            if (index == station.surface.index) then
-                stations_on_surface[station.unit_number] = station
-            end
-        else
-            global.service_stations[s] = nil
-        end
-    end
-    return stations_on_surface or {}
 end
 
 ---@param required_items ItemCounts
@@ -791,7 +775,7 @@ end
 me.get_worker = function(surface_index)
     for _, constructron in pairs(global.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell or not (constructron.grid.generator_energy > 0) then
+            if not constructron.logistic_cell or not ((constructron.grid.generator_energy > 0) or (constructron.grid.max_solar_energy > 0)) then
                 rendering.draw_text {
                     text = "Needs Equipment",
                     target = constructron,
@@ -1320,6 +1304,23 @@ me.get_constructron_status = function(constructron, state)
         return global.constructron_statuses[constructron.unit_number][state]
     end
     return nil
+end
+
+---@param surface_index uint
+---@return table<uint, LuaEntity>
+me.get_service_stations = function(surface_index)
+    ---@type table<uint, LuaEntity>
+    local stations_on_surface = {}
+    for s, station in pairs(global.service_stations) do
+        if station and station.valid then
+            if (surface_index == station.surface.index) then
+                stations_on_surface[station.unit_number] = station
+            end
+        else
+            global.service_stations[s] = nil
+        end
+    end
+    return stations_on_surface or {}
 end
 
 ---@param constructron LuaEntity
