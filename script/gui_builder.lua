@@ -373,85 +373,112 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
     inventory.style.vertical_spacing = 0
 
     local c_inv = constructron.get_inventory(defines.inventory.spider_trunk)
+    local c_trash = constructron.get_inventory(defines.inventory.spider_trash)
 
-    if c_inv then
+    if c_inv and c_trash then
         local items = c_inv.get_contents()
-        local c_req = {}
+        local trash = c_trash.get_contents()
+        local combined_inv = {none = {}, done = {}, requesting = {}, dumping = {}}
 
+        -- parsing regular inventory
+        for name, count in pairs(items) do
+            combined_inv.none[name] = {count = count}
+        end
+
+        -- parsing trash inventory
+        for name, count in pairs(trash) do
+            combined_inv.dumping[name] = {count = count}
+        end
+
+        -- parsing logistic requests
         for slot = 1, constructron.request_slot_count do --[[@cast slot uint]]
             local req_slot = constructron.get_vehicle_logistic_slot(slot)
+            local name = req_slot.name
 
-            if req_slot.name ~= nil then
-                local tmp = {}
-                tmp.count = req_slot.min
-                tmp.tags = {
-                    mod = "constructron",
-                    on_gui_click = "remove_logistic_request",
-                    unit = constructron.unit_number,
-                    slot = slot,
-                }
-
-                c_req[req_slot.name] = tmp
+            if not name then
+                goto continue
             end
-        end
 
-        for item, count in pairs(items) do
-            local slot_style = "slot_button"
-            local tags = {
-                mod = "constructron"
-            }
+            local none_tmp = combined_inv.none[name]
 
-            if c_req[item] then
-                local req_count = c_req[item].count
-                slot_style = "red_slot_button"
-
-                if req_count > 0 then
-                    tags = c_req[item].tags
-                    slot_style = "yellow_slot_button"
+            -- dumping items out of inventory?
+            if req_slot.min == 0 then
+                local dump_tmp = combined_inv.dumping[name]
+                if none_tmp and dump_tmp then
+                    none_tmp.count = none_tmp.count + dump_tmp.count
                 end
 
-                count = count - req_count
-                c_req[item] = nil
+                combined_inv.dumping[name] = none_tmp or dump_tmp or {count = 0}
+                combined_inv.none[name] = nil
+
+                goto continue
             end
 
-            inventory.add{
-                type = "sprite-button",
-                name = item,
-                sprite = "item/" .. item,
-                number = count,
-                style = slot_style,
-                tags = tags
-            }
+            -- requesting the item (or already completed)
+            if none_tmp then
+                if none_tmp.count >= req_slot.min then
+                    combined_inv.done[name] = none_tmp
+                else
+                    combined_inv.requesting[name] = {
+                        count = req_slot.min - none_tmp.count,
+                        tags = {
+                            mod = "constructron",
+                            on_gui_click = "remove_logistic_request",
+                            unit = constructron.unit_number,
+                            slot = slot
+                        }
+                    }
+                end
 
-            if #inventory.children_names == (7*7) then
-                goto inventory_complete
+                combined_inv.none[name] = nil
+            else
+                combined_inv.requesting[name] = {
+                    count = req_slot.min,
+                    tags = {
+                        mod = "constructron",
+                        on_gui_click = "remove_logistic_request",
+                        unit = constructron.unit_number,
+                        slot = slot
+                    }
+                }
+            end
+
+            ::continue::
+        end
+
+        local inv_max_size = 7*7
+        local style_per_type = {
+            none = "flib_slot_button_default",
+            done = "flib_slot_button_green",
+            requesting = "flib_slot_button_orange",
+            dumping = "flib_slot_button_red"
+        }
+
+        -- building inventory items
+        for sub_type, sub_list in pairs(combined_inv) do
+            local style = style_per_type[sub_type]
+
+            for name, data in pairs(sub_list) do
+                inventory.add{
+                    type = "sprite-button",
+                    name = name,
+                    sprite = "item/" .. name,
+                    number = data.count,
+                    style = style,
+                    tags = data.tags or {
+                        mod = "constructron"
+                    }
+                }
+
+                -- is inventory full?
+                if #inventory.children_names >= inv_max_size then
+                    goto inventory_complete
+                end
             end
         end
 
-        for item, req in pairs(c_req) do
-            local slot_style = "yellow_slot_button"
-
-            if req.count == 0 then
-                slot_style = "red_slot_button"
-            end
-
-            inventory.add{
-                type = "sprite-button",
-                name = item,
-                sprite = "item/" .. item,
-                number = -req.count,
-                style = slot_style,
-                tags = req.tags
-            }
-
-            if #inventory.children_names == (7*7) then
-                goto inventory_complete
-            end
-        end
+        ::inventory_complete::
     end
-
-    ::inventory_complete::
-
 end
 
 return gui_builder
