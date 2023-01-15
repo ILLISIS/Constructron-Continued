@@ -13,11 +13,10 @@ gui_builder.mainFrameName = "CTRON_main_guiFrame"
 local function titleBar(frame, isMainFrame)
     local bar = frame.add{
         type = "flow",
-        name = "title_bar"
+        name = "title_bar",
+        style = "ctron_title_bar_flow"
     }
     bar.drag_target = frame
-    bar.style.horizontal_spacing = 8
-    bar.style.height = 28
 
     local title
     local close_callback
@@ -111,18 +110,14 @@ local function buildTabContent(name, tab_flow)
         type = "frame",
         name = "frame",
         direction = "vertical",
-        style = "deep_frame_in_shallow_frame"
+        style = "ctron_entity_list_frame"
     }
-    --entityListFrame.style.maximal_height = 750
-    --entityListFrame.style.horizontally_stretchable = true
-    --entityListFrame.style.vertically_stretchable = true
 
     local noEntityFrame = entityListFrame.add{
         type = "frame",
         name = "no_entity",
         style = "negative_subheader_frame"
     }
-    --noEntityFrame.style.bottom_margin = -36
 
     local noEntityFlow = noEntityFrame.add{
         type = "flow",
@@ -147,14 +142,8 @@ local function buildTabContent(name, tab_flow)
         name = "scroll",
         style = scroll_style
     }
-    --entityScroll.style.vertically_stretchable = true
-    --entityScroll.style.horizontally_stretchable = true
-    --entityScroll.style.height = 912
-    --entityScroll.style.minimal_height = 710
     entityScroll.horizontal_scroll_policy = "never"
     entityScroll.vertical_scroll_policy = "auto-and-reserve-space"
-    --entityScroll.style.vertically_squashable = true
-    --entityScroll.style.extra_padding_when_activated = 0
 
     local col_count = 2 ---@type uint
     if name == "idle" then
@@ -167,11 +156,6 @@ local function buildTabContent(name, tab_flow)
         column_count = col_count,
         style = "ctron_entity_table"
     }
-    --entityTable.style.vertically_stretchable = true
-    --entityTable.style.horizontally_stretchable = true
-    --entityTable.style.horizontal_spacing = 0
-    --entityTable.style.vertical_spacing = 0
-    --entityTable.style.width = 1168 -- 4 * 292 (width of 1 idle item)
 end
 
 ---@param name string
@@ -196,10 +180,8 @@ local function buildTab(name, count, tabbed_pane)
         type = "flow",
         name = name .. "_flow",
         direction = "horizontal",
-        style = "inset_frame_container_horizontal_flow_in_tabbed_pane"
+        style = "ctron_tab_flow"
     }
-    tabFlow.style.horizontally_stretchable = true
-    tabFlow.style.vertically_stretchable = true
 
     tabbed_pane.add_tab(tab, tabFlow)
 
@@ -211,22 +193,18 @@ local function buildMainContent(frame)
     local tabPaneFrame = frame.add{
         type = "frame",
         name = "main",
-        style = "inside_deep_frame_for_tabs"
+        style = "ctron_tab_pane_frame"
     }
-    --tabPaneFrame.style.height = 350
-    tabPaneFrame.style.vertically_stretchable = true
-    tabPaneFrame.style.horizontally_stretchable = true
 
     local tabbedPane = tabPaneFrame.add{
         type = "tabbed-pane",
         name = "tab_pane",
+        style = "ctron_tabbed_pane",
         tags = {
             mod = "constructron",
             on_gui_selected_tab_changed  = "update_tab_content"
         }
     }
-    tabbedPane.style.vertically_stretchable = true
-    tabbedPane.style.horizontally_stretchable = true
 
     buildTab("idle", 0, tabbedPane)
     buildTab("construct", 420, tabbedPane)
@@ -245,10 +223,6 @@ function gui_builder.buildMainGui(player)
         direction = "vertical"
     }
     frame.auto_center = true
-    --frame.style.horizontally_stretchable = true
-    --frame.style.vertically_stretchable = true
-    frame.style.width = 1228
-    frame.style.height = 834
 
     titleBar(frame, true)
     buildMainContent(frame)
@@ -303,25 +277,22 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
     local button = left.add{
         type = "button",
         name = "map-button",
-        style = "locomotive_minimap_button",
+        style = "ctron_entity_item_map_button",
         tags = {
             mod = "constructron",
             on_gui_click = "open_ctron_map",
             unit = constructron.unit_number,
         }
     }
-    button.style.height = 260 + 16 - 40
-    button.style.width = 260 + 8
 
     local minimap = button.add{
         type = "minimap",
         name = "map",
-        ignored_by_interaction = true
+        ignored_by_interaction = true,
+        style = "ctron_entity_item_map"
     }
     minimap.entity = constructron
     minimap.zoom = 1.25
-    minimap.style.height = 260 + 16 - 40
-    minimap.style.width = 260 + 8
 
     local left_bottom = left.add{
         type = "flow",
@@ -359,18 +330,15 @@ function gui_builder.buildItem(entity_list, constructron, is_idle)
         name = "right",
         direction = "vertical",
         visible = is_idle == false,
-        style = "slot_button_deep_frame"
+        style = "ctron_entity_item_inventory_frame"
     }
-    right.style.width = 280 -- 7 * 40 --260 + 12
-    right.style.height = 280 -- 7 * 40 --304
 
     local inventory = right.add{
         type = "table",
         name = "inventory",
-        column_count = 7
+        column_count = 7,
+        style = "ctron_entity_item_inventory_table"
     }
-    inventory.style.horizontal_spacing = 0
-    inventory.style.vertical_spacing = 0
 
     local c_inv = constructron.get_inventory(defines.inventory.spider_trunk)
     local c_trash = constructron.get_inventory(defines.inventory.spider_trash)
