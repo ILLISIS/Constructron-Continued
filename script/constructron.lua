@@ -96,23 +96,6 @@ me.ensure_globals = function()
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
 end
 
----@param index uint
----@return table<uint, LuaEntity>
-me.get_service_stations = function(index)
-    ---@type table<uint, LuaEntity>
-    local stations_on_surface = {}
-    for s, station in pairs(global.service_stations) do
-        if station and station.valid then
-            if (index == station.surface.index) then
-                stations_on_surface[station.unit_number] = station
-            end
-        else
-            global.service_stations[s] = nil
-        end
-    end
-    return stations_on_surface or {}
-end
-
 ---@param required_items ItemCounts
 ---@return integer
 me.calculate_required_inventory_slot_count = function(required_items)
@@ -1320,6 +1303,23 @@ me.get_constructron_status = function(constructron, state)
         return global.constructron_statuses[constructron.unit_number][state]
     end
     return nil
+end
+
+---@param surface_index uint
+---@return table<uint, LuaEntity>
+me.get_service_stations = function(surface_index)
+    ---@type table<uint, LuaEntity>
+    local stations_on_surface = {}
+    for s, station in pairs(global.service_stations) do
+        if station and station.valid then
+            if (surface_index == station.surface.index) then
+                stations_on_surface[station.unit_number] = station
+            end
+        else
+            global.service_stations[s] = nil
+        end
+    end
+    return stations_on_surface or {}
 end
 
 ---@param constructron LuaEntity

@@ -103,7 +103,6 @@ local function reset(player, parameters)
         cmd.clear_queues()
 
         -- Clear supporting globals
-        global.allowed_items = {}
         global.stack_cache = {}
         cmd.rebuild_caches()
 
