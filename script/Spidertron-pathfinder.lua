@@ -37,7 +37,8 @@ function Spidertron_Pathfinder.request_path(units, _, destination)
     ---@type LuaSurface.request_path_param
     local request_params = {unit = units[1], units = units, goal = destination}
     if units[1].valid then
-        if request_params.unit.name == "constructron-rocket-powered" then
+        if request_params.unit.name == "constructron-rocket-powered"
+        or request_params.unit.name == "constructron-ss-space-spidertron" then
             for _, unit in ipairs(units) do
                 Spidertron_Pathfinder.set_autopilot(unit, {{position = destination}})
             end

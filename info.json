@@ -10,6 +10,8 @@
     "base",
     "! Constructron",
     "(?) space-exploration",
+    "(?) space-spidertron",
+    "(?) spidertron-extended",
     "? dynamic-robot-queues"
   ]
 }
