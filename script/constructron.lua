@@ -14,7 +14,7 @@ local me = {}
 me.ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
-    global.allowed_items = {}
+
     global.stack_cache = {}
 
     global.ghost_index = global.ghost_index or 0
@@ -50,6 +50,7 @@ me.ensure_globals = function()
     end
 
     -- build allowed items cache (used in add_entities_to_chunks)
+    global.allowed_items = {}
     for item_name, _ in pairs(game.item_prototypes) do
         local recipes = game.get_filtered_recipe_prototypes({
                 {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}},

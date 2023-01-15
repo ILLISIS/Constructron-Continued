@@ -36,8 +36,6 @@ me.clear_queues = function()
     global.repair_queue = {}
 
     for s, surface in pairs(game.surfaces) do
-        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
-        global.stations_count[surface.index] = global.stations_count[surface.index] or 0
         global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
         global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
@@ -167,7 +165,6 @@ end
 me.reload_ctron_status = function()
     for k, constructron in pairs(global.constructrons) do
         ctron.set_constructron_status(constructron, 'busy', false)
-        ctron.set_constructron_status(constructron, 'staged', false)
     end
 end
 
@@ -220,12 +217,43 @@ me.clear_ctron_inventory = function()
     end
 end
 
+me.rebuild_caches = function()
+    -- build allowed items cache (used in add_entities_to_chunks)
+    global.allowed_items = {}
+    for item_name, _ in pairs(game.item_prototypes) do
+        local recipes = game.get_filtered_recipe_prototypes({
+                {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}},
+            })
+        for _ , recipe in pairs(recipes) do
+            if not game.forces["player"].recipes[recipe.name].hidden then -- if the recipe is hidden disallow it
+                global.allowed_items[item_name] = true
+            else
+                global.allowed_items[item_name] = false
+            end
+        end
+        if global.allowed_items[item_name] == nil then -- some items do not have recipes so set the item to disallowed
+            global.allowed_items[item_name] = false
+        end
+    end
+
+    -- build required_items cache (used in add_entities_to_chunks)
+    global.items_to_place_cache = {}
+    for name, v in pairs(game.entity_prototypes) do
+        if v.items_to_place_this ~= nil and v.items_to_place_this[1] and v.items_to_place_this[1].name then -- bots will only ever use the first item from this list
+            global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
+        end
+    end
+    for name, v in pairs(game.tile_prototypes) do
+        if v.items_to_place_this ~= nil and v.items_to_place_this[1] and v.items_to_place_this[1].name then -- bots will only ever use the first item from this list
+            global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
+        end
+    end
+end
+
 me.stats = function()
     local queues = {
         "registered_entities",
         "constructron_statuses",
-        "ignored_entities",
-        "allowed_items",
         "ghost_entities",
         "deconstruction_entities",
         "upgrade_entities",
