@@ -1,26 +1,26 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.60
 Date: ????
-  Fixed:
+  Bugfixes:
     - Possible crash when Constructrons had certain roboport equipments equipped.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.59
 Date: 2023-01-15
-  Fixed:
+  Bugfixes:
     - Constructrons powered by solar energy were not being considered for jobs.
     - Migration script issue causing a crash when loading older game saves.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.58
 Date: 2023-01-15
-  Fixed:
+  Bugfixes:
     - Constructrons and Stations not being correctly counted if /ctron clear all command was used.
     - Allowed_items cache was being cleared but not rebuilt if /ctron reset all was used.
-  Changed:
+  Changes:
     - Removed toggle setting for items-on-ground. (due to entity processing optimizations).
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.57
 Date: 2023-01-14
-  Fixed:
+  Bugfixes:
     - [SE] Spidertrons despawn when ordered to place spaceship tiles.
     - Miniloaders not being upgraded.
     - A crash if roboports were removed whilst on a landfill job.
@@ -28,7 +28,7 @@ Date: 2023-01-14
     - Large amounts of optimization to entity processing.
     - Code/file restructuring for better readability and navigation.
     - Improvements to Debug mode to show more information about what is happening.
-  Changed:
+  Changes:
     - Added a power source as an equipment requirement instead of just roboports. Which prevents Constructrons walking off while being setup.
     - The "equipment needed" message will be draw on Constructrons even without debug mode enable if equipment requirements are not met.
     - Landfill now cannot be disabled and all settings have been removed (due to entity processing optimizations).
@@ -36,21 +36,21 @@ Date: 2023-01-14
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.56
 Date: 2023-01-09
-  Fixed:
+  Bugfixes:
     - A crash when other mods called the game pathfinder API.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.55
 Date: 2023-01-09
-  Notes:
+  Info:
     - 1 Year anniversary update!
-  Fixed:
+  Bugfixes:
     - Pathfinder retries failing which prevented traversal of land 1 tile wide.
     - Containers that were not completely emptied/picked up during deconstruction jobs would not be added as a new job in the chunk checks.
     - Constructrons taking small movement steps in jobs.
     - Entities that could be placed by multiple different items will no longer request all items but only the first.
   Improvements:
     - Pathfinder will now search for the mainland and start building from a fairly close point rather than trying to path through the whole lake.
-  Changed:
+  Changes:
     - Overhaul of Constructron movement actions/conditions.
     - Renvations to job actions and job conditions code.
     - Deduplicated validation code.
@@ -63,19 +63,19 @@ Date: 2022-12-29
     - Constructrons no longer respond to entites within roboport range that robots have already been dispathed to fulfill.
     - Slight optimization to entity processing.
     - Tweaked upgrade jobs to follow standard processing.
-  Changed:
+  Changes:
     - Entity processing is now every 15 ticks instead of every tick.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.53
 Date: 2022-12-28
-  Fixed:
+  Bugfixes:
     - A crash when /ctron reset settings was used.
     - Some settings were not being reset to defaults when using /ctron reset settings.
     - Fixed pathfinder.initial_bounding_box being inadvertenly changed during path requests.
   Improvements:
     - Added a constant waypoint overshoot and waypoint orbit check when Constructrons are active and are moving faster than intended due to other mods.
     - Tweaked path finder to use very skinny paths.
-  Changed:
+  Changes:
     - Various internal CI improvements.
     - Various code comments added.
     - Added better formatting in pathfinder code for readability.
@@ -83,101 +83,101 @@ Date: 2022-12-28
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.52
 Date: 2022-12-26
-  Fixed:
+  Bugfixes:
     - An issue where Constructrons would get stuck in perpetual 'moving to position'.
   Improvements:
     - Overshoot prevention. Constructrons will now slow to base speed within 3 map chunks of the destination.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.51
 Date: 2022-12-25
-  Fixed:
+  Bugfixes:
     - A crash on load when jobs were in progress after 1.0.50.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.50
 Date: 2022-12-24
-  Changed:
+  Changes:
     - [internal] expose job to actions and conditions for later use.
     - Job retry after 3 failures of attempting to move to a position.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.49
 Date: 2022-12-23
-  Changed:
+  Changes:
     - Defaulted max entities per tick to 1000 instead of 100.
-  Fixed:
+  Bugfixes:
     - Required item count is now correctly factored in when identifying if a Constructron has inventory to build a ghost.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.48
 Date: 2022-12-15
-  Fixed:
+  Bugfixes:
     - Modded roboports being removed.
     - A bug that caused a crash when the Constructron could not reach its destination.
     - A bug that caused a crash when a Constructron was standing in a logistic network but did not have a roboport itself.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.47
 Date: 2022-12-06
-  Fixed:
+  Bugfixes:
     - A bug where which caused jobs not to trigger when clear_robots_when_idle was enabled.
   Other:
     - Added type annotations to functions. Thanks BrainGamer!
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.46
 Date: 2022-12-01
-  Changed:
+  Changes:
     - Major changes to landfill behaviour that results in a much better experience. Constructrons will now build landfill as they move toward the construction area creating a path.
-  Fixed:
+  Bugfixes:
     - Constructrons and Stations would not be registered when construction jobs were disabled.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.45
 Date: 2022-11-13
-  Fixed:
+  Bugfixes:
     - A bug which caused Constructrons to work on the wrong surface.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.44
 Date: 2022-11-11
-  Changed:
+  Changes:
     - Made the experience of Constructron staging a bit better when logistic requests were delayed.
     - Code Cleanup.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.43
 Date: 2022-11-10
-  Changed:
+  Changes:
     - Removed periodic Constructron checks, now available Constructrons will be checked as needed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.42
 Date: 2022-11-08
-  Fixed:
+  Bugfixes:
     - A crash upgrading miniloaders and other items with mismatching prototype names.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.41
 Date: 2022-11-03
-  Changed:
+  Changes:
     - Reverted back to pre 1.0.30 method of unused chunk processing for optimization purposes.
     - Cleaned up a lot of unused information in the chunk tables for optimization purposes.
     - Added interval reset to the Constructron checks.
-  Fixed:
+  Bugfixes:
     - Pre v1.0.21 save game migration bug.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.40
 Date: 2022-10-30
-  Fixed:
+  Bugfixes:
     - A bug that caused only the first Constructron to be checked.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.39
 Date: 2022-10-30
-  Fixed:
+  Bugfixes:
     - Constructrons getting stuck on ghosts that cannot be fulfilled due to missing inventory.
-  Changed:
+  Changes:
     - Disabled the Constructron job grouping. Whilst a cool feature, this change will make it easier to develop and has no negative impacts to how the mod works.
     - Optimized frequent check occuring on all Constructrons. Constructrons will now be checked in a queued format eliminating a cpu spike when hundreds of Constructrons were placed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.38
 Date: 2022-10-21
-  Fixed:
+  Bugfixes:
     - A crash when train rails were detected in the new build_done check behaviour
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.37
 Date: 2022-10-20
-  Changed:
+  Changes:
     - Additional changes to deconstruct_done behaviour.
     - Added a graceful wrapup of deconstruction jobs when the inventory has no remaining free slots. Instead of the job carrying on like normal, the Constructron will walk back to the station and queue another job.
     - Changed build_done check behaviour. It now checks if there is more to build in the area instead of only basing it off the bot statuses.
@@ -188,41 +188,41 @@ Date: 2022-10-20
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.36
 Date: 2022-10-8
-  Changed:
+  Changes:
     - Changed deconstruction_done check behaviour. It now checks if there is more to deconstruct in the area instead of only basing it off the bot statuses.
     - Jobs will no longer be assigned to Constructrons that are awaiting robots to fly back to them.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.35
 Date: 2022-09-16
-  Changed:
+  Changes:
     - Added Space Exploration as an optional dependency for Stringweasel.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.34
 Date: 2022-08-27
-  Changed:
+  Changes:
     - New, hopefully more fitting and unique, mod thumbnail.
     - Added a new setting to control wether a Constructron will clear all bots from it's inventory after a job is done. Bots will get requested at the beginning of a new job with this enabled.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.33
 Date: 2022-08-19
-  Changed:
+  Changes:
     - Enabled the ability to repair at any percentage for high health buildings that get damaged only slightly.
     - Minor setting rename.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.32
 Date: 2022-07-20
-  Fixes:
+  Bugfixes:
     - Fixed a bug that disabled deconstruction when items-on-ground is disabled.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.31
 Date: 2022-07-9
-  Fixes:
+  Bugfixes:
     - Fixed a crash when recalling Constructrons when no stations are present on the surface.
     - Fixed unwanted behaviour with internal troubleshooting commands.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.30
 Date: 2022-06-4
-  Fixes:
+  Bugfixes:
     - Fixed multiplayer desyncs by disabling the pathfinder cache in path requests.
     - Fixed a job loop in very specific circumstances.
   Improvements:
@@ -230,19 +230,19 @@ Date: 2022-06-4
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.29
 Date: 2022-05-25
-  Fixes:
+  Bugfixes:
     - Fix a bug that caused entities marked for deconstruction to not be actioned after a reset all command.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.28
 Date: 2022-05-23
   Improvements:
     - Added better visualisation to single entity chunk checks for deconstruction & upgrades.
-  Fixes:
+  Bugfixes:
     - Fixed a bug that caused build/deconstruction/upgrade checks to miss entities.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.27
 Date: 2022-05-22
-  Fixes:
+  Bugfixes:
     - Fixed crash with 'lastpos' variable not being set in jobs that existed prior to v1.0.26.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.26
@@ -251,28 +251,28 @@ Date: 2022-05-22
     - Anti-stuck / waypoint orbiting / pathfinding reattempts added which will find new paths during landfill jobs as they become available.
     - Prioritized deconstruction jobs after reset command is given.
     - Added extra validation to go_to_position action.
-  Fixes:
+  Bugfixes:
     - Fixed an issue that prevented landfill from being enabled through the mod settings menu.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.25
 Date: 2022-05-15
-  Fixes:
+  Bugfixes:
     - Optimized the get_service_stations function when unit_numbers were extremely high to fix very slow responses in the function and even game freezes.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.24
 Date: 2022-05-14
-  Fixes:
+  Bugfixes:
     - Bugfix in deconstruction checks to fix unremoved trees and rocks.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.23
 Date: 2022-05-11
-  Fixes:
+  Bugfixes:
     - Bugfix for Rocket Constructrun not responding to scripting due to entity placement filters.
     - Bugfix for entity counts not subtracting at time of removal which caused a crash when Constructrons performed a check and had no robots in inventory.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.22
 Date: 2022-05-6
-  New Features:
+  Features:
     - New setting: entities_per_tick - control how many items are processed into jobs per tick. Higher numbers requires more initial compute with large blueprints.
     - Added /ctron stats command for further diagnostics.
     - Added /ctron clear inventory command.
@@ -281,18 +281,18 @@ Date: 2022-05-6
     - Optimizations through out other parts of job assignment process.
     - Optimizations to on_built event.
     - Optimizations to inventory calculations.
-  Fixes:
+  Bugfixes:
     - Bugfix in /ctron reset all command whilst recalling the Constructrons.
     - Bugfix after surface deletion.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.21
 Date: 2022-05-1
-  New Features:
-    - Rocket Constructron for Space Exporation. This must be enabled in the startup settings and is only placable in space zones. WIP.
+  Features:
+    - Added a rocket Constructron for Space Exporation. This must be enabled in the startup settings and is only placable in space zones. WIP.
   Improvements:
     - Commands! enable|disable|reset|clear. Please see the mod portal page for info.
     - Performance improvements in entity processing and Constructron checks.
-  Fixes:
+  Bugfixes:
     - Minor bugfix with unit status not clearing after it was picked up/destroyed.
     - Bugfix for Constructrons requesting more than one path at once.
     - Bugfix for landfill not being constructed after toggling the setting.
@@ -300,7 +300,7 @@ Date: 2022-05-1
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.20
 Date: 2022-04-15
-  Fixes:
+  Bugfixes:
     - Changed chunk calculation assumptions back to original value to decrease the chance of missing entities.
     - Bugfix in migration script which only occurred in older saves.
 ---------------------------------------------------------------------------------------------------
@@ -313,7 +313,7 @@ Date: 2022-04-10
     - Added a setting to control after how long the alert is displayed.
     - Items on the ground that get marked for deconstruction will now be actioned.
     - Added a toggle option in startup settings that toggles deconstruction of items on ground.
-  Fixes:
+  Bugfixes:
     - Fixed a bug that caused Rocks and trees to be excluded from deconstruction jobs.
     - Construction robots will now be cleared from inventory if the count exceeds desired_robot_count.
   Known issues:
@@ -329,9 +329,9 @@ Date: 2022-04-03
     - Added force checks to various actions such as construct, deconstruct and upgrade to accomodate AbandonedRuins mod and Auto-Deconstruct mod.
     - Added force to chunk checks so other forces entities will not be considered when a ghost is placed from another force.
     - Expanded minimum chunk check range so item-request-proxies / missing modules would be found in single entity construction if they got missed somehow.
-  Fixes:
+  Bugfixes:
     - Various crashes due to lack of entity validation.
-  Notes:
+  Info:
     - Landfill can be enabled or disabled through the mod settings menu.
     - Landfill functionality is highly experimental and does not represent the finished product.
     - Landfill is best constructed in small jobs close to the shore. It is highly recommended to have atleast a few Constructrons placed.
@@ -343,7 +343,7 @@ Date: 2022-04-03
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.17
 Date: 2022-03-26
-  Fixes:
+  Bugfixes:
     - Fixed job assignment function exit when previous surfaces had no available Constructrons.
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
@@ -352,7 +352,7 @@ Date: 2022-03-26
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.16
 Date: 2022-03-25
-  Fixes:
+  Bugfixes:
     - Fixed queue backlogs that were created if a player performed an action on a lot of entities and then undone the changes
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
@@ -361,7 +361,7 @@ Date: 2022-03-25
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.15
 Date: 2022-03-21
-  Fixes:
+  Bugfixes:
     - Added validation to pathfinder to prevent a crash.
     - Bug fixes in chunk check processes.
   Known issues:
@@ -377,9 +377,9 @@ Date: 2022-03-21
     - A mod settings to control how low an entity can get before a repair job is triggered has been added.
     - Startup mod settings have been added which gives the ability to toggle construct, rebuild, deconstruct, upgrade and repair jobs.
     - Debug text no longer has a random offset.
-  Fixes:
+  Bugfixes:
     - Map mod settings now update in game.
-  Notes:
+  Info:
     - The Constructron colour whilst performing a repair job is charcoal.
     - Any pre-existing damage on entities will not be repaired. The repair jobs are triggered by on_entity_damaged.
     - Constructrons that are already on the way to repair an entity that dies will still proceed as the job is already in progress.
@@ -395,8 +395,8 @@ Date: 2022-03-11
   Improvements:
     - Countless amounts of code cleanup and refactoring all thanks to Karoschl!
     - Constructron waypoint circling should be detected and reset.
-  Krastorio2:
-    - Tesla coils should now target Constructrons
+  Info:
+    - Krastorio2 Tesla coils should now target Constructrons
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
     - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
@@ -415,7 +415,7 @@ Version: 1.0.11
 Date: 2022-03-09
   Improvements:
     - Constructrons are now painted grey(idle) when placed or cloned to another surface.
-  Fixes:
+  Bugfixes:
     - Resolved a crash in Constructron staging when no stations were placed.
     - Resolved a crash in go_to_position retry when a companion was no longer valid.
     - Fixed companion Constructrons not resetting thier status after the leader became invalid.
@@ -428,7 +428,7 @@ Version: 1.0.10
 Date: 2022-03-08
   Improvements:
     - Chunk checks now finds item-request-proxy / unfulfilled modules and will queue another job.
-  Fixes:
+  Bugfixes:
     - Resolved a crash when a Constructron companion was no longer valid.
     - Resolved 'calculate_required_inventory_slot_count' crash.
   Known issues:
@@ -442,7 +442,7 @@ Date: 2022-03-05
     - The mod will now detect unbuilt ghost tiles after a build job.
     - Constructron pathing now takes into account the smallest gaps(1 tile) between water to path through.
     - Garbage collection on path requests that fail to navigate to destination.
-  Fixes:
+  Bugfixes:
     - Resolved a crash in 1.0.7 migrations with invalid entities.
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
@@ -461,13 +461,12 @@ Date: 2022-02-26
     - Added Fuzzy pathing logic to assist when entities are placed in tight places or when using mods like MazeRibbon018.
     - Constructrons will now retry move actions after a few seconds instead of max_jobtime.
     - Constructrons and Service Stations are now registered entities so their removal will be captured regardless of how they are removed.
-  Fixes:
+  Bugfixes:
     - Resolved the 'next_station' crash when only one Service Station was placed.
     - Resolved an issue with unconstructucted rails being detected by the post job check.
-  Space Exploration notes:
-    - Space platform tiles are not constructed at this time for the same reason as Landfill.
-    - Constructrons do not travel between surfaces themselves.
-  Misc:
+  Info:
+    - Space-exploration platform tiles are not constructed at this time for the same reason as landfill.
+    - Constructrons do not travel between space-exploration surfaces themselves.
     - A discord has been created for discussions, ideas, bugs etc. https://discord.gg/m9TDSsH3u2
   Known issues:
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
@@ -482,7 +481,7 @@ Date: 2022-02-09
     - Added event listening for when mods add modules to an entity (i.e Module Inerter) so Constructrons will now build modules even if a ghost is not created.
     - Constructrons will now move to other service stations in hope of fulfilling their logistic request at the new station after max_jobtime is reached. More logic to be added to make this smarter later.
     - Added Krastorio 2 support with equipment grids in Constructrons.
-  Fixes:
+  Bugfixes:
     - Clean up service stations and constructrons that are destroyed which will prevent crashes at various stages.
     - Clean up service stations that are removed by bots which will prevent crashes at various stages.
     - Constructrons will now retry to move into position after overshooting its destination due to moving too fast after max_jobtime is reached.
@@ -511,14 +510,14 @@ Date: 2022-01-25
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 2022-01-13
-  Fixes:
+  Bugfixes:
     - Linear constructron job assignment.
   Improvements:
     - Contructrons no longer will start a job without a roboport and at least one bot allowing time to place and fit equipment.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 2022-01-12
-  Fixes:
+  Bugfixes:
     - Crash on Constructron placement.
   Improvements:
     - Major performance improvements to ghost and deconstruction entity processing.
@@ -530,7 +529,7 @@ Date: 2022-01-12
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Date: 2022-01-10
-  Fixes:
+  Bugfixes:
     - Mining a Constructron gives the player a Spidertron instead.
     - Partially fixed deconstruction process when Constructron inventory fills. Constructrons will not get stuck any more eliminating manual intervention.
   Known issues:
@@ -542,5 +541,5 @@ Date: 2022-01-10
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 2022-01-09
-  Fixes:
+  Bugfixes:
     - Crash on mining a Constructron whilst there are active jobs.
