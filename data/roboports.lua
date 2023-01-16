@@ -29,9 +29,3 @@ for name, eq in pairs(roboports) do
 end
 
 data:extend(reduced_roboports)
-
-local fun_stuff = 43
-
-local fun_stufa = 42
-
-local fun_stufc = 41
