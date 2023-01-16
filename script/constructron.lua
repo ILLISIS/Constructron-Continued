@@ -216,10 +216,10 @@ me.replace_roboports = function(grid, old_eq, new_eq)
 end
 
 ---@param grid LuaEquipmentGrid
----@param size string
+---@param size 0|1
 me.disable_roboports = function(grid, size) -- doesn't really disable them, it sets the size of that cell
     for _, eq in next, grid.equipment do
-        if eq.type == "roboport-equipment" then
+        if eq.type == "roboport-equipment" and eq.prototype.logistic_parameters.construction_radius > size then
             if not string.find(eq.name, "%-reduced%-") then
                 me.replace_roboports(grid, eq, (eq.name .. "-reduced-" .. size ))
             end
@@ -246,7 +246,7 @@ me.actions = {
     go_to_position = function(job, position)
         local constructron = job.constructron
         job.attempt = job.attempt + 1
-        me.disable_roboports(constructron.grid, "1")
+        me.disable_roboports(constructron.grid, 1)
         local distance = chunk_util.distance_between(constructron.position, position)
         constructron.grid.inhibit_movement_bonus = (distance < 32)
         constructron.enable_logistics_while_moving = job.landfill_job
@@ -615,7 +615,7 @@ me.conditions = {
                         me.set_constructron_status(constructron, 'deconstruct_tick', game.tick)
                         return false -- robots are active
                     else
-                        me.disable_roboports(constructron.grid, "0")
+                        me.disable_roboports(constructron.grid, 0)
                         me.graceful_wrapup(job) -- there is no inventory space.. leave
                         return false
                     end
@@ -638,7 +638,7 @@ me.conditions = {
                             end
                         end
                     end
-                    me.disable_roboports(constructron.grid, "0")
+                    me.disable_roboports(constructron.grid, 0)
                     return true -- condition is satisfied
                 end
             else
