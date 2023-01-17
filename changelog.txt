@@ -1,8 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.60
-Date: ????
+Date: 2023-01-17
   Bugfixes:
-    - Possible crash when Constructrons had certain roboport equipments equipped.
+    - A crash when Constructrons had certain roboport equipments equipped.
+    - An issue where items were blacklisted when some but not all recipies were hidden.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.59
 Date: 2023-01-15
