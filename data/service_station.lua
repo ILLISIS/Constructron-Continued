@@ -112,4 +112,4 @@ else
 end
 
 
-table.insert(data.raw["technology"]["spidertron"].effects,{type = "unlock-recipe", recipe="service_station"})
+--table.insert(data.raw["technology"]["spidertron"].effects,{type = "unlock-recipe", recipe="service_station"})

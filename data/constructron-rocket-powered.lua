@@ -6,12 +6,12 @@ local spidertron_definition = {
     leg_scale = 0,
     legs = {
         {
-            block = {1},
+            block = { 1 },
             angle = 0,
             length = 1
         }
     },
-    collision_mask = {"colliding-with-tiles-only", "ground-tile", "water-tile"}
+    collision_mask = { "colliding-with-tiles-only", "ground-tile", "water-tile" }
 }
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 constructron.se_allow_in_space = true
@@ -87,14 +87,14 @@ constructron_recipe = {
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {"low-density-structure", 150},
-        {"se-heavy-girder", 16},
-        {"rocket-control-unit", 16},
-        {"se-specimen", 1},
-        {"rocket-launcher", 4},
-        {"se-rtg-equipment", 8},
-        {"radar", 2},
-        {"se-cargo-rocket-section", 200}
+        { "low-density-structure",   150 },
+        { "se-heavy-girder",         16 },
+        { "rocket-control-unit",     16 },
+        { "se-specimen",             1 },
+        { "rocket-launcher",         4 },
+        { "se-rtg-equipment",        8 },
+        { "radar",                   2 },
+        { "se-cargo-rocket-section", 200 }
     },
     result = "constructron-rocket-powered",
     result_count = 1,
@@ -105,8 +105,8 @@ constructron_easy_recipe = {
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {"constructron", 1},
-        {"se-cargo-rocket-section", 200}
+        { "constructron",            1 },
+        { "se-cargo-rocket-section", 200 }
     },
     result = "constructron-rocket-powered",
     result_count = 1,
@@ -114,7 +114,7 @@ constructron_easy_recipe = {
 }
 
 if mods["space-exploration"] then
-    local ctron_rocket_powered = {constructron, constructron_item}
+    local ctron_rocket_powered = { constructron, constructron_item }
     if settings.startup["constructron-easy-recipe-toggle"].value then
         table.insert(ctron_rocket_powered, constructron_easy_recipe)
     else
@@ -128,7 +128,7 @@ if mods["space-exploration"] then
     data:extend(ctron_rocket_powered)
 
     table.insert(
-        data.raw["technology"]["spidertron"].effects,
+        data.raw["technology"]["constructron"].effects,
         {
             type = "unlock-recipe",
             recipe = "constructron-rocket-powered"
