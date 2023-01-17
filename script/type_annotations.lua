@@ -84,6 +84,7 @@
 ---@field attempt uint
 ---@field path_active boolean?
 ---@field path_requestid uint
+---@field start_tick integer
 
 ---@class RegisteredEntity
 ---@field name string
@@ -123,16 +124,13 @@
 ---@field construction_job_toggle boolean
 ---@field rebuild_job_toggle boolean
 ---@field deconstruction_job_toggle boolean
----@field ground_decon_job_toggle boolean
 ---@field upgrade_job_toggle boolean
 ---@field repair_job_toggle boolean
 ---@field debug_toggle boolean
 ---@field job_start_delay uint
 ---@field desired_robot_count uint
 ---@field desired_robot_name string
----@field max_worker_per_job uint
 ---@field construction_mat_alert uint
----@field max_jobtime uint
 ---@field entities_per_tick uint
 ---@field clear_robots_when_idle boolean
 ---@field spider_remote_toggle boolean
