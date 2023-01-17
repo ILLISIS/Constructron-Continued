@@ -227,8 +227,6 @@ me.rebuild_caches = function()
         for _ , recipe in pairs(recipes) do
             if not game.forces["player"].recipes[recipe.name].hidden then -- if the recipe is hidden disallow it
                 global.allowed_items[item_name] = true
-            else
-                global.allowed_items[item_name] = false
             end
         end
         if global.allowed_items[item_name] == nil then -- some items do not have recipes so set the item to disallowed
