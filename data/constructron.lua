@@ -8,7 +8,7 @@ local constructron_collision_mask = {
 
 if mods["space-exploration"] then
     local collision_mask_util_extended = require(
-    "__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
+        "__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
 
     -- removed becuase it caused despawns when constructrons built space ship tiles. (pathfinder still collides)
     -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
@@ -27,7 +27,8 @@ end
 
 local spidertron_definition = {
     name = "constructron",
-    collision_mask = constructron_collision_mask
+    collision_mask = constructron_collision_mask,
+    allow_passengers = false
 }
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 
