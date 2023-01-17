@@ -1,9 +1,9 @@
-require("data/constructron")
-require("data/constructron_pathing_proxy")
-require("data/service_station")
+require("prototypes/constructron")
+require("prototypes/constructron_pathing_proxy")
+require("prototypes/service_station")
 
-require("data/technology")
+require("prototypes/technology")
 
 if mods["space-exploration"] and settings.startup["enable_rocket_powered_constructron"].value then
-    require("data/constructron-rocket-powered")
+    require("prototypes/constructron-rocket-powered")
 end

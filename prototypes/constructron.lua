@@ -1,4 +1,4 @@
-local lib_spider = require("data/lib/lib_spider")
+local lib_spider = require("prototypes/lib/spider")
 
 local constructron_collision_mask = {
     "water-tile",
@@ -8,7 +8,7 @@ local constructron_collision_mask = {
 
 if mods["space-exploration"] then
     local collision_mask_util_extended = require(
-        "__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
+    "__space-exploration__/collision-mask-util-extended/data/collision-mask-util-extended")
 
     -- removed becuase it caused despawns when constructrons built space ship tiles. (pathfinder still collides)
     -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
@@ -39,13 +39,13 @@ local constructron_item = {
         {
             icon = "__Constructron-Continued__/graphics/icon_texture.png",
             icon_size = 256,
-            -- scale = 0.25
+            scale = 0.25
         },
         {
             icon = "__base__/graphics/icons/spidertron.png",
             icon_size = 64,
             icon_mipmaps = 4,
-            scale = 0.5
+            scale = 1
         }
     },
     name = "constructron",
@@ -55,71 +55,37 @@ local constructron_item = {
     subgroup = "transport",
     type = "item-with-entity-data"
 }
-local constructron_recipe
-local constructron_easy_recipe
 
-if not mods["space-exploration"] then
-    constructron_recipe = {
-        type = "recipe",
-        name = "constructron",
-        enabled = false,
-        ingredients = {
-            { "raw-fish",                 1 },
-            { "rocket-control-unit",      16 },
-            { "low-density-structure",    150 },
-            { "effectivity-module-3",     2 },
-            { "rocket-launcher",          4 },
-            { "fusion-reactor-equipment", 2 },
-            { "exoskeleton-equipment",    4 },
-            { "radar",                    2 }
-        },
-        result = "constructron",
-        result_count = 1,
-        energy = 1
-    }
-    constructron_easy_recipe = {
-        type = "recipe",
-        name = "constructron",
-        enabled = false,
-        ingredients = {
-            { "spidertron", 1 }
-        },
-        result = "constructron",
-        result_count = 1,
-        energy = 1
-    }
-else
-    constructron_recipe = {
-        type = "recipe",
-        name = "constructron",
-        enabled = false,
-        ingredients = {
-            { "low-density-structure", 150 },
-            { "se-heavy-girder",       16 },
-            { "rocket-control-unit",   16 },
-            { "se-specimen",           1 },
-            { "rocket-launcher",       4 },
-            { "se-rtg-equipment",      8 },
-            { "exoskeleton-equipment", 4 },
-            { "radar",                 2 }
-        },
-        result = "constructron",
-        result_count = 1,
-        energy = 1
-    }
-    constructron_easy_recipe = {
-        type = "recipe",
-        name = "constructron",
-        enabled = false,
-        ingredients = {
-            { "spidertron", 1 }
-        },
-        result = "constructron",
-        result_count = 1,
-        energy = 1
-    }
-end
+local constructron_recipe = {
+    type = "recipe",
+    name = "constructron",
+    enabled = false,
+    ingredients = {
+        { "raw-fish",                 1 },
+        { "rocket-control-unit",      16 },
+        { "low-density-structure",    150 },
+        { "effectivity-module-3",     2 },
+        { "rocket-launcher",          4 },
+        { "fusion-reactor-equipment", 2 },
+        { "exoskeleton-equipment",    4 },
+        { "radar",                    2 }
+    },
+    result = "constructron",
+    result_count = 1,
+    energy = 1
+}
 
+local constructron_easy_recipe = {
+    type = "recipe",
+    name = "constructron",
+    enabled = false,
+    ingredients = {
+        { "spidertron", 1 }
+    },
+    result = "constructron",
+    result_count = 1,
+    energy = 1
+}
 
 -- Add the 'Cannot be placed on:' SE description
 if mods["space-exploration"] then

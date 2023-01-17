@@ -1,4 +1,4 @@
-local lib_spider = require("data/lib/lib_spider")
+local lib_spider = require("prototypes/lib/spider")
 local spidertron_definition = {
     name = "constructron-rocket-powered",
     guns = {},

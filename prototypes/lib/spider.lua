@@ -5,7 +5,7 @@ local sounds = require("__base__/prototypes/entity/sounds")
 local movement_triggers = require("__base__/prototypes/entity/movement-triggers")
 
 local lib_spider = {}
-lib_spider.spidertron_animations = require("data/lib/lib_spider_animations")
+lib_spider.spidertron_animations = require("prototypes/lib/spider_animations")
 lib_spider.default_legs = {
     -- right side
     {
