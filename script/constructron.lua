@@ -1038,86 +1038,94 @@ me.get_job = function()
                 })
 
                 -- request items
-                me.create_job(global.job_bundle_index, {
-                    action = 'request_items',
-                    action_args = {combined_chunks.requested_items},
-                    leave_condition = 'request_done',
-                    constructron = worker,
-                    unused_stations = me.get_service_stations(worker.surface.index)
-                })
+                non_optimistic_item_requested = false
+                for k,item in pairs(combined_chunks.requested_items) do
+                    if not custom_lib.table_has_value(global.optimistic_logistics_items, item) then
+                        non_optimistic_item_requested = true 
+                    end
+                end
 
-                for i, chunk in ipairs(combined_chunks) do
-                    chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
-                    chunk['surface'] = surface.index
-                    for p, position in ipairs(chunk.positions) do
+                if non_optimistic_item_requested then
+                    me.create_job(global.job_bundle_index, {
+                        action = 'request_items',
+                        action_args = { combined_chunks.requested_items },
+                        leave_condition = 'request_done',
+                        constructron = worker,
+                        unused_stations = me.get_service_stations(worker.surface.index)
+                    })
 
-                        local landfill_check = false
-                        if combined_chunks.requested_items["landfill"] then
-                            landfill_check = true
-                        end
+                    for i, chunk in ipairs(combined_chunks) do
+                        chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
+                        chunk['surface'] = surface.index
+                        for p, position in ipairs(chunk.positions) do
 
-                        -- move to position
-                        me.create_job(global.job_bundle_index, {
-                            action = 'go_to_position',
-                            action_args = {position},
-                            leave_condition = 'position_done',
-                            leave_args = {position},
-                            constructron = worker,
-                            landfill_job = landfill_check
-                        })
-                        -- do actions
-                        if not (job_type == 'deconstruct') then
-                            if not (job_type == 'upgrade') then
+                            local landfill_check = false
+                            if combined_chunks.requested_items["landfill"] then
+                                landfill_check = true
+                            end
+
+                            -- move to position
+                            me.create_job(global.job_bundle_index, {
+                                action = 'go_to_position',
+                                action_args = {position},
+                                leave_condition = 'position_done',
+                                leave_args = {position},
+                                constructron = worker,
+                                landfill_job = landfill_check
+                            })
+                            -- do actions
+                            if not (job_type == 'deconstruct') then
+                                if not (job_type == 'upgrade') then
+                                    me.create_job(global.job_bundle_index, {
+                                        action = 'build',
+                                        leave_condition = 'build_done',
+                                        leave_args = {},
+                                        constructron = worker,
+                                        job_class = job_type
+                                    })
+                                else
+                                    me.create_job(global.job_bundle_index, {
+                                        action = 'build',
+                                        leave_condition = 'upgrade_done',
+                                        leave_args = {},
+                                        constructron = worker,
+                                        job_class = job_type
+                                    })
+                                end
+                            elseif (job_type == 'deconstruct') then
                                 me.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'build_done',
-                                    leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
-                                })
-                            else
-                                me.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'upgrade_done',
-                                    leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
+                                    action = 'deconstruct',
+                                    leave_condition = 'deconstruction_done',
+                                    constructron = worker
                                 })
                             end
-                        elseif (job_type == 'deconstruct') then
+                        end
+                        if (job_type == 'construct') then
                             me.create_job(global.job_bundle_index, {
-                                action = 'deconstruct',
-                                leave_condition = 'deconstruction_done',
+                                action = 'check_build_chunk',
+                                action_args = {chunk},
+                                leave_condition = 'pass', -- there is no leave condition
+                                constructron = worker
+                            })
+                        end
+                        if (job_type == 'deconstruct') then
+                            me.create_job(global.job_bundle_index, {
+                                action = 'check_decon_chunk',
+                                action_args = {chunk},
+                                leave_condition = 'pass', -- there is no leave condition
+                                constructron = worker
+                            })
+                        end
+                        if (job_type == 'upgrade') then
+                            me.create_job(global.job_bundle_index, {
+                                action = 'check_upgrade_chunk',
+                                action_args = {chunk},
+                                leave_condition = 'pass', -- there is no leave condition
                                 constructron = worker
                             })
                         end
                     end
-                    if (job_type == 'construct') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_build_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'deconstruct') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_decon_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'upgrade') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_upgrade_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
                 end
-
                 -- go back to a service_station when job is done.
                 me.create_job(global.job_bundle_index, {
                     action = 'go_to_position',
@@ -1229,6 +1237,10 @@ me.mod_settings_changed = function(event)
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "clear_robots_when_idle" then
         global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
+    elseif setting == "optimistic_logistics_items" then
+        global.optimistic_logistics_items = custom_lib.string_split(settings.global["optimistic_logistics_items"].value,",")
+    elseif setting == "logistics_fullfillment_timeout" then
+        global.logistics_fullfillment_timeout = settings.global["logistics_fullfillment_timeout"] * 60
     end
 end
 
