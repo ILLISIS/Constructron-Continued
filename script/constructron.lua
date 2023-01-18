@@ -699,6 +699,8 @@ me.conditions = {
     ---@return boolean
     request_done = function(job)
         local constructron = job.constructron
+        local timer = game.tick - job.start_tick
+
         debug_lib.VisualDebugText("Awaiting logistics", constructron, -1, 1)
 
         -- check status of logisitc requests
@@ -714,10 +716,25 @@ me.conditions = {
             local request = constructron.get_vehicle_logistic_slot(i)
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
-                    return false -- condition is not met
+                    -- If fullfillment timout isnt enabled return false
+                    if (global.logistics_fullfillment_timeout == -60) then
+                        return false
+                    end
+
+                    -- if the item isnt in the optimistic_logistics_items
+                    if not custom_lib.table_has_value(global.optimistic_logistics_items, request.name) then
+                        return false -- condition is not met
+                    end
                 end
             end
         end
+
+        -- If we get here it means that we have gotten all the required items and possibly all of the optimistic items
+        -- If the timeout is enabled and the timer hasnt expanded we return false to keep waiting
+        if (timer < global.logistics_fullfillment_timeout and global.logistics_fullfillment_timeout ~= -60) then
+            return false
+        end
+
 
         -- clear logistic request
         for i = 1, constructron.request_slot_count do --[[@cast i uint]]
