@@ -4,6 +4,7 @@ local chunk_util = require("script/chunk_util")
 local debug_lib = require("script/debug_lib")
 local color_lib = require("script/color_lib")
 local pathfinder = require("script/pathfinder")
+local custom_lib = require("script/custom_lib")
 
 ---@module "chunk_util"
 ---@module "debug_lib"
@@ -92,6 +93,8 @@ me.ensure_globals = function()
     global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
+    global.optimistic_logistics_items = custom_lib.string_split(settings.global["optimistic_logistics_items"].value,",")
+    global.logistics_fullfillment_timeout = settings.global["logistics_fullfillment_timeout"] * 60
 end
 
 ---@param required_items ItemCounts
