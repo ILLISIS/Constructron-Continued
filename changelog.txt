@@ -3,6 +3,8 @@ Version: 1.0.76
 Date: ????
   Features:
     - Added a new technology to unlock constructrons (requires spidertrons and personal roboports to be researched).
+  Changes:
+    - Constructrons no longer allow any passengers to enter them.
   Other:
     - Changed the internal file structure of the data stage to be more organized.
 ---------------------------------------------------------------------------------------------------
