@@ -1,6 +1,6 @@
 local tech = data.raw["technology"]["spidertron"]
 
-local unit = tech.unit
+local unit = table.deepcopy(tech.unit)
 unit.count = 450
 unit.time = 60
 
