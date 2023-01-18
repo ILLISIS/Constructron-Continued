@@ -11,7 +11,8 @@ local spidertron_definition = {
             length = 1
         }
     },
-    collision_mask = { "colliding-with-tiles-only", "ground-tile", "water-tile" }
+    collision_mask = { "colliding-with-tiles-only", "ground-tile", "water-tile" },
+    allow_passengers = false
 }
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 constructron.se_allow_in_space = true
