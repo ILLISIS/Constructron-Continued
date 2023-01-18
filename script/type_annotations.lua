@@ -84,6 +84,7 @@
 ---@field attempt uint
 ---@field path_active boolean?
 ---@field path_requestid uint
+---@field start_tick uint?
 
 ---@class RegisteredEntity
 ---@field name string
@@ -132,6 +133,7 @@
 ---@field desired_robot_name string
 ---@field max_worker_per_job uint
 ---@field construction_mat_alert uint
+---@field logistics_fullfillment_timeout uint
 ---@field max_jobtime uint
 ---@field entities_per_tick uint
 ---@field clear_robots_when_idle boolean

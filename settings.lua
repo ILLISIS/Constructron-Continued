@@ -1,4 +1,4 @@
-data:extend({{
+data:extend({ {
     type = "bool-setting",
     name = "constructron-debug-enabled",
     setting_type = "runtime-global",
@@ -47,7 +47,7 @@ data:extend({{
     order = "a2",
     setting_type = "runtime-global",
     default_value = true
-},{
+}, {
     type = "bool-setting",
     name = "deconstruct_jobs",
     order = "a3",
@@ -82,6 +82,13 @@ data:extend({{
     maximum_value = 3600
 }, {
     type = "int-setting",
+    name = "logistics_fullfillment_timeout",
+    setting_type = "runtime-global",
+    default_value = -1,
+    minimum_value = -1,
+    maximum_value = 3600
+}, {
+    type = "int-setting",
     name = "entities_per_tick",
     setting_type = "runtime-global",
     default_value = 1000,
@@ -99,5 +106,12 @@ data:extend({{
     order = "a10",
     setting_type = "runtime-global",
     default_value = false
+}, {
+    type = "string-setting",
+    name = "optimistic_logistics_items",
+    setting_type = "runtime-global",
+    default_value = "",
+    allow_blank = true
 },
+
 })
