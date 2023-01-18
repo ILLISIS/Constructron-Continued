@@ -1,7 +1,7 @@
 local tech = data.raw["technology"]["spidertron"]
 
 local unit = tech.unit
-unit.count = 750
+unit.count = 450
 unit.time = 60
 
 local ctron_tech = {
@@ -12,16 +12,7 @@ local ctron_tech = {
         "personal-roboport-equipment"
     },
     unit = unit,
-    effects = {
-        {
-            type = "unlock-recipe",
-            recipe = "constructron"
-        },
-        {
-            type = "unlock-recipe",
-            recipe = "service_station"
-        }
-    },
+    effects = {},
 
     icon = tech.icon,
     icon_mipmaps = tech.icon_mipmaps,

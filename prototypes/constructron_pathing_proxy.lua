@@ -1,18 +1,8 @@
-local collision_mask_util_extended = require("prototypes/lib/collision-mask-util-extended")
 local pathing_collision_mask = {
   "water-tile",
   "colliding-with-tiles-only",
   "not-colliding-with-itself"
 }
-if mods["space-exploration"] then
-  local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-  table.insert(pathing_collision_mask, spaceship_collision_layer)
-
-  if not settings.startup["enable_rocket_powered_constructron"].value then
-    local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-    table.insert(pathing_collision_mask, empty_space_collision_layer)
-  end
-end
 
 local template_entity = {
   type = "simple-entity",

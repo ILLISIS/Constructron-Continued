@@ -1,1 +1,1 @@
-require("prototypes/compatibility/krastorio2")
+require("prototypes/compatibility/krastorio2-updates")
