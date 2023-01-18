@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.76
+Date: ????
+  Features:
+    - Added a new technology to unlock constructrons (requires spidertrons and personal roboports to be researched).
+  Other:
+    - Changed the internal file structure of the data stage to be more organized.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.75
 Date: 2023-07-08
   Bugfixes:
