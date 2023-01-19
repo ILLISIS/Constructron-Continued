@@ -2,7 +2,6 @@
 local debug_lib = require("script/debug_lib")
 local chunk_util = require("script/chunk_util")
 local color_lib = require("script/color_lib")
-local pathfinder = require("script/pathfinder")
 local ctron = require("script/constructron")
 
 job_proc = {}
@@ -299,7 +298,6 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
                             end
                         end
                         -- !!! recursive call
-                        -- return get_job_chunks_and_constructrons(remaining_chunks, total_required_slots, requested_items)
                         return job_proc.merge_chunks(remaining_chunks, total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
                     end
                 end
@@ -331,7 +329,7 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
         end
     end
     used_chunks.requested_items = requested_items
-    return used_chunks -- these chunks will be used in the construction job
+    return used_chunks -- these chunks will be used in the job
 end
 
 ---@param job_bundle_index uint
