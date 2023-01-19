@@ -1041,7 +1041,8 @@ me.get_job = function()
                 non_optimistic_item_requested = false
                 for k,item in pairs(combined_chunks.requested_items) do
                     if not custom_lib.table_has_value(global.optimistic_logistics_items, item) then
-                        non_optimistic_item_requested = true 
+                        non_optimistic_item_requested = true
+                        break
                     end
                 end
 
