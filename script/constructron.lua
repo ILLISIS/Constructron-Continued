@@ -717,7 +717,7 @@ me.conditions = {
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
                     -- If fullfillment timout isnt enabled return false
-                    if (global.logistics_fullfillment_timeout == -60) then
+                    if (global.logistics_fullfillment_timeout == 0) then
                         return false
                     end
 
@@ -731,7 +731,7 @@ me.conditions = {
 
         -- If we get here it means that we have gotten all the required items and possibly all of the optimistic items
         -- If the timeout is enabled and the timer hasnt expanded we return false to keep waiting
-        if (timer < global.logistics_fullfillment_timeout and global.logistics_fullfillment_timeout ~= -60) then
+        if (timer < global.logistics_fullfillment_timeout and global.logistics_fullfillment_timeout ~= 0) then
             return false
         end
 
