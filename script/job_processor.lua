@@ -12,8 +12,8 @@ job_proc = {}
 -------------------------------------------------------------------------------
 
 job_proc.process_job_queue = function()
-    job_proc.get_job()
-    job_proc.do_job(global.job_bundles)
+    job_proc.get_job() -- job creation
+    job_proc.do_job(global.job_bundles) -- job opteration
 end
 
 job_proc.get_job = function()
@@ -64,12 +64,8 @@ job_proc.get_job = function()
             })
             -- main job setup
             for _, chunk in ipairs(combined_chunks) do
-                debug_lib.draw_simple_rect(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.green, 0.3))
                 chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
                 chunk['surface'] = surface_index
-                for _, position in pairs(chunk.positions) do
-                    debug_lib.VisualDebugCircle2(position, surface_index, color_lib.color_alpha(color_lib.colors.pink, 0.8))
-                end
                 for _, position in ipairs(chunk.positions) do
                     local landfill_check = false
                     if combined_chunks.requested_items["landfill"] then
@@ -296,7 +292,7 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
                         local remaining_chunks = {}
                         local remaining_counter = 1
                         remaining_chunks[1] = merged_chunk
-                        for k, chunk in ipairs(chunks) do
+                        for k, chunk in pairs(chunks) do
                             if (not (k == i)) and (not (k == j)) then
                                 remaining_counter = remaining_counter + 1
                                 remaining_chunks[remaining_counter] = chunk
