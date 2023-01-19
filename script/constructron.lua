@@ -247,6 +247,8 @@ me.actions = {
                     end
                 end
             end
+            -- ensure robots are in the inventory
+            merged_items[global.desired_robot_name] = global.desired_robot_count
             -- clear unwanted items from inventory
             for item_name, _ in pairs(inventory_items) do
                 if not merged_items[item_name] then
@@ -264,14 +266,6 @@ me.actions = {
                     })
                     slot = slot + 1
                 end
-            end
-            -- request robots if required
-            if global.clear_robots_when_idle then
-                constructron.set_vehicle_logistic_slot(slot, {
-                    name = global.desired_robot_name --[[@as string]],
-                    min = global.desired_robot_count --[[@as uint]],
-                    max = global.desired_robot_count --[[@as uint]]
-                })
             end
         end
     end,
@@ -379,8 +373,8 @@ me.actions = {
             debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
 
             for i, entity in ipairs(ghosts) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.ghost_entities[key] = entity
+                global.ghost_index = global.ghost_index + 1
+                global.ghost_entities[global.ghost_index] = entity
             end
             global.ghost_tick = game.tick
         end
@@ -408,8 +402,8 @@ me.actions = {
             debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
 
             for i, entity in ipairs(decons) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.deconstruction_entities[key] = entity
+                global.decon_index = global.decon_index + 1
+                global.deconstruction_entities[global.decon_index] = entity
             end
             global.deconstruct_marked_tick = game.tick
         end
@@ -438,8 +432,8 @@ me.actions = {
         if next(upgrades) then
             debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
             for i, entity in ipairs(upgrades) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.upgrade_entities[key] = entity
+                global.upgrade_index = global.upgrade_index + 1
+                global.upgrade_entities[global.upgrade_index] = entity
             end
             global.upgrade_marked_tick = game.tick
         end
@@ -773,7 +767,6 @@ me.get_worker = function(surface_index)
                 else
                     if not global.clear_robots_when_idle then
                         local desired_robot_name = global.desired_robot_name
-
                         ---@cast desired_robot_name string
                         ---@cast desired_robot_count uint
                         if game.item_prototypes[desired_robot_name] then
@@ -810,21 +803,25 @@ me.get_worker = function(surface_index)
         end
     end
 end
+
 -------------------------------------------------------------------------------
 
-
-me.merge_chunks = function(chunks, inventory_slots, items, build_type)
+---@param chunks Chunk
+---@param total_required_stacks integer
+---@param empty_stack_count integer
+---@param requested_items table
+---@param job_type string
+---@param surface_index integer
+---@return Chunk[]
+me.merge_chunks = function(chunks, total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
     local merged_chunk
-
     for i, chunk1 in pairs(chunks) do -- first chunk
         for j, chunk2 in pairs(chunks) do -- compared chunk
             if not (i == j) then -- if not self
                 local merged_area = chunk_util.check_if_neighbour(chunk1.area, chunk2.area) -- checks if chunks are near to each other
-
                 if merged_area then -- chunks are neighbors
                     local required_slots1 = 0
                     local required_slots2 = 0
-
                     if not chunk1.merged then
                         required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items or {})
                         required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {})
@@ -839,16 +836,13 @@ me.merge_chunks = function(chunks, inventory_slots, items, build_type)
                             requested_items[name] = math.ceil((requested_items[name] or 0) + count)
                         end
                     end
-
-                    if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then -- Actually merge the chunks
-                        total_required_slots = total_required_slots + required_slots1 + required_slots2
+                    if ((total_required_stacks + required_slots1 + required_slots2) < empty_stack_count) then -- actually merge the chunks if inventory fits
+                        total_required_stacks = total_required_stacks + required_slots1 + required_slots2
                         merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
                         merged_chunk.merged = true
-
                         -- create a new table for remaining chunks
                         local remaining_chunks = {}
                         local remaining_counter = 1
-
                         remaining_chunks[1] = merged_chunk
                         for k, chunk in ipairs(chunks) do
                             if (not (k == i)) and (not (k == j)) then
@@ -857,154 +851,43 @@ me.merge_chunks = function(chunks, inventory_slots, items, build_type)
                             end
                         end
                         -- !!! recursive call
-                        return get_job_chunks_and_constructrons(remaining_chunks, total_required_slots, requested_items)
-                        return me.merge_chunks = function(chunks, inventory_slots, items, build_type)
+                        -- return get_job_chunks_and_constructrons(remaining_chunks, total_required_slots, requested_items)
+                        return me.merge_chunks(remaining_chunks, total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
                     end
                 end
             end
         end
     end
-
+    -- reaching this point of the function means that as many of the original set of chunks have been merged together as possible
+    global[job_type .. "_queue"][surface_index] = {} -- clear the queue
     ---@type Chunk[]
     local used_chunks = {}
     local used_chunk_counter = 1
-
-    ---@type Chunk[]
-    local unused_chunks = {}
-    local unused_chunk_counter = 1
-
     ---@type ItemCounts
     requested_items = {}
-    total_required_slots = 0
-
+    total_required_stacks = 0
     for i, chunk in pairs(chunks) do
         local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items or {})
-
         required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {})
-        if ((total_required_slots + required_slots) < empty_stack_count) then
-            total_required_slots = total_required_slots + required_slots
+        if ((total_required_stacks + required_slots) < empty_stack_count) then
+            total_required_stacks = total_required_stacks + required_slots
             for name, count in pairs(chunk['required_items']) do
                 requested_items[name] = math.ceil(((requested_items[name] or 0) + count))
             end
             used_chunks[used_chunk_counter] = chunk
             used_chunk_counter = used_chunk_counter + 1
+            global[job_type .. "_queue"][surface_index][i] = nil
         else
-            unused_chunks[unused_chunk_counter] = chunk
-            unused_chunk_counter = unused_chunk_counter + 1
+            -- chunks will not fit into the inventory - add them back to the queue for reprocessing
+            global[job_type .. "_queue"][surface_index][i] = chunk
         end
     end
-
     used_chunks.requested_items = requested_items
-    return used_chunks, unused_chunks -- function exit point
+    return used_chunks -- these chunks will be used in the construction job
 end
-
---- This function is a Mess: refactor - carefull, recursion!!!
----@param queued_chunks any
----@param worker LuaEntity[]
----@return {[integer]: Chunk, requested_items: ItemCounts}
----@return Chunk[]
-me.get_chunks_and_constructrons = function(queued_chunks, worker)
-    -- this function in called by get_job and iterates over all job chunks to merge them until there is one left and/or job chunks cannot be merged.
-
-    local inventory = worker.get_inventory(defines.inventory.spider_trunk)
-    local empty_stack_count = inventory.count_empty_stacks()
-
-    ---@param chunks Chunk[]
-    ---@param total_required_slots integer
-    ---@param requested_items ItemCounts
-    ---@return {[integer]: Chunk, requested_items: ItemCounts}
-    ---@return Chunk[]
-    local function get_job_chunks_and_constructrons(chunks, total_required_slots, requested_items)
-        local merged_chunk
-
-        for i, chunk1 in pairs(chunks) do
-            for j, chunk2 in pairs(chunks) do
-                if not (i == j) then
-                    local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area) -- checks if chunks are near to each other
-
-                    if merged_area then
-                        local required_slots1 = 0
-                        local required_slots2 = 0
-
-                        if not chunk1.merged then
-                            required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items or {})
-                            required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {})
-                            for name, count in pairs(chunk1['required_items']) do
-                                requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                            end
-                        end
-                        if not chunk2.merged then
-                            required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items or {})
-                            required_slots2 = required_slots2 + me.calculate_required_inventory_slot_count(chunk2.trash_items or {})
-                            for name, count in pairs(chunk2['required_items']) do
-                                requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                            end
-                        end
-
-                        if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then -- Actually merge the chunks
-                            total_required_slots = total_required_slots + required_slots1 + required_slots2
-                            merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                            merged_chunk.merged = true
-
-                            -- create a new table for remaining chunks
-                            local remaining_chunks = {}
-                            local remaining_counter = 1
-
-                            remaining_chunks[1] = merged_chunk
-                            for k, chunk in ipairs(chunks) do
-                                if (not (k == i)) and (not (k == j)) then
-                                    remaining_counter = remaining_counter + 1
-                                    remaining_chunks[remaining_counter] = chunk
-                                end
-                            end
-                            -- !!! recursive call
-                            return get_job_chunks_and_constructrons(remaining_chunks, total_required_slots, requested_items)
-                        end
-                    end
-                end
-            end
-        end
-
-        ---@type Chunk[]
-        local used_chunks = {}
-        local used_chunk_counter = 1
-
-        ---@type Chunk[]
-        local unused_chunks = {}
-        local unused_chunk_counter = 1
-
-        ---@type ItemCounts
-        requested_items = {}
-        total_required_slots = 0
-
-        for i, chunk in pairs(chunks) do
-            local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items or {})
-
-            required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {})
-            if ((total_required_slots + required_slots) < empty_stack_count) then
-                total_required_slots = total_required_slots + required_slots
-                for name, count in pairs(chunk['required_items']) do
-                    requested_items[name] = math.ceil(((requested_items[name] or 0) + count))
-                end
-                used_chunks[used_chunk_counter] = chunk
-                used_chunk_counter = used_chunk_counter + 1
-            else
-                unused_chunks[unused_chunk_counter] = chunk
-                unused_chunk_counter = unused_chunk_counter + 1
-            end
-        end
-
-        used_chunks.requested_items = requested_items
-        return used_chunks, unused_chunks -- function exit point
-    end
-
-    return get_job_chunks_and_constructrons(queued_chunks, 0, {}) -- function entry point
-end
-
 
 me.get_job = function()
-    local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
-    for _, surface in pairs(managed_surfaces) do -- iterate each surface
+    for _, surface in pairs(game.surfaces) do -- iterate each surface
         local surface_index = surface.index
         if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
             local job_type
@@ -1019,25 +902,20 @@ me.get_job = function()
             else
                 return
             end
-
+            -- get a constructron for this job
             local worker = me.get_worker(surface_index)
             if not (worker and worker.valid) then return end
             me.set_constructron_status(worker, 'busy', true)
             me.paint_constructron(worker, job_type)
-
             local inventory = worker.get_inventory(defines.inventory.spider_trunk)
-            local empty_stack_count = inventory.count_empty_stacks()
-            local combined_chunks = me.merge_chunks(global[job_type .. "_queue"][surface_index])
-            local combined_chunks, unused_chunks = me.get_chunks_and_constructrons(global[job_type .. "_queue"][surface_index], worker)
-
-            global[job_type .. "_queue"][surface_index] = {} -- clear queue
-            for i, chunk in pairs(unused_chunks) do -- requeue unused chunks
-                global[job_type .. "_queue"][surface_index][chunk.key] = chunk
-            end
-
+            local empty_stack_count = ((inventory.count_empty_stacks()) - (me.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
+            -- merge chunks in proximity to each other
+            local requested_items = {}
+            local total_required_stacks = 0
+            local combined_chunks = me.merge_chunks(global[job_type .. "_queue"][surface_index], total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
+            -- get closest service station
             global.job_bundle_index = (global.job_bundle_index or 0) + 1
             local closest_station = me.get_closest_service_station(worker)
-
             -- go to service station
             me.create_job(global.job_bundle_index, {
                 action = 'go_to_position',
@@ -1046,7 +924,6 @@ me.get_job = function()
                 leave_args = {closest_station.position},
                 constructron = worker
             })
-
             -- request items
             me.create_job(global.job_bundle_index, {
                 action = 'request_items',
@@ -1055,17 +932,15 @@ me.get_job = function()
                 constructron = worker,
                 unused_stations = me.get_service_stations(worker.surface.index)
             })
-
+            -- main job setup
             for _, chunk in ipairs(combined_chunks) do
                 chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
                 chunk['surface'] = surface_index
                 for _, position in ipairs(chunk.positions) do
-
                     local landfill_check = false
                     if combined_chunks.requested_items["landfill"] then
                         landfill_check = true
                     end
-
                     -- move to position
                     me.create_job(global.job_bundle_index, {
                         action = 'go_to_position',
@@ -1127,7 +1002,6 @@ me.get_job = function()
                     })
                 end
             end
-
             -- go back to a service_station when job is done.
             me.create_job(global.job_bundle_index, {
                 action = 'go_to_position',
@@ -1137,14 +1011,12 @@ me.get_job = function()
                 constructron = worker,
                 returning_home = true
             })
-
             -- clear items
             me.create_job(global.job_bundle_index, {
                 action = 'clear_items',
                 leave_condition = 'request_done',
                 constructron = worker
             })
-
             -- ready for next job
             me.create_job(global.job_bundle_index, {
                 action = 'retire',
