@@ -4,6 +4,7 @@ local pathfinder = require("script/pathfinder")
 local cmd = require("script/command_functions")
 local chunk_util = require("script/chunk_util")
 local entity_proc = require("script/entity_processor")
+local job_proc = require("script/job_processor")
 
 local init = function()
     ctron.ensure_globals()
@@ -26,7 +27,7 @@ script.on_nth_tick(15, (function(event)
 end))
 
 -- main worker
-script.on_nth_tick(60, ctron.process_job_queue)
+script.on_nth_tick(60, job_proc.process_job_queue)
 
 -- cleanup
 script.on_nth_tick(54000, (function(event)
