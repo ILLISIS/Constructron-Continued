@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.63
+Date: 2023-01-21
+  Bugfixes:
+    - A crash when clearing items from trash took too long.
+    - Constructrons movement speed was inhibited while station roaming.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.62
 Date: 2023-01-20
   Bugfixes:
