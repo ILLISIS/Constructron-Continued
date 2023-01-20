@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.62
+Date: 2023-01-20
+  Bugfixes:
+    - Constructrons not operating on any surface other than nauvis.
+    - A possible crash during the v1.0.55 migration script when pathfinder global variables weren't initialised yet.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.61
 Date: 2023-01-20
   Bugfixes:

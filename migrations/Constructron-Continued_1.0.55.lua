@@ -7,6 +7,11 @@ game.map_settings.path_finder.use_path_cache = false
 global.spider_remote_toggle = false
 
 local cmd = require("script/command_functions")
+local ctron = require("script/constructron")
+local pathfinder = require("script/pathfinder")
+
+ctron.ensure_globals()
+pathfinder.init_globals()
 
 -- Clear jobs/queues/entities
 global.job_bundles = {}
