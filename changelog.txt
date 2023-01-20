@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.61
+Date: 2023-01-20
+  Bugfixes:
+    - A crash if '/ctron reset settings' was used.
+    - Empty slots during job creation not being counted correctly.
+  Changes:
+    - Large amounts of code restructure.
+    - Refactor chunk merge function.
+    - Refactor request_done condition.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.60
 Date: 2023-01-17
   Bugfixes:

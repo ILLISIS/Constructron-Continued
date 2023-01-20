@@ -15,7 +15,9 @@ me.ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
 
-    global.stack_cache = {}
+    global.stack_cache = {} -- rebuild
+
+    global.job_bundle_index = global.job_bundle_index or 1
 
     global.ghost_index = global.ghost_index or 0
     global.decon_index = global.decon_index or 0
@@ -94,24 +96,6 @@ me.ensure_globals = function()
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
 end
 
----@param required_items ItemCounts
----@return integer
-me.calculate_required_inventory_slot_count = function(required_items)
-    local slots = 0
-    local stack_size
-
-    for name, count in pairs(required_items) do
-        if not global.stack_cache[name] then
-            stack_size = game.item_prototypes[name].stack_size
-            global.stack_cache[name] = stack_size
-        else
-            stack_size = global.stack_cache[name]
-        end
-        slots = slots + math.ceil(count / stack_size)
-    end
-    return slots
-end
-
 ---@param network LuaLogisticNetwork
 ---@return boolean
 me.robots_active = function(network)
@@ -150,54 +134,6 @@ me.graceful_wrapup = function(job)
         i = i + 1
     end
     global.job_bundles[job.bundle_index] = new_t
-end
-
----@param job Job
-me.do_until_leave = function(job)
-    -- action is what to do, a function.
-    -- action_args is going to be unpacked to action function. first argument of action must be constructron.
-    -- leave_condition is a function, leave_args is a table to unpack to leave_condition as arguments
-    -- leave_condition should have constructron as first argument
-
-    if not job.active then
-        job.attempt = 0
-        job.active = true
-        job.start_tick = game.tick
-        me.actions[job.action](job, table.unpack(job.action_args or {}))
-    end
-
-    local status = me.conditions[job.leave_condition](job, table.unpack(job.leave_args or {}))
-
-    if status == true then
-        table.remove(global.job_bundles[job.bundle_index], 1)
-        return true -- returning true means you can remove this job from job list
-    elseif (job.action == 'request_items') then
-        local timer = game.tick - job.start_tick
-        if timer > global.construction_mat_alert then
-            for k, v in pairs(game.players) do
-                v.add_alert(job.constructron, defines.alert_type.no_material_for_construction)
-            end
-        end
-        if timer > global.max_jobtime and (global.stations_count[(job.constructron.surface.index)] > 0) then
-            local closest_station = me.get_closest_service_station(job.constructron)
-            for unit_number, station in pairs(job.unused_stations) do
-                if not station.valid then
-                    job.unused_stations[unit_number] = nil
-                end
-            end
-            job.unused_stations[closest_station.unit_number] = nil
-            if not (next(job.unused_stations)) then
-                job.unused_stations = me.get_service_stations(job.constructron.surface.index)
-                if not #job.unused_stations == 1 then
-                    job.unused_stations[closest_station.unit_number] = nil
-                end
-            end
-            local next_station = me.get_closest_unused_service_station(job.constructron, job.unused_stations)
-            pathfinder.init_path_request(job.constructron, next_station.position, job)
-            job.start_tick = game.tick
-            debug_lib.DebugLog('request_items action timed out, moving to new station')
-        end
-    end
 end
 
 ---@param grid LuaEquipmentGrid
@@ -282,14 +218,28 @@ me.actions = {
         local constructron = job.constructron
         if global.stations_count[constructron.surface.index] > 0 then
             local merged_items = table.deepcopy(request_items)
-            for _, inv in pairs({"spider_trash", "spider_trunk"}) do
-                local inventory_items = me.get_inventory(constructron, inv)
-                for item_name, _ in pairs(inventory_items) do
-                    if not merged_items[item_name] then
-                        merged_items[item_name] = 0
+            -- get inventory conents
+            local inventory_items = {}
+            for _, inventory_type in pairs({"spider_trash", "spider_trunk"}) do
+                local inventory = constructron.get_inventory(defines.inventory[inventory_type] --[[@as defines.inventory]])
+                if inventory ~= nil then
+                    local inv_contents = inventory.get_contents()
+                    if (inv_contents ~= nil) then
+                        for item, count in pairs(inv_contents) do
+                            inventory_items[item] = (inventory_items[item] or 0) + count
+                        end
                     end
                 end
             end
+            -- ensure robots are in the inventory
+            merged_items[global.desired_robot_name] = global.desired_robot_count
+            -- clear unwanted items from inventory
+            for item_name, _ in pairs(inventory_items) do
+                if not merged_items[item_name] then
+                    merged_items[item_name] = 0
+                end
+            end
+            -- request the required items for the job
             local slot = 1
             for name, count in pairs(merged_items) do
                 if (global.allowed_items[name] == true) then
@@ -300,13 +250,6 @@ me.actions = {
                     })
                     slot = slot + 1
                 end
-            end
-            if global.clear_robots_when_idle then
-                constructron.set_vehicle_logistic_slot(slot, {
-                    name = global.desired_robot_name --[[@as string]],
-                    min = global.desired_robot_count --[[@as uint]],
-                    max = global.desired_robot_count --[[@as uint]]
-                })
             end
         end
     end,
@@ -414,8 +357,8 @@ me.actions = {
             debug_lib.DebugLog('added ' .. #ghosts .. ' unbuilt ghosts.')
 
             for i, entity in ipairs(ghosts) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.ghost_entities[key] = entity
+                global.ghost_index = global.ghost_index + 1
+                global.ghost_entities[global.ghost_index] = entity
             end
             global.ghost_tick = game.tick
         end
@@ -443,8 +386,8 @@ me.actions = {
             debug_lib.DebugLog('added ' .. #decons .. ' to be deconstructed.')
 
             for i, entity in ipairs(decons) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.deconstruction_entities[key] = entity
+                global.decon_index = global.decon_index + 1
+                global.deconstruction_entities[global.decon_index] = entity
             end
             global.deconstruct_marked_tick = game.tick
         end
@@ -473,8 +416,8 @@ me.actions = {
         if next(upgrades) then
             debug_lib.DebugLog('added ' .. #upgrades .. ' missed entity upgrades.')
             for i, entity in ipairs(upgrades) do
-                local key =  entity.surface.index .. ',' .. entity.position.x .. ',' .. entity.position.y
-                global.upgrade_entities[key] = entity
+                global.upgrade_index = global.upgrade_index + 1
+                global.upgrade_entities[global.upgrade_index] = entity
             end
             global.upgrade_marked_tick = game.tick
         end
@@ -696,27 +639,66 @@ me.conditions = {
     ---@return boolean
     request_done = function(job)
         local constructron = job.constructron
+        local ticks = (game.tick - job.start_tick)
+        local surface_index = constructron.surface.index
+        local logistic_condition = true
         debug_lib.VisualDebugText("Awaiting logistics", constructron, -1, 1)
-
         -- check status of logisitc requests
         local trunk_inventory = constructron.get_inventory(defines.inventory.spider_trunk)
-        local trunk = {}
+        local trunk = {} -- what we have
         for i = 1, #trunk_inventory do
             local item = trunk_inventory[i]
             if item.valid_for_read then
                 trunk[item.name] = (trunk[item.name] or 0) + item.count
             end
         end
+        -- ensure that what we do not want has been taken
+        local trash_inventory = constructron.get_inventory(defines.inventory.spider_trash)
+        if trash_inventory then
+            local trash_items = trash_inventory.get_contents()
+            if next(trash_items) then
+                logistic_condition = false
+            end
+        end
+        -- ensure what we are asking for has been delivered
         for i = 1, constructron.request_slot_count do ---@cast i uint
             local request = constructron.get_vehicle_logistic_slot(i)
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
-                    return false -- condition is not met
+                    logistic_condition = false
                 end
             end
         end
-
-        -- clear logistic request
+        if not logistic_condition then
+            -- alert
+            if (ticks > global.construction_mat_alert) then
+                for _, player in pairs(game.players) do
+                    player.add_alert(constructron, defines.alert_type.no_material_for_construction)
+                end
+            end
+            -- station roaming
+            if (ticks > global.max_jobtime) and (global.stations_count[(surface_index)] > 0) then
+                local closest_station = me.get_closest_service_station(constructron)
+                for unit_number, station in pairs(job.unused_stations) do
+                    if not station.valid then
+                        job.unused_stations[unit_number] = nil
+                    end
+                end
+                job.unused_stations[closest_station.unit_number] = nil
+                if not (next(job.unused_stations)) then
+                    job.unused_stations = me.get_service_stations(surface_index)
+                    if not #job.unused_stations == 1 then
+                        job.unused_stations[closest_station.unit_number] = nil
+                    end
+                end
+                local next_station = me.get_closest_unused_service_station(constructron, job.unused_stations)
+                pathfinder.init_path_request(job.constructron, next_station.position, job)
+                job.start_tick = game.tick
+                debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
+            end
+            return false -- condition is not met
+        end
+        -- clear logistic request and proceed with job
         for i = 1, constructron.request_slot_count do --[[@cast i uint]]
             constructron.clear_vehicle_logistic_slot(i)
         end
@@ -730,430 +712,6 @@ me.conditions = {
 }
 
 -------------------------------------------------------------------------------
-
----@param constructron LuaEntity
----@param inventory_type defines.inventory | string
----@return ItemCounts
-me.get_inventory = function(constructron, inventory_type)
-    ---@type ItemCounts
-    local items = {}
-    local inventory
-    if inventory_type == "spider_trash" then
-        inventory = constructron.get_inventory(defines.inventory.spider_trash)
-    elseif inventory_type == "spider_trunk" then
-        inventory = constructron.get_inventory(defines.inventory.spider_trunk)
-    end
-    inventory = inventory or {}
-    for i = 1, #inventory do
-        local item = inventory[i]
-        if item.valid_for_read and item.name ~= global.desired_robot_name then
-            items[item.name] = (items[item.name] or 0) + item.count
-        end
-    end
-    return items
-end
-
----@param job_bundle_index uint
----@param job Job
-me.create_job = function(job_bundle_index, job)
-    if not global.job_bundles then
-        global.job_bundles = {}
-    end
-    if not global.job_bundles[job_bundle_index] then
-        global.job_bundles[job_bundle_index] = {}
-    end
-    local index = #global.job_bundles[job_bundle_index] + 1 --[[@as uint]]
-    job.bundle_index = job_bundle_index
-    global.job_bundles[job_bundle_index][index] = job
-end
-
----@param surface_index uint
----@return LuaEntity?
-me.get_worker = function(surface_index)
-    for _, constructron in pairs(global.constructrons) do
-        if constructron and constructron.valid and (constructron.surface.index == surface_index) and not me.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell or not ((constructron.grid.generator_energy > 0) or (constructron.grid.max_solar_energy > 0)) then
-                rendering.draw_text {
-                    text = "Needs Equipment",
-                    target = constructron,
-                    filled = true,
-                    surface = constructron.surface,
-                    time_to_live = 180,
-                    target_offset = {0, -1},
-                    alignment = "center",
-                    color = {r = 255, g = 255, b = 255, a = 255}
-                }
-            else
-                local desired_robot_count = global.desired_robot_count
-                local logistic_network = constructron.logistic_cell.logistic_network
-                if ((logistic_network.all_construction_robots >= desired_robot_count) and not (me.robots_active(logistic_network))) or global.clear_robots_when_idle then
-                    return constructron
-                else
-                    if not global.clear_robots_when_idle then
-                        if global.stations_count[constructron.surface.index] > 0 then
-                            local desired_robot_name = global.desired_robot_name
-
-                            ---@cast desired_robot_name string
-                            ---@cast desired_robot_count uint
-                            if game.item_prototypes[desired_robot_name] then
-                                if global.stations_count[constructron.surface.index] > 0 then
-                                    debug_lib.VisualDebugText("Requesting Construction Robots", constructron, -1, 3)
-                                    constructron.set_vehicle_logistic_slot(1, {
-                                        name = desired_robot_name,
-                                        min = desired_robot_count,
-                                        max = desired_robot_count
-                                    })
-                                    local closest_station = me.get_closest_service_station(constructron)
-                                    local distance = chunk_util.distance_between(constructron.position, closest_station.position)
-                                    if distance < 9 then return end
-                                    me.set_constructron_status(constructron, 'busy', true)
-                                    global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                                    me.create_job(global.job_bundle_index, {
-                                        action = 'go_to_position',
-                                        action_args = {closest_station.position},
-                                        leave_condition = 'position_done',
-                                        leave_args = {closest_station.position},
-                                        constructron = constructron
-                                    })
-                                    me.create_job(global.job_bundle_index, {
-                                        action = 'retire',
-                                        leave_condition = 'pass',
-                                        leave_args = {closest_station.position},
-                                        constructron = constructron
-                                    })
-                                else
-                                    debug_lib.VisualDebugText("No Stations", constructron, -1, 3)
-                                end
-                            else
-                                debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
---- This function is a Mess: refactor - carefull, recursion!!!
----@param queued_chunks any
----@param worker LuaEntity[]
----@return {[integer]: Chunk, requested_items: ItemCounts}
----@return Chunk[]
-me.get_chunks_and_constructrons = function(queued_chunks, worker)
-    local inventory = worker.get_inventory(defines.inventory.spider_trunk) -- only checking if things can fit in the first constructron. expecting others to be the exact same.
-    local empty_stack_count = inventory.count_empty_stacks()
-
-    ---@param chunks Chunk[]
-    ---@param total_required_slots integer
-    ---@param requested_items ItemCounts
-    ---@return {[integer]: Chunk, requested_items: ItemCounts}
-    ---@return Chunk[]
-    local function get_job_chunks_and_constructrons(chunks, total_required_slots, requested_items)
-        local merged_chunk
-
-        for i, chunk1 in ipairs(chunks) do
-            for j, chunk2 in ipairs(chunks) do
-                if not (i == j) then
-                    local merged_area = chunk_util.merge_direct_neighbour(chunk1.area, chunk2.area) -- checks if chunks are near to each other on the game map
-
-                    if merged_area then
-                        local required_slots1 = 0
-                        local required_slots2 = 0
-
-                        if not chunk1.merged then
-                            required_slots1 = me.calculate_required_inventory_slot_count(chunk1.required_items or {})
-                            required_slots1 = required_slots1 + me.calculate_required_inventory_slot_count(chunk1.trash_items or {})
-                            for name, count in pairs(chunk1['required_items']) do
-                                requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                            end
-                        end
-                        if not chunk2.merged then
-                            required_slots2 = me.calculate_required_inventory_slot_count(chunk2.required_items or {})
-                            required_slots2 = required_slots2 + me.calculate_required_inventory_slot_count(chunk2.trash_items or {})
-                            for name, count in pairs(chunk2['required_items']) do
-                                requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                            end
-                        end
-
-                        if ((total_required_slots + required_slots1 + required_slots2) < empty_stack_count) then -- Actually merge the chunks
-                            total_required_slots = total_required_slots + required_slots1 + required_slots2
-                            merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                            merged_chunk.merged = true
-
-                            -- create a new table for remaining chunks
-                            local remaining_chunks = {}
-                            local remaining_counter = 1
-
-                            remaining_chunks[1] = merged_chunk
-                            for k, chunk in ipairs(chunks) do
-                                if (not (k == i)) and (not (k == j)) then
-                                    remaining_counter = remaining_counter + 1
-                                    remaining_chunks[remaining_counter] = chunk
-                                end
-                            end
-                            -- !!! recursive call
-                            return get_job_chunks_and_constructrons(remaining_chunks, total_required_slots, requested_items)
-                        end
-                    end
-                end
-            end
-        end
-
-        ---@type Chunk[]
-        local used_chunks = {}
-        local used_chunk_counter = 1
-
-        ---@type Chunk[]
-        local unused_chunks = {}
-        local unused_chunk_counter = 1
-
-        ---@type ItemCounts
-        requested_items = {}
-        total_required_slots = 0
-
-        for i, chunk in ipairs(chunks) do
-            local required_slots = me.calculate_required_inventory_slot_count(chunk.required_items or {})
-
-            required_slots = required_slots + me.calculate_required_inventory_slot_count(chunk.trash_items or {})
-            if ((total_required_slots + required_slots) < empty_stack_count) then
-                total_required_slots = total_required_slots + required_slots
-                for name, count in pairs(chunk['required_items']) do
-                    requested_items[name] = math.ceil(((requested_items[name] or 0) + count))
-                end
-                used_chunks[used_chunk_counter] = chunk
-                used_chunk_counter = used_chunk_counter + 1
-            else
-                unused_chunks[unused_chunk_counter] = chunk
-                unused_chunk_counter = unused_chunk_counter + 1
-            end
-        end
-
-        used_chunks.requested_items = requested_items
-        return used_chunks, unused_chunks -- function exit point
-    end
-
-    return get_job_chunks_and_constructrons(queued_chunks, 0, {}) -- function entry point
-end
-
-
-me.get_job = function()
-    local managed_surfaces = game.surfaces -- revisit as all surfaces are scanned, even ones without service stations or constructrons.
-    for _, surface in pairs(managed_surfaces) do -- iterate each surface
-        if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
-            if (next(global.construct_queue[surface.index]) or next(global.deconstruct_queue[surface.index]) or next(global.upgrade_queue[surface.index]) or next(global.repair_queue[surface.index])) then -- this means they are processed as chunks or it's empty.
-                local chunks = {} --[=[@type Chunk[]]=]
-                local job_type
-                local chunk_counter = 0
-                local worker = me.get_worker(surface.index)
-
-                if not (worker and worker.valid) then return end
-                me.set_constructron_status(worker, 'busy', true)
-                if next(global.deconstruct_queue[surface.index]) then -- deconstruction have priority over construction.
-                    for key, chunk in pairs(global.deconstruct_queue[surface.index]) do
-                        chunk_counter = chunk_counter + 1
-                        chunks[chunk_counter] = chunk
-                    end
-                    job_type = 'deconstruct'
-
-                elseif next(global.construct_queue[surface.index]) then
-                    for key, chunk in pairs(global.construct_queue[surface.index]) do
-                        chunk_counter = chunk_counter + 1
-                        chunks[chunk_counter] = chunk
-                    end
-                    job_type = 'construct'
-
-                elseif next(global.upgrade_queue[surface.index]) then
-                    for key, chunk in pairs(global.upgrade_queue[surface.index]) do
-                        chunk_counter = chunk_counter + 1
-                        chunks[chunk_counter] = chunk
-                    end
-                    job_type = 'upgrade'
-
-                elseif next(global.repair_queue[surface.index]) then
-                    for key, chunk in pairs(global.repair_queue[surface.index]) do
-                        chunk_counter = chunk_counter + 1
-                        chunks[chunk_counter] = chunk
-                    end
-                    job_type = 'repair'
-                end
-
-                ---@cast job_type JobType
-
-                if not next(chunks) then
-                    return
-                end
-
-                local combined_chunks, unused_chunks = me.get_chunks_and_constructrons(chunks, worker)
-
-                local queue
-                if job_type == 'deconstruct' then
-                    queue = global.deconstruct_queue
-                elseif job_type == 'construct' then
-                    queue = global.construct_queue
-                elseif job_type == 'upgrade' then
-                    queue = global.upgrade_queue
-                elseif job_type == 'repair' then
-                    queue = global.repair_queue
-                end
-
-                queue[surface.index] = {}
-
-                for i, chunk in ipairs(unused_chunks) do -- requeue unused chunks
-                    queue[surface.index][chunk.key] = chunk
-                end
-
-                me.paint_constructron(worker, job_type)
-
-                global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                local closest_station = me.get_closest_service_station(worker)
-
-                -- go to service station
-                me.create_job(global.job_bundle_index, {
-                    action = 'go_to_position',
-                    action_args = {closest_station.position},
-                    leave_condition = 'position_done',
-                    leave_args = {closest_station.position},
-                    constructron = worker
-                })
-
-                -- request items
-                me.create_job(global.job_bundle_index, {
-                    action = 'request_items',
-                    action_args = {combined_chunks.requested_items},
-                    leave_condition = 'request_done',
-                    constructron = worker,
-                    unused_stations = me.get_service_stations(worker.surface.index)
-                })
-
-                for i, chunk in ipairs(combined_chunks) do
-                    chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
-                    chunk['surface'] = surface.index
-                    for p, position in ipairs(chunk.positions) do
-
-                        local landfill_check = false
-                        if combined_chunks.requested_items["landfill"] then
-                            landfill_check = true
-                        end
-
-                        -- move to position
-                        me.create_job(global.job_bundle_index, {
-                            action = 'go_to_position',
-                            action_args = {position},
-                            leave_condition = 'position_done',
-                            leave_args = {position},
-                            constructron = worker,
-                            landfill_job = landfill_check
-                        })
-                        -- do actions
-                        if not (job_type == 'deconstruct') then
-                            if not (job_type == 'upgrade') then
-                                me.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'build_done',
-                                    leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
-                                })
-                            else
-                                me.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'upgrade_done',
-                                    leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
-                                })
-                            end
-                        elseif (job_type == 'deconstruct') then
-                            me.create_job(global.job_bundle_index, {
-                                action = 'deconstruct',
-                                leave_condition = 'deconstruction_done',
-                                constructron = worker
-                            })
-                        end
-                    end
-                    if (job_type == 'construct') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_build_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'deconstruct') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_decon_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'upgrade') then
-                        me.create_job(global.job_bundle_index, {
-                            action = 'check_upgrade_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                end
-
-                -- go back to a service_station when job is done.
-                me.create_job(global.job_bundle_index, {
-                    action = 'go_to_position',
-                    action_args = {closest_station.position},
-                    leave_condition = 'position_done',
-                    leave_args = {closest_station.position},
-                    constructron = worker,
-                    returning_home = true
-                })
-
-                -- clear items
-                me.create_job(global.job_bundle_index, {
-                    action = 'clear_items',
-                    leave_condition = 'request_done',
-                    constructron = worker
-                })
-
-                -- ready for next job
-                me.create_job(global.job_bundle_index, {
-                    action = 'retire',
-                    leave_condition = 'pass',
-                    leave_args = {closest_station.position},
-                    constructron = worker
-                })
-            end
-        end
-    end
-end
-
----@param job_bundles JobBundle
-me.do_job = function(job_bundles)
-    if not next(job_bundles) then return end
-
-    for i, job_bundle in pairs(job_bundles) do
-        local job = job_bundle[1]
-        if job then
-            if job.constructron and job.constructron and job.constructron.valid then
-                me.do_until_leave(job)
-            else -- cleanup job, check chunks and reprocess entities
-                for _, value in pairs(global.job_bundles[job.bundle_index]) do  -- do check actions
-                    if (value.action == "check_build_chunk") or (value.action == "check_decon_chunk") or (value.action == "check_upgrade_chunk") then
-                        me.actions[value.action](value, table.unpack(value.action_args or {}))
-                    end
-                end
-                job_bundles[i] = nil -- remove job
-            end
-        else
-            job_bundles[i] = nil
-        end
-    end
-end
-
-me.process_job_queue = function()
-    me.get_job()
-    me.do_job(global.job_bundles)
-end
 
 me.perform_surface_cleanup = function(_)
     debug_lib.DebugLog('Surface job validation & cleanup')

@@ -61,7 +61,7 @@ end
 ---@param a1 Area
 ---@param a2 Area
 ---@return Area?
-me.merge_direct_neighbour = function(a1, a2)
+me.check_if_neighbour = function(a1, a2)
 
     local merge
     -- if they are in the same row
@@ -124,27 +124,27 @@ end
 
 ---@param chunks Chunk[]
 ---@return Chunk[]
-me.combine_chunks = function(chunks)
-    for i, chunk1 in ipairs(chunks) do
-        for j, chunk2 in ipairs(chunks) do
-            if not (i == j) then
-                local merged_area = me.merge_direct_neighbour(chunk1.area, chunk2.area)
-                if merged_area then
-                    local new_chunk = me.merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                    local new_chunks = {}
-                    for k, chunk in ipairs(chunks) do
-                        if (not (k == i)) and (not (k == j)) then
-                            table.insert(new_chunks, chunk)
-                        end
-                    end
-                    table.insert(new_chunks, new_chunk)
-                    return me.combine_chunks(new_chunks) -- recursion
-                end
-            end
-        end
-    end
-    return chunks
-end
+-- me.combine_chunks = function(chunks)
+--     for i, chunk1 in ipairs(chunks) do
+--         for j, chunk2 in ipairs(chunks) do
+--             if not (i == j) then
+--                 local merged_area = me.merge_direct_neighbour(chunk1.area, chunk2.area)
+--                 if merged_area then
+--                     local new_chunk = me.merge_neighbour_chunks(merged_area, chunk1, chunk2)
+--                     local new_chunks = {}
+--                     for k, chunk in ipairs(chunks) do
+--                         if (not (k == i)) and (not (k == j)) then
+--                             table.insert(new_chunks, chunk)
+--                         end
+--                     end
+--                     table.insert(new_chunks, new_chunk)
+--                     return me.combine_chunks(new_chunks) -- recursion
+--                 end
+--             end
+--         end
+--     end
+--     return chunks
+-- end
 
 ---@param area Area
 ---@param radius float
