@@ -4,7 +4,7 @@ local chunk_util = require("script/chunk_util")
 local color_lib = require("script/color_lib")
 local ctron = require("script/constructron")
 
-job_proc = {}
+local job_proc = {}
 
 -------------------------------------------------------------------------------
 --  Job processing
