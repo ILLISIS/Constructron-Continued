@@ -7,6 +7,7 @@ Date: 2023-01-20
   Changes:
     - Large amounts of code restructure.
     - Refactor chunk merge function.
+    - Refactor request_done condition.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.60
 Date: 2023-01-17
