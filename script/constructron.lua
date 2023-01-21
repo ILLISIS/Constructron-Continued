@@ -323,11 +323,11 @@ ctron.conditions = {
         if (game_tick - build_tick) > 119 then
             if constructron.logistic_cell then
                 local logistic_network = constructron.logistic_cell.logistic_network
-                if (ctron.robots_active(logistic_network)) then
+                if next(logistic_network.construction_robots) then
                     ctron.set_constructron_status(constructron, 'build_tick', game.tick)
                     return false -- robots are active
                 else
-                    local cell = logistic_network.cells[1]
+                    local cell = constructron.logistic_cell
                     local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
                     local ghosts = constructron.surface.find_entities_filtered {
                         area = area,
@@ -366,7 +366,7 @@ ctron.conditions = {
         if (game_tick - decon_tick) > 119 then
             if constructron.logistic_cell then
                 local logistic_network = constructron.logistic_cell.logistic_network
-                if (ctron.robots_active(logistic_network)) then
+                if next(logistic_network.construction_robots) then
                     local empty_stacks = 0
                     local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
                     empty_stacks = empty_stacks + (inventory.count_empty_stacks())
@@ -379,7 +379,7 @@ ctron.conditions = {
                         return false
                     end
                 else
-                    local cell = logistic_network.cells[1]
+                    local cell = constructron.logistic_cell
                     local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
                     local decons = constructron.surface.find_entities_filtered {
                         area = area,
@@ -417,11 +417,11 @@ ctron.conditions = {
         if (game_tick - build_tick) > 119 then
             if constructron.logistic_cell then
                 local logistic_network = constructron.logistic_cell.logistic_network
-                if (ctron.robots_active(logistic_network)) then
+                if next(logistic_network.construction_robots) then
                     ctron.set_constructron_status(constructron, 'build_tick', game.tick)
                     return false -- robots are active
                 else
-                    local cell = logistic_network.cells[1]
+                    local cell = constructron.logistic_cell
                     local area = chunk_util.get_area_from_position(constructron.position, cell.construction_radius)
                     local upgrades = constructron.surface.find_entities_filtered {
                         area = area,
@@ -562,23 +562,6 @@ script.on_nth_tick(1, (function()
         end
     end
 end))
-
----@param network LuaLogisticNetwork
----@return boolean
-ctron.robots_active = function(network)
-    local cell = network.cells[1]
-    local all_construction_robots = network.all_construction_robots
-    local stationed_bots = cell.stationed_construction_robot_count
-    local charging_robots = cell.charging_robots
-    local to_charge_robots = cell.to_charge_robots
-    local active_bots = (all_construction_robots) - (stationed_bots)
-
-    if ((active_bots == 0) and not next(charging_robots) and not next(to_charge_robots)) then
-        return false -- robots are not active
-    else
-        return true -- robots are active
-    end
-end
 
 ---@param job Job
 ctron.graceful_wrapup = function(job)
