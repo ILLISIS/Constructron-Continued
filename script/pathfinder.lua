@@ -33,7 +33,7 @@ end))
 
 ---@param unit LuaEntity[]
 ---@param destination MapPosition
----@param job Job
+---@param job Job?
 function pathfinder.init_path_request(unit, destination, job)
     ---@type LuaSurface.request_path_param
     local request_params = {unit = unit, goal = destination, job = job}

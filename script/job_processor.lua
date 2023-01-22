@@ -85,16 +85,14 @@ job_proc.get_job = function()
                                     action = 'build',
                                     leave_condition = 'build_done',
                                     leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
+                                    constructron = worker
                                 })
                             else
                                 job_proc.create_job(global.job_bundle_index, {
                                     action = 'build',
                                     leave_condition = 'upgrade_done',
                                     leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
+                                    constructron = worker
                                 })
                             end
                         elseif (job_type == 'deconstruct') then
