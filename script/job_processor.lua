@@ -350,7 +350,7 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
     return used_chunks -- these chunks will be used in the job
 end
 
----@param job_bundle_index uint
+---@param job_bundle_index integer
 ---@param job Job
 job_proc.create_job = function(job_bundle_index, job)
     if not global.job_bundles then

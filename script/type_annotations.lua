@@ -79,7 +79,7 @@
 ---@field job_class JobType?
 ---@field returning_home boolean?
 ---@field index uint
----@field bundle_index uint
+---@field bundle_index integer
 ---@field landfill_job boolean?
 ---@field attempt uint
 ---@field path_active boolean?

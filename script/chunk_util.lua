@@ -122,30 +122,6 @@ me.merge_neighbour_chunks = function(merged_area, chunk1, chunk2)
     return new_chunk
 end
 
----@param chunks Chunk[]
----@return Chunk[]
--- me.combine_chunks = function(chunks)
---     for i, chunk1 in ipairs(chunks) do
---         for j, chunk2 in ipairs(chunks) do
---             if not (i == j) then
---                 local merged_area = me.merge_direct_neighbour(chunk1.area, chunk2.area)
---                 if merged_area then
---                     local new_chunk = me.merge_neighbour_chunks(merged_area, chunk1, chunk2)
---                     local new_chunks = {}
---                     for k, chunk in ipairs(chunks) do
---                         if (not (k == i)) and (not (k == j)) then
---                             table.insert(new_chunks, chunk)
---                         end
---                     end
---                     table.insert(new_chunks, new_chunk)
---                     return me.combine_chunks(new_chunks) -- recursion
---                 end
---             end
---         end
---     end
---     return chunks
--- end
-
 ---@param area Area
 ---@param radius float
 ---@return MapPosition[]
@@ -193,28 +169,6 @@ me.calculate_construct_positions = function(area, radius)
             end
         end
     end
-    --[[
-    if settings.global["constructron-debug-enabled"].value then
-        for p, point in pairs(points) do
-            local otherp = {}
-            otherp.x = point.x - 1
-            otherp.y = point.y - 1
-            rendering.draw_rectangle {
-                left_top = point,
-                right_bottom = otherp,
-                filled = true,
-                surface = game.surfaces['nauvis'],
-                time_to_live = 1800,
-                color = {
-                    r = 100,
-                    g = 100,
-                    b = 100,
-                    a = 0.2
-                }
-            }
-        end
-    end
-    ]]
     return points
 end
 
