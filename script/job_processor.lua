@@ -62,9 +62,11 @@ job_proc.get_job = function()
                 })
                 -- main job setup
                 for _, chunk in ipairs(combined_chunks) do
+                    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "yellow", false, 3600)
                     chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
                     chunk['surface'] = surface_index
                     for _, position in ipairs(chunk.positions) do
+                        debug_lib.VisualDebugCircle(position, surface, "yellow", 0.5, 3600)
                         local landfill_check = false
                         if combined_chunks.requested_items["landfill"] then
                             landfill_check = true

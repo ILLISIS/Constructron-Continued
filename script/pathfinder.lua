@@ -46,7 +46,7 @@ function pathfinder.init_path_request(unit, destination, job)
         if (job ~= nil) and job.landfill_job then
             local spot = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", destination, 1, 4, false)
             if spot then -- check position is reachable
-                debug_lib.VisualDebugCircle(spot, request_params.unit.surface, "blue", 0.5, 1, 3600)
+                debug_lib.VisualDebugCircle(spot, request_params.unit.surface, "yellow", 0.75, 1200)
                 pathfinder.request_path(request_params)
             else -- position is unreachable so find the mainland
                 local mainland = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "64", destination, 800, 4, false)
@@ -135,13 +135,13 @@ function pathfinder.on_script_path_request_finished(event)
             request.attempt = request.attempt + 1
             if request.attempt < 4 then
                 if request.attempt == 2 then -- 2. Re-Request ensuring the start of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
                     request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.75, 600)
                 elseif request.attempt == 3 then -- 3. Re-Request ensuring the goal of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again

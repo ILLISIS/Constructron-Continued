@@ -185,7 +185,7 @@ ctron.actions = {
             chunk.maximum.x = chunk.maximum.x + 1
             chunk.maximum.y = chunk.maximum.y + 1
         end
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.blue, 0.5))
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "blue", true, 600)
         local ghosts = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
@@ -210,7 +210,7 @@ ctron.actions = {
             chunk.maximum.x = chunk.maximum.x + 1
             chunk.maximum.y = chunk.maximum.y + 1
         end
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.red, 0.5))
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "red", true, 600)
         local decons = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             to_be_deconstructed = true,
@@ -236,7 +236,7 @@ ctron.actions = {
             chunk.maximum.x = chunk.maximum.x + 1
             chunk.maximum.y = chunk.maximum.y + 1
         end
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color_lib.color_alpha(color_lib.colors.green, 0.5))
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "green", true, 600)
         local upgrades = surface.find_entities_filtered {
             area = {chunk.minimum, chunk.maximum},
             force = "player",

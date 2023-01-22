@@ -16,6 +16,12 @@ me.colors.blue = {
     g = 0.35,
     b = 0.65
 }
+me.colors.yellow = {
+    r = 128,
+    g = 128,
+    b = 0,
+    a = 1
+}
 me.colors.purple = {
     r = 255,
     g = 0,
@@ -36,13 +42,5 @@ me.colors.charcoal = {
     g = 0.1,
     b = 0.1
 }
-
----@param color Color
----@param alpha float
----@return Color
-me.color_alpha = function(color, alpha)
-    color.a = alpha
-    return color
-end
 
 return me
