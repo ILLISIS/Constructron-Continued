@@ -4,17 +4,20 @@ me.colors = {}
 me.colors.red = {
     r = 1,
     g = 0,
-    b = 0
+    b = 0,
+    a = 0.4
 }
 me.colors.green = {
     r = 0,
     g = 0.65,
-    b = 0
+    b = 0,
+    a = 0.4
 }
 me.colors.blue = {
     r = 0,
     g = 0.35,
-    b = 0.65
+    b = 0.65,
+    a = 0.4
 }
 me.colors.yellow = {
     r = 128,
@@ -35,7 +38,8 @@ me.colors.pink = {
 me.colors.white = {
     r = 0.65,
     g = 0.65,
-    b = 0.65
+    b = 0.65,
+    a = 0.25
 }
 me.colors.charcoal = {
     r = 0.1,

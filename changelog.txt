@@ -1,7 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.64
-Date: ????
+Date: 2023-01-23
+  Bugfixes:
+    - Fixed a crash when Constructrons were recalled via command(s).
+    - Fixed an issue where chunks could be overloaded with entities that resulted in a job loop.
   Changes:
+    - Added job chunk visuals to debug mode.
     - Large amounts of code restructure.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.63

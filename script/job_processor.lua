@@ -313,6 +313,7 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
     requested_items = {}
     total_required_stacks = 0
     for i, chunk in pairs(chunks) do
+        local divisor = 1
         local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
         required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
         if ((total_required_stacks + required_slots) < empty_stack_count) then
@@ -323,9 +324,26 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
             used_chunks[used_chunk_counter] = chunk
             used_chunk_counter = used_chunk_counter + 1
             global[job_type .. "_queue"][surface_index][i] = nil
-        else
-            -- chunks will not fit into the inventory - add them back to the queue for reprocessing
-            global[job_type .. "_queue"][surface_index][i] = chunk
+        else -- chunk will not fit into the inventory
+            if required_slots > empty_stack_count then -- if chunk is overloaded
+                divisor = math.ceil(required_slots / empty_stack_count)
+                for item, count in pairs(chunk.required_items) do
+                    chunk.required_items[item] = math.ceil(count / divisor)
+                end
+                for item, count in pairs(chunk.trash_items) do
+                    chunk.trash_items[item] = math.ceil(count / divisor)
+                end
+                requested_items = chunk.required_items -- !! trash items just need to be divided
+                used_chunks[used_chunk_counter] = chunk
+                used_chunk_counter = used_chunk_counter + 1
+            end
+            if divisor > 1 then -- duplicate the chunk so another constructron will perform the same job
+                for j = 1, (divisor - 1) do
+                    global[job_type .. "_queue"][surface_index][i .. "-" .. j] = chunk
+                end
+            else
+                global[job_type .. "_queue"][surface_index][i] = chunk
+            end
         end
     end
     used_chunks.requested_items = requested_items

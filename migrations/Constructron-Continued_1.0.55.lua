@@ -7,11 +7,19 @@ game.map_settings.path_finder.use_path_cache = false
 global.spider_remote_toggle = false
 
 local cmd = require("script/command_functions")
-local ctron = require("script/constructron")
-local pathfinder = require("script/pathfinder")
 
-ctron.ensure_globals()
-pathfinder.init_globals()
+-- ensure_globals()
+global.ghost_index = global.ghost_index or 0
+global.decon_index = global.decon_index or 0
+global.upgrade_index = global.upgrade_index or 0
+global.repair_index = global.repair_index or 0
+--
+global.ghost_entities = global.ghost_entities or {}
+global.deconstruction_entities = global.deconstruction_entities or {}
+global.upgrade_entities = global.upgrade_entities or {}
+global.repair_entities = global.repair_entities or {}
+--
+global.pathfinder_requests = global.pathfinder_requests or {}
 
 -- Clear jobs/queues/entities
 global.job_bundles = {}

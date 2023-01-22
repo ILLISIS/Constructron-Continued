@@ -684,15 +684,15 @@ end
 ---@param color_state "idle" | "construct" | "deconstruct" | "upgrade" | "repair"
 ctron.paint_constructron = function(constructron, color_state)
     if color_state == 'idle' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.white, 0.25)
+        constructron.color = color_lib.colors.white
     elseif color_state == 'construct' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.blue, 0.4)
+        constructron.color = color_lib.colors.blue
     elseif color_state == 'deconstruct' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.red, 0.4)
+        constructron.color = color_lib.colors.red
     elseif color_state == 'upgrade' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.green, 0.4)
+        constructron.color = color_lib.colors.green
     elseif color_state == 'repair' then
-        constructron.color = color_lib.color_alpha(color_lib.colors.charcoal, 0.4)
+        constructron.color = color_lib.colors.charcoal
     end
 end
 
