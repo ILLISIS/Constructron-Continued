@@ -15,7 +15,6 @@ local pathfinder = {}
 
 pathfinder.init_globals = function()
     global.pathfinder_requests = global.pathfinder_requests or {}
-
     --So, when path cache is enabled, negative path cache is also enabled.
     --The problem is, when a single unit inside a nest can't get to the silo,
     --He tells all other biters nearby that they also can't get to the silo.
@@ -34,21 +33,20 @@ end))
 
 ---@param unit LuaEntity[]
 ---@param destination MapPosition
----@param job Job
+---@param job Job?
 function pathfinder.init_path_request(unit, destination, job)
     ---@type LuaSurface.request_path_param
     local request_params = {unit = unit, goal = destination, job = job}
-
     if request_params.unit.name == "constructron-rocket-powered" then
         if request_params.job then
             request_params.job.path_active = true
         end
         pathfinder.set_autopilot(unit, {{position = destination}})
     else
-        if job and job.landfill_job then
+        if (job ~= nil) and job.landfill_job then
             local spot = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", destination, 1, 4, false)
             if spot then -- check position is reachable
-                debug_lib.VisualDebugCircle(spot, request_params.unit.surface, "blue", 0.5, 1, 3600)
+                debug_lib.VisualDebugCircle(spot, request_params.unit.surface, "yellow", 0.75, 1200)
                 pathfinder.request_path(request_params)
             else -- position is unreachable so find the mainland
                 local mainland = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "64", destination, 800, 4, false)
@@ -82,14 +80,12 @@ end
 ---@param request_params LuaSurface.request_path_param
 function pathfinder.request_path(request_params)
     local pathing_collision_mask = {"water-tile", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"}
-
     if game.active_mods["space-exploration"] then
         local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
         local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
         table.insert(pathing_collision_mask, spaceship_collision_layer)
         table.insert(pathing_collision_mask, empty_space_collision_layer)
     end
-
     pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
     local request = { -- template
         job = request_params.job or nil, -- The job that initiated this request. Used to update the job. Not used by the factorio-pathfinder
@@ -110,12 +106,10 @@ function pathfinder.request_path(request_params)
         attempt = request_params.attempt or 1, -- The count of path attemps. Not used by the factorio-pathfinder
         try_again_later = 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
     }
-
     if request_params.initial_target then -- landfill goal
         request.initial_target = request_params.initial_target
     end
     request.initial_target = request.initial_target or request_params.goal -- The initial goal of the job request. Not used by the factorio-pathfinder
-
     local request_id = request.surface.request_path(request) -- request the path from the game
     global.pathfinder_requests[request_id] = request
     if request_params.job then -- if there is a job update the job with the path request id so we can track it
@@ -130,10 +124,8 @@ end
 ---@param event EventData.on_script_path_request_finished
 function pathfinder.on_script_path_request_finished(event)
     local request = global.pathfinder_requests[event.id]
-
     if request and request.unit and request.unit.valid then
         local path = event.path
-
         if event.try_again_later then -- try_again_later is a return of the event handler
             if request.try_again_later < 5 then
                 request.try_again_later = request.try_again_later + 1
@@ -143,13 +135,13 @@ function pathfinder.on_script_path_request_finished(event)
             request.attempt = request.attempt + 1
             if request.attempt < 4 then
                 if request.attempt == 2 then -- 2. Re-Request ensuring the start of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.5, 1, 600)
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
                     request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.3, 1, 600)
+                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.75, 600)
                 elseif request.attempt == 3 then -- 3. Re-Request ensuring the goal of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.5, 1, 600)
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.3, 1, 600)
+                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
@@ -195,7 +187,7 @@ end
 
 ---@param surface LuaSurface
 ---@param position MapPosition
----@param job Job
+---@param job Job?
 ---@return MapPosition?
 function pathfinder.find_non_colliding_position(surface, position, job) -- find a position to stand / walk to
     local new_position

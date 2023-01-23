@@ -33,63 +33,41 @@ me.VisualDebugText = function(message, entity, offset, ttl)
     end
 end
 
+
 ---@param position MapPosition
 ---@param surface LuaSurface
----@param color Color
+---@param color string
 ---@param radius integer
----@param alpha integer
----@param ttl integer
-me.VisualDebugCircle = function(position, surface, color, radius, alpha, ttl)
+---@param ttl uint
+me.VisualDebugCircle = function(position, surface, color, radius, ttl)
     if global.debug_toggle then
-        if position then
-            local message = "Circle"
-            rendering.draw_circle {
-                target = position,
-                radius = radius,
-                filled = true,
-                surface = surface,
-                time_to_live = ttl,
-                color = (color_lib.color_alpha(color_lib.colors[color], alpha))
-            }
-        end
+        rendering.draw_circle {
+            target = position,
+            radius = radius,
+            filled = true,
+            surface = surface,
+            time_to_live = ttl,
+            color = color_lib.colors[color]
+        }
     end
 end
 
 ---@param minimum MapPosition | LuaEntity
 ---@param maximum MapPosition | LuaEntity
 ---@param surface SurfaceIdentification
----@param color Color
-me.draw_rectangle = function(minimum, maximum, surface, color)
+---@param color string
+---@param filled boolean
+---@param ttl uint
+me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
     if global.debug_toggle then
-        local message = "rectangle"
-        local inner_color = {
-            r = color.r,
-            g = color.g,
-            b = color.b,
-            a = 0.1
-        }
-
         rendering.draw_rectangle {
             left_top = minimum,
             right_bottom = maximum,
-            filled = true,
+            filled = filled,
             surface = surface,
-            time_to_live = 600,
-            color = inner_color
+            time_to_live = ttl,
+            color = color_lib.colors[color]
         }
-
-        rendering.draw_rectangle {
-            left_top = minimum,
-            right_bottom = maximum,
-            width = 3,
-            filled = false,
-            surface = surface,
-            time_to_live = 600,
-            color = color
-        }
-
-        -- log("surface " .. (surface.name or surface.index) .. message)
-        -- log("minimum:" .. serpent.block(minimum) .. ", maximum:" .. serpent.block(maximum))
     end
 end
 

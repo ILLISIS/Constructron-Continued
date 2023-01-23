@@ -62,9 +62,11 @@ job_proc.get_job = function()
                 })
                 -- main job setup
                 for _, chunk in ipairs(combined_chunks) do
+                    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "yellow", false, 3600)
                     chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
                     chunk['surface'] = surface_index
                     for _, position in ipairs(chunk.positions) do
+                        debug_lib.VisualDebugCircle(position, surface, "yellow", 0.5, 3600)
                         local landfill_check = false
                         if combined_chunks.requested_items["landfill"] then
                             landfill_check = true
@@ -85,16 +87,14 @@ job_proc.get_job = function()
                                     action = 'build',
                                     leave_condition = 'build_done',
                                     leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
+                                    constructron = worker
                                 })
                             else
                                 job_proc.create_job(global.job_bundle_index, {
                                     action = 'build',
                                     leave_condition = 'upgrade_done',
                                     leave_args = {},
-                                    constructron = worker,
-                                    job_class = job_type
+                                    constructron = worker
                                 })
                             end
                         elseif (job_type == 'deconstruct') then
@@ -211,7 +211,7 @@ job_proc.get_worker = function(surface_index)
             else
                 local desired_robot_count = global.desired_robot_count
                 local logistic_network = constructron.logistic_cell.logistic_network
-                if ((logistic_network.all_construction_robots >= desired_robot_count) and not (ctron.robots_active(logistic_network))) or global.clear_robots_when_idle then
+                if ((logistic_network.all_construction_robots >= desired_robot_count) and not next(logistic_network.construction_robots)) or global.clear_robots_when_idle then
                     return constructron
                 else
                     if not global.clear_robots_when_idle then
@@ -313,6 +313,7 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
     requested_items = {}
     total_required_stacks = 0
     for i, chunk in pairs(chunks) do
+        local divisor = 1
         local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
         required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
         if ((total_required_stacks + required_slots) < empty_stack_count) then
@@ -323,16 +324,33 @@ job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_coun
             used_chunks[used_chunk_counter] = chunk
             used_chunk_counter = used_chunk_counter + 1
             global[job_type .. "_queue"][surface_index][i] = nil
-        else
-            -- chunks will not fit into the inventory - add them back to the queue for reprocessing
-            global[job_type .. "_queue"][surface_index][i] = chunk
+        else -- chunk will not fit into the inventory
+            if required_slots > empty_stack_count then -- if chunk is overloaded
+                divisor = math.ceil(required_slots / empty_stack_count)
+                for item, count in pairs(chunk.required_items) do
+                    chunk.required_items[item] = math.ceil(count / divisor)
+                end
+                for item, count in pairs(chunk.trash_items) do
+                    chunk.trash_items[item] = math.ceil(count / divisor)
+                end
+                requested_items = chunk.required_items -- !! trash items just need to be divided
+                used_chunks[used_chunk_counter] = chunk
+                used_chunk_counter = used_chunk_counter + 1
+            end
+            if divisor > 1 then -- duplicate the chunk so another constructron will perform the same job
+                for j = 1, (divisor - 1) do
+                    global[job_type .. "_queue"][surface_index][i .. "-" .. j] = chunk
+                end
+            else
+                global[job_type .. "_queue"][surface_index][i] = chunk
+            end
         end
     end
     used_chunks.requested_items = requested_items
     return used_chunks -- these chunks will be used in the job
 end
 
----@param job_bundle_index uint
+---@param job_bundle_index integer
 ---@param job Job
 job_proc.create_job = function(job_bundle_index, job)
     if not global.job_bundles then

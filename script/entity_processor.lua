@@ -72,10 +72,10 @@ script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
 })
 
 -- for entities that die and need rebuilding
+---@param event EventData.on_post_entity_died
 script.on_event(ev.on_post_entity_died, function(event)
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
-
     if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
         global.ghost_index = global.ghost_index + 1
         global.ghost_entities[global.ghost_index] = entity
@@ -84,6 +84,7 @@ script.on_event(ev.on_post_entity_died, function(event)
 end)
 
 -- for entity deconstruction
+---@param event EventData.on_marked_for_deconstruction
 script.on_event(ev.on_marked_for_deconstruction, function(event)
     if not global.deconstruction_job_toggle then return end
     local entity = event.entity
@@ -104,6 +105,7 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
 end)
 
 -- for entity upgrade
+---@param event EventData.on_marked_for_upgrade
 script.on_event(ev.on_marked_for_upgrade, function(event)
     if not global.upgrade_job_toggle then return end
     local entity = event.entity
@@ -115,6 +117,7 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
 end)
 
 -- for entity repair
+---@param event EventData.on_entity_damaged
 script.on_event(ev.on_entity_damaged, function(event)
     if not global.repair_job_toggle then return end
     local entity = event.entity
@@ -138,6 +141,49 @@ end,
     {filter = "type", type = "character", invert = true, mode = "and"},
     {filter = "type", type = "fish", invert = true, mode = "and"}
 })
+
+---@param event EventData.on_entity_cloned
+script.on_event(ev.on_entity_cloned, function(event)
+    local entity = event.destination
+    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
+        local registration_number = script.register_on_entity_destroyed(entity)
+        ctron.paint_constructron(entity, 'idle')
+        global.constructrons[entity.unit_number] = entity
+        global.registered_entities[registration_number] = {
+            name = "constructron",
+            surface = entity.surface.index
+        }
+        global.constructrons_count[entity.surface.index] = global.constructrons_count[entity.surface.index] + 1
+    elseif entity.name == "service_station" then
+        local registration_number = script.register_on_entity_destroyed(entity)
+        global.service_stations[entity.unit_number] = entity
+        global.registered_entities[registration_number] = {
+            name = "service_station",
+            surface = entity.surface.index
+        }
+        global.stations_count[entity.surface.index] = global.stations_count[entity.surface.index] + 1
+    end
+end)
+
+---@param event
+---| EventData.on_entity_destroyed
+---| EventData.script_raised_destroy
+script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(event)
+    if global.registered_entities[event.registration_number] then
+        local removed_entity = global.registered_entities[event.registration_number]
+        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
+            local surface = removed_entity.surface
+            global.constructrons_count[surface] = math.max(0, (global.constructrons_count[surface] or 0) - 1)
+            global.constructrons[event.unit_number] = nil
+            global.constructron_statuses[event.unit_number] = nil
+        elseif removed_entity.name == "service_station" then
+            local surface = removed_entity.surface
+            global.stations_count[surface] = math.max(0, (global.stations_count[surface] or 0) - 1)
+            global.service_stations[event.unit_number] = nil
+        end
+        global.registered_entities[event.registration_number] = nil
+    end
+end)
 
 -------------------------------------------------------------------------------
 --  Entity processing
