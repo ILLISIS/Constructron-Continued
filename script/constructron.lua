@@ -198,6 +198,7 @@ ctron.actions = {
                 global.ghost_entities[global.ghost_index] = entity
             end
             global.ghost_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end,
     -------------------------------------------------------------------------------
@@ -223,6 +224,7 @@ ctron.actions = {
                 global.deconstruction_entities[global.decon_index] = entity
             end
             global.deconstruct_marked_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end,
     -------------------------------------------------------------------------------
@@ -249,6 +251,7 @@ ctron.actions = {
                 global.upgrade_entities[global.upgrade_index] = entity
             end
             global.upgrade_marked_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end
 }

@@ -7,17 +7,22 @@ local job_proc = require("script/job_processor")
 
 -- main workers
 script.on_nth_tick(60, job_proc.process_job_queue)
-script.on_nth_tick(15, (function(event)
-    if event.tick % 20 == 15 then
+
+script.on_nth_tick(15, function()
+    if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
+    if next(global.deconstruction_entities) then -- deconstruction has priority over construction.
         entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruct_queue, global.deconstruct_marked_tick)
-    elseif event.tick % 20 == 10 then
+    elseif next(global.ghost_entities) then
         entity_proc.add_entities_to_chunks("construction", global.ghost_entities, global.construct_queue, global.ghost_tick)
-    elseif event.tick % 20 == 5 then
+    elseif next(global.upgrade_entities) then
         entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_marked_tick)
-    elseif event.tick % 20 == 0 then
+    elseif next(global.repair_entities) then
         entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_marked_tick)
+    else
+        global.entity_proc_trigger = false -- stop entity processing
+        global.queue_proc_trigger = true -- start job processing
     end
-end))
+end)
 
 -- cleanup
 script.on_nth_tick(54000, (function()
@@ -41,6 +46,12 @@ end))
 local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
+    --
+    global.entity_proc_trigger = global.entity_proc_triggerr or false
+    global.queue_proc_trigger = global.queue_proc_trigger or false
+    global.job_proc_trigger = global.job_proc_trigger or false
+    --
+    global.managed_surfaces = global.managed_surfaces or {}
     --
     global.stack_cache = {} -- rebuild
     --

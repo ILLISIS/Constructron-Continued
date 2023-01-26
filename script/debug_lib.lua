@@ -64,6 +64,7 @@ me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
             left_top = minimum,
             right_bottom = maximum,
             filled = filled,
+            width = 4,
             surface = surface,
             time_to_live = ttl,
             color = color_lib.colors[color]

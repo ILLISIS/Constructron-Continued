@@ -11,155 +11,163 @@ local job_proc = {}
 -------------------------------------------------------------------------------
 
 job_proc.process_job_queue = function()
-    job_proc.get_job() -- job creation
-    job_proc.do_job(global.job_bundles) -- job opteration
+    -- job creation
+    if global.queue_proc_trigger then  -- there is something to do start processing
+        for _, surface_index in pairs(global.managed_surfaces) do
+            job_proc.get_job(surface_index)
+        end
+    end
+    -- job operation
+    if global.job_proc_trigger then
+        job_proc.do_job(global.job_bundles)
+    end
 end
 
-job_proc.get_job = function()
-    for _, surface in pairs(game.surfaces) do -- iterate each surface
-        local surface_index = surface.index
-        if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
-            local job_type
-            if next(global.deconstruct_queue[surface_index]) then -- deconstruction has priority over construction.
-                job_type = 'deconstruct'
-            elseif next(global.construct_queue[surface_index]) then
-                job_type = 'construct'
-            elseif next(global.upgrade_queue[surface_index]) then
-                job_type = 'upgrade'
-            elseif next(global.repair_queue[surface_index]) then
-                job_type = 'repair'
+job_proc.get_job = function(surface_index)
+    local job_type
+    if next(global.deconstruct_queue[surface_index]) then -- deconstruction has priority over construction.
+        job_type = 'deconstruct'
+    elseif next(global.construct_queue[surface_index]) then
+        job_type = 'construct'
+    elseif next(global.upgrade_queue[surface_index]) then
+        job_type = 'upgrade'
+    elseif next(global.repair_queue[surface_index]) then
+        job_type = 'repair'
+    end
+    if (job_type == nil) then -- there is nothing to do pause processing
+        global.queue_proc_trigger = false -- stop job processing
+        return
+    end
+    -- get a constructron for this job
+    local worker = job_proc.get_worker(surface_index)
+    if not (worker and worker.valid) then return end
+    global.job_proc_trigger = true -- start job operations
+    ctron.set_constructron_status(worker, 'busy', true)
+    ctron.paint_constructron(worker, job_type)
+    local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+    local empty_stack_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
+    -- merge chunks in proximity to each other
+    local requested_items = {}
+    local total_required_stacks = 0
+    local combined_chunks = job_proc.merge_chunks(global[job_type .. "_queue"][surface_index], total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
+    -- get closest service station
+    global.job_bundle_index = (global.job_bundle_index or 0) + 1
+    local closest_station = ctron.get_closest_service_station(worker)
+    -- go to service station
+    job_proc.create_job(global.job_bundle_index, {
+        action = 'go_to_position',
+        action_args = {closest_station.position},
+        leave_condition = 'position_done',
+        leave_args = {closest_station.position},
+        constructron = worker
+    })
+    -- request items
+    job_proc.create_job(global.job_bundle_index, {
+        action = 'request_items',
+        action_args = {combined_chunks.requested_items},
+        leave_condition = 'request_done',
+        constructron = worker,
+        unused_stations = ctron.get_service_stations(worker.surface.index)
+    })
+    -- main job setup
+    for _, chunk in ipairs(combined_chunks) do
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface_index, "yellow", false, 3600)
+        chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
+        chunk['surface'] = surface_index
+        for _, position in ipairs(chunk.positions) do
+            debug_lib.VisualDebugCircle(position, surface_index, "yellow", 0.5, 3600)
+            local landfill_check = false
+            if combined_chunks.requested_items["landfill"] then
+                landfill_check = true
             end
-            if (job_type ~= nil) then
-                -- get a constructron for this job
-                local worker = job_proc.get_worker(surface_index)
-                if not (worker and worker.valid) then return end
-                ctron.set_constructron_status(worker, 'busy', true)
-                ctron.paint_constructron(worker, job_type)
-                local inventory = worker.get_inventory(defines.inventory.spider_trunk)
-                local empty_stack_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
-                -- merge chunks in proximity to each other
-                local requested_items = {}
-                local total_required_stacks = 0
-                local combined_chunks = job_proc.merge_chunks(global[job_type .. "_queue"][surface_index], total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
-                -- get closest service station
-                global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                local closest_station = ctron.get_closest_service_station(worker)
-                -- go to service station
-                job_proc.create_job(global.job_bundle_index, {
-                    action = 'go_to_position',
-                    action_args = {closest_station.position},
-                    leave_condition = 'position_done',
-                    leave_args = {closest_station.position},
-                    constructron = worker
-                })
-                -- request items
-                job_proc.create_job(global.job_bundle_index, {
-                    action = 'request_items',
-                    action_args = {combined_chunks.requested_items},
-                    leave_condition = 'request_done',
-                    constructron = worker,
-                    unused_stations = ctron.get_service_stations(worker.surface.index)
-                })
-                -- main job setup
-                for _, chunk in ipairs(combined_chunks) do
-                    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, "yellow", false, 3600)
-                    chunk['positions'] = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
-                    chunk['surface'] = surface_index
-                    for _, position in ipairs(chunk.positions) do
-                        debug_lib.VisualDebugCircle(position, surface, "yellow", 0.5, 3600)
-                        local landfill_check = false
-                        if combined_chunks.requested_items["landfill"] then
-                            landfill_check = true
-                        end
-                        -- move to position
-                        job_proc.create_job(global.job_bundle_index, {
-                            action = 'go_to_position',
-                            action_args = {position},
-                            leave_condition = 'position_done',
-                            leave_args = {position},
-                            constructron = worker,
-                            landfill_job = landfill_check
-                        })
-                        -- do actions
-                        if not (job_type == 'deconstruct') then
-                            if not (job_type == 'upgrade') then
-                                job_proc.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'build_done',
-                                    leave_args = {},
-                                    constructron = worker
-                                })
-                            else
-                                job_proc.create_job(global.job_bundle_index, {
-                                    action = 'build',
-                                    leave_condition = 'upgrade_done',
-                                    leave_args = {},
-                                    constructron = worker
-                                })
-                            end
-                        elseif (job_type == 'deconstruct') then
-                            job_proc.create_job(global.job_bundle_index, {
-                                action = 'deconstruct',
-                                leave_condition = 'deconstruction_done',
-                                constructron = worker
-                            })
-                        end
-                    end
-                    if (job_type == 'construct') then
-                        job_proc.create_job(global.job_bundle_index, {
-                            action = 'check_build_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'deconstruct') then
-                        job_proc.create_job(global.job_bundle_index, {
-                            action = 'check_decon_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
-                    if (job_type == 'upgrade') then
-                        job_proc.create_job(global.job_bundle_index, {
-                            action = 'check_upgrade_chunk',
-                            action_args = {chunk},
-                            leave_condition = 'pass', -- there is no leave condition
-                            constructron = worker
-                        })
-                    end
+            -- move to position
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'go_to_position',
+                action_args = {position},
+                leave_condition = 'position_done',
+                leave_args = {position},
+                constructron = worker,
+                landfill_job = landfill_check
+            })
+            -- do actions
+            if not (job_type == 'deconstruct') then
+                if not (job_type == 'upgrade') then
+                    job_proc.create_job(global.job_bundle_index, {
+                        action = 'build',
+                        leave_condition = 'build_done',
+                        leave_args = {},
+                        constructron = worker
+                    })
+                else
+                    job_proc.create_job(global.job_bundle_index, {
+                        action = 'build',
+                        leave_condition = 'upgrade_done',
+                        leave_args = {},
+                        constructron = worker
+                    })
                 end
-                -- go back to a service_station when job is done.
+            elseif (job_type == 'deconstruct') then
                 job_proc.create_job(global.job_bundle_index, {
-                    action = 'go_to_position',
-                    action_args = {closest_station.position},
-                    leave_condition = 'position_done',
-                    leave_args = {closest_station.position},
-                    constructron = worker,
-                    returning_home = true
-                })
-                -- clear items
-                job_proc.create_job(global.job_bundle_index, {
-                    action = 'clear_items',
-                    leave_condition = 'request_done',
-                    constructron = worker
-                })
-                -- ready for next job
-                job_proc.create_job(global.job_bundle_index, {
-                    action = 'retire',
-                    leave_condition = 'pass',
-                    leave_args = {closest_station.position},
+                    action = 'deconstruct',
+                    leave_condition = 'deconstruction_done',
                     constructron = worker
                 })
             end
         end
+        if (job_type == 'construct') then
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'check_build_chunk',
+                action_args = {chunk},
+                leave_condition = 'pass', -- there is no leave condition
+                constructron = worker
+            })
+        end
+        if (job_type == 'deconstruct') then
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'check_decon_chunk',
+                action_args = {chunk},
+                leave_condition = 'pass', -- there is no leave condition
+                constructron = worker
+            })
+        end
+        if (job_type == 'upgrade') then
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'check_upgrade_chunk',
+                action_args = {chunk},
+                leave_condition = 'pass', -- there is no leave condition
+                constructron = worker
+            })
+        end
     end
+    -- go back to a service_station when job is done.
+    job_proc.create_job(global.job_bundle_index, {
+        action = 'go_to_position',
+        action_args = {closest_station.position},
+        leave_condition = 'position_done',
+        leave_args = {closest_station.position},
+        constructron = worker,
+        returning_home = true
+    })
+    -- clear items
+    job_proc.create_job(global.job_bundle_index, {
+        action = 'clear_items',
+        leave_condition = 'request_done',
+        constructron = worker
+    })
+    -- ready for next job
+    job_proc.create_job(global.job_bundle_index, {
+        action = 'retire',
+        leave_condition = 'pass',
+        leave_args = {closest_station.position},
+        constructron = worker
+    })
 end
 
 ---@param job_bundles JobBundle
 job_proc.do_job = function(job_bundles)
-    if not next(job_bundles) then return end
+    if not next(job_bundles) then
+        global.job_proc_trigger = false
+    end
     for i, job_bundle in pairs(job_bundles) do
         local job = job_bundle[1]
         if job then
