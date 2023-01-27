@@ -1,5 +1,6 @@
 local ctron = require("script/constructron")
 local chunk_util = require("script/chunk_util")
+local debug_lib = require("script/debug_lib")
 
 local entity_proc = {}
 
@@ -301,7 +302,16 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
             end
             entities[entity_key] = nil -- clear entity from entity queue
             entity_counter = entity_counter - 1
-            if entity_counter <= 0 then return end
+            if entity_counter <= 0 then
+                if global.debug_toggle then
+                    for index, _ in pairs(queue) do
+                        for _, chunk in pairs(queue[index]) do
+                            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, chunk.surface, "red", false, 15)
+                        end
+                    end
+                end
+                return
+            end
         end
     end
 end

@@ -54,6 +54,7 @@ me.reacquire_construction_jobs = function()
             global.ghost_entities[global.ghost_index] = entity
         end
         global.ghost_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 
@@ -70,6 +71,7 @@ me.reacquire_deconstruction_jobs = function()
             global.deconstruction_entities[global.decon_index] = entity
         end
         global.deconstruct_marked_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 
@@ -86,6 +88,7 @@ me.reacquire_upgrade_jobs = function()
             global.upgrade_entities[global.upgrade_index] = entity
         end
         global.upgrade_marked_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 

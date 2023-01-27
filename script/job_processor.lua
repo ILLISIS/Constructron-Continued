@@ -1,7 +1,6 @@
 
 local debug_lib = require("script/debug_lib")
 local chunk_util = require("script/chunk_util")
-local color_lib = require("script/color_lib")
 local ctron = require("script/constructron")
 
 local job_proc = {}
