@@ -54,6 +54,7 @@ local ensure_globals = function()
     global.managed_surfaces = global.managed_surfaces or {}
     --
     global.stack_cache = {} -- rebuild
+    global.entity_inventory_cache = {}
     --
     global.job_bundle_index = global.job_bundle_index or 1
     --
@@ -115,6 +116,19 @@ local ensure_globals = function()
             global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
         end
     end
+    -- build trash_items_cache
+    global.trash_items_cache = {}
+    for entity_name, prototype in pairs(game.entity_prototypes) do
+        if prototype.mineable_properties and prototype.mineable_properties.products then
+            for _, product in pairs(prototype.mineable_properties.products) do
+                if product.type == "item" then
+                    global.trash_items_cache[entity_name] = global.trash_items_cache[entity_name] or {}
+                    global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
+                end
+            end
+        end
+    end
+
     -- settings
     global.construction_job_toggle = settings.global["construct_jobs"].value
     global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
@@ -235,6 +249,7 @@ local function reset(player, parameters)
         cmd.clear_queues()
         -- Clear supporting globals
         global.stack_cache = {}
+        global.entity_inventory_cache = {}
         cmd.rebuild_caches()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()

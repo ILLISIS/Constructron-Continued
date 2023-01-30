@@ -1,7 +1,22 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.65
-Date: ????
+Date: 2023-02-03
+  Improvements:
+    - Major job efficiency improvements because all entities are placed inside a chunk before it can be released as a job.
+    - Optimizations, when different things are idle they are now disabled and awoken when needed.
+    - Pathfinder speed & performance attempt was re-introduced when not on a landfill job.
+    - Jobs are given to constructrons all at the same time now instead of one per second previously.
+    - Constructrons will no longer roam the map just because a chunk will fit into it's inventory.
+    - Entity inventories are now taken into account when deconstructing. i.e modules, inputs, outputs and fuel etc. This will cause far more Constructrons to be sent to the job site when there are full chests etc.
+  Bugfixes:
+    - Deconstruction jobs should always be selected first now.
+    - Fixed an issue where if the path finder was busy it would mark the path in the job as active.
+    - Fixed an issue where the try_again_attempts in the path finder were reset with each new request.
   Changes:
+    - A red rectangle is drawn around the chunks in debug mode where and when entities are being processed.
+  Info:
+    - The job_start_delay setting is no longer the maximum wait time before jobs get released but rather the minimum.
+    - Very large jobs will seem slow to start, this is becuase of the entity processing embargo. The entities_per_tick setting effects this delay.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.64
 Date: 2023-01-23

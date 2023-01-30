@@ -87,24 +87,31 @@ function pathfinder.request_path(request_params)
         table.insert(pathing_collision_mask, empty_space_collision_layer)
     end
     pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
+    local bounding_box = {{-5, -5}, {5, 5}}
+    local path_resolution_modifier = -2
+    local landfill_job = request_params.landfill_job or false
+    if landfill_job then
+        bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
+        path_resolution_modifier = 0
+    end
     local request = { -- template
         job = request_params.job or nil, -- The job that initiated this request. Used to update the job. Not used by the factorio-pathfinder
         unit = request_params.unit, -- Unit that this path request is for. Used to add waypoints to the unit and surface id. not used by the factorio-pathfinder
         surface = request_params.unit.surface, -- The surface this path request is for. Not used by the factorio-pathfinder
-        landfill_job = request_params.landfill_job or false, -- Identifies if this path request is for a landfill job. Not used by the factorio-pathfinder
-        bounding_box = {{-0.015, -0.015}, {0.015, 0.015}},
+        landfill_job = landfill_job, -- Identifies if this path request is for a landfill job. Not used by the factorio-pathfinder
+        bounding_box = bounding_box,
         collision_mask = pathing_collision_mask,
         start = request_params.start or request_params.unit.position,
         goal = request_params.goal,
         force = request_params.unit.force,
         radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        path_resolution_modifier = 0,
+        path_resolution_modifier = path_resolution_modifier,
         pathfinding_flags = {
             cache = true,
             low_priority = true
         },
         attempt = request_params.attempt or 1, -- The count of path attemps. Not used by the factorio-pathfinder
-        try_again_later = 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
+        try_again_later = request_params.try_again_later or 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
     }
     if request_params.initial_target then -- landfill goal
         request.initial_target = request_params.initial_target
@@ -130,6 +137,9 @@ function pathfinder.on_script_path_request_finished(event)
             if request.try_again_later < 5 then
                 request.try_again_later = request.try_again_later + 1
                 pathfinder.request_path(request)
+                if request.job and request.job.constructron then
+                    debug_lib.DebugLog('Path finder busy for job:' .. request.job.bundle_index .. '')
+                end
             end
         elseif not path then
             request.attempt = request.attempt + 1
@@ -163,7 +173,7 @@ function pathfinder.on_script_path_request_finished(event)
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
             pathfinder.set_autopilot(request.unit, path)
         end
-        if request.job then
+        if request.job and next(request.job.constructron.autopilot_destinations) then
             request.job.path_active = true
         end
     end

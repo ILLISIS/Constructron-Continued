@@ -10,4 +10,9 @@ for _, surface in pairs(game.surfaces) do
     entity_proc.toggle_managed_surface(surface)
 end
 
+-- addition of trash_items_cache
+global.trash_items_cache = {}
+-- addition of entity_inventory_cache
+global.entity_inventory_cache = {}
+
 game.print('Constructron-Continued: v1.0.65 migration complete!')

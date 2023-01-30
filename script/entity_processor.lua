@@ -239,8 +239,51 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         if (entity_type == "cliff") then -- cliff demolition
                             required_items['cliff-explosives'] = (required_items['cliff-explosives'] or 0) + 1
                         else
-                            trash_items["iron-plate"] = (trash_items["iron-plate"] or 0) + 4
-                            -- !! assuming 4 generic items to pickup as calculating all the different prototypes and inventories would be very expensive.
+                            local entity_name = entity.name
+                            if (global.entity_inventory_cache[entity_name] == nil) then -- if entity is not in cache
+                                -- build entity inventory cache
+                                global.entity_inventory_cache[entity_name] = {}
+                                local max_index = 0
+                                for _, index in pairs(defines.inventory) do -- get maximum index value of defines.inventory
+                                    if index > max_index then
+                                        max_index = index
+                                    end
+                                end
+                                for i = 1, max_index do
+                                    local inventory = entity.get_inventory(i)
+                                    if (inventory ~= nil) then
+                                        table.insert(global.entity_inventory_cache[entity_name], i) -- add inventory defines index to cache against the entity
+                                    end
+                                end
+                                if not next(global.entity_inventory_cache[entity_name]) then
+                                    global.entity_inventory_cache[entity_name] = false -- item does not have an inventory
+                                end
+                            end
+                            if (global.entity_inventory_cache[entity_name] ~= false) then -- if entity is in the cache and has an inventory
+                                -- check inventory contents
+                                for _, inventory_id in pairs(global.entity_inventory_cache[entity_name]) do
+                                    local inventory = entity.get_inventory(inventory_id)
+                                    if (inventory ~= nil) then
+                                        local inv_contents = inventory.get_contents()
+                                        if (inv_contents ~= nil) then
+                                            for item, count in pairs(inv_contents) do
+                                                trash_items[item] = (trash_items[item] or 0) + count
+                                            end
+                                        end
+                                    end
+                                end
+                                -- add the entity itself to the trash_items
+                                for product_name, count in pairs (global.trash_items_cache[entity_name]) do
+                                    trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                end
+                            elseif not (entity_name == "item-on-ground") then
+                                for product_name, count in pairs (global.trash_items_cache[entity_name]) do
+                                    trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                end
+                            else
+                                entity_stack = entity.stack
+                                trash_items[entity_stack.name] = (trash_items[entity_stack.name] or 0) + entity_stack.count
+                            end
                         end
                     -- upgrade
                     elseif build_type == "upgrade" then

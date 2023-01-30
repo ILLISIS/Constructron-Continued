@@ -21,15 +21,17 @@ ctron.actions = {
     go_to_position = function(job, position)
         local constructron = job.constructron
         job.attempt = job.attempt + 1
-        ctron.disable_roboports(constructron.grid, 1)
         local distance = chunk_util.distance_between(constructron.position, position)
         constructron.grid.inhibit_movement_bonus = (distance < 32)
         constructron.enable_logistics_while_moving = job.landfill_job
         if job.landfill_job then -- is this a landfill job?
+            ctron.disable_roboports(constructron.grid, 1)
             if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
                 ctron.graceful_wrapup(job) -- no landfill left.. leave
                 return
             end
+        else
+            ctron.disable_roboports(constructron.grid, 0)
         end
         if distance > 12 then
             pathfinder.init_path_request(constructron, position, job)
@@ -544,7 +546,7 @@ ctron.conditions = {
 
 -- Spidertron waypoint orbit countermeasure
 script.on_nth_tick(1, (function()
-    for i, job_bundle in pairs(global.job_bundles) do
+    for _, job_bundle in pairs(global.job_bundles) do
         local job = job_bundle[1]
         if job and job.action == "go_to_position" then
             if job.constructron and job.constructron.valid then
@@ -606,9 +608,9 @@ end
 ---@param size 0|1
 ctron.disable_roboports = function(grid, size) -- doesn't really disable them, it sets the size of that cell
     for _, eq in next, grid.equipment do
-        if eq.type == "roboport-equipment" and eq.prototype.logistic_parameters.construction_radius > size then
-            if not string.find(eq.name, "%-reduced%-") then
-                ctron.replace_roboports(grid, eq, (eq.name .. "-reduced-" .. size ))
+        if eq.type == "roboport-equipment" and not (eq.prototype.logistic_parameters.construction_radius == size) then
+            if not string.find(eq.name, "%-reduced%-" .. size) then
+                ctron.replace_roboports(grid, eq, (eq.prototype.take_result.name .. "-reduced-" .. size ))
             end
         end
     end

@@ -13,7 +13,9 @@ job_proc.process_job_queue = function()
     -- job creation
     if global.queue_proc_trigger then  -- there is something to do start processing
         for _, surface_index in pairs(global.managed_surfaces) do
-            job_proc.get_job(surface_index)
+            for i = 1, global.constructrons_count[surface_index] do
+                job_proc.get_job(surface_index)
+            end
         end
     end
     -- job operation
@@ -44,30 +46,39 @@ job_proc.get_job = function(surface_index)
     ctron.set_constructron_status(worker, 'busy', true)
     ctron.paint_constructron(worker, job_type)
     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
-    local empty_stack_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
-    -- merge chunks in proximity to each other
-    local requested_items = {}
-    local total_required_stacks = 0
-    local combined_chunks = job_proc.merge_chunks(global[job_type .. "_queue"][surface_index], total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
+    -- merge chunks in proximity to each other into one job
+    local chunk_params = {
+        chunks = global[job_type .. "_queue"][surface_index],
+        job_type = job_type,
+        surface_index = surface_index,
+        total_required_slots = 0,
+        empty_slot_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count}))),
+        origin_chunk = nil,
+        used_chunks = {},
+        required_items = {}
+    }
+    local combined_chunks, required_items = job_proc.merge_chunks(chunk_params, nil)
     -- get closest service station
     global.job_bundle_index = (global.job_bundle_index or 0) + 1
     local closest_station = ctron.get_closest_service_station(worker)
     -- go to service station
-    job_proc.create_job(global.job_bundle_index, {
-        action = 'go_to_position',
-        action_args = {closest_station.position},
-        leave_condition = 'position_done',
-        leave_args = {closest_station.position},
-        constructron = worker
-    })
-    -- request items
-    job_proc.create_job(global.job_bundle_index, {
-        action = 'request_items',
-        action_args = {combined_chunks.requested_items},
-        leave_condition = 'request_done',
-        constructron = worker,
-        unused_stations = ctron.get_service_stations(worker.surface.index)
-    })
+    if next(required_items) or global.clear_robots_when_idle then
+        job_proc.create_job(global.job_bundle_index, {
+            action = 'go_to_position',
+            action_args = {closest_station.position},
+            leave_condition = 'position_done',
+            leave_args = {closest_station.position},
+            constructron = worker
+        })
+        -- request items
+        job_proc.create_job(global.job_bundle_index, {
+            action = 'request_items',
+            action_args = {required_items},
+            leave_condition = 'request_done',
+            constructron = worker,
+            unused_stations = ctron.get_service_stations(worker.surface.index)
+        })
+    end
     -- main job setup
     for _, chunk in ipairs(combined_chunks) do
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface_index, "yellow", false, 3600)
@@ -76,7 +87,7 @@ job_proc.get_job = function(surface_index)
         for _, position in ipairs(chunk.positions) do
             debug_lib.VisualDebugCircle(position, surface_index, "yellow", 0.5, 3600)
             local landfill_check = false
-            if combined_chunks.requested_items["landfill"] then
+            if required_items["landfill"] then
                 landfill_check = true
             end
             -- move to position
@@ -260,101 +271,59 @@ job_proc.get_worker = function(surface_index)
     end
 end
 
----@param chunks Chunk
----@param total_required_stacks integer
----@param empty_stack_count integer
----@param requested_items table
----@param job_type string
----@param surface_index integer
+---@param chunk_params table
+---@param origin_chunk table
 ---@return Chunk[]
-job_proc.merge_chunks = function(chunks, total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
-    local merged_chunk
-    for i, chunk1 in pairs(chunks) do -- first chunk
-        for j, chunk2 in pairs(chunks) do -- compared chunk
-            if not (i == j) then -- if not self
-                local merged_area = chunk_util.check_if_neighbour(chunk1.area, chunk2.area) -- checks if chunks are near to each other
-                if merged_area then -- chunks are neighbors
-                    local required_slots1 = 0
-                    local required_slots2 = 0
-                    if not chunk1.merged then
-                        required_slots1 = job_proc.calculate_required_inventory_slot_count(chunk1.required_items or {})
-                        required_slots1 = required_slots1 + job_proc.calculate_required_inventory_slot_count(chunk1.trash_items or {})
-                        for name, count in pairs(chunk1['required_items']) do
-                            requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                        end
-                    end
-                    if not chunk2.merged then
-                        required_slots2 = job_proc.calculate_required_inventory_slot_count(chunk2.required_items or {})
-                        required_slots2 = required_slots2 + job_proc.calculate_required_inventory_slot_count(chunk2.trash_items or {})
-                        for name, count in pairs(chunk2['required_items']) do
-                            requested_items[name] = math.ceil((requested_items[name] or 0) + count)
-                        end
-                    end
-                    if ((total_required_stacks + required_slots1 + required_slots2) < empty_stack_count) then -- actually merge the chunks if inventory fits
-                        total_required_stacks = total_required_stacks + required_slots1 + required_slots2
-                        merged_chunk = chunk_util.merge_neighbour_chunks(merged_area, chunk1, chunk2)
-                        merged_chunk.merged = true
-                        -- create a new table for remaining chunks
-                        local remaining_chunks = {}
-                        local remaining_counter = 1
-                        remaining_chunks[1] = merged_chunk
-                        for k, chunk in pairs(chunks) do
-                            if (not (k == i)) and (not (k == j)) then
-                                remaining_counter = remaining_counter + 1
-                                remaining_chunks[remaining_counter] = chunk
-                            end
-                        end
-                        -- !!! recursive call
-                        return job_proc.merge_chunks(remaining_chunks, total_required_stacks, empty_stack_count, requested_items, job_type, surface_index)
-                    end
-                end
-            end
-        end
-    end
-    -- reaching this point of the function means that as many of the original set of chunks have been merged together as possible
-    global[job_type .. "_queue"][surface_index] = {} -- clear the queue
-    ---@type Chunk[]
-    local used_chunks = {}
-    local used_chunk_counter = 1
-    ---@type ItemCounts
-    requested_items = {}
-    total_required_stacks = 0
-    for i, chunk in pairs(chunks) do
-        local divisor = 1
-        local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
-        required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
-        if ((total_required_stacks + required_slots) < empty_stack_count) then
-            total_required_stacks = total_required_stacks + required_slots
-            for name, count in pairs(chunk['required_items']) do
-                requested_items[name] = math.ceil(((requested_items[name] or 0) + count))
-            end
-            used_chunks[used_chunk_counter] = chunk
-            used_chunk_counter = used_chunk_counter + 1
-            global[job_type .. "_queue"][surface_index][i] = nil
-        else -- chunk will not fit into the inventory
-            if required_slots > empty_stack_count then -- if chunk is overloaded
-                divisor = math.ceil(required_slots / empty_stack_count)
+---@return required_items table
+job_proc.merge_chunks = function(chunk_params, origin_chunk)
+    for _, chunk in pairs(chunk_params.chunks) do
+        if (chunk.midpoint == nil) then -- establish chunk
+            chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+            local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
+            chunk.required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
+            if chunk.required_slots > chunk_params.empty_slot_count then -- if chunk is overloaded
+                divisor = math.ceil(chunk.required_slots / chunk_params.empty_slot_count)
                 for item, count in pairs(chunk.required_items) do
                     chunk.required_items[item] = math.ceil(count / divisor)
                 end
                 for item, count in pairs(chunk.trash_items) do
                     chunk.trash_items[item] = math.ceil(count / divisor)
                 end
-                requested_items = chunk.required_items -- !! trash items just need to be divided
-                used_chunks[used_chunk_counter] = chunk
-                used_chunk_counter = used_chunk_counter + 1
-            end
-            if divisor > 1 then -- duplicate the chunk so another constructron will perform the same job
-                for j = 1, (divisor - 1) do
-                    global[job_type .. "_queue"][surface_index][i .. "-" .. j] = chunk
+                -- update required_slots
+                local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
+                chunk.required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
+                -- duplicate the chunk so another constructron will perform the same job
+                if divisor > 1 then
+                    for i = 1, (divisor - 1) do
+                        chunk_params.chunks[chunk.key .. "-" .. i] = table.deepcopy(chunk)
+                        chunk_params.chunks[chunk.key .. "-" .. i].key = chunk.key .. "-" .. i
+                    end
                 end
-            else
-                global[job_type .. "_queue"][surface_index][i] = chunk
             end
         end
+        if (origin_chunk ~= nil) then
+            if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then
+                if ((chunk_params.total_required_slots + chunk.required_slots) < chunk_params.empty_slot_count) then
+                    chunk_params.total_required_slots = chunk_params.total_required_slots + chunk.required_slots
+                    table.insert(chunk_params.used_chunks, chunk)
+                    for name, count in pairs(chunk['required_items']) do
+                        chunk_params.required_items[name] = (chunk_params.required_items[name] or 0) + count
+                    end
+                    global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+                    return job_proc.merge_chunks(chunk_params, chunk)
+                end
+            end
+        else
+            origin_chunk = chunk
+            table.insert(chunk_params.used_chunks, chunk)
+            chunk_params.total_required_slots = chunk.required_slots
+            for name, count in pairs(chunk['required_items']) do
+                chunk_params.required_items[name] = (chunk_params.required_items[name] or 0) + count
+            end
+            global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+        end
     end
-    used_chunks.requested_items = requested_items
-    return used_chunks -- these chunks will be used in the job
+    return chunk_params.used_chunks, chunk_params.required_items
 end
 
 ---@param job_bundle_index integer
