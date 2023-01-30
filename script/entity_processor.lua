@@ -184,16 +184,16 @@ end)
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
-        local surface = removed_entity.surface
+        local surface_index = removed_entity.surface
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
-            global.constructrons_count[surface.index] = math.max(0, (global.constructrons_count[surface.index] or 0) - 1)
+            global.constructrons_count[surface_index] = math.max(0, (global.constructrons_count[surface_index] or 0) - 1)
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
-            entity_proc.toggle_managed_surface(surface)
+            entity_proc.toggle_managed_surface(surface_index)
         elseif removed_entity.name == "service_station" then
-            global.stations_count[surface.index] = math.max(0, (global.stations_count[surface.index] or 0) - 1)
+            global.stations_count[surface_index] = math.max(0, (global.stations_count[surface_index] or 0) - 1)
             global.service_stations[event.unit_number] = nil
-            entity_proc.toggle_managed_surface(surface)
+            entity_proc.toggle_managed_surface(surface_index)
         end
         global.registered_entities[event.registration_number] = nil
     end
@@ -363,12 +363,11 @@ end
 --  Utility
 -------------------------------------------------------------------------------
 
-entity_proc.toggle_managed_surface = function(surface)
-    local surface_index = surface.index
+entity_proc.toggle_managed_surface = function(surface_index)
     if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
-        global.managed_surfaces[surface.name] = surface_index
+        global.managed_surfaces[game.surfaces[surface_index].name] = surface_index
     else
-        global.managed_surfaces[surface.name] = nil
+        global.managed_surfaces[game.surfaces[surface_index].name] = nil
     end
 end
 
