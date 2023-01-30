@@ -25,27 +25,27 @@ entity_proc.on_built_entity = function(event)
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
-        local surface = entity.surface
+        local surface_index = entity.surface.index
         ctron.set_constructron_status(entity, 'busy', false)
         ctron.paint_constructron(entity, 'idle')
         entity.enable_logistics_while_moving = false
         global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "constructron",
-            surface = surface.index
+            surface = surface_index
         }
-        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] + 1
+        global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
         entity_proc.toggle_managed_surface(surface)
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_entity_destroyed(entity)
-        local surface = entity.surface
+        local surface_index = entity.surface.index
         global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "service_station",
-            surface = surface.index
+            surface = surface_index
         }
-        global.stations_count[surface.index] = global.stations_count[surface.index] + 1
-        entity_proc.toggle_managed_surface(surface)
+        global.stations_count[surface_index] = global.stations_count[surface_index] + 1
+        entity_proc.toggle_managed_surface(surface_index)
     end
 end
 
