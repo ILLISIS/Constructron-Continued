@@ -76,7 +76,7 @@ job_proc.get_job = function(surface_index)
             action_args = {required_items},
             leave_condition = 'request_done',
             constructron = worker,
-            unused_stations = ctron.get_service_stations(worker.surface.index)
+            request_station = closest_station
         })
     end
     -- main job setup

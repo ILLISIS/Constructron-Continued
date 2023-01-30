@@ -4,6 +4,7 @@ Date: 2023-02-03
   Improvements:
     - Major job efficiency improvements because all entities are placed inside a chunk before it can be released as a job.
     - Optimizations, when different things are idle they are now disabled and awoken when needed.
+    - Smart logistic roaming. Constructrons will now roam to other stations if the current network has nothing to offer and another one does.
     - Pathfinder speed & performance attempt was re-introduced when not on a landfill job.
     - Jobs are given to constructrons all at the same time now instead of one per second previously.
     - Constructrons will no longer roam the map just because a chunk will fit into it's inventory.

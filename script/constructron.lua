@@ -486,43 +486,55 @@ ctron.conditions = {
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
                     logistic_condition = false
+                else
+                    constructron.clear_vehicle_logistic_slot(i)
                 end
             end
         end
         if not logistic_condition then
             if not (job.action == "clear_items") then
-                -- alert
-                if (ticks > global.construction_mat_alert) then
-                    for _, player in pairs(game.players) do
-                        player.add_alert(constructron, defines.alert_type.no_material_for_construction)
-                    end
-                end
                 -- station roaming
-                if (ticks > global.max_jobtime) and (global.stations_count[(surface_index)] > 0) then
-                    local closest_station = ctron.get_closest_service_station(constructron)
-                    for unit_number, station in pairs(job.unused_stations) do
-                        if not station.valid then
-                            job.unused_stations[unit_number] = nil
+                if (ticks > global.max_jobtime) and (global.stations_count[(surface_index)] > 1) then
+                    -- check if current network can provide
+                    for i = 1, constructron.request_slot_count do ---@cast i uint
+                        local request = constructron.get_vehicle_logistic_slot(i)
+                        if request and request.name then
+                            if job.request_station.logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                return false -- items are expected to be delivered
+                            end
                         end
                     end
-                    job.unused_stations[closest_station.unit_number] = nil
-                    if not (next(job.unused_stations)) then
-                        job.unused_stations = ctron.get_service_stations(surface_index)
-                        if not #job.unused_stations == 1 then
-                            job.unused_stations[closest_station.unit_number] = nil
+                    -- check if other stations can provide
+                    local surface_stations = ctron.get_service_stations(surface_index)
+                    local new_station
+                    for _, station in pairs(surface_stations) do
+                        for i = 1, constructron.request_slot_count do ---@cast i uint
+                            local request = constructron.get_vehicle_logistic_slot(i)
+                            if request and request.name then
+                                if station.logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                    job.request_station = station
+                                    new_station = station
+                                end
+                            end
                         end
                     end
-                    local next_station = ctron.get_closest_unused_service_station(constructron, job.unused_stations)
-                    table.insert(global.job_bundles[job.bundle_index], 1, {
-                        action = 'go_to_position',
-                        action_args = {next_station.position},
-                        leave_condition = 'position_done',
-                        leave_args = {next_station.position},
-                        constructron = constructron,
-                        bundle_index = job.bundle_index
-                    })
-                    job.start_tick = game.tick
-                    debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
+                    -- roam to station if there is a better one
+                    if new_station then
+                        table.insert(global.job_bundles[job.bundle_index], 1, {
+                            action = 'go_to_position',
+                            action_args = {new_station.position},
+                            leave_condition = 'position_done',
+                            leave_args = {new_station.position},
+                            constructron = constructron,
+                            bundle_index = job.bundle_index
+                        })
+                        job.start_tick = game.tick
+                        debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
+                    else -- alert
+                        for _, player in pairs(game.players) do
+                            player.add_alert(constructron, defines.alert_type.no_material_for_construction)
+                        end
+                    end
                 end
             end
             return false -- condition is not met
@@ -649,7 +661,7 @@ end
 
 ---@param surface_index uint
 ---@return table<uint, LuaEntity>
-ctron.get_service_stations = function(surface_index)
+ctron.get_service_stations = function(surface_index) -- used to get all stations on a surface
     ---@type table<uint, LuaEntity>
     local stations_on_surface = {}
     for s, station in pairs(global.service_stations) do
@@ -666,7 +678,7 @@ end
 
 ---@param constructron LuaEntity
 ---@return LuaEntity
-ctron.get_closest_service_station = function(constructron)
+ctron.get_closest_service_station = function(constructron) -- used to get the closest station on a surface
     local service_stations = ctron.get_service_stations(constructron.surface.index)
     for unit_number, station in pairs(service_stations) do
         if not station.valid then
@@ -675,14 +687,6 @@ ctron.get_closest_service_station = function(constructron)
     end
     local service_station_index = chunk_util.get_closest_object(service_stations, constructron.position)
     return service_stations[service_station_index]
-end
-
----@param constructron LuaEntity
----@param unused_stations LuaEntity[]
----@return LuaEntity
-ctron.get_closest_unused_service_station = function(constructron, unused_stations)
-    local unused_stations_index = chunk_util.get_closest_object(unused_stations, constructron.position)
-    return unused_stations[unused_stations_index]
 end
 
 ---@param constructron LuaEntity
