@@ -1,10 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.65
 Date: 2023-02-03
+  Features:
+    - Smart logistic roaming. Constructrons will now roam to other stations if the current logistic network has nothing to offer and another one does.
   Improvements:
     - Major job efficiency improvements because all entities are placed inside a chunk before it can be released as a job.
     - Optimizations, when different things are idle they are now disabled and awoken when needed.
-    - Smart logistic roaming. Constructrons will now roam to other stations if the current network has nothing to offer and another one does.
     - Pathfinder speed & performance attempt was re-introduced when not on a landfill job.
     - Jobs are given to constructrons all at the same time now instead of one per second previously.
     - Constructrons will no longer roam the map just because a chunk will fit into it's inventory.
@@ -15,6 +16,9 @@ Date: 2023-02-03
     - Fixed an issue where the try_again_attempts in the path finder were reset with each new request.
   Changes:
     - A red rectangle is drawn around the chunks in debug mode where and when entities are being processed.
+    - Logistic request slots are now cleared as they are filled making it easier to identify lacking items.
+    - Removed missing material alert setting, the alert is only triggered when no stations have anything to offer.
+    - Removed max_jobtime setting as it only effected the old station roaming method.
   Info:
     - The job_start_delay setting is no longer the maximum wait time before jobs get released but rather the minimum.
     - Very large jobs will seem slow to start, this is becuase of the entity processing embargo. The entities_per_tick setting effects this delay.

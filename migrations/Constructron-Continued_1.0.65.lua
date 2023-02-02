@@ -7,7 +7,7 @@ cmd.reload_entities()
 -- addition of managed surface register
 global.managed_surfaces = {}
 for _, surface in pairs(game.surfaces) do
-    entity_proc.toggle_managed_surface(surface)
+    entity_proc.toggle_managed_surface(surface.index)
 end
 
 -- addition of trash_items_cache

@@ -139,8 +139,6 @@ local ensure_globals = function()
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-    global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
 end
@@ -212,10 +210,6 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.desired_robot_count = settings.global["desired_robot_count"].value
     elseif setting == "desired_robot_name" then
         global.desired_robot_name = settings.global["desired_robot_name"].value
-    elseif setting == "construction_mat_alert" then
-        global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-    elseif setting == "max-jobtime-per-job" then
-        global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
     elseif setting == "entities_per_tick" then
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "clear_robots_when_idle" then

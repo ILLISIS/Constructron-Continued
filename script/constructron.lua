@@ -463,7 +463,7 @@ ctron.conditions = {
         local surface_index = constructron.surface.index
         local logistic_condition = true
         debug_lib.VisualDebugText("Awaiting logistics", constructron, -1, 1)
-        -- check status of logisitc requests
+        -- check status of logistic requests
         local trunk_inventory = constructron.get_inventory(defines.inventory.spider_trunk)
         local trunk = {} -- what we have
         for i = 1, #trunk_inventory do
@@ -494,7 +494,7 @@ ctron.conditions = {
         if not logistic_condition then
             if not (job.action == "clear_items") then
                 -- station roaming
-                if (ticks > global.max_jobtime) and (global.stations_count[(surface_index)] > 1) then
+                if (ticks > 600) and (global.stations_count[(surface_index)] > 1) then
                     -- check if current network can provide
                     for i = 1, constructron.request_slot_count do ---@cast i uint
                         local request = constructron.get_vehicle_logistic_slot(i)
