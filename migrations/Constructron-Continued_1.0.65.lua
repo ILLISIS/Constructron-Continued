@@ -15,4 +15,9 @@ global.trash_items_cache = {}
 -- addition of entity_inventory_cache
 global.entity_inventory_cache = {}
 
+-- manual trigger of all threads
+global.entity_proc_trigger = true
+global.queue_proc_trigger = true
+global.job_proc_trigger = true
+
 game.print('Constructron-Continued: v1.0.65 migration complete!')

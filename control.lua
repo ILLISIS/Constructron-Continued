@@ -47,9 +47,9 @@ local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
     --
-    global.entity_proc_trigger = global.entity_proc_triggerr or false
-    global.queue_proc_trigger = global.queue_proc_trigger or false
-    global.job_proc_trigger = global.job_proc_trigger or false
+    global.entity_proc_trigger = global.entity_proc_triggerr or true
+    global.queue_proc_trigger = global.queue_proc_trigger or true
+    global.job_proc_trigger = global.job_proc_trigger or true
     --
     global.managed_surfaces = global.managed_surfaces or {}
     --

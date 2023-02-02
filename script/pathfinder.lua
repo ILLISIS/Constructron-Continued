@@ -87,8 +87,8 @@ function pathfinder.request_path(request_params)
         table.insert(pathing_collision_mask, empty_space_collision_layer)
     end
     pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
-    local bounding_box = {{-5, -5}, {5, 5}}
-    local path_resolution_modifier = -2
+    local bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}
+    local path_resolution_modifier = request_params.path_resolution_modifier or -2
     local landfill_job = request_params.landfill_job or false
     if landfill_job then
         bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
@@ -143,7 +143,7 @@ function pathfinder.on_script_path_request_finished(event)
             end
         elseif not path then
             request.attempt = request.attempt + 1
-            if request.attempt < 4 then
+            if request.attempt < 5 then
                 if request.attempt == 2 then -- 2. Re-Request ensuring the start of the path is not colliding
                     debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
                     request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
@@ -152,6 +152,9 @@ function pathfinder.on_script_path_request_finished(event)
                     debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
                     request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
                     debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
+                elseif request.attempt == 4 then -- 4. Re-Request with higher pathing precision
+                    request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
+                    request.path_resolution_modifier = 0
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
