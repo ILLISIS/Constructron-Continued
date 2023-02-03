@@ -72,7 +72,7 @@ data:extend({{
     setting_type = "runtime-global",
     default_value = 1000,
     minimum_value = 100,
-    maximum_value = 10000
+    maximum_value = 100000
 }, {
     type = "bool-setting",
     name = "enable_rocket_powered_constructron",

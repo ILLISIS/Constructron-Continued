@@ -222,14 +222,6 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
     end
 end
 
-function pathfinder.check_pathfinder_requests_timeout()
-    for key, request in pairs(global.pathfinder_requests) do
-        if ((game.tick - request.request_tick) > 60 * 60) then -- one minute
-            global.pathfinder_requests[key] = nil
-        end
-    end
-end
-
 ---@param path PathfinderWaypoint[]
 ---@return PathfinderWaypoint[]
 function pathfinder.clean_linear_path(path) -- removes points on the same line except the start and the end.

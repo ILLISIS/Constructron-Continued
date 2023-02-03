@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.67
+Date: 2023-02-04
+  Bugfixes:
+    - Fixed a crash when an entity was deconstructructed with an inventory but was not in the trash_items cache.
+    - Fixed a crash when the job.request_station was invalidated during logistic roaming.
+    - Fixed an issue where Constructrons would get staged and the function would return early instead of moving on to find an available Constructron.
+    - Fixed and issue where Constructrons would get staged but the job_processor would not be triggered.
+  Changes:
+    - Increased maximum entities_per_tick settin value to 100000.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.66
 Date: 2023-02-03
   Bugfixes:

@@ -245,22 +245,24 @@ job_proc.get_worker = function(surface_index)
                             })
                             local closest_station = ctron.get_closest_service_station(constructron)
                             local distance = chunk_util.distance_between(constructron.position, closest_station.position)
-                            if distance < 9 then return end
-                            ctron.set_constructron_status(constructron, 'busy', true)
-                            global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                            job_proc.create_job(global.job_bundle_index, {
-                                action = 'go_to_position',
-                                action_args = {closest_station.position},
-                                leave_condition = 'position_done',
-                                leave_args = {closest_station.position},
-                                constructron = constructron
-                            })
-                            job_proc.create_job(global.job_bundle_index, {
-                                action = 'retire',
-                                leave_condition = 'pass',
-                                leave_args = {closest_station.position},
-                                constructron = constructron
-                            })
+                            if distance > 9 then
+                                ctron.set_constructron_status(constructron, 'busy', true)
+                                global.job_bundle_index = (global.job_bundle_index or 0) + 1
+                                job_proc.create_job(global.job_bundle_index, {
+                                    action = 'go_to_position',
+                                    action_args = {closest_station.position},
+                                    leave_condition = 'position_done',
+                                    leave_args = {closest_station.position},
+                                    constructron = constructron
+                                })
+                                job_proc.create_job(global.job_bundle_index, {
+                                    action = 'retire',
+                                    leave_condition = 'pass',
+                                    leave_args = {closest_station.position},
+                                    constructron = constructron
+                                })
+                                global.job_proc_trigger = true -- start job operations
+                            end
                         else
                             debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
                         end
