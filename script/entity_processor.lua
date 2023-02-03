@@ -273,8 +273,12 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                                     end
                                 end
                                 -- add the entity itself to the trash_items
-                                for product_name, count in pairs(global.trash_items_cache[entity_name]) do
-                                    trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                if global.trash_items_cache[entity_name] then
+                                    for product_name, count in pairs(global.trash_items_cache[entity_name]) do
+                                        trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                    end
+                                else
+                                    debug_lib.DebugLog('Constructron:-Continued: Entity not cached! please report this to mod author!' .. entity_name .. '')
                                 end
                             elseif not (entity_name == "item-on-ground") then
                                 if not (entity_name == "deconstructible-tile-proxy") then
