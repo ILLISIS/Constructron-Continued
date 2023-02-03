@@ -282,7 +282,7 @@ job_proc.merge_chunks = function(chunk_params, origin_chunk)
             local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
             chunk.required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
             if chunk.required_slots > chunk_params.empty_slot_count then -- if chunk is overloaded
-                divisor = math.ceil(chunk.required_slots / chunk_params.empty_slot_count)
+                local divisor = math.ceil(chunk.required_slots / chunk_params.empty_slot_count)
                 for item, count in pairs(chunk.required_items) do
                     chunk.required_items[item] = math.ceil(count / divisor)
                 end
@@ -290,7 +290,7 @@ job_proc.merge_chunks = function(chunk_params, origin_chunk)
                     chunk.trash_items[item] = math.ceil(count / divisor)
                 end
                 -- update required_slots
-                local required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
+                required_slots = job_proc.calculate_required_inventory_slot_count(chunk.required_items or {})
                 chunk.required_slots = required_slots + job_proc.calculate_required_inventory_slot_count(chunk.trash_items or {})
                 -- duplicate the chunk so another constructron will perform the same job
                 if divisor > 1 then

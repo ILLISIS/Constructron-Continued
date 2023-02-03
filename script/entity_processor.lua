@@ -277,11 +277,15 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                                     trash_items[product_name] = (trash_items[product_name] or 0) + count
                                 end
                             elseif not (entity_name == "item-on-ground") then
-                                for product_name, count in pairs(global.trash_items_cache[entity_name]) do
-                                    trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                if not (entity_name == "deconstructible-tile-proxy") then
+                                    for product_name, count in pairs(global.trash_items_cache[entity_name]) do
+                                        trash_items[product_name] = (trash_items[product_name] or 0) + count
+                                    end
+                                else
+                                    trash_items["concrete"] = (trash_items["concrete"] or 0) + 1 -- assuming tile name because there doesn't seem to be a way to get what will be picked up
                                 end
                             else
-                                entity_stack = entity.stack
+                                local entity_stack = entity.stack
                                 trash_items[entity_stack.name] = (trash_items[entity_stack.name] or 0) + entity_stack.count
                             end
                         end
