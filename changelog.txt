@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.68
+Date: ????
+  Changes:
+    - New command: /ctron enable all - enables all job types.
+    - New command: /ctron disable all - disables all job types.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.67
 Date: 2023-02-04
   Bugfixes:

@@ -320,6 +320,26 @@ local function enable(player, parameters)
         global.repair_job_toggle = true
         settings.global["repair_jobs"] = {value = true}
         game.print('Repair jobs enabled.')
+    elseif parameters[1] == "all" then
+        global.construction_job_toggle = true
+        settings.global["construct_jobs"] = {value = true}
+        cmd.reload_entities()
+        cmd.reacquire_construction_jobs()
+        game.print('Construction jobs enabled.')
+        global.rebuild_job_toggle = true
+        settings.global["rebuild_jobs"] = {value = true}
+        game.print('Rebuild jobs enabled.')
+        global.deconstruction_job_toggle = true
+        settings.global["deconstruct_jobs"] = {value = true}
+        cmd.reacquire_deconstruction_jobs()
+        game.print('Deconstruction jobs enabled.')
+        global.upgrade_job_toggle = true
+        settings.global["upgrade_jobs"] = {value = true}
+        cmd.reacquire_upgrade_jobs()
+        game.print('Upgrade jobs enabled.')
+        global.repair_job_toggle = true
+        settings.global["repair_jobs"] = {value = true}
+        game.print('Repair jobs enabled.')
     elseif parameters[1] == "debug" then
         global.debug_toggle = true
         settings.global["constructron-debug-enabled"] = {value = true}
@@ -363,6 +383,22 @@ local function disable(player, parameters)
         settings.global["upgrade_jobs"] = {value = false}
         game.print('Upgrade jobs disabled.')
     elseif parameters[1] == "repair" then
+        global.repair_job_toggle = false
+        settings.global["repair_jobs"] = {value = false}
+        game.print('Repair jobs disabled.')
+    elseif parameters[1] == "all" then
+        global.construction_job_toggle = false
+        settings.global["construct_jobs"] = {value = false}
+        game.print('Construction jobs disabled.')
+        global.rebuild_job_toggle = false
+        settings.global["rebuild_jobs"] = {value = false}
+        game.print('Rebuild jobs disabled.')
+        global.deconstruction_job_toggle = false
+        settings.global["deconstruct_jobs"] = {value = false}
+        game.print('Deconstruction jobs disabled.')
+        global.upgrade_job_toggle = false
+        settings.global["upgrade_jobs"] = {value = false}
+        game.print('Upgrade jobs disabled.')
         global.repair_job_toggle = false
         settings.global["repair_jobs"] = {value = false}
         game.print('Repair jobs disabled.')
