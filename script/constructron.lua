@@ -21,15 +21,17 @@ ctron.actions = {
     go_to_position = function(job, position)
         local constructron = job.constructron
         job.attempt = job.attempt + 1
-        ctron.disable_roboports(constructron.grid, 1)
         local distance = chunk_util.distance_between(constructron.position, position)
         constructron.grid.inhibit_movement_bonus = (distance < 32)
         constructron.enable_logistics_while_moving = job.landfill_job
         if job.landfill_job then -- is this a landfill job?
+            ctron.disable_roboports(constructron.grid, 1)
             if not constructron.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then
                 ctron.graceful_wrapup(job) -- no landfill left.. leave
                 return
             end
+        else
+            ctron.disable_roboports(constructron.grid, 0)
         end
         if distance > 12 then
             pathfinder.init_path_request(constructron, position, job)
@@ -198,6 +200,7 @@ ctron.actions = {
                 global.ghost_entities[global.ghost_index] = entity
             end
             global.ghost_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end,
     -------------------------------------------------------------------------------
@@ -223,6 +226,7 @@ ctron.actions = {
                 global.deconstruction_entities[global.decon_index] = entity
             end
             global.deconstruct_marked_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end,
     -------------------------------------------------------------------------------
@@ -249,6 +253,7 @@ ctron.actions = {
                 global.upgrade_entities[global.upgrade_index] = entity
             end
             global.upgrade_marked_tick = game.tick
+            global.entity_proc_trigger = true -- there is something to do start processing
         end
     end
 }
@@ -458,7 +463,7 @@ ctron.conditions = {
         local surface_index = constructron.surface.index
         local logistic_condition = true
         debug_lib.VisualDebugText("Awaiting logistics", constructron, -1, 1)
-        -- check status of logisitc requests
+        -- check status of logistic requests
         local trunk_inventory = constructron.get_inventory(defines.inventory.spider_trunk)
         local trunk = {} -- what we have
         for i = 1, #trunk_inventory do
@@ -481,43 +486,59 @@ ctron.conditions = {
             if request then
                 if not (((trunk[request.name] or 0) >= request.min) and ((trunk[request.name] or 0) <= request.max)) then
                     logistic_condition = false
+                else
+                    constructron.clear_vehicle_logistic_slot(i)
                 end
             end
         end
         if not logistic_condition then
             if not (job.action == "clear_items") then
-                -- alert
-                if (ticks > global.construction_mat_alert) then
+                -- station roaming
+                if (ticks > 900) and (global.stations_count[(surface_index)] > 1) then
+                    -- check if current network can provide
+                    for i = 1, constructron.request_slot_count do ---@cast i uint
+                        local request = constructron.get_vehicle_logistic_slot(i)
+                        if request and request.name then
+                            if job.request_station.logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                return false -- items are expected to be delivered
+                            end
+                        end
+                    end
+                    -- check if other stations can provide
+                    local surface_stations = ctron.get_service_stations(surface_index)
+                    local new_station
+                    for _, station in pairs(surface_stations) do
+                        for i = 1, constructron.request_slot_count do ---@cast i uint
+                            local request = constructron.get_vehicle_logistic_slot(i)
+                            if request and request.name then
+                                if station.logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                    job.request_station = station
+                                    new_station = station
+                                end
+                            end
+                        end
+                    end
+                    -- roam to station if there is a better one
+                    if new_station then
+                        table.insert(global.job_bundles[job.bundle_index], 1, {
+                            action = 'go_to_position',
+                            action_args = {new_station.position},
+                            leave_condition = 'position_done',
+                            leave_args = {new_station.position},
+                            constructron = constructron,
+                            bundle_index = job.bundle_index
+                        })
+                        job.start_tick = game.tick
+                        debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
+                    else -- alert
+                        for _, player in pairs(game.players) do
+                            player.add_alert(constructron, defines.alert_type.no_material_for_construction)
+                        end
+                    end
+                elseif (ticks > 900) then -- alert
                     for _, player in pairs(game.players) do
                         player.add_alert(constructron, defines.alert_type.no_material_for_construction)
                     end
-                end
-                -- station roaming
-                if (ticks > global.max_jobtime) and (global.stations_count[(surface_index)] > 0) then
-                    local closest_station = ctron.get_closest_service_station(constructron)
-                    for unit_number, station in pairs(job.unused_stations) do
-                        if not station.valid then
-                            job.unused_stations[unit_number] = nil
-                        end
-                    end
-                    job.unused_stations[closest_station.unit_number] = nil
-                    if not (next(job.unused_stations)) then
-                        job.unused_stations = ctron.get_service_stations(surface_index)
-                        if not #job.unused_stations == 1 then
-                            job.unused_stations[closest_station.unit_number] = nil
-                        end
-                    end
-                    local next_station = ctron.get_closest_unused_service_station(constructron, job.unused_stations)
-                    table.insert(global.job_bundles[job.bundle_index], 1, {
-                        action = 'go_to_position',
-                        action_args = {next_station.position},
-                        leave_condition = 'position_done',
-                        leave_args = {next_station.position},
-                        constructron = constructron,
-                        bundle_index = job.bundle_index
-                    })
-                    job.start_tick = game.tick
-                    debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
                 end
             end
             return false -- condition is not met
@@ -541,7 +562,7 @@ ctron.conditions = {
 
 -- Spidertron waypoint orbit countermeasure
 script.on_nth_tick(1, (function()
-    for i, job_bundle in pairs(global.job_bundles) do
+    for _, job_bundle in pairs(global.job_bundles) do
         local job = job_bundle[1]
         if job and job.action == "go_to_position" then
             if job.constructron and job.constructron.valid then
@@ -603,9 +624,9 @@ end
 ---@param size 0|1
 ctron.disable_roboports = function(grid, size) -- doesn't really disable them, it sets the size of that cell
     for _, eq in next, grid.equipment do
-        if eq.type == "roboport-equipment" and eq.prototype.logistic_parameters.construction_radius > size then
-            if not string.find(eq.name, "%-reduced%-") then
-                ctron.replace_roboports(grid, eq, (eq.name .. "-reduced-" .. size ))
+        if eq.type == "roboport-equipment" and not (eq.prototype.logistic_parameters.construction_radius == size) then
+            if not string.find(eq.name, "%-reduced%-" .. size) then
+                ctron.replace_roboports(grid, eq, (eq.prototype.take_result.name .. "-reduced-" .. size ))
             end
         end
     end
@@ -644,7 +665,7 @@ end
 
 ---@param surface_index uint
 ---@return table<uint, LuaEntity>
-ctron.get_service_stations = function(surface_index)
+ctron.get_service_stations = function(surface_index) -- used to get all stations on a surface
     ---@type table<uint, LuaEntity>
     local stations_on_surface = {}
     for s, station in pairs(global.service_stations) do
@@ -661,7 +682,7 @@ end
 
 ---@param constructron LuaEntity
 ---@return LuaEntity
-ctron.get_closest_service_station = function(constructron)
+ctron.get_closest_service_station = function(constructron) -- used to get the closest station on a surface
     local service_stations = ctron.get_service_stations(constructron.surface.index)
     for unit_number, station in pairs(service_stations) do
         if not station.valid then
@@ -670,14 +691,6 @@ ctron.get_closest_service_station = function(constructron)
     end
     local service_station_index = chunk_util.get_closest_object(service_stations, constructron.position)
     return service_stations[service_station_index]
-end
-
----@param constructron LuaEntity
----@param unused_stations LuaEntity[]
----@return LuaEntity
-ctron.get_closest_unused_service_station = function(constructron, unused_stations)
-    local unused_stations_index = chunk_util.get_closest_object(unused_stations, constructron.position)
-    return unused_stations[unused_stations_index]
 end
 
 ---@param constructron LuaEntity

@@ -44,7 +44,8 @@ me.colors.white = {
 me.colors.charcoal = {
     r = 0.1,
     g = 0.1,
-    b = 0.1
+    b = 0.1,
+    a = 0.4
 }
 
 return me

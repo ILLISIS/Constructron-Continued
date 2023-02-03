@@ -54,6 +54,7 @@ me.reacquire_construction_jobs = function()
             global.ghost_entities[global.ghost_index] = entity
         end
         global.ghost_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 
@@ -70,6 +71,7 @@ me.reacquire_deconstruction_jobs = function()
             global.deconstruction_entities[global.decon_index] = entity
         end
         global.deconstruct_marked_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 
@@ -86,6 +88,7 @@ me.reacquire_upgrade_jobs = function()
             global.upgrade_entities[global.upgrade_index] = entity
         end
         global.upgrade_marked_tick = game.tick
+        global.entity_proc_trigger = true
     end
 end
 
@@ -231,7 +234,6 @@ me.rebuild_caches = function()
             global.allowed_items[item_name] = false
         end
     end
-
     -- build required_items cache (used in add_entities_to_chunks)
     global.items_to_place_cache = {}
     for name, v in pairs(game.entity_prototypes) do
@@ -242,6 +244,18 @@ me.rebuild_caches = function()
     for name, v in pairs(game.tile_prototypes) do
         if v.items_to_place_this ~= nil and v.items_to_place_this[1] and v.items_to_place_this[1].name then -- bots will only ever use the first item from this list
             global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
+        end
+    end
+    -- build trash_items_cache
+    global.trash_items_cache = {}
+    for entity_name, prototype in pairs(game.entity_prototypes) do
+        if prototype.mineable_properties and prototype.mineable_properties.products then
+            for _, product in pairs(prototype.mineable_properties.products) do
+                if product.type == "item" then
+                    global.trash_items_cache[entity_name] = global.trash_items_cache[entity_name] or {}
+                    global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
+                end
+            end
         end
     end
 end

@@ -12,5 +12,5 @@ global.job_start_delay = (settings.global["job-start-delay"].value * 60)
 global.desired_robot_count = settings.global["desired_robot_count"].value
 global.desired_robot_name = settings.global["desired_robot_name"].value
 -- global.max_worker_per_job = settings.global['max-worker-per-job'].value
-global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
+-- global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60) -- removed in 1.0.65
+-- global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) -- removed in 1.0.65

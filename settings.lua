@@ -11,13 +11,6 @@ data:extend({{
     default_value = true
 }, {
     type = "int-setting",
-    name = "max-jobtime-per-job",
-    setting_type = "runtime-global",
-    default_value = 2,
-    minimum_value = 1,
-    maximum_value = 10
-}, {
-    type = "int-setting",
     name = "job-start-delay",
     setting_type = "runtime-global",
     default_value = 5,
@@ -73,13 +66,6 @@ data:extend({{
     default_value = 75,
     minimum_value = 1,
     maximum_value = 100
-}, {
-    type = "int-setting",
-    name = "construction_mat_alert",
-    setting_type = "runtime-global",
-    default_value = 30,
-    minimum_value = 0,
-    maximum_value = 3600
 }, {
     type = "int-setting",
     name = "entities_per_tick",

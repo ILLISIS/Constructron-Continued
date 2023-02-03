@@ -7,17 +7,22 @@ local job_proc = require("script/job_processor")
 
 -- main workers
 script.on_nth_tick(60, job_proc.process_job_queue)
-script.on_nth_tick(15, (function(event)
-    if event.tick % 20 == 15 then
+
+script.on_nth_tick(15, function()
+    if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
+    if next(global.deconstruction_entities) then -- deconstruction has priority over construction.
         entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruct_queue, global.deconstruct_marked_tick)
-    elseif event.tick % 20 == 10 then
+    elseif next(global.ghost_entities) then
         entity_proc.add_entities_to_chunks("construction", global.ghost_entities, global.construct_queue, global.ghost_tick)
-    elseif event.tick % 20 == 5 then
+    elseif next(global.upgrade_entities) then
         entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_marked_tick)
-    elseif event.tick % 20 == 0 then
+    elseif next(global.repair_entities) then
         entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_marked_tick)
+    else
+        global.entity_proc_trigger = false -- stop entity processing
+        global.queue_proc_trigger = true -- start job processing
     end
-end))
+end)
 
 -- cleanup
 script.on_nth_tick(54000, (function()
@@ -42,7 +47,14 @@ local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
     --
+    global.entity_proc_trigger = global.entity_proc_triggerr or true
+    global.queue_proc_trigger = global.queue_proc_trigger or true
+    global.job_proc_trigger = global.job_proc_trigger or true
+    --
+    global.managed_surfaces = global.managed_surfaces or {}
+    --
     global.stack_cache = {} -- rebuild
+    global.entity_inventory_cache = {}
     --
     global.job_bundle_index = global.job_bundle_index or 1
     --
@@ -104,6 +116,19 @@ local ensure_globals = function()
             global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
         end
     end
+    -- build trash_items_cache
+    global.trash_items_cache = {}
+    for entity_name, prototype in pairs(game.entity_prototypes) do
+        if prototype.mineable_properties and prototype.mineable_properties.products then
+            for _, product in pairs(prototype.mineable_properties.products) do
+                if product.type == "item" then
+                    global.trash_items_cache[entity_name] = global.trash_items_cache[entity_name] or {}
+                    global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
+                end
+            end
+        end
+    end
+
     -- settings
     global.construction_job_toggle = settings.global["construct_jobs"].value
     global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
@@ -114,8 +139,6 @@ local ensure_globals = function()
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-    global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60) --[[@as uint]]
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
 end
@@ -187,10 +210,6 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.desired_robot_count = settings.global["desired_robot_count"].value
     elseif setting == "desired_robot_name" then
         global.desired_robot_name = settings.global["desired_robot_name"].value
-    elseif setting == "construction_mat_alert" then
-        global.construction_mat_alert = (settings.global["construction_mat_alert"].value * 60)
-    elseif setting == "max-jobtime-per-job" then
-        global.max_jobtime = (settings.global["max-jobtime-per-job"].value * 60 * 60)
     elseif setting == "entities_per_tick" then
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "clear_robots_when_idle" then
@@ -224,6 +243,7 @@ local function reset(player, parameters)
         cmd.clear_queues()
         -- Clear supporting globals
         global.stack_cache = {}
+        global.entity_inventory_cache = {}
         cmd.rebuild_caches()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
