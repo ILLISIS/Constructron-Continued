@@ -273,11 +273,11 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                                     end
                                 end
                                 -- add the entity itself to the trash_items
-                                for product_name, count in pairs (global.trash_items_cache[entity_name]) do
+                                for product_name, count in pairs(global.trash_items_cache[entity_name]) do
                                     trash_items[product_name] = (trash_items[product_name] or 0) + count
                                 end
                             elseif not (entity_name == "item-on-ground") then
-                                for product_name, count in pairs (global.trash_items_cache[entity_name]) do
+                                for product_name, count in pairs(global.trash_items_cache[entity_name]) do
                                     trash_items[product_name] = (trash_items[product_name] or 0) + count
                                 end
                             else

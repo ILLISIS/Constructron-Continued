@@ -17,11 +17,11 @@ Date: 2023-02-03
   Changes:
     - A red rectangle is drawn around the chunks in debug mode where and when entities are being processed.
     - Logistic request slots are now cleared as they are filled making it easier to identify lacking items.
-    - Removed missing material alert setting, the alert is only triggered when no stations have anything to offer.
+    - Removed missing material alert setting, the alert is only triggered when no stations have anything to offer after 15 seconds.
     - Removed max_jobtime setting as it only effected the old station roaming method.
   Info:
     - The job_start_delay setting is no longer the maximum wait time before jobs get released but rather the minimum.
-    - Very large jobs will seem slow to start, this is becuase of the entity processing embargo. The entities_per_tick setting effects this delay.
+    - Very large jobs will seem slow to start, this is becuase of the entity processing embargo. The entities_per_tick setting effects this delay significantly.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.64
 Date: 2023-01-23

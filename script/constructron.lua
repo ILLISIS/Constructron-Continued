@@ -494,7 +494,7 @@ ctron.conditions = {
         if not logistic_condition then
             if not (job.action == "clear_items") then
                 -- station roaming
-                if (ticks > 600) and (global.stations_count[(surface_index)] > 1) then
+                if (ticks > 900) and (global.stations_count[(surface_index)] > 1) then
                     -- check if current network can provide
                     for i = 1, constructron.request_slot_count do ---@cast i uint
                         local request = constructron.get_vehicle_logistic_slot(i)
@@ -534,6 +534,10 @@ ctron.conditions = {
                         for _, player in pairs(game.players) do
                             player.add_alert(constructron, defines.alert_type.no_material_for_construction)
                         end
+                    end
+                elseif (ticks > 900) then -- alert
+                    for _, player in pairs(game.players) do
+                        player.add_alert(constructron, defines.alert_type.no_material_for_construction)
                     end
                 end
             end
