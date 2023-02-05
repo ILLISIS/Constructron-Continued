@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.69
+Date: ????
+  Changes:
+    - Constructrons no longer step to the station if they are already in range.
+  Bugfixes:
+    - Fixed a crash when the specified robot name was invalid in the settings.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.68
 Date: 2023-02-05
   Improvements:

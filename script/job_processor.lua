@@ -46,13 +46,20 @@ job_proc.get_job = function(surface_index)
     ctron.set_constructron_status(worker, 'busy', true)
     ctron.paint_constructron(worker, job_type)
     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+    -- calculate empty slots
+    local empty_slots
+    if game.item_prototypes[global.desired_robot_name] then
+        empty_slots = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
+    else
+        empty_slots = inventory.count_empty_stacks()
+    end
     -- merge chunks in proximity to each other into one job
     local chunk_params = {
         chunks = global[job_type .. "_queue"][surface_index],
         job_type = job_type,
         surface_index = surface_index,
         total_required_slots = 0,
-        empty_slot_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count}))),
+        empty_slot_count = empty_slots,
         origin_chunk = nil,
         used_chunks = {},
         required_items = {}
@@ -63,13 +70,16 @@ job_proc.get_job = function(surface_index)
     local closest_station = ctron.get_closest_service_station(worker)
     -- go to service station
     if next(required_items) or global.clear_robots_when_idle then
-        job_proc.create_job(global.job_bundle_index, {
-            action = 'go_to_position',
-            action_args = {closest_station.position},
-            leave_condition = 'position_done',
-            leave_args = {closest_station.position},
-            constructron = worker
-        })
+        local distance = chunk_util.distance_between(worker.position, closest_station.position)
+        if distance > 10 then -- 10 is the logistic radius of a station
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'go_to_position',
+                action_args = {closest_station.position},
+                leave_condition = 'position_done',
+                leave_args = {closest_station.position},
+                constructron = worker
+            })
+        end
         -- request items
         job_proc.create_job(global.job_bundle_index, {
             action = 'request_items',
@@ -168,7 +178,7 @@ job_proc.get_job = function(surface_index)
     job_proc.create_job(global.job_bundle_index, {
         action = 'retire',
         leave_condition = 'pass',
-        leave_args = {closest_station.position},
+        leave_args = {},
         constructron = worker
     })
 end

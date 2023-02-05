@@ -75,7 +75,14 @@ ctron.actions = {
                 end
             end
             -- ensure robots are in the inventory
-            merged_items[global.desired_robot_name] = global.desired_robot_count
+            if game.item_prototypes[global.desired_robot_name] then
+                merged_items[global.desired_robot_name] = global.desired_robot_count
+            else
+                settings.global["desired_robot_name"] = {value = "construction-robot"}
+                global.desired_robot_name = "construction-robot"
+                game.print("desired_robot_name name is not valid in mod settings! Robot name reset!")
+                merged_items[global.desired_robot_name] = global.desired_robot_count
+            end
             -- clear unwanted items from inventory
             for item_name, _ in pairs(inventory_items) do
                 if not merged_items[item_name] then
