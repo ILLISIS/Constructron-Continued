@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.68
+Date: 2023-02-05
+  Improvements:
+    - Constructrons will now move to a new station if their own station they are requesting at is removed.
+  Bugfixes:
+    - Fixed an issue that caused a memory leak and game crash when a Constructron had a roboport with a construction radius of 0.
+    - Fixed a crash when considering roboports to roam to that are out of power.
+  Changes:
+    - New command: /ctron enable all - enables all job types.
+    - New command: /ctron disable all - disables all job types.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.67
 Date: 2023-02-04
   Bugfixes:
