@@ -278,6 +278,7 @@ local function clear(player, parameters)
         cmd.reload_ctron_color()
         global.job_bundles = {}
         cmd.recall_ctrons()
+        cmd.reload_entities() -- needed to reset roboport construction radius
     elseif parameters[1] == "queues" then
         game.print('All queued jobs and unprocessed entities cleared.')
         cmd.clear_queues()

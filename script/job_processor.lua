@@ -228,9 +228,15 @@ job_proc.get_worker = function(surface_index)
                 }
             else
                 local desired_robot_count = global.desired_robot_count
-                local logistic_network = constructron.logistic_cell.logistic_network
+                local logistic_cell = constructron.logistic_cell
+                local logistic_network = logistic_cell.logistic_network
                 if ((logistic_network.all_construction_robots >= desired_robot_count) and not next(logistic_network.construction_robots)) or global.clear_robots_when_idle then
-                    return constructron
+                    if logistic_cell.construction_radius > 0 then
+                        return constructron
+                    else
+                        debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
+                        ctron.enable_roboports(constructron.grid) -- attempt to rectify issue
+                    end
                 else
                     if not global.clear_robots_when_idle then
                         local desired_robot_name = global.desired_robot_name

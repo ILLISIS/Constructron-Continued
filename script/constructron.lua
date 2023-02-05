@@ -494,40 +494,51 @@ ctron.conditions = {
         if not logistic_condition then
             if not (job.action == "clear_items") then
                 -- station roaming
-                if (ticks > 900) and (global.stations_count[(surface_index)] > 1) then
+                if (ticks > 900) then
                     local new_station
                     -- check if current station no longer exists
                     if not job.request_station or not job.request_station.valid then
                         new_station = ctron.get_closest_service_station(job.constructron)
-                        table.insert(global.job_bundles[job.bundle_index], 1, {
-                            action = 'go_to_position',
-                            action_args = {new_station.position},
-                            leave_condition = 'position_done',
-                            leave_args = {new_station.position},
-                            constructron = constructron,
-                            bundle_index = job.bundle_index
-                        })
-                        job.request_station = new_station
+                        if new_station then
+                            table.insert(global.job_bundles[job.bundle_index], 1, {
+                                action = 'go_to_position',
+                                action_args = {new_station.position},
+                                leave_condition = 'position_done',
+                                leave_args = {new_station.position},
+                                constructron = constructron,
+                                bundle_index = job.bundle_index
+                            })
+                            job.request_station = new_station
+                        end
                         return false
                     end
-                    -- check if current network can provide
-                    for i = 1, constructron.request_slot_count do ---@cast i uint
-                        local request = constructron.get_vehicle_logistic_slot(i)
-                        if request and request.name then
-                            if job.request_station.logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                return false -- items are expected to be delivered
-                            end
-                        end
-                    end
-                    -- check if other stations can provide
-                    local surface_stations = ctron.get_service_stations(surface_index)
-                    for _, station in pairs(surface_stations) do
+                    if (global.stations_count[(surface_index)] > 1) then
+                        -- check if current network can provide
                         for i = 1, constructron.request_slot_count do ---@cast i uint
                             local request = constructron.get_vehicle_logistic_slot(i)
                             if request and request.name then
-                                if station.logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                    job.request_station = station
-                                    new_station = station
+                                local logistic_network = job.request_station.logistic_network
+                                if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                    if not (logistic_network.all_logistic_robots <= 0) then
+                                        return false -- items are expected to be delivered
+                                    else
+                                        debug_lib.VisualDebugText("No logistic robots in network", constructron, -0.5, 3)
+                                        return false
+                                    end
+                                end
+                            end
+                        end
+                        -- check if other stations can provide
+                        local surface_stations = ctron.get_service_stations(surface_index)
+                        for _, station in pairs(surface_stations) do
+                            for i = 1, constructron.request_slot_count do ---@cast i uint
+                                local request = constructron.get_vehicle_logistic_slot(i)
+                                if request and request.name then
+                                    local logistic_network = station.logistic_network
+                                    if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                        job.request_station = station
+                                        new_station = station
+                                    end
                                 end
                             end
                         end
@@ -548,10 +559,6 @@ ctron.conditions = {
                         for _, player in pairs(game.players) do
                             player.add_alert(constructron, defines.alert_type.no_material_for_construction)
                         end
-                    end
-                elseif (ticks > 900) then -- alert
-                    for _, player in pairs(game.players) do
-                        player.add_alert(constructron, defines.alert_type.no_material_for_construction)
                     end
                 end
             end
