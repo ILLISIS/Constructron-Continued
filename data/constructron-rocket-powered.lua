@@ -80,37 +80,20 @@ local constructron_item = {
 }
 
 local constructron_recipe = {
-    type = "recipe",
-    name = "constructron-rocket-powered",
-    enabled = false,
-    ingredients = {
-        {"raw-fish", 1},
-        {"rocket-control-unit", 16},
-        {"low-density-structure", 150},
-        {"effectivity-module-3", 2},
-        {"rocket-launcher", 4},
-        {"fusion-reactor-equipment", 2},
-        {"exoskeleton-equipment", 4},
-        {"radar", 2},
-        {"se-cargo-rocket-section", 200}
-    },
-    result = "constructron-rocket-powered",
-    result_count = 1,
-    energy = 1
+  type = "recipe",
+  name = "constructron-rocket-powered",
+  enabled = false,
+  ingredients = {
+    {"constructron", 1},
+    {"se-cargo-rocket-section", 200}
+  },
+  result = "constructron-rocket-powered",
+  result_count = 1,
+  energy = 1
 }
 
-local constructron_easy_recipe = {
-    type = "recipe",
-    name = "constructron-rocket-powered",
-    enabled = false,
-    ingredients = {
-        {"spidertron", 1},
-        {"se-cargo-rocket-section", 200}
-    },
-    result = "constructron-rocket-powered",
-    result_count = 1,
-    energy = 1
-}
+-- both easy and normal recipes add rocket sections to a normal constructron
+local constructron_easy_recipe = constructron_recipe
 
 local ctron_rocket_powered = {constructron, constructron_item}
 if settings.startup["constructron-easy-recipe-toggle"].value then
