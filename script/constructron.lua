@@ -34,6 +34,7 @@ ctron.actions = {
             ctron.disable_roboports(constructron.grid, 0)
         end
         if distance > 12 then
+            job.path_active = false
             pathfinder.init_path_request(constructron, position, job)
         else
             job.path_active = true
@@ -281,11 +282,9 @@ ctron.conditions = {
         local distance_from_pos = chunk_util.distance_between(constructron.position, position)
         if (distance_from_pos < 5) then return true end -- condition is satisfied
         if not job.path_active then -- check if the path is active
-            if job.request_pathid and not global.pathfinder_requests[job.request_pathid] then -- check that there is a request
-                if ticks > 900 then
-                    job.start_tick = game.tick
-                    ctron.actions[job.action](job, table.unpack(job.action_args or {})) -- there is no request, request a path.
-                end
+            if job.request_pathid and (ticks > 900)then -- check that there is a request
+                job.start_tick = game.tick
+                ctron.actions[job.action](job, table.unpack(job.action_args or {})) -- there is no request, request a path.
             end
             debug_lib.VisualDebugText("Waiting for pathfinder", constructron, -0.5, 1)
             return false -- condition is not met
