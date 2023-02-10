@@ -141,6 +141,7 @@ local ensure_globals = function()
     global.desired_robot_name = settings.global["desired_robot_name"].value
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
+    global.horde_mode = settings.global["horde_mode"].value
 end
 
 local init = function()
@@ -214,6 +215,8 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "clear_robots_when_idle" then
         global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
+    elseif setting == "horde_mode" then
+        global.horde_mode = settings.global["horde_mode"].value
     end
 end)
 
@@ -430,6 +433,17 @@ local function stats(player, _)
             player.print(k .. ": " .. tostring(v))
         end
     end
+    local available_count = 0
+    local used_count = 0
+    for _, constructron in pairs(global.constructron_statuses) do
+        if (constructron.busy == true) then
+            used_count = used_count + 1
+        else
+            available_count = available_count + 1
+        end
+    end
+    game.print('Constructrons on a job:' .. used_count ..'')
+    game.print('Idle Constructrons:' .. available_count .. '')
     return global_stats
 end
 

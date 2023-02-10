@@ -46,13 +46,20 @@ job_proc.get_job = function(surface_index)
     ctron.set_constructron_status(worker, 'busy', true)
     ctron.paint_constructron(worker, job_type)
     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+    -- calculate empty slots
+    local empty_slots
+    if game.item_prototypes[global.desired_robot_name] then
+        empty_slots = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})))
+    else
+        empty_slots = inventory.count_empty_stacks()
+    end
     -- merge chunks in proximity to each other into one job
     local chunk_params = {
         chunks = global[job_type .. "_queue"][surface_index],
         job_type = job_type,
         surface_index = surface_index,
         total_required_slots = 0,
-        empty_slot_count = ((inventory.count_empty_stacks()) - (job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count}))),
+        empty_slot_count = empty_slots,
         origin_chunk = nil,
         used_chunks = {},
         required_items = {}
@@ -63,13 +70,16 @@ job_proc.get_job = function(surface_index)
     local closest_station = ctron.get_closest_service_station(worker)
     -- go to service station
     if next(required_items) or global.clear_robots_when_idle then
-        job_proc.create_job(global.job_bundle_index, {
-            action = 'go_to_position',
-            action_args = {closest_station.position},
-            leave_condition = 'position_done',
-            leave_args = {closest_station.position},
-            constructron = worker
-        })
+        local distance = chunk_util.distance_between(worker.position, closest_station.position)
+        if distance > 10 then -- 10 is the logistic radius of a station
+            job_proc.create_job(global.job_bundle_index, {
+                action = 'go_to_position',
+                action_args = {closest_station.position},
+                leave_condition = 'position_done',
+                leave_args = {closest_station.position},
+                constructron = worker
+            })
+        end
         -- request items
         job_proc.create_job(global.job_bundle_index, {
             action = 'request_items',
@@ -168,7 +178,7 @@ job_proc.get_job = function(surface_index)
     job_proc.create_job(global.job_bundle_index, {
         action = 'retire',
         leave_condition = 'pass',
-        leave_args = {closest_station.position},
+        leave_args = {},
         constructron = worker
     })
 end
@@ -227,51 +237,14 @@ job_proc.get_worker = function(surface_index)
                     color = {r = 255, g = 255, b = 255, a = 255}
                 }
             else
-                local desired_robot_count = global.desired_robot_count
                 local logistic_cell = constructron.logistic_cell
                 local logistic_network = logistic_cell.logistic_network
-                if ((logistic_network.all_construction_robots >= desired_robot_count) and not next(logistic_network.construction_robots)) or global.clear_robots_when_idle then
+                if not next(logistic_network.construction_robots) then
                     if logistic_cell.construction_radius > 0 then
                         return constructron
                     else
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
                         ctron.enable_roboports(constructron.grid) -- attempt to rectify issue
-                    end
-                else
-                    if not global.clear_robots_when_idle then
-                        local desired_robot_name = global.desired_robot_name
-                        ---@cast desired_robot_name string
-                        ---@cast desired_robot_count uint
-                        if game.item_prototypes[desired_robot_name] then
-                            debug_lib.VisualDebugText("Requesting Construction Robots", constructron, -1, 3)
-                            constructron.set_vehicle_logistic_slot(1, {
-                                name = desired_robot_name,
-                                min = desired_robot_count,
-                                max = desired_robot_count
-                            })
-                            local closest_station = ctron.get_closest_service_station(constructron)
-                            local distance = chunk_util.distance_between(constructron.position, closest_station.position)
-                            if distance > 9 then
-                                ctron.set_constructron_status(constructron, 'busy', true)
-                                global.job_bundle_index = (global.job_bundle_index or 0) + 1
-                                job_proc.create_job(global.job_bundle_index, {
-                                    action = 'go_to_position',
-                                    action_args = {closest_station.position},
-                                    leave_condition = 'position_done',
-                                    leave_args = {closest_station.position},
-                                    constructron = constructron
-                                })
-                                job_proc.create_job(global.job_bundle_index, {
-                                    action = 'retire',
-                                    leave_condition = 'pass',
-                                    leave_args = {closest_station.position},
-                                    constructron = constructron
-                                })
-                                global.job_proc_trigger = true -- start job operations
-                            end
-                        else
-                            debug_lib.DebugLog('desired_robot_name name is not valid in mod settings')
-                        end
                     end
                 end
             end
@@ -310,15 +283,21 @@ job_proc.merge_chunks = function(chunk_params, origin_chunk)
             end
         end
         if (origin_chunk ~= nil) then
-            if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then
-                if ((chunk_params.total_required_slots + chunk.required_slots) < chunk_params.empty_slot_count) then
-                    chunk_params.total_required_slots = chunk_params.total_required_slots + chunk.required_slots
-                    table.insert(chunk_params.used_chunks, chunk)
-                    for name, count in pairs(chunk['required_items']) do
-                        chunk_params.required_items[name] = (chunk_params.required_items[name] or 0) + count
+            local merge_check = true
+            if global.horde_mode and (#global[chunk_params.job_type .. "_queue"][chunk_params.surface_index] < global.constructrons_count[chunk_params.surface_index]) then
+                merge_check = false
+            end
+            if merge_check then
+                if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then -- merge chunks
+                    if ((chunk_params.total_required_slots + chunk.required_slots) < chunk_params.empty_slot_count) then
+                        chunk_params.total_required_slots = chunk_params.total_required_slots + chunk.required_slots
+                        table.insert(chunk_params.used_chunks, chunk)
+                        for name, count in pairs(chunk['required_items']) do
+                            chunk_params.required_items[name] = (chunk_params.required_items[name] or 0) + count
+                        end
+                        global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+                        return job_proc.merge_chunks(chunk_params, chunk)
                     end
-                    global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
-                    return job_proc.merge_chunks(chunk_params, chunk)
                 end
             end
         else

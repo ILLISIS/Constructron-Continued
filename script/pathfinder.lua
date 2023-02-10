@@ -20,6 +20,8 @@ pathfinder.init_globals = function()
     --He tells all other biters nearby that they also can't get to the silo.
     --Which causes whole groups of them just to chillout and idle...
     --This applies to all paths as the pathfinder is generic - Klonan
+    global.pathfinder_queue = global.pathfinder_queue or {}
+    global.path_queue_trigger = global.path_queue_trigger or true
     game.map_settings.path_finder.use_path_cache = false
 end
 
@@ -108,7 +110,7 @@ function pathfinder.request_path(request_params)
         path_resolution_modifier = path_resolution_modifier,
         pathfinding_flags = {
             cache = true,
-            low_priority = true
+            low_priority = false
         },
         attempt = request_params.attempt or 1, -- The count of path attemps. Not used by the factorio-pathfinder
         try_again_later = request_params.try_again_later or 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
@@ -134,13 +136,8 @@ function pathfinder.on_script_path_request_finished(event)
     if request and request.unit and request.unit.valid then
         local path = event.path
         if event.try_again_later then -- try_again_later is a return of the event handler
-            if request.try_again_later < 5 then
-                request.try_again_later = request.try_again_later + 1
-                pathfinder.request_path(request)
-                if request.job and request.job.constructron then
-                    debug_lib.DebugLog('Path finder busy for job:' .. request.job.bundle_index .. '')
-                end
-            end
+            table.insert(global.pathfinder_queue, request)
+            global.path_queue_trigger = true
         elseif not path then
             request.attempt = request.attempt + 1
             if request.attempt < 5 then
@@ -158,7 +155,7 @@ function pathfinder.on_script_path_request_finished(event)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
-            else -- 4. f*ck it... just try to walk there in a straight line
+            else -- 5. f*ck it... just try to walk there in a straight line
                 pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
             end
         else
@@ -176,7 +173,7 @@ function pathfinder.on_script_path_request_finished(event)
             -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
             pathfinder.set_autopilot(request.unit, path)
         end
-        if request.job and next(request.job.constructron.autopilot_destinations) then
+        if request.job and (path or (request.attempt > 4)) and next(request.job.constructron.autopilot_destination) then
             request.job.path_active = true
         end
     end
@@ -186,6 +183,19 @@ end
 -------------------------------------------------------------------------------
 --  Utility
 -------------------------------------------------------------------------------
+
+script.on_nth_tick(10, function() -- pathfinder is busy requeue function
+    if global.path_queue_trigger then
+        if next(global.pathfinder_queue) then
+            if global.pathfinder_queue[1].unit and global.pathfinder_queue[1].unit.valid then
+                pathfinder.request_path(global.pathfinder_queue[1])
+            end
+            table.remove(global.pathfinder_queue, 1)
+        else
+            global.path_queue_trigger = false
+        end
+    end
+end)
 
 ---@param unit LuaEntity
 ---@param path PathfinderWaypoint[]
