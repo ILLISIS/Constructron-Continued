@@ -155,7 +155,7 @@ function pathfinder.on_script_path_request_finished(event)
                 end
                 request.request_tick = game.tick
                 pathfinder.request_path(request) -- try again
-            else -- 4. f*ck it... just try to walk there in a straight line
+            else -- 5. f*ck it... just try to walk there in a straight line
                 pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
             end
         else
@@ -187,7 +187,9 @@ end
 script.on_nth_tick(10, function() -- pathfinder is busy requeue function
     if global.path_queue_trigger then
         if next(global.pathfinder_queue) then
-            pathfinder.request_path(global.pathfinder_queue[1])
+            if global.pathfinder_queue[1].unit and global.pathfinder_queue[1].unit.valid then
+                pathfinder.request_path(global.pathfinder_queue[1])
+            end
             table.remove(global.pathfinder_queue, 1)
         else
             global.path_queue_trigger = false

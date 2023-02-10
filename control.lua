@@ -435,7 +435,7 @@ local function stats(player, _)
     end
     local available_count = 0
     local used_count = 0
-    for num, constructron in pairs(global.constructron_statuses) do
+    for _, constructron in pairs(global.constructron_statuses) do
         if (constructron.busy == true) then
             used_count = used_count + 1
         else

@@ -288,7 +288,7 @@ job_proc.merge_chunks = function(chunk_params, origin_chunk)
                 merge_check = false
             end
             if merge_check then
-                if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then
+                if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then -- merge chunks
                     if ((chunk_params.total_required_slots + chunk.required_slots) < chunk_params.empty_slot_count) then
                         chunk_params.total_required_slots = chunk_params.total_required_slots + chunk.required_slots
                         table.insert(chunk_params.used_chunks, chunk)

@@ -2,7 +2,7 @@
 Version: 1.0.69
 Date: 2023-02-09
   Features:
-    - Horde Mode. Literally thousands of Constructrons can perform jobs by assigning one Constructron per task/chunk. (disables job proximity merging)
+    - Horde Mode. Literally thousands of Constructrons can perform jobs by assigning one Constructron per task/chunk. (avoids job proximity merging)
   Changes:
     - New setting: Horde Mode - toggles horde mode.
     - Constructrons no longer step to the station if they are already in range.
