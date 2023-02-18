@@ -79,38 +79,70 @@ local constructron_item = {
     type = "item-with-entity-data"
 }
 
-local constructron_recipe = {
-    type = "recipe",
-    name = "constructron-rocket-powered",
-    enabled = false,
-    ingredients = {
-        {"raw-fish", 1},
-        {"rocket-control-unit", 16},
-        {"low-density-structure", 150},
-        {"effectivity-module-3", 2},
-        {"rocket-launcher", 4},
-        {"fusion-reactor-equipment", 2},
-        {"exoskeleton-equipment", 4},
-        {"radar", 2},
-        {"se-cargo-rocket-section", 200}
-    },
-    result = "constructron-rocket-powered",
-    result_count = 1,
-    energy = 1
-}
+local constructron_recipe
+local constructron_easy_recipe
 
-local constructron_easy_recipe = {
-    type = "recipe",
-    name = "constructron-rocket-powered",
-    enabled = false,
-    ingredients = {
-        {"spidertron", 1},
-        {"se-cargo-rocket-section", 200}
-    },
-    result = "constructron-rocket-powered",
-    result_count = 1,
-    energy = 1
-}
+if not mods["space-exploration"] then
+    constructron_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"raw-fish", 1},
+            {"rocket-control-unit", 16},
+            {"low-density-structure", 150},
+            {"effectivity-module-3", 2},
+            {"rocket-launcher", 4},
+            {"fusion-reactor-equipment", 2},
+            {"exoskeleton-equipment", 4},
+            {"radar", 2}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+    constructron_easy_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"spidertron", 1}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+else
+    constructron_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"low-density-structure", 150},
+            {"se-heavy-girder", 16},
+            {"rocket-control-unit", 16},
+            {"se-specimen", 1},
+            {"rocket-launcher", 4},
+            {"se-rtg-equipment", 8},
+            {"radar", 2},
+            {"se-cargo-rocket-section", 200}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+    constructron_easy_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"spidertron", 1}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+end
 
 local ctron_rocket_powered = {constructron, constructron_item}
 if settings.startup["constructron-easy-recipe-toggle"].value then

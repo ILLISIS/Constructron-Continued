@@ -53,37 +53,71 @@ local constructron_item = {
     subgroup = "transport",
     type = "item-with-entity-data"
 }
+local constructron_recipe
+local constructron_easy_recipe
 
-local constructron_recipe = {
-    type = "recipe",
-    name = "constructron",
-    enabled = false,
-    ingredients = {
-        {"raw-fish", 1},
-        {"rocket-control-unit", 16},
-        {"low-density-structure", 150},
-        {"effectivity-module-3", 2},
-        {"rocket-launcher", 4},
-        {"fusion-reactor-equipment", 2},
-        {"exoskeleton-equipment", 4},
-        {"radar", 2}
-    },
-    result = "constructron",
-    result_count = 1,
-    energy = 1
-}
+if not mods["space-exploration"] then
+    constructron_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"raw-fish", 1},
+            {"rocket-control-unit", 16},
+            {"low-density-structure", 150},
+            {"effectivity-module-3", 2},
+            {"rocket-launcher", 4},
+            {"fusion-reactor-equipment", 2},
+            {"exoskeleton-equipment", 4},
+            {"radar", 2}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+    constructron_easy_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"spidertron", 1}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+else
+    constructron_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"low-density-structure", 150},
+            {"se-heavy-girder", 16},
+            {"rocket-control-unit", 16},
+            {"se-specimen", 1},
+            {"rocket-launcher", 4},
+            {"se-rtg-equipment", 8},
+            {"exoskeleton-equipment", 4},
+            {"radar", 2}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+    constructron_easy_recipe = {
+        type = "recipe",
+        name = "constructron",
+        enabled = false,
+        ingredients = {
+            {"spidertron", 1}
+        },
+        result = "constructron",
+        result_count = 1,
+        energy = 1
+    }
+end
 
-local constructron_easy_recipe = {
-    type = "recipe",
-    name = "constructron",
-    enabled = false,
-    ingredients = {
-        {"spidertron", 1}
-    },
-    result = "constructron",
-    result_count = 1,
-    energy = 1
-}
 
 -- Add the 'Cannot be placed on:' SE description
 if mods["space-exploration"] then
