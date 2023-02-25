@@ -79,18 +79,20 @@ local constructron_item = {
     type = "item-with-entity-data"
 }
 
-local constructron_recipe = {
+local constructron_recipe
+local constructron_easy_recipe
+
+constructron_recipe = {
     type = "recipe",
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {"raw-fish", 1},
-        {"rocket-control-unit", 16},
         {"low-density-structure", 150},
-        {"effectivity-module-3", 2},
+        {"se-heavy-girder", 16},
+        {"rocket-control-unit", 16},
+        {"se-specimen", 1},
         {"rocket-launcher", 4},
-        {"fusion-reactor-equipment", 2},
-        {"exoskeleton-equipment", 4},
+        {"se-rtg-equipment", 8},
         {"radar", 2},
         {"se-cargo-rocket-section", 200}
     },
@@ -98,13 +100,12 @@ local constructron_recipe = {
     result_count = 1,
     energy = 1
 }
-
-local constructron_easy_recipe = {
+constructron_easy_recipe = {
     type = "recipe",
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {"spidertron", 1},
+        {"constructron", 1},
         {"se-cargo-rocket-section", 200}
     },
     result = "constructron-rocket-powered",
@@ -112,23 +113,25 @@ local constructron_easy_recipe = {
     energy = 1
 }
 
-local ctron_rocket_powered = {constructron, constructron_item}
-if settings.startup["constructron-easy-recipe-toggle"].value then
-    table.insert(ctron_rocket_powered, constructron_easy_recipe)
-else
-    table.insert(ctron_rocket_powered, constructron_recipe)
-end
-for _, leg in pairs(leg_entities) do
-    leg.se_allow_in_space = true
-    table.insert(ctron_rocket_powered, leg)
-end
+if mods["space-exploration"] then
+    local ctron_rocket_powered = {constructron, constructron_item}
+    if settings.startup["constructron-easy-recipe-toggle"].value then
+        table.insert(ctron_rocket_powered, constructron_easy_recipe)
+    else
+        table.insert(ctron_rocket_powered, constructron_recipe)
+    end
+    for _, leg in pairs(leg_entities) do
+        leg.se_allow_in_space = true
+        table.insert(ctron_rocket_powered, leg)
+    end
 
-data:extend(ctron_rocket_powered)
+    data:extend(ctron_rocket_powered)
 
-table.insert(
-    data.raw["technology"]["spidertron"].effects,
-    {
-        type = "unlock-recipe",
-        recipe = "constructron-rocket-powered"
-    }
-)
+    table.insert(
+        data.raw["technology"]["spidertron"].effects,
+        {
+            type = "unlock-recipe",
+            recipe = "constructron-rocket-powered"
+        }
+    )
+end
