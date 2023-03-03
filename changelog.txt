@@ -1,8 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.71
+Date: 2023-03-03
+  Bugfixes:
+    - Fixed Constructrons not requesting bots when used for the first time on a deconstruction job.
+    - Fixed icon sizes on assemblers, chests and belts.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.70
 Date: 2023-02-25
   Changes:
-    - [SE] Changed normal recipes to allign with the spidertron.
+    - [SE] Changed normal recipes to align with the spidertron.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.69
 Date: 2023-02-09

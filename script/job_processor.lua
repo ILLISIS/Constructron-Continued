@@ -69,7 +69,7 @@ job_proc.get_job = function(surface_index)
     global.job_bundle_index = (global.job_bundle_index or 0) + 1
     local closest_station = ctron.get_closest_service_station(worker)
     -- go to service station
-    if next(required_items) or global.clear_robots_when_idle then
+    if next(required_items) or (worker.logistic_cell.logistic_network.all_construction_robots < global.desired_robot_count) then
         local distance = chunk_util.distance_between(worker.position, closest_station.position)
         if distance > 10 then -- 10 is the logistic radius of a station
             job_proc.create_job(global.job_bundle_index, {
