@@ -3,6 +3,7 @@ Version: 1.0.72
 Date: ???
   Changes:
     - Added Russian localisation.
+    - Using the 'reset all' or 'clear all' commands now resets path request queues.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.71
 Date: 2023-03-03
