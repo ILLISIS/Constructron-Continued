@@ -240,6 +240,8 @@ local function reset(player, parameters)
         game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     elseif parameters[1] == "all" then
+        global.pathfinder_queue = {}
+        global.pathfinder_requests = {}
         game.print('Reset all parameters and queues complete.')
         -- Clear jobs/queues/entities
         global.job_bundles = {}
@@ -275,6 +277,8 @@ local function clear(player, parameters)
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
     if parameters[1] == "all" then
+        global.pathfinder_queue = {}
+        global.pathfinder_requests = {}
         game.print('All jobs, queued jobs and unprocessed entities cleared.')
         cmd.clear_queues()
         cmd.reload_ctron_status()
