@@ -482,8 +482,35 @@ ctron.conditions = {
         local trash_inventory = constructron.get_inventory(defines.inventory.spider_trash)
         if trash_inventory then
             local trash_items = trash_inventory.get_contents()
-            if next(trash_items) then
+            local item = next(trash_items)
+
+            if item then
                 logistic_condition = false
+            end
+            
+            local logistic_network = ctron.get_closest_service_station(constructron).logistic_network
+            if item and not logistic_network.select_drop_point {stack = item} then --check if there's no storage for the item
+                local surface_stations = ctron.get_service_stations(surface_index)
+                for _, station in pairs(surface_stations) do
+                    -- find a station that can take the item
+                    if station.valid and station.logistic_network and station.logistic_network.select_drop_point {stack = item} then
+                        job.request_station = station
+                        new_station = station
+                    end
+                end
+                if new_station then
+                    table.insert(global.job_bundles[job.bundle_index], 1, {
+                        action = 'go_to_position',
+                        action_args = {new_station.position},
+                        leave_condition = 'position_done',
+                        leave_args = {new_station.position},
+                        constructron = constructron,
+                        bundle_index = job.bundle_index
+                    })
+                    job.start_tick = game.tick
+                    debug_lib.VisualDebugText("Trying a different station", constructron, -0.5, 5)
+                end
+                return false
             end
         end
         -- ensure what we are asking for has been delivered
