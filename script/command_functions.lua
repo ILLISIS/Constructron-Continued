@@ -45,7 +45,7 @@ end
 me.reacquire_construction_jobs = function()
     for _, surface in pairs(game.surfaces) do
         local ghosts = surface.find_entities_filtered {
-            name = {"entity-ghost", "tile-ghost"},
+            name = {"entity-ghost", "tile-ghost", "item-request-proxy"},
             force = {"player", "neutral"},
             surface = surface.name
         }
