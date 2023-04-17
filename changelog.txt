@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.74
+Date: ????
+  Bugfixes:
+    - Request overload issue that causes the Constructron to wait for logistics with a full inventory.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.73
 Date: 2023-03-16
   Changes:

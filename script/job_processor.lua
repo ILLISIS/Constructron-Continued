@@ -134,7 +134,8 @@ job_proc.get_job = function(surface_index)
                 })
             end
         end
-        if (job_type == 'construct') then
+        if (chunk.scan == nil) then chunk.scan = true end -- chunk.scan is set to false for duplicated chunks when they are split.
+        if (job_type == 'construct') and chunk.scan then
             job_proc.create_job(global.job_bundle_index, {
                 action = 'check_build_chunk',
                 action_args = {chunk},
@@ -278,8 +279,12 @@ job_proc.merge_chunks = function(chunk_params, origin_chunk)
                     for i = 1, (divisor - 1) do
                         chunk_params.chunks[chunk.key .. "-" .. i] = table.deepcopy(chunk)
                         chunk_params.chunks[chunk.key .. "-" .. i].key = chunk.key .. "-" .. i
+                        if i ~= (divisor - 1) then
+                            chunk_params.chunks[chunk.key .. "-" .. i].scan = false -- skips chunk_checks in split chunks
+                        end
                     end
                 end
+                chunk_params.chunks[chunk.key].scan = false -- skips chunk_checks in split chunks
             end
         end
         if (origin_chunk ~= nil) then
