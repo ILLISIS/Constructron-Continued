@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.74
 Date: ????
+  Changes:
+    - Modified pathfinder attempt process to attempt more things in one go for a faster outcome.
   Bugfixes:
     - Request overload issue that causes the Constructron to wait for logistics with a full inventory.
 ---------------------------------------------------------------------------------------------------
