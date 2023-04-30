@@ -72,6 +72,7 @@ function lib_spider.create_spidertron(arguments)
     local trash_inventory_size = arguments.trash_inventory_size or 20
     local legs = arguments.legs or lib_spider.default_legs
     local function get_leg_hit_the_ground_trigger()
+        if legs[1].graphics_scale and legs[1].graphics_scale == 0 then return end
         return {
             {
                 type = "create-trivial-smoke",

@@ -13,7 +13,7 @@ local spidertron_definition = {
             graphics_scale = 0, -- Invisible legs
         }
     },
-    collision_mask = {"colliding-with-tiles-only", "ground-tile", "water-tile"}
+    collision_mask = { } -- Allows flying in space or on planets, anywhere!
 }
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 constructron.se_allow_in_space = true

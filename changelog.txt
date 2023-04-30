@@ -3,6 +3,7 @@ Version: 1.0.74
 Date: 2023-??-??
   Changes:
     - Improved Rocket Powered Constructron aesthetic (#144).
+    - Rocket Powered Constructron can now fly anywhere (#144).
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.73
 Date: 2023-03-16
