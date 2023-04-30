@@ -1,14 +1,16 @@
 local lib_spider = require("data/lib/lib_spider")
 local spidertron_definition = {
     name = "constructron-rocket-powered",
+    torso_bob_speed = 0.2, -- Slow hover
     guns = {},
     scale = 1,
-    leg_scale = 0,
+    leg_scale = 1,
     legs = {
         {
             block = {1},
             angle = 0,
-            length = 1
+            length = 1,
+            graphics_scale = 0, -- Invisible legs
         }
     },
     collision_mask = {"colliding-with-tiles-only", "ground-tile", "water-tile"}
@@ -17,43 +19,40 @@ local constructron = lib_spider.create_spidertron(spidertron_definition)
 constructron.se_allow_in_space = true
 
 --Rocket flames
--- local layers = constructron.graphics_set.base_animation.layers
--- for _, layer in pairs(layers) do
---     layer.repeat_count = 8
---     layer.hr_version.repeat_count = 8
--- end
--- table.insert(
---     layers,
---     1,
---     {
---         filename = "__base__/graphics/entity/rocket-silo/10-jet-flame.png",
---         priority = "medium",
---         blend_mode = "additive",
---         draw_as_glow = true,
---         width = 87,
---         height = 128,
---         frame_count = 8,
---         line_length = 8,
---         animation_speed = 0.5,
---         scale = 1.25,
---         shift = util.by_pixel(-0.5, 55),
---         direction_count = 1,
---         hr_version = {
---             filename = "__base__/graphics/entity/rocket-silo/hr-10-jet-flame.png",
---             priority = "medium",
---             blend_mode = "additive",
---             draw_as_glow = true,
---             width = 172,
---             height = 256,
---             frame_count = 8,
---             line_length = 8,
---             animation_speed = 0.5,
---             scale = 1.25 / 2,
---             shift = util.by_pixel(-1, 80),
---             direction_count = 1
---         }
---     }
--- )
+local torso_bottom_layers = constructron.graphics_set.base_animation.layers
+local flame_scale = 2
+for k, layer in pairs (torso_bottom_layers) do
+  layer.repeat_count = 8
+  layer.hr_version.repeat_count = 8
+end
+table.insert(torso_bottom_layers, 1, {
+  filename = "__base__/graphics/entity/rocket-silo/10-jet-flame.png",
+  priority = "medium",
+  blend_mode = "additive",
+  draw_as_glow = true,
+  width = 87,
+  height = 128,
+  frame_count = 8,
+  line_length = 8,
+  animation_speed = 0.5,
+  scale = flame_scale/4,
+  shift = util.by_pixel(-0.5, 30),
+  direction_count = 1,
+  hr_version = {
+    filename = "__base__/graphics/entity/rocket-silo/hr-10-jet-flame.png",
+    priority = "medium",
+    blend_mode = "additive",
+    draw_as_glow = true,
+    width = 172,
+    height = 256,
+    frame_count = 8,
+    line_length = 8,
+    animation_speed = 0.5,
+    scale = flame_scale/8,
+    shift = util.by_pixel(-1, 30),
+    direction_count = 1,
+  }
+})
 
 local leg_entities = lib_spider.create_spidertron_legs(spidertron_definition)
 

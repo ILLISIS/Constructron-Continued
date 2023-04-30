@@ -142,6 +142,7 @@ function lib_spider.create_spidertron(arguments)
         weight = 1,
         braking_force = 1,
         friction_force = 1,
+        torso_bob_speed = arguments.torso_bob_speed,
         flags = {"placeable-neutral", "player-creation", "placeable-off-grid"},
         collision_mask = collision_mask,
         minable = {
@@ -223,7 +224,7 @@ function lib_spider.create_spidertron(arguments)
     return entity
 end
 
-function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, movement_speed, number, base_sprite, ending_sprite)
+function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, movement_speed, number, graphics_scale)
     if scale == 0 then
         part_length = 1
     else
@@ -252,7 +253,7 @@ function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, m
         max_health = 100,
         movement_based_position_selection_distance = 4 * scale,
         selectable_in_game = false,
-        graphics_set = lib_spider.spidertron_animations.create_spidertron_leg_graphics_set(scale * leg_thickness, number)
+        graphics_set = lib_spider.spidertron_animations.create_spidertron_leg_graphics_set(graphics_scale or (scale * leg_thickness), number)
     }
 end
 
@@ -271,7 +272,14 @@ function lib_spider.create_spidertron_legs(arguments)
             custom_scale = leg_details.scale
             custom_leg_thickness = 1 / custom_scale * leg_thickness
         end
-        local leg = lib_spider.make_spidertron_leg(arguments.name, (custom_scale or leg_scale), (custom_leg_thickness or leg_thickness), leg_movement_speed, x)
+        local leg = lib_spider.make_spidertron_leg(
+            arguments.name, 
+            (custom_scale or leg_scale), 
+            (custom_leg_thickness or leg_thickness), 
+            leg_movement_speed, 
+            x,
+            leg_details.graphics_scale
+        )
         leg.collision_mask = collision_mask
         table.insert(leg_entities, leg)
     end
