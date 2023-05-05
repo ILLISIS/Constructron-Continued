@@ -141,15 +141,18 @@ function pathfinder.on_script_path_request_finished(event)
         elseif not path then
             request.attempt = request.attempt + 1
             if request.attempt < 5 then
-                if request.attempt == 2 then -- 2. Re-Request ensuring the start of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
-                    request.start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                    debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.75, 600)
-                elseif request.attempt == 3 then -- 3. Re-Request ensuring the goal of the path is not colliding
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
-                    request.goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
-                    debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
-                elseif request.attempt == 4 then -- 4. Re-Request with higher pathing precision
+                local start, goal
+                debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
+                start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
+                debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.75, 600)
+                debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
+                goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
+                debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
+                if (goal.x ~= request.goal.x) or (goal.y ~= request.goal.y) then
+                    request.goal = goal
+                elseif (start.x ~= request.start.x) or (start.y ~= request.start.y) then
+                    request.start = start
+                else
                     request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
                     request.path_resolution_modifier = 0
                 end
