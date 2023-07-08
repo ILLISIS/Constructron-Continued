@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.75
+Date: 2023-07-08
+  Bugfixes:
+    - Fixed managed surfaces not being repopulated when performing the reset command.
+    - Fixed typo in entity_proc_trigger global variable in init.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.74
 Date: 2023-05-05
   Changes:

@@ -42,6 +42,14 @@ me.clear_queues = function()
     end
 end
 
+me.reacquire_managed_surfaces = function()
+    for _, surface in pairs(game.surfaces) do
+        if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
+            global.managed_surfaces[game.surfaces[surface.index].name] = surface.index
+        end
+    end
+end
+
 me.reacquire_construction_jobs = function()
     for _, surface in pairs(game.surfaces) do
         local ghosts = surface.find_entities_filtered {
