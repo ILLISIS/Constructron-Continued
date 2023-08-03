@@ -58,8 +58,10 @@ function lib_spider.create_spidertron(arguments)
     local mining_result = arguments.name or "spidertron"
     local burner = arguments.burner
     local energy_source = arguments.energy_source
-    local allow_passengers = arguments.allow_passengers or true
+    local allow_passengers = arguments.allow_passengers
     local collision_mask = arguments.collision_mask or {}
+
+    if allow_passengers == nil then allow_passengers = true end
 
     if not burner and not energy_source then
         energy_source = {
