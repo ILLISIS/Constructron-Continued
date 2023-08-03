@@ -1,1 +1,1 @@
-require("data/roboports")
+require("prototypes/roboports")
