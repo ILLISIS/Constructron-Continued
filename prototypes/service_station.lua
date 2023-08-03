@@ -25,7 +25,7 @@ end
 local shft_1 = util.by_pixel(-1, -55)
 local shft_2 = util.by_pixel(100.5, 15.5)
 service_station.base_animation = {
-  layers = {   -- Base
+  layers = { -- Base
     {
       filename = "__Constructron-Continued__/graphics/entity/antenna.png",
       width = 54,

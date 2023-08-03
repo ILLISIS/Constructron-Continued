@@ -9,42 +9,42 @@ lib_spider.spidertron_animations = require("prototypes/lib/spider_animations")
 lib_spider.default_legs = {
     -- right side
     {
-        block = {2},
+        block = { 2 },
         angle = 138,
         length = 3.3
     },
     {
-        block = {1, 3},
+        block = { 1, 3 },
         angle = 108,
         length = 3.1
     },
     {
-        block = {2, 4},
+        block = { 2, 4 },
         angle = 72,
         length = 3.1
     },
     {
-        block = {3},
+        block = { 3 },
         angle = 42,
         length = 3.3
     }, -- left side
     {
-        block = {6, 1},
+        block = { 6, 1 },
         angle = -138,
         length = 3.3
     },
     {
-        block = {5, 7},
+        block = { 5, 7 },
         angle = -108,
         length = 3.1
     },
     {
-        block = {6, 8},
+        block = { 6, 8 },
         angle = -72,
         length = 3.1
     },
     {
-        block = {7},
+        block = { 7 },
         angle = -42,
         length = 3.3
     }
@@ -69,7 +69,9 @@ function lib_spider.create_spidertron(arguments)
         }
     end
     local movement_energy_consumption = arguments.movement_energy_consumption or "250kW"
-    local guns = arguments.guns or {"spidertron-rocket-launcher-1", "spidertron-rocket-launcher-2", "spidertron-rocket-launcher-3", "spidertron-rocket-launcher-4"}
+    local guns = arguments.guns or
+        { "spidertron-rocket-launcher-1", "spidertron-rocket-launcher-2", "spidertron-rocket-launcher-3",
+            "spidertron-rocket-launcher-4" }
     local inventory_size = arguments.inventory_size or 80
     local trash_inventory_size = arguments.trash_inventory_size or 20
     local legs = arguments.legs or lib_spider.default_legs
@@ -81,7 +83,7 @@ function lib_spider.create_spidertron(arguments)
                 repeat_count = 4,
                 starting_frame_deviation = 5,
                 starting_frame_speed_deviation = 5,
-                offset_deviation = {{-0.2, -0.2}, {0.2, 0.2}},
+                offset_deviation = { { -0.2, -0.2 }, { 0.2, 0.2 } },
                 speed_from_center = 0.03
             }
         }
@@ -94,8 +96,9 @@ function lib_spider.create_spidertron(arguments)
         }
         local leg = {
             leg = entity_name .. "-leg-" .. i,
-            mount_position = util.by_pixel(math.floor(pos.x * 0.875 * 32 + 0.5) * scale, math.floor(pos.y * 0.875 * 32 + 0.5) * scale), -- {-0.5, 0.75},
-            ground_position = {pos.x * length * leg_scale, pos.y * length * leg_scale},
+            mount_position = util.by_pixel(math.floor(pos.x * 0.875 * 32 + 0.5) * scale,
+                math.floor(pos.y * 0.875 * 32 + 0.5) * scale), -- {-0.5, 0.75},
+            ground_position = { pos.x * length * leg_scale, pos.y * length * leg_scale },
             blocking_legs = blocking_legs,
             leg_hit_the_ground_trigger = get_leg_hit_the_ground_trigger()
         }
@@ -105,10 +108,10 @@ function lib_spider.create_spidertron(arguments)
     local entity = {
         type = "spider-vehicle",
         name = entity_name,
-        collision_box = {{-1 * scale, -1 * scale}, {1 * scale, 1 * scale}},
-        sticker_box = {{-1.5 * scale, -1.5 * scale}, {1.5 * scale, 1.5 * scale}},
-        selection_box = {{-1 * scale, -1 * scale}, {1 * scale, 1 * scale}},
-        drawing_box = {{-3 * scale, -4 * scale}, {3 * scale, 2 * scale}},
+        collision_box = { { -1 * scale, -1 * scale }, { 1 * scale, 1 * scale } },
+        sticker_box = { { -1.5 * scale, -1.5 * scale }, { 1.5 * scale, 1.5 * scale } },
+        selection_box = { { -1 * scale, -1 * scale }, { 1 * scale, 1 * scale } },
+        drawing_box = { { -3 * scale, -4 * scale }, { 3 * scale, 2 * scale } },
         icon = "__base__/graphics/icons/spidertron.png",
         mined_sound = {
             filename = "__core__/sound/deconstruct-large.ogg",
@@ -144,7 +147,7 @@ function lib_spider.create_spidertron(arguments)
         weight = 1,
         braking_force = 1,
         friction_force = 1,
-        flags = {"placeable-neutral", "player-creation", "placeable-off-grid"},
+        flags = { "placeable-neutral", "player-creation", "placeable-off-grid" },
         collision_mask = collision_mask,
         minable = {
             mining_time = 0.5,
@@ -190,8 +193,8 @@ function lib_spider.create_spidertron(arguments)
         },
         minimap_representation = {
             filename = "__base__/graphics/entity/spidertron/spidertron-map.png",
-            flags = {"icon"},
-            size = {128, 128},
+            flags = { "icon" },
+            size = { 128, 128 },
             scale = 0.5
         },
         corpse = "spidertron-remnants",
@@ -225,7 +228,8 @@ function lib_spider.create_spidertron(arguments)
     return entity
 end
 
-function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, movement_speed, number, base_sprite, ending_sprite)
+function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, movement_speed, number, base_sprite,
+                                        ending_sprite)
     if scale == 0 then
         part_length = 1
     else
@@ -234,9 +238,9 @@ function lib_spider.make_spidertron_leg(spidertron_name, scale, leg_thickness, m
     return {
         type = "spider-leg",
         name = spidertron_name .. "-leg-" .. number,
-        localised_name = {"entity-name.spidertron-leg"},
-        collision_box = {{-0.05, -0.05}, {0.05, 0.05}},
-        selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+        localised_name = { "entity-name.spidertron-leg" },
+        collision_box = { { -0.05, -0.05 }, { 0.05, 0.05 } },
+        selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
         icon = "__base__/graphics/icons/spidertron.png",
         icon_size = 64,
         icon_mipmaps = 4,
@@ -273,7 +277,8 @@ function lib_spider.create_spidertron_legs(arguments)
             custom_scale = leg_details.scale
             custom_leg_thickness = 1 / custom_scale * leg_thickness
         end
-        local leg = lib_spider.make_spidertron_leg(arguments.name, (custom_scale or leg_scale), (custom_leg_thickness or leg_thickness), leg_movement_speed, x)
+        local leg = lib_spider.make_spidertron_leg(arguments.name, (custom_scale or leg_scale),
+            (custom_leg_thickness or leg_thickness), leg_movement_speed, x)
         leg.collision_mask = collision_mask
         table.insert(leg_entities, leg)
     end
