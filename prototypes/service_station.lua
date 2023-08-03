@@ -14,11 +14,11 @@ service_station.construction_radius = 0
 
 for _, layer in pairs(service_station.base.layers) do
   if layer.filename == "__base__/graphics/entity/roboport/roboport-base.png" then
-    layer.filename = "__Constructron-Continued__/graphics/entity/constructotron-service-station.png"
+    layer.filename = "__Constructron-Continued__/graphics/entity/constructron-service-station.png"
     layer.width = 114
     layer.height = 139
     layer.shift = layer.hr_version.shift
-    layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructotron-service-station.png"
+    layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructron-service-station.png"
   end
 end
 -- Beacon Antenna
