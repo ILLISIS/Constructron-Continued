@@ -744,9 +744,9 @@ end
 ---@return integer
 ctron.get_max_robot_count = function (grid)
     total_robot_limit = 0
-    for eq in grid.equipment do
+    for _, eq in pairs(grid.equipment) do
         if eq.type == 'roboport-equipment' then
-            total_robot_limit = total_robot_limit + eq.robot_limit
+            total_robot_limit = total_robot_limit + eq.prototype.logistic_parameters.robot_limit
         end
     end
     return total_robot_limit
