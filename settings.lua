@@ -97,6 +97,6 @@ data:extend({
         name = "dynamic_robot_count",
         order = "a12",
         setting_type = "runtime-global",
-        default_value = false
+        default_value = true
     }
 })
