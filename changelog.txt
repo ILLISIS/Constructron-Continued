@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.76
+Date: 2023-10-06
+  Features:
+    - Added dynamic robot limit. Each constructron tries to request as many robots at its equipment grid allows
+---------------------------------------------------------------------------------------------------
 Version: 1.0.75
 Date: 2023-07-08
   Bugfixes:
