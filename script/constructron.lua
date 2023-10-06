@@ -77,7 +77,11 @@ ctron.actions = {
             end
             -- ensure robots are in the inventory
             if game.item_prototypes[global.desired_robot_name] then
-                merged_items[global.desired_robot_name] = global.desired_robot_count
+                if global.dynamic_robot_count then
+                    merged_items[global.desired_robot_name] = ctron.get_max_robot_count(constructron.grid)
+                else
+                    merged_items[global.desired_robot_name] = global.desired_robot_count
+                end
             else
                 settings.global["desired_robot_name"] = {value = "construction-robot"}
                 global.desired_robot_name = "construction-robot"
@@ -734,6 +738,18 @@ ctron.paint_constructron = function(constructron, color_state)
     elseif color_state == 'repair' then
         constructron.color = color_lib.colors.charcoal
     end
+end
+
+---@param grid LuaEquipmentGrid
+---@return integer
+ctron.get_max_robot_count = function (grid)
+    total_robot_limit = 0
+    for eq in grid.equipment do
+        if eq.type == 'roboport-equipment' then
+            total_robot_limit = total_robot_limit + eq.robot_limit
+        end
+    end
+    return total_robot_limit
 end
 
 return ctron
