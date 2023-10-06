@@ -138,6 +138,7 @@ local ensure_globals = function()
     global.debug_toggle = settings.global["constructron-debug-enabled"].value
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
+    global.dynamic_robot_count = settings.global["dynamic_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
@@ -217,6 +218,8 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
     elseif setting == "horde_mode" then
         global.horde_mode = settings.global["horde_mode"].value
+    elseif setting == "dynamic_robot_count" then
+        global.dynamic_robot_count = settings.global["dynamic_robot_count"].value
     end
 end)
 

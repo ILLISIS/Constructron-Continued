@@ -16,6 +16,7 @@ me.reset_settings = function()
     settings.global["clear_robots_when_idle"] = {value = false}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
+    settings.global["dynamic_robot_count"] = {value = true}
 end
 
 me.clear_queues = function()
