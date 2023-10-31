@@ -395,7 +395,7 @@ job_proc.process_job_queue = function()
     if global.job_proc_trigger then
         for job_index, job in pairs(global.jobs) do
             local worker
-            if not job.state == "deffered" then
+            if not (job.state == "deffered") then
                 job:validate_worker()
                 worker = job.worker
             end
