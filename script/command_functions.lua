@@ -195,10 +195,9 @@ me.recall_ctrons = function()
                 surface = surface.name
             }
             for _, constructron in pairs(constructrons) do
+                constructron.autopilot_destination = nil
                 local closest_station = ctron.get_closest_service_station(constructron)
                 if closest_station then
-                    -- TODO: remimplement below line
-                    -- pathfinder.init_path_request(constructron, closest_station.position) -- find path to station
                     global.job_index = global.job_index + 1
                     global.jobs[global.job_index] = job.new(global.job_index, constructron.surface.index, "upgrade", constructron)
                     global.jobs[global.job_index].state = "finishing"

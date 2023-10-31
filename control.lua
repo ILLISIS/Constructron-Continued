@@ -260,6 +260,8 @@ local function reset(player, parameters)
         game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     elseif parameters[1] == "all" then
+        global.custom_pathfinder_index =  0
+        global.custom_pathfinder_requests = {}
         global.pathfinder_requests = {}
         game.print('Reset all parameters and queues complete.')
         -- Clear jobs/queues/entities
