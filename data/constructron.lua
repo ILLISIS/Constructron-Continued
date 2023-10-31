@@ -1,9 +1,10 @@
 local lib_spider = require("data/lib/lib_spider")
 
-local constructron_collision_mask = {
-    "water-tile",
-    "colliding-with-tiles-only",
-    "not-colliding-with-itself"
+local constructron_collision_mask = {}
+
+local constructron_leg_collision_mask = {
+    "player-layer",
+    "rail-layer"
 }
 
 if mods["space-exploration"] then
@@ -11,31 +12,37 @@ if mods["space-exploration"] then
 
     -- removed becuase it caused despawns when constructrons built space ship tiles. (pathfinder still collides)
     -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-    -- table.insert(constructron_collision_mask, spaceship_collision_layer)
+    -- table.insert(constructron_leg_collision_mask, spaceship_collision_layer)
 
     if settings.startup["enable_rocket_powered_constructron"].value then
         --collide with all of "space"
         local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
-        table.insert(constructron_collision_mask, collision_mask_space_tile)
+        table.insert(constructron_leg_collision_mask, collision_mask_space_tile)
     else
         --collide with "empty space"
         local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-        table.insert(constructron_collision_mask, empty_space_collision_layer)
+        table.insert(constructron_leg_collision_mask, empty_space_collision_layer)
     end
 end
 
-local spidertron_definition = {
+local constructron_definition = {
     name = "constructron",
     collision_mask = constructron_collision_mask
 }
-local constructron = lib_spider.create_spidertron(spidertron_definition)
 
-local leg_entities = lib_spider.create_spidertron_legs(spidertron_definition)
+local constructron_leg_definition = {
+    name = "constructron",
+    collision_mask = constructron_leg_collision_mask
+}
+
+local constructron = lib_spider.create_spidertron(constructron_definition)
+
+local leg_entities = lib_spider.create_spidertron_legs(constructron_leg_definition)
 
 local constructron_item = {
     icons = {
         {
-            icon = "__Constructron-Continued__/graphics/icon_texture.png",
+            icon = "__project_terraverse__/graphics/icon_texture.png",
             icon_size = 256,
             -- scale = 0.25
         },

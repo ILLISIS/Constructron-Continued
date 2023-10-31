@@ -19,9 +19,9 @@ entity_proc.on_built_entity = function(event)
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
     if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
-        global.ghost_index = global.ghost_index + 1
-        global.ghost_entities[global.ghost_index] = entity
-        global.ghost_tick = event.tick
+        global.construction_index = global.construction_index + 1
+        global.construction_entities[global.construction_index] = entity
+        global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
@@ -35,7 +35,9 @@ entity_proc.on_built_entity = function(event)
             surface = surface_index
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
-        entity_proc.toggle_managed_surface(surface_index)
+        if (global.stations_count[surface_index] > 0) then
+            global.managed_surfaces[entity.surface.name] = surface_index
+        end
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_entity_destroyed(entity)
         local surface_index = entity.surface.index
@@ -45,7 +47,9 @@ entity_proc.on_built_entity = function(event)
             surface = surface_index
         }
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
-        entity_proc.toggle_managed_surface(surface_index)
+        if (global.constructrons_count[surface_index] > 0) then
+            global.managed_surfaces[entity.surface.name] = surface_index
+        end
     end
 end
 
@@ -83,9 +87,9 @@ script.on_event(ev.on_post_entity_died, function(event)
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
     if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
-        global.ghost_index = global.ghost_index + 1
-        global.ghost_entities[global.ghost_index] = entity
-        global.ghost_tick = event.tick
+        global.construction_index = global.construction_index + 1
+        global.construction_entities[global.construction_index] = entity
+        global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     end
 end)
@@ -95,19 +99,19 @@ end)
 script.on_event(ev.on_marked_for_deconstruction, function(event)
     if not global.deconstruction_job_toggle then return end
     local entity = event.entity
-    global.decon_index = global.decon_index + 1
+    global.deconstruction_index = global.deconstruction_index + 1
     global.entity_proc_trigger = true -- there is something to do start processing
     if not (entity.name == "item-on-ground") then
         local force_name = entity.force.name
         if force_name == "player" or force_name == "neutral" then
-            global.deconstruct_marked_tick = event.tick
-            global.deconstruction_entities[global.decon_index] = entity
+            global.deconstruction_tick = event.tick
+            global.deconstruction_entities[global.deconstruction_index] = entity
         end
     elseif global.ground_decon_job_toggle then
         local force_name = entity.force.name
         if force_name == "player" or force_name == "neutral" then
-            global.deconstruct_marked_tick = event.tick
-            global.deconstruction_entities[global.decon_index] = entity
+            global.deconstruction_tick = event.tick
+            global.deconstruction_entities[global.deconstruction_index] = entity
         end
     end
 end)
@@ -119,7 +123,7 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
     if entity.force.name == "player" then
         global.upgrade_index = global.upgrade_index + 1
-        global.upgrade_marked_tick = event.tick
+        global.upgrade_tick = event.tick
         global.upgrade_entities[global.upgrade_index] = entity
         global.entity_proc_trigger = true -- there is something to do start processing
     end
@@ -135,7 +139,7 @@ script.on_event(ev.on_entity_damaged, function(event)
     local key = entity.surface.index .. ',' .. entity_pos.x .. ',' .. entity_pos.y
     if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) <= settings.global["repair_percent"].value) then
         if not global.repair_entities[key] then
-            global.repair_marked_tick = event.tick
+            global.repair_tick = event.tick
             global.repair_entities[key] = entity
             global.entity_proc_trigger = true -- there is something to do start processing
         end
@@ -165,7 +169,10 @@ script.on_event(ev.on_entity_cloned, function(event)
             surface = surface_index
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
-        entity_proc.toggle_managed_surface(surface_index)
+        -- configure surface management
+        if (global.stations_count[surface_index] > 0) then
+            global.managed_surfaces[entity.surface.name] = surface_index
+        end
     elseif entity.name == "service_station" then
         local registration_number = script.register_on_entity_destroyed(entity)
         global.service_stations[entity.unit_number] = entity
@@ -174,9 +181,54 @@ script.on_event(ev.on_entity_cloned, function(event)
             surface = surface_index
         }
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
-        entity_proc.toggle_managed_surface(surface_index)
+        -- configure surface management
+        if (global.constructrons_count[surface_index] > 0) then
+            global.managed_surfaces[entity.surface.name] = surface_index
+        end
     end
-end)
+end,
+{
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
+    {filter = "name", name = "service_station", mode = "or"},
+})
+
+-- TODO: teleported
+---@param event
+---| EventData.script_raised_teleported
+script.on_event(ev.script_raised_teleported, function(event)
+    local entity = event.entity
+    if not (entity.surface_index == event.old_surface_index) then
+        if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
+            ctron.paint_constructron(entity, 'idle')
+            ctron.set_constructron_status(entity, 'busy', false)
+            global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
+            global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
+            for _, job in pairs(global.jobs) do
+                if (job.worker.unit_number == entity.unit_number) then
+                    -- remove worker from job
+                    job.worker = nil
+                end
+            end
+            -- configure surface management
+            if (global.stations_count[entity.surface_index] > 0) then
+                global.managed_surfaces[entity.surface.name] = surface_index
+            end
+        elseif entity.name == "service_station" then
+            global.stations_count[event.old_surface_index] = global.stations_count[event.old_surface_index] - 1
+            global.stations_count[entity.surface_index] = global.stations_count[event.old_surface_index] + 1
+            -- configure surface management
+            if (global.constructrons_count[entity.surface_index] > 0) then
+                global.managed_surfaces[entity.surface.name] = surface_index
+            end
+        end
+    end
+end,
+{
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
+    {filter = "name", name = "service_station", mode = "or"},
+})
 
 ---@param event
 ---| EventData.on_entity_destroyed
@@ -185,15 +237,22 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(eve
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         local surface_index = removed_entity.surface
+        local surface_name = game.surfaces[surface_index].name
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
-            global.constructrons_count[surface_index] = math.max(0, (global.constructrons_count[surface_index] or 0) - 1)
+            global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
-            entity_proc.toggle_managed_surface(surface_index)
+            -- configure surface management
+            if (global.stations_count[surface_index] <= 0) then
+                global.managed_surfaces[surface_name] = nil
+            end
         elseif removed_entity.name == "service_station" then
-            global.stations_count[surface_index] = math.max(0, (global.stations_count[surface_index] or 0) - 1)
+            global.stations_count[surface_index] = global.stations_count[surface_index] - 1
             global.service_stations[event.unit_number] = nil
-            entity_proc.toggle_managed_surface(surface_index)
+            -- configure surface management
+            if (global.constructrons_count[surface_index] <= 0) then
+                global.managed_surfaces[surface_name] = nil
+            end
         end
         global.registered_entities[event.registration_number] = nil
     end
@@ -364,18 +423,6 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                 return
             end
         end
-    end
-end
-
--------------------------------------------------------------------------------
---  Utility
--------------------------------------------------------------------------------
-
-entity_proc.toggle_managed_surface = function(surface_index)
-    if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
-        global.managed_surfaces[game.surfaces[surface_index].name] = surface_index
-    else
-        global.managed_surfaces[game.surfaces[surface_index].name] = nil
     end
 end
 

@@ -587,29 +587,30 @@ ctron.conditions = {
 -- abilities
 --===========================================================================--
 
+-- TODO: reimplement below
 -- Spidertron waypoint orbit countermeasure
-script.on_nth_tick(1, (function()
-    for _, job_bundle in pairs(global.job_bundles) do
-        local job = job_bundle[1]
-        if job and job.action == "go_to_position" then
-            if job.constructron and job.constructron.valid then
-                local constructron = job.constructron
-                if constructron.autopilot_destination then
-                    if (constructron.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 vanilla Exoskeletons.
-                        local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
-                        local last_distance = job.wp_last_distance
-                        if distance < 1 or (last_distance and distance > last_distance) then
-                            constructron.stop_spider()
-                            job.wp_last_distance = nil
-                        else
-                            job.wp_last_distance = distance
-                        end
-                    end
-                end
-            end
-        end
-    end
-end))
+-- script.on_nth_tick(1, (function() -- TODO: rebuild for new globals
+--     for _, job_bundle in pairs(global.job_bundles) do
+--         local job = job_bundle[1]
+--         if job and job.action == "go_to_position" then
+--             if job.constructron and job.constructron.valid then
+--                 local constructron = job.constructron
+--                 if constructron.autopilot_destination then
+--                     if (constructron.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 vanilla Exoskeletons.
+--                         local distance = chunk_util.distance_between(constructron.position, constructron.autopilot_destination)
+--                         local last_distance = job.wp_last_distance
+--                         if distance < 1 or (last_distance and distance > last_distance) then
+--                             constructron.stop_spider()
+--                             job.wp_last_distance = nil
+--                         else
+--                             job.wp_last_distance = distance
+--                         end
+--                     end
+--                 end
+--             end
+--         end
+--     end
+-- end))
 
 ---@param job Job
 ctron.graceful_wrapup = function(job)
@@ -672,11 +673,13 @@ end
 ---@param state ConstructronStatus
 ---@param value uint | boolean
 ctron.set_constructron_status = function(constructron, state, value)
+    if constructron and constructron.valid then
     if global.constructron_statuses[constructron.unit_number] then
         global.constructron_statuses[constructron.unit_number][state] = value
     else
         global.constructron_statuses[constructron.unit_number] = {}
         global.constructron_statuses[constructron.unit_number][state] = value
+        end
     end
 end
 
@@ -721,18 +724,20 @@ ctron.get_closest_service_station = function(constructron) -- used to get the cl
 end
 
 ---@param constructron LuaEntity
----@param color_state "idle" | "construct" | "deconstruct" | "upgrade" | "repair"
+---@param color_state "idle" | "construction" | "deconstruction" | "upgrade" | "repair"
 ctron.paint_constructron = function(constructron, color_state)
+    if constructron and constructron.valid then
     if color_state == 'idle' then
         constructron.color = color_lib.colors.white
-    elseif color_state == 'construct' then
+        elseif color_state == 'construction' then
         constructron.color = color_lib.colors.blue
-    elseif color_state == 'deconstruct' then
+        elseif color_state == 'deconstruction' then
         constructron.color = color_lib.colors.red
     elseif color_state == 'upgrade' then
         constructron.color = color_lib.colors.green
     elseif color_state == 'repair' then
         constructron.color = color_lib.colors.charcoal
+        end
     end
 end
 

@@ -1,38 +1,38 @@
 local custom_lib = require("script/custom_lib")
 local debug_lib = require("script/debug_lib")
-local pathfinder = require("script/pathfinder")
+-- local pathfinder = require("script/pathfinder")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")
 
 -- main workers
-script.on_nth_tick(60, job_proc.process_job_queue)
+script.on_nth_tick(90, job_proc.process_job_queue)
 
 script.on_nth_tick(15, function()
     if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
     if next(global.deconstruction_entities) then -- deconstruction has priority over construction.
-        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruct_queue, global.deconstruct_marked_tick)
-    elseif next(global.ghost_entities) then
-        entity_proc.add_entities_to_chunks("construction", global.ghost_entities, global.construct_queue, global.ghost_tick)
+        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruction_queue, global.deconstruction_tick)
+    elseif next(global.construction_entities) then
+        entity_proc.add_entities_to_chunks("construction", global.construction_entities, global.construction_queue, global.construction_tick)
     elseif next(global.upgrade_entities) then
-        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_marked_tick)
+        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_tick)
     elseif next(global.repair_entities) then
-        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_marked_tick)
+        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_tick)
     else
         global.entity_proc_trigger = false -- stop entity processing
-        global.queue_proc_trigger = true -- start job processing
+        global.queue_proc_trigger = true -- start queue processing
     end
 end)
 
 -- cleanup
 script.on_nth_tick(54000, (function()
     debug_lib.DebugLog('Surface job validation & cleanup')
-    for s, surface in pairs(game.surfaces) do
+    for _, surface in pairs(game.surfaces) do
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
             debug_lib.DebugLog('No Constructrons or Service Stations found on ' .. surface.name)
             debug_lib.DebugLog('All job queues on '.. surface.name ..' cleared!')
-            global.construct_queue[surface.index] = {}
-            global.deconstruct_queue[surface.index] = {}
+            global.construction_queue[surface.index] = {}
+            global.deconstruction_queue[surface.index] = {}
             global.upgrade_queue[surface.index] = {}
             global.repair_queue[surface.index] = {}
         end
@@ -56,24 +56,27 @@ local ensure_globals = function()
     global.stack_cache = {} -- rebuild
     global.entity_inventory_cache = {}
     --
-    global.job_bundle_index = global.job_bundle_index or 1
+    global.pathfinder_requests = global.pathfinder_requests or {}
+    global.custom_pathfinder_index = global.custom_pathfinder_index or 0
+    global.custom_pathfinder_requests = global.custom_pathfinder_requests or {}
     --
-    global.ghost_index = global.ghost_index or 0
-    global.decon_index = global.decon_index or 0
+    global.job_index = global.job_index or 0
+    global.jobs = global.jobs or {}
+    --
+    global.construction_index = global.construction_index or 0
+    global.deconstruction_index = global.deconstruction_index or 0
     global.upgrade_index = global.upgrade_index or 0
     global.repair_index = global.repair_index or 0
     --
-    global.ghost_entities = global.ghost_entities or {}
+    global.construction_entities = global.construction_entities or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
     global.upgrade_entities = global.upgrade_entities or {}
     global.repair_entities = global.repair_entities or {}
     --
-    global.construct_queue = global.construct_queue or {}
-    global.deconstruct_queue = global.deconstruct_queue or {}
+    global.construction_queue = global.construction_queue or {}
+    global.deconstruction_queue = global.deconstruction_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
     global.repair_queue = global.repair_queue or {}
-    --
-    global.job_bundles = global.job_bundles or {}
     --
     global.constructrons = global.constructrons or {}
     global.service_stations = global.service_stations or {}
@@ -81,11 +84,11 @@ local ensure_globals = function()
     global.constructrons_count = global.constructrons_count or {}
     global.stations_count = global.stations_count or {}
     --
-    for s, surface in pairs(game.surfaces) do
+    for _, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
         global.stations_count[surface.index] = global.stations_count[surface.index] or 0
-        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+        global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
+        global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
     end
@@ -126,6 +129,8 @@ local ensure_globals = function()
                     global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
                 end
             end
+        else
+            global.trash_items_cache[entity_name] = {}
         end
     end
 
@@ -146,7 +151,15 @@ end
 
 local init = function()
     ensure_globals()
-    pathfinder.init_globals()
+    --
+    -- TODO: check if this is needed to cross water bridges
+    -- game.map_settings.path_finder.use_path_cache = false
+    -- Klonan's explanation:
+    -- So, when path cache is enabled, negative path cache is also enabled.
+    -- The problem is, when a single unit inside a nest can't get to the silo,
+    -- He tells all other biters nearby that they also can't get to the silo.
+    -- Which causes whole groups of them just to chillout and idle...
+    -- This applies to all paths as the pathfinder is generic
 end
 
 script.on_init(init)
@@ -161,8 +174,8 @@ local ev = defines.events
 ---@param event EventData.on_surface_created
 script.on_event(ev.on_surface_created, function(event)
     local index = event.surface_index
-    global.construct_queue[index] = {}
-    global.deconstruct_queue[index] = {}
+    global.construction_queue[index] = {}
+    global.deconstruction_queue[index] = {}
     global.upgrade_queue[index] = {}
     global.repair_queue[index] = {}
     global.constructrons_count[index] = 0
@@ -172,8 +185,8 @@ end)
 ---@param event EventData.on_surface_deleted
 script.on_event(ev.on_surface_deleted, function(event)
     local index = event.surface_index
-    global.construct_queue[index] = nil
-    global.deconstruct_queue[index] = nil
+    global.construction_queue[index] = nil
+    global.deconstruction_queue[index] = nil
     global.upgrade_queue[index] = nil
     global.repair_queue[index] = nil
     global.constructrons_count[index] = nil
@@ -188,6 +201,12 @@ script.on_event(ev.on_player_used_spider_remote, (function(event)
         pathfinder.request_path(request_params)
     end
 end))
+
+script.on_nth_tick(10, function()
+    for _, pathfinder in pairs(global.custom_pathfinder_requests) do
+        pathfinder:findpath()
+    end
+end)
 
 ---@param event EventData.on_runtime_mod_setting_changed
 script.on_event(ev.on_runtime_mod_setting_changed, function(event)
@@ -210,6 +229,7 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
     elseif setting == "desired_robot_count" then
         global.desired_robot_count = settings.global["desired_robot_count"].value
     elseif setting == "desired_robot_name" then
+        -- IDEA: validate robot name here
         global.desired_robot_name = settings.global["desired_robot_name"].value
     elseif setting == "entities_per_tick" then
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
@@ -240,11 +260,11 @@ local function reset(player, parameters)
         game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     elseif parameters[1] == "all" then
-        global.pathfinder_queue = {}
         global.pathfinder_requests = {}
         game.print('Reset all parameters and queues complete.')
         -- Clear jobs/queues/entities
-        global.job_bundles = {}
+        global.jobs = {}
+        global.job_index = 0
         cmd.clear_queues()
         -- Clear supporting globals
         global.stack_cache = {}
@@ -277,13 +297,13 @@ local function clear(player, parameters)
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
     if parameters[1] == "all" then
-        global.pathfinder_queue = {}
         global.pathfinder_requests = {}
         game.print('All jobs, queued jobs and unprocessed entities cleared.')
         cmd.clear_queues()
         cmd.reload_ctron_status()
         cmd.reload_ctron_color()
-        global.job_bundles = {}
+        global.jobs = {}
+        global.job_index = 0
         cmd.recall_ctrons()
         cmd.reload_entities() -- needed to reset roboport construction radius
     elseif parameters[1] == "queues" then
@@ -448,6 +468,9 @@ local function stats(player, _)
     end
     game.print('Constructrons on a job:' .. used_count ..'')
     game.print('Idle Constructrons:' .. available_count .. '')
+    game.print('global.entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
+    game.print('global.queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
+    game.print('global.job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
     return global_stats
 end
 
