@@ -42,6 +42,7 @@ function pathfinder.new(start, goal, job)
             ["1"] = node
         }
     } -- heuristic cache
+    instance.lowesth = index
     instance.retries = 0
     return instance
 end
@@ -120,24 +121,8 @@ function pathfinder:findpath()
     while next(openSet) and (TilesProcessed < 10) and (self.retries < 500) do
         TilesProcessed = TilesProcessed + 1
 
-        local _, this = next(self.lowh)
+        local this = self.lowh[self.lowesth] -- TODO: fix var name
         local index, current = next(this)
-
-        -- remove current from openSet and add to closedSet
-        openSet[current.x][current.y] = nil
-        if not next(openSet[current.x]) then
-            openSet[current.x] = nil
-        end
-        closedSet[current.x] = closedSet[current.x] or {}
-        closedSet[current.x][current.y] = current
-
-        -- remove from heuristic cache
-        something = math.floor(current.h)
-        self.lowh[something][index] = nil
-        if not next(self.lowh[something]) then
-            self.lowh[something] = nil
-        end
-        -- debug_lib.VisualDebugText("".. current.h .."", {}, 0, 30, "green")
 
         -- check for path result
         if current.h < 5 then
@@ -189,7 +174,7 @@ function pathfinder:findpath()
                     parent = current
                 }
                 neighbor.h = math.abs(neighbor.x - goal.x) + math.abs(neighbor.y - goal.y) + 1
-                -- debug_lib.VisualDebugText("".. neighbor.h .."", {}, 0, 30)
+                -- debug_lib.VisualDebugText("".. neighbor.h .."", neighbor, 0, 30)
                 if not closedSet[neighbor.x] or not closedSet[neighbor.x][neighbor.y] then
                     if not openSet[neighbor.x] or not openSet[neighbor.x][neighbor.y] then
                         local collides = self.surface.entity_prototype_collides("constructron_pathing_proxy_1", neighbor, false)
@@ -215,6 +200,9 @@ function pathfinder:findpath()
                                 openSet[neighbor.x][neighbor.y] = neighbor
                                 -- add to heuristic table
                                 heuristic = math.floor(neighbor.h)
+                                if (heuristic < self.lowesth) then
+                                    self.lowesth = heuristic
+                                end
                                 if not self.lowh[heuristic] then self.lowh[heuristic] = {} end
                                 table.insert(self.lowh[heuristic], neighbor)
                             end
@@ -230,6 +218,30 @@ function pathfinder:findpath()
                 end
             end
         end
+        -- remove current from openSet and add to closedSet
+        openSet[current.x][current.y] = nil
+        if not next(openSet[current.x]) then
+            openSet[current.x] = nil
+        end
+        closedSet[current.x] = closedSet[current.x] or {}
+        closedSet[current.x][current.y] = current
+
+        -- remove from heuristic cache
+        something = math.floor(current.h)
+        self.lowh[something][index] = nil -- TODO: fix var name
+        if not next(self.lowh[something]) then
+            self.lowh[something] = nil
+            local newlowesth, _ = next(self.lowh)
+            if (newlowesth > 1024) then
+                for h, _ in pairs(self.lowh) do
+                    if (h < newlowesth) then
+                        newlowesth = h
+                    end
+                end
+            end
+            self.lowesth = newlowesth
+        end
+        -- debug_lib.VisualDebugText("".. current.h .."", {}, 0, 30, "green")
     end
     if (self.retries > 500) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
@@ -243,7 +255,7 @@ function pathfinder:findpath()
         end
         self.job.pathfinding = nil
         global.custom_pathfinder_requests[self.path_index] = nil
-        debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 1)
+        debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
     end
     return nil  -- No path found
 end
