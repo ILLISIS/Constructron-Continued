@@ -43,7 +43,7 @@ function pathfinder.new(start, goal, job)
         }
     } -- heuristic cache
     instance.lowesth = index
-    instance.retries = 0
+    instance.path_iterations = 0 -- number of path iterations * TilesProcessed
     return instance
 end
 
@@ -116,9 +116,9 @@ function pathfinder:findpath()
     local openSet = self.openSet -- nodes to be evaluated
     local closedSet = self.closedSet -- nodes already evaluated
     local TilesProcessed = 0
-    self.retries = self.retries + 1
+    self.path_iterations = self.path_iterations + 1
 
-    while next(openSet) and (TilesProcessed < 10) and (self.retries < 500) do
+    while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 100) do
         TilesProcessed = TilesProcessed + 1
 
         local this = self.lowh[self.lowesth] -- TODO: fix var name
@@ -156,6 +156,7 @@ function pathfinder:findpath()
                 self.job.custom_path = reversed_path
                 self.job.pathfinding = nil
                 global.custom_pathfinder_requests[self.path_index] = nil
+                return
             end
         end
 
@@ -243,7 +244,7 @@ function pathfinder:findpath()
         end
         -- debug_lib.VisualDebugText("".. current.h .."", {}, 0, 30, "green")
     end
-    if (self.retries > 500) or not next(openSet) then
+    if (self.path_iterations > 100) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
         if not self.job.task_positions[1].reattempt then
             self.job.task_positions[1].reattempt = true
@@ -257,7 +258,7 @@ function pathfinder:findpath()
         global.custom_pathfinder_requests[self.path_index] = nil
         debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
     end
-    return nil  -- No path found
+    return -- No path found
 end
 
 -------------------------------------------------------------------------------
