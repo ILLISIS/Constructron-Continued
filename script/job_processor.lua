@@ -36,6 +36,7 @@ function job.new(job_index, surface_index, job_type, worker)
     -- job telemetry
     instance.last_position = {} -- used to check if the worker is moving
     instance.last_distance = 0 -- used to check if the worker is moving
+    instance.mobility_tick = nil -- used to delay mobility checks
     instance.last_robot_positions = {} -- used to check that robots are active and not stuck
     -- job flags
     instance.landfill_job = false -- used to determine if the job should expect landfill
@@ -72,8 +73,6 @@ function job:get_chunk()
     self.trash_items = job_proc.combine_tables{self.trash_items, chunk.trash_items}
     global[self.job_type .. "_queue"][self.surface_index][chunk_key] = nil
 end
-
-
 
 function job:find_chunks_in_proximity()
     -- merge chunks in proximity to each other into one job
@@ -314,6 +313,11 @@ function job:validate_worker()
 end
 
 function job:mobility_check()
+    local game_tick = game.tick
+    if not ((game_tick - self.mobility_tick) > 180) then
+        self.mobility_tick = game_tick
+        return true
+    end
     worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0 -- TODO: is 'or 0' apropriate when ap destination is nil?
@@ -321,6 +325,7 @@ function job:mobility_check()
         return false -- is not mobile
     end
     self.last_distance = current_distance
+    self.mobility_tick = game_tick
     return true -- is mobile
 end
 
@@ -561,6 +566,7 @@ job_proc.process_job_queue = function()
                 -- IDEA: health checks to avoid unit destruction
                 local _, task_position = next(job.task_positions)
                 if not next(job.task_positions) then
+                    job:check_chunks()
                     job.state = "finishing"
                     goto continue
                 end
@@ -607,8 +613,7 @@ job_proc.process_job_queue = function()
                             job.state = "finishing"
                             goto continue
                         end
-                        -- IDEA: mobility checks could still be needed for landfill jobs
-                        if not job.landfill_job and not job:mobility_check() then
+                        if not job:mobility_check() then
                             debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
                             worker.autopilot_destination = nil
                             job.last_distance = nil
@@ -634,10 +639,6 @@ job_proc.process_job_queue = function()
                             if (logistic_cell.charging_robot_count == 0) then
                                 job.last_robot_positions = {}
                                 table.remove(job.task_positions, 1)
-                                if not next(job.task_positions) then
-                                    job:check_chunks()
-                                    job.state = "finishing"
-                                end
                             end
                         end
                     else -- robots are not deployed
@@ -653,10 +654,6 @@ job_proc.process_job_queue = function()
                             } -- only detects entities in range
                             if not next(entities) then
                                 table.remove(job.task_positions, 1)
-                                if not next(job.task_positions) then
-                                    job:check_chunks()
-                                    job.state = "finishing"
-                                end
                             end
                         --===========================================================================--
                         --  Construction logic
@@ -688,10 +685,6 @@ job_proc.process_job_queue = function()
                             end
                             if not can_build_entity then
                                 table.remove(job.task_positions, 1)
-                                if not next(job.task_positions) then
-                                    job:check_chunks()
-                                    job.state = "finishing"
-                                end
                             end
                         --===========================================================================--
                         --  Upgrade logic
@@ -712,10 +705,6 @@ job_proc.process_job_queue = function()
                             end
                             if not can_upgrade_entity then
                                 table.remove(job.task_positions, 1)
-                                if not next(job.task_positions) then
-                                    job:check_chunks()
-                                    job.state = "finishing"
-                                end
                             end
                         --===========================================================================--
                         --  Repair logic
@@ -726,9 +715,6 @@ job_proc.process_job_queue = function()
                                 goto continue
                             end
                             table.remove(job.task_positions, 1)
-                            if not next(job.task_positions) then
-                                job.state = "finishing"
-                            end
                         end
                     end
                 end
