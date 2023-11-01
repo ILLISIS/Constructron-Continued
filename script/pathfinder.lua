@@ -232,7 +232,7 @@ function pathfinder:findpath()
         if not next(self.lowh[something]) then
             self.lowh[something] = nil
             local newlowesth, _ = next(self.lowh)
-            if (newlowesth > 1024) then
+            if newlowesth and (newlowesth > 1024) then
                 for h, _ in pairs(self.lowh) do
                     if (h < newlowesth) then
                         newlowesth = h
