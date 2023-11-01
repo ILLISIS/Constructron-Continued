@@ -60,7 +60,7 @@ local leg_entities = lib_spider.create_spidertron_legs(spidertron_definition)
 local constructron_item = {
     icons = {
         {
-            icon = "__Constructron-Continued__/graphics/icon_texture_gray.png",
+            icon = "__project_terraverse__/graphics/icon_texture_gray.png",
             icon_size = 256,
             scale = 0.25
         },
