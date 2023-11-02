@@ -36,14 +36,14 @@ function pathfinder.new(start, goal, job)
     instance.openSet[start.x] = {}
     instance.openSet[start.x][start.y] = node
     instance.closedSet = {} -- Nodes already evaluated
-    local index = math.floor(node.h)
-    instance.lowh = {
-        [index] = {
-            ["1"] = node
+    local lowh_bundle = math.floor(node.h)
+    instance.lowh_bundles = {
+        [lowh_bundle] = {
+            [1] = node
         }
     } -- heuristic cache
-    instance.lowesth = index
-    instance.retries = 0
+    instance.lowesth_value = lowh_bundle
+    instance.path_iterations = 0 -- number of path iterations * TilesProcessed
     return instance
 end
 
@@ -115,22 +115,48 @@ function pathfinder:findpath()
     local goal = self.goal
     local openSet = self.openSet -- nodes to be evaluated
     local closedSet = self.closedSet -- nodes already evaluated
-    local TilesProcessed = 0
-    self.retries = self.retries + 1
+    local TilesProcessed = 0 -- tiles processed per iteration
+    local lowesth_value = self.lowesth_value -- lowest heuristic value found
+    self.path_iterations = self.path_iterations + 1 -- iteration count
 
-    while next(openSet) and (TilesProcessed < 10) and (self.retries < 500) do
+    while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
         TilesProcessed = TilesProcessed + 1
 
-        local this = self.lowh[self.lowesth] -- TODO: fix var name
-        local index, current = next(this)
+        local lowh_bundle = self.lowh_bundles[lowesth_value]
+        local bundle_index, current_node = next(lowh_bundle)
+
+        -- remove current_node from openSet and add to closedSet
+        openSet[current_node.x][current_node.y] = nil
+        if not next(openSet[current_node.x]) then
+            openSet[current_node.x] = nil
+        end
+        closedSet[current_node.x] = closedSet[current_node.x] or {}
+        closedSet[current_node.x][current_node.y] = current_node
+
+        -- remove from heuristic cache
+        self.lowh_bundles[lowesth_value][bundle_index] = nil
+        if not next(self.lowh_bundles[lowesth_value]) then
+            self.lowh_bundles[lowesth_value] = nil
+            local new_lowesth_value, _ = next(self.lowh_bundles)
+            if new_lowesth_value and (new_lowesth_value > 1024) then
+                for heuristic, _ in pairs(self.lowh_bundles) do
+                    if (heuristic < new_lowesth_value) then
+                        new_lowesth_value = heuristic
+                    end
+                end
+            end
+            lowesth_value = new_lowesth_value
+            self.lowesth_value = new_lowesth_value
+        end
+        -- debug_lib.VisualDebugText("".. current_node.h .."", {}, 0, 30, "green")
 
         -- check for path result
-        if current.h < 5 then
-            if current.x == goal.x and current.y == goal.y then
+        if current_node.h < 5 then
+            if current_node.x == goal.x and current_node.y == goal.y then
                 local path = {}
-                while current.parent do
-                    table.insert(path, 1, current)
-                    current = current.parent
+                while current_node.parent do
+                    table.insert(path, 1, current_node)
+                    current_node = current_node.parent
                 end
                 table.insert(path, 1, start)
                 table.insert(path, goal)
@@ -156,6 +182,7 @@ function pathfinder:findpath()
                 self.job.custom_path = reversed_path
                 self.job.pathfinding = nil
                 global.custom_pathfinder_requests[self.path_index] = nil
+                return
             end
         end
 
@@ -167,11 +194,11 @@ function pathfinder:findpath()
         for dx = -maxDistance, maxDistance do
             for dy = -maxDistance, maxDistance do
                 local neighbor = {
-                    x = current.x + dx,
-                    y = current.y + dy,
-                    g = current.g + 1,
+                    x = current_node.x + dx,
+                    y = current_node.y + dy,
+                    g = current_node.g + 1,
                     h = 0,
-                    parent = current
+                    parent = current_node
                 }
                 neighbor.h = math.abs(neighbor.x - goal.x) + math.abs(neighbor.y - goal.y) + 1
                 -- debug_lib.VisualDebugText("".. neighbor.h .."", neighbor, 0, 30)
@@ -192,7 +219,7 @@ function pathfinder:findpath()
                                 local openNode = openSet[neighbor.x][neighbor.y]
                                 if neighbor.g < openNode.g then
                                     openNode.g = neighbor.g
-                                    openNode.parent = current
+                                    openNode.parent = current_node
                                 end
                             else
                                 -- add to openSet table
@@ -200,11 +227,12 @@ function pathfinder:findpath()
                                 openSet[neighbor.x][neighbor.y] = neighbor
                                 -- add to heuristic table
                                 heuristic = math.floor(neighbor.h)
-                                if (heuristic < self.lowesth) then
-                                    self.lowesth = heuristic
+                                if (lowesth_value == nil) or (heuristic < lowesth_value) then
+                                    lowesth_value = heuristic
+                                    self.lowesth_value = heuristic
                                 end
-                                if not self.lowh[heuristic] then self.lowh[heuristic] = {} end
-                                table.insert(self.lowh[heuristic], neighbor)
+                                if not self.lowh_bundles[heuristic] then self.lowh_bundles[heuristic] = {} end
+                                table.insert(self.lowh_bundles[heuristic], neighbor)
                             end
                         else
                             debug_lib.VisualDebugCircle(neighbor, self.surface, "red", 0.5, 300)
@@ -218,32 +246,8 @@ function pathfinder:findpath()
                 end
             end
         end
-        -- remove current from openSet and add to closedSet
-        openSet[current.x][current.y] = nil
-        if not next(openSet[current.x]) then
-            openSet[current.x] = nil
-        end
-        closedSet[current.x] = closedSet[current.x] or {}
-        closedSet[current.x][current.y] = current
-
-        -- remove from heuristic cache
-        something = math.floor(current.h)
-        self.lowh[something][index] = nil -- TODO: fix var name
-        if not next(self.lowh[something]) then
-            self.lowh[something] = nil
-            local newlowesth, _ = next(self.lowh)
-            if (newlowesth > 1024) then
-                for h, _ in pairs(self.lowh) do
-                    if (h < newlowesth) then
-                        newlowesth = h
-                    end
-                end
-            end
-            self.lowesth = newlowesth
-        end
-        -- debug_lib.VisualDebugText("".. current.h .."", {}, 0, 30, "green")
     end
-    if (self.retries > 500) or not next(openSet) then
+    if (self.path_iterations > 200) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
         if not self.job.task_positions[1].reattempt then
             self.job.task_positions[1].reattempt = true
@@ -257,7 +261,7 @@ function pathfinder:findpath()
         global.custom_pathfinder_requests[self.path_index] = nil
         debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
     end
-    return nil  -- No path found
+    return -- No path found
 end
 
 -------------------------------------------------------------------------------

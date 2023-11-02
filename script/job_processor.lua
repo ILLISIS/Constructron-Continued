@@ -314,8 +314,7 @@ end
 
 function job:mobility_check()
     local game_tick = game.tick
-    if not ((game_tick - self.mobility_tick) > 180) then
-        self.mobility_tick = game_tick
+    if not ((game_tick - (self.mobility_tick or 0)) > 180) then
         return true
     end
     worker = self.worker
