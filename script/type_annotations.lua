@@ -133,7 +133,6 @@
 ---@field desired_robot_name string
 ---@field construction_mat_alert uint
 ---@field entities_per_tick uint
----@field clear_robots_when_idle boolean
 ---@field spider_remote_toggle boolean
 
 -- set type of global (this will never get executed, only intellisense will see this)
