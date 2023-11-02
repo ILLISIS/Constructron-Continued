@@ -118,38 +118,38 @@ ctron.actions = {
         for i = 1, #inventory do
             local item = inventory[i]
             if item.valid_for_read then
-                if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
-                    if not filtered_items[item.name] then
-                        constructron.set_vehicle_logistic_slot(slot, {
-                            name = item.name,
-                            min = 0,
-                            max = 0
-                        })
-                        slot = slot + 1
-                        filtered_items[item.name] = true
-                    end
-                else
-                    robot_count = robot_count + item.count
-                    if robot_count > desired_robot_count then
+                    if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
                         if not filtered_items[item.name] then
-                            if item.name == desired_robot_name then
-                                constructron.set_vehicle_logistic_slot(slot, {
-                                    name = item.name,
-                                    min = desired_robot_count --[[@as uint]],
-                                    max = desired_robot_count --[[@as uint]]
-                                })
-                            else
-                                constructron.set_vehicle_logistic_slot(slot, {
-                                    name = item.name,
-                                    min = 0,
-                                    max = 0
-                                })
-                            end
+                            constructron.set_vehicle_logistic_slot(slot, {
+                                name = item.name,
+                                min = 0,
+                                max = 0
+                            })
                             slot = slot + 1
                             filtered_items[item.name] = true
                         end
+                    else
+                        robot_count = robot_count + item.count
+                        if robot_count > desired_robot_count then
+                            if not filtered_items[item.name] then
+                                if item.name == desired_robot_name then
+                                    constructron.set_vehicle_logistic_slot(slot, {
+                                        name = item.name,
+                                        min = desired_robot_count --[[@as uint]],
+                                        max = desired_robot_count --[[@as uint]]
+                                    })
+                                else
+                                    constructron.set_vehicle_logistic_slot(slot, {
+                                        name = item.name,
+                                        min = 0,
+                                        max = 0
+                                    })
+                                end
+                                slot = slot + 1
+                                filtered_items[item.name] = true
+                            end
+                        end
                     end
-                end
             end
         end
     end,
