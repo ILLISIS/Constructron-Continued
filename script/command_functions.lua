@@ -13,6 +13,7 @@ me.reset_settings = function()
     settings.global["desired_robot_count"] = {value = 50}
     settings.global["desired_robot_name"] = {value = "construction-robot"}
     settings.global["entities_per_tick"] = {value = 1000}
+    settings.global["clear_robots_when_idle"] = {value = false}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
 end
@@ -41,18 +42,10 @@ me.clear_queues = function()
     end
 end
 
-me.reacquire_managed_surfaces = function()
-    for _, surface in pairs(game.surfaces) do
-        if (global.constructrons_count[surface.index] > 0) and (global.stations_count[surface.index] > 0) then
-            global.managed_surfaces[game.surfaces[surface.index].name] = surface.index
-        end
-    end
-end
-
 me.reacquire_construction_jobs = function()
     for _, surface in pairs(game.surfaces) do
-        local ghosts = surface.find_entities_filtered {
-            name = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+        local entities = surface.find_entities_filtered {
+            name = {"entity-ghost", "tile-ghost"},
             force = {"player", "neutral"},
             surface = surface.name
         }

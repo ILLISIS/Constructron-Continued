@@ -47,7 +47,7 @@ local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
     --
-    global.entity_proc_trigger = global.entity_proc_trigger or true
+    global.entity_proc_trigger = global.entity_proc_triggerr or true
     global.queue_proc_trigger = global.queue_proc_trigger or true
     global.job_proc_trigger = global.job_proc_trigger or true
     --
@@ -145,6 +145,7 @@ local ensure_globals = function()
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
     global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
+    global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
     global.horde_mode = settings.global["horde_mode"].value
 end
 
@@ -232,6 +233,8 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.desired_robot_name = settings.global["desired_robot_name"].value
     elseif setting == "entities_per_tick" then
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
+    elseif setting == "clear_robots_when_idle" then
+        global.clear_robots_when_idle = settings.global["clear_robots_when_idle"].value --[[@as boolean]]
     elseif setting == "horde_mode" then
         global.horde_mode = settings.global["horde_mode"].value
     end
@@ -269,9 +272,6 @@ local function reset(player, parameters)
         global.stack_cache = {}
         global.entity_inventory_cache = {}
         cmd.rebuild_caches()
-        -- Clear managed_surfaces
-        global.managed_surfaces = {}
-        cmd.reacquire_managed_surfaces()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
         cmd.reload_ctron_status()

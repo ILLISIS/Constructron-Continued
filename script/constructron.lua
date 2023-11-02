@@ -118,6 +118,7 @@ ctron.actions = {
         for i = 1, #inventory do
             local item = inventory[i]
             if item.valid_for_read then
+                if not global.clear_robots_when_idle then
                     if not (item.prototype.place_result and item.prototype.place_result.type == "construction-robot") then
                         if not filtered_items[item.name] then
                             constructron.set_vehicle_logistic_slot(slot, {
@@ -150,6 +151,17 @@ ctron.actions = {
                             end
                         end
                     end
+                else
+                    if not filtered_items[item.name] then
+                        constructron.set_vehicle_logistic_slot(slot, {
+                            name = item.name,
+                            min = 0,
+                            max = 0
+                        })
+                        slot = slot + 1
+                        filtered_items[item.name] = true
+                    end
+                end
             end
         end
     end,
