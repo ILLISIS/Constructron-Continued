@@ -83,7 +83,7 @@ data:extend({
     }, {
         type = "bool-setting",
         name = "horde_mode",
-        order = "a10",
+        order = "a11",
         setting_type = "runtime-global",
         default_value = false
     }
