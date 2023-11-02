@@ -47,7 +47,7 @@ local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
     --
-    global.entity_proc_trigger = global.entity_proc_triggerr or true
+    global.entity_proc_trigger = global.entity_proc_trigger or true
     global.queue_proc_trigger = global.queue_proc_trigger or true
     global.job_proc_trigger = global.job_proc_trigger or true
     --
@@ -269,6 +269,9 @@ local function reset(player, parameters)
         global.stack_cache = {}
         global.entity_inventory_cache = {}
         cmd.rebuild_caches()
+        -- Clear managed_surfaces
+        global.managed_surfaces = {}
+        cmd.reacquire_managed_surfaces()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
         cmd.reload_ctron_status()

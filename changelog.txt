@@ -1,17 +1,9 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.1.0
-Date: 2023-10-31
-  Features:
-    - Implemented a custom pathfinder to augment the games pathfinder for landfill jobs.
-  Changes:
-    - Completely overhauled the job operation code.
-    - Aligned the Constructron collision mask to the Spidertron which allows Constructrons to path through shallow water.
-    - [SE] Added event handler for teleportation of Constructrons and Stations.
+Version: 1.0.75
+Date: 2023-07-08
   Bugfixes:
     - Fixed managed surfaces not being repopulated when performing the reset command.
-    - Fixed infamous line 285 crash during deconstruction processing of modded entities that did not return a product upon mining the entity.
-    - Fixed Constructrons getting stuck while building long trains.
-    - Fixed request / inventory overload.
+    - Fixed typo in entity_proc_trigger global variable in init.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.74
 Date: 2023-05-05
