@@ -23,16 +23,17 @@ script.register_metatable("job_table", job)
 
 function job.new(job_index, surface_index, job_type, worker)
     local instance = setmetatable({}, job)
-    instance.job_index = job_index
-    instance.state = "new"
+    instance.job_index = job_index -- the global index of the job
+    instance.state = "new" -- the state of the job
     instance.sub_state = nil -- secondary state that can be used to achieve something within a particular state
-    instance.job_type = job_type
-    instance.surface_index = surface_index
-    instance.chunks = {}
-    instance.required_items = {}
-    instance.trash_items = {}
-    instance.worker = worker
-    instance.task_positions = {}
+    instance.job_type = job_type -- the type of action the job will take i.e construction
+    instance.surface_index = surface_index -- the surface of the job
+    instance.chunks = {} -- these are what define task positions and required & trash items
+    instance.required_items = {} -- these are the items required to complete the job
+    instance.trash_items = {} -- these are the items that is expected after the job completes
+    instance.worker = worker -- this is the constructron that will work the job
+    instance.station = {} -- used as the home point for item requests etc
+    instance.task_positions = {} -- positions where the job will act
     -- job telemetry
     instance.last_position = {} -- used to check if the worker is moving
     instance.last_distance = 0 -- used to check if the worker is moving
@@ -296,7 +297,7 @@ end
 
 function job:validate_worker()
     if self.worker and self.worker.valid then
-        return true
+        return
     else
         self.worker = job_proc.get_worker(self.surface_index)
         if self.worker and self.worker.valid then
@@ -308,6 +309,20 @@ function job:validate_worker()
         else
             self.state = "error"
             debug_lib.DebugLog('No suitable Constructrons available to resume job')
+        end
+    end
+end
+
+function job:validate_station()
+    if self.station and self.station.valid then
+        return
+    else
+        self.station = ctron.get_closest_service_station(self.worker)
+        if self.station and self.station.valid then
+            return
+        else
+            self.state = "error"
+            debug_lib.VisualDebugText("No suitable Stations available to resume job", self.worker, -2, 1)
         end
     end
 end
@@ -402,6 +417,7 @@ job_proc.process_job_queue = function()
             if not (job.state == "deffered") then
                 job:validate_worker()
                 worker = job.worker
+                job:validate_station()
             end
             if job.state == "new" then
                 -- set job service station
@@ -444,12 +460,11 @@ job_proc.process_job_queue = function()
 
             elseif job.state == "starting" then
                 -- request path to station
-                station_position = job.station.position
-                local distance = chunk_util.distance_between(worker.position, station_position)
+                local distance = chunk_util.distance_between(worker.position, job.station.position)
                 if distance > 10 then -- 10 is the logistic radius of a station
                     debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
                     if not worker.autopilot_destination and (job.path_request_id == nil) then
-                        job:move_to_position(station_position)
+                        job:move_to_position(job.station.position)
                     else
                         if not job:mobility_check() then
                             debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
@@ -492,15 +507,6 @@ job_proc.process_job_queue = function()
                     -- station roaming
                     local ticks = (game.tick - job.request_tick)
                     if (ticks > 900) and not logistic_condition then -- !!! TODO
-                        local new_station
-                        -- check if current station no longer exists
-                        if not job.station or not job.station.valid then
-                            new_station = ctron.get_closest_service_station(worker)
-                            if new_station then
-                                job.station = new_station
-                            end
-                            goto continue
-                        end
                         if (global.stations_count[(job.surface_index)] > 1) then
                             -- check if current station network can provide
                             for i = 1, worker.request_slot_count do ---@cast i uint
@@ -672,7 +678,7 @@ job_proc.process_job_queue = function()
                                     item = entity.ghost_prototype.items_to_place_this[1]
                                 else -- entity is an item_request_proxy
                                     item = {}
-                                    for name, count in next(entity.item_requests) do
+                                    for name, count in pairs(entity.item_requests) do
                                         item.name = name
                                         item.count = count
                                     end
@@ -729,13 +735,12 @@ job_proc.process_job_queue = function()
 
 
             elseif job.state == "finishing" then
-                local closest_station = ctron.get_closest_service_station(worker)
-                local distance = chunk_util.distance_between(worker.position, closest_station.position)
+                local distance = chunk_util.distance_between(worker.position, job.station.position)
                 worker.enable_logistics_while_moving = false
                 if distance > 10 then -- 10 is the logistic radius of a station
                     debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
                     if not worker.autopilot_destination and (job.path_request_id == nil) then
-                        job:move_to_position(closest_station.position)
+                        job:move_to_position(job.station.position)
                     else
                         if not job:mobility_check() then
                             debug_lib.VisualDebugText("Stuck!", worker, -2, 1)

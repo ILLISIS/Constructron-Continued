@@ -164,7 +164,6 @@ me.reacquire_ctrons = function()
             }
 
             -- Reset Hardcodes
-            ctron.enable_roboports(constructron.grid)
             constructron.grid.inhibit_movement_bonus = false
 
             global.constructrons_count[surface.index] = global.constructrons_count[surface.index] + 1

@@ -5,7 +5,10 @@ local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")
 
--- main workers
+--===========================================================================--
+-- Main workers
+--===========================================================================--
+
 script.on_nth_tick(90, job_proc.process_job_queue)
 
 script.on_nth_tick(15, function()
