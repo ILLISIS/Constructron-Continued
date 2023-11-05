@@ -101,18 +101,10 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
     local entity = event.entity
     global.deconstruction_index = global.deconstruction_index + 1
     global.entity_proc_trigger = true -- there is something to do start processing
-    if not (entity.name == "item-on-ground") then
-        local force_name = entity.force.name
-        if force_name == "player" or force_name == "neutral" then
-            global.deconstruction_tick = event.tick
-            global.deconstruction_entities[global.deconstruction_index] = entity
-        end
-    elseif global.ground_decon_job_toggle then
-        local force_name = entity.force.name
-        if force_name == "player" or force_name == "neutral" then
-            global.deconstruction_tick = event.tick
-            global.deconstruction_entities[global.deconstruction_index] = entity
-        end
+    local force_name = entity.force.name
+    if force_name == "player" or force_name == "neutral" then
+        global.deconstruction_tick = event.tick
+        global.deconstruction_entities[global.deconstruction_index] = entity
     end
 end)
 
