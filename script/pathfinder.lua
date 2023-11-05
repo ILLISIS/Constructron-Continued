@@ -209,10 +209,12 @@ function pathfinder:findpath()
                             if not collides then
                                 -- check if the virtual chunk that this node is in is the mainland
                                 local var = self:mainland_finder({x = neighbor.x, y = neighbor.y})
-                                if (var ~= nil) and not self.mainland_found then
-                                    -- mainland found, set the goal of the path finder to be the middle of this virtual chunk
+                                if var and not self.mainland_found then
+                                    -- mainland found, set the goal of the pathfinder to be this particular neighbor
                                     self.mainland_found = true
-                                    self.goal = {y = var.y + 48, x = var.x + 48}
+                                    self.goal = {x = neighbor.x, y = neighbor.y}
+                                    goal = self.goal
+                                    neighbor.h = 1
                                 end
                             end
                             if openSet[neighbor.x] and openSet[neighbor.x][neighbor.y] then
@@ -269,26 +271,10 @@ end
 -------------------------------------------------------------------------------
 
 function pathfinder:isWalkable(position)
-    -- Check for collision with entities (replace "your_collision_mask" with the appropriate collision mask)
-    -- local collision_mask = {"player-layer", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"}
-    -- local collides_with_entities = game.surfaces["your_surface_name"].count_entities_filtered{
-    --     area = {{tile.x - 0.5, tile.y - 0.5}, {tile.x + 0.5, tile.y + 0.5}},
-    --     collision_mask = collision_mask
-    -- }
-
-    -- if collides_with_entities > 0 then
-    --     return false
-    -- end
-
     tile = self.surface.get_tile(position.x, position.y)
     tile_ghost = tile.has_tile_ghost()
 
-    local water = {
-        ["water"] = true,
-        ["deepwater"] = true
-    } -- TODO: collision masks
-
-    if water[tile.name] then
+    if global.water_tile_cache[tile.name] then
         if not tile_ghost then
             return false
         end
@@ -301,79 +287,26 @@ end
 -- TODO: fix draw calls into debug mode
 -- finds the mainland by looking for an area where a size 96 entity will fit
 function pathfinder:mainland_finder(position)
-    local surface = self.surface
     local chunk = {
         y = math.floor((position.y) / 96),
         x = math.floor((position.x) / 96)
     }
-    if not global.checked_chunks then
-        global.checked_chunks = {}
-    end
-    local key = chunk.y .. ',' .. chunk.x
-    if not global.checked_chunks[key] then
-        global.checked_chunks[key] = true
-        test = surface.find_non_colliding_position_in_box("constructron_pathing_proxy_" .. "96", {{
-            y = chunk.y * 96,
-            x = chunk.x * 96
-        }, {
-            y = (chunk.y + 1) * 96,
-            x = (chunk.x + 1) * 96
-        }}, 128, true)
-
-        rendering.draw_rectangle {
-            left_top = {y = chunk.y * 96, x = chunk.x * 96},
-            right_bottom = {y = (chunk.y + 1) * 96, x = (chunk.x + 1) * 96},
-            filled = false,
-            width = 16,
-            surface = surface,
-            time_to_live = 600,
-            color = {
-                r = 0,
-                g = 0.35,
-                b = 0.65,
-                a = 1
-            }
-        }
-        local new_goal = {
-            y = chunk.y * 96,
-            x = chunk.x * 96
-        }
-        if (test ~= nil) then
-            debug_lib.draw_rectangle({
-                y = chunk.y * 96,
-                x = chunk.x * 96
-            }, {
-                y = (chunk.y + 1) * 96,
-                x = (chunk.x + 1) * 96
-            }, surface, "green", true, 300)
-            debug_lib.VisualDebugCircle(new_goal, surface, "green", 0.75, 900)
-            return new_goal
+    local chunk_key = chunk.y .. ',' .. chunk.x
+    if (global.mainland_chunks[chunk_key] == nil) then
+        chunk.minimum = {y = chunk.y * 96, x = chunk.x * 96}
+        chunk.maximum = {y = (chunk.y + 1) * 96, x = (chunk.x + 1) * 96}
+        local collides = self.surface.find_non_colliding_position_in_box("constructron_pathing_proxy_" .. "96", {chunk.minimum, chunk.maximum}, 128, true)
+        if (collides ~= nil) then
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "green", true, 300)
+            global.mainland_chunks[chunk_key] = true
+            return true
         else
-            debug_lib.draw_rectangle({
-                y = chunk.y * 96,
-                x = chunk.x * 96
-            }, {
-                y = (chunk.y + 1) * 96,
-                x = (chunk.x + 1) * 96
-            }, surface, "red", true, 300)
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "red", true, 300)
+            global.mainland_chunks[chunk_key] = false
+            return false
         end
-        rendering.draw_text {
-            text = "" .. key .. "",
-            target = new_goal,
-            filled = true,
-            scale = 5,
-            -- surface = entity.surface,
-            surface = surface,
-            time_to_live = (10 * 60) or 60,
-            target_offset = {0, (offset or 0)},
-            alignment = "center",
-            color = {
-                r = 255,
-                g = 255,
-                b = 255,
-                a = 255
-            }
-        }
+    else
+        return global.mainland_chunks[chunk_key]
     end
 end
 

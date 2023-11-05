@@ -275,6 +275,11 @@ me.rebuild_caches = function()
             global.trash_items_cache[entity_name] = {}
         end
     end
+    -- build water tile cache
+    local water_tile_prototypes = game.get_filtered_tile_prototypes{{filter="collision-mask",mask={["water-tile"]=true},mask_mode="contains-any"}}
+    for tile_name, _ in pairs(water_tile_prototypes) do
+        global.water_tile_cache[tile_name] = true
+    end
 end
 
 me.stats = function()

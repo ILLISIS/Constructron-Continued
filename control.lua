@@ -62,6 +62,7 @@ local ensure_globals = function()
     global.pathfinder_requests = global.pathfinder_requests or {}
     global.custom_pathfinder_index = global.custom_pathfinder_index or 0
     global.custom_pathfinder_requests = global.custom_pathfinder_requests or {}
+    global.mainland_chunks = global.mainland_chunks or {}
     --
     global.job_index = global.job_index or 0
     global.jobs = global.jobs or {}
@@ -136,7 +137,11 @@ local ensure_globals = function()
             global.trash_items_cache[entity_name] = {}
         end
     end
-
+    -- build water tile cache
+    local water_tile_prototypes = game.get_filtered_tile_prototypes{{filter="collision-mask",mask={["water-tile"]=true},mask_mode="contains-any"}}
+    for tile_name, _ in pairs(water_tile_prototypes) do
+        global.water_tile_cache[tile_name] = true
+    end
     -- settings
     global.construction_job_toggle = settings.global["construct_jobs"].value
     global.rebuild_job_toggle = settings.global["rebuild_jobs"].value

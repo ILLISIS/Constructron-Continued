@@ -12,6 +12,7 @@ Date: 2023-10-31
     - Fixed infamous line 285 crash during deconstruction processing of modded entities that did not return a product upon mining the entity.
     - Fixed Constructrons getting stuck while building long trains.
     - Fixed request / inventory overload.
+    - Fixed items-on-ground not being actioned upon being market for deconstruction due to legacy code.
   Other:
     - Removed clear robots setting as this is now done by default.
 ---------------------------------------------------------------------------------------------------
