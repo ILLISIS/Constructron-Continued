@@ -35,6 +35,11 @@ local constructron_leg_definition = {
     collision_mask = constructron_leg_collision_mask
 }
 
+if mods["pyalienlife"] then
+    constructron_definition["scale"] = 1.75
+    constructron_leg_definition["scale"] = 1.75
+end
+
 local constructron = lib_spider.create_spidertron(constructron_definition)
 
 local leg_entities = lib_spider.create_spidertron_legs(constructron_leg_definition)
