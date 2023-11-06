@@ -36,7 +36,7 @@ local constructron_leg_definition = {
 }
 
 if mods["pyalienlife"] then
-    constructron_definition["scale"] = 1.75
+    constructron_definition["leg_scale"] = 1.75
     constructron_leg_definition["scale"] = 1.75
 end
 
