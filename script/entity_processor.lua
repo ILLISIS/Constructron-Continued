@@ -53,6 +53,35 @@ entity_proc.on_built_entity = function(event)
     end
 end
 
+-- for ghost removal
+---@param event
+---| EventData.on_pre_ghost_deconstructed
+---| EventData.on_player_mined_entity
+entity_proc.on_removed_entity = function(event)
+    local unit_num = nil
+    if event.ghost then
+        unit_num = event.ghost.unit_number
+    else
+        unit_num = event.entity.unit_number
+    end
+    local job_ref = global.unit_jobs[unit_num]
+    if job_ref then
+        local worker = job_ref.job.worker
+        job_ref.job.required_items[job_ref.name] = job_ref.job.required_items[job_ref.name] - 1
+        for i = 1, worker.request_slot_count do
+            local request = worker.get_vehicle_logistic_slot(i)
+            if request and request.name == job_ref.name then
+                worker.set_vehicle_logistic_slot(i, {
+                    name = request.name,
+                    min = request.min - 1,
+                    max = request.max - 1
+                })
+            end
+        end
+        global.unit_jobs[unit_num] = nil
+    end
+end
+
 script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
@@ -250,6 +279,17 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(eve
     end
 end)
 
+---@param event
+---| EventData.on_pre_ghost_deconstructed
+script.on_event(ev.on_pre_ghost_deconstructed, entity_proc.on_removed_entity)
+
+---@param event
+---| EventData.on_player_mined_entity
+script.on_event(ev.on_player_mined_entity, entity_proc.on_removed_entity,
+{
+    {filter = "name", name = "entity-ghost", mode = "or"},
+    {filter = "name", name = "tile-ghost", mode = "or"},
+})
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
@@ -379,7 +419,8 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                                 y = entity_pos_y
                             },
                             required_items = required_items or {},
-                            trash_items = trash_items or {}
+                            trash_items = trash_items or {},
+                            units = {}
                         }
                     else -- add to existing queued chunk
                         if entity_pos_x < queue_surface_key['minimum'].x then
@@ -399,6 +440,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
                     end
+                    queue_surface_key.units[entity.unit_number] = entity.ghost_name
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
                 end
             end

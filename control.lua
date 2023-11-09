@@ -66,6 +66,7 @@ local ensure_globals = function()
     --
     global.job_index = global.job_index or 0
     global.jobs = global.jobs or {}
+    global.unit_jobs = global.unit_jobs or {}
     --
     global.construction_index = global.construction_index or 0
     global.deconstruction_index = global.deconstruction_index or 0
@@ -273,6 +274,7 @@ local function reset(player, parameters)
         -- Clear jobs/queues/entities
         global.jobs = {}
         global.job_index = 0
+        global.unit_jobs = {}
         cmd.clear_queues()
         -- Clear supporting globals
         global.stack_cache = {}
@@ -312,6 +314,7 @@ local function clear(player, parameters)
         cmd.reload_ctron_color()
         global.jobs = {}
         global.job_index = 0
+        global.unit_jobs = {}
         cmd.recall_ctrons()
         cmd.reload_entities() -- needed to reset roboport construction radius
     elseif parameters[1] == "queues" then

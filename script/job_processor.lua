@@ -558,6 +558,13 @@ job_proc.process_job_queue = function()
                         job.sub_state = nil
                         job.request_tick = nil
                         job.state = "in_progress"
+
+                        -- job no longer modifiable
+                        for _, chunk in pairs(job.chunks) do
+                            for unit_num, _ in pairs(chunk.units) do
+                                global.unit_jobs[unit_num] = nil
+                            end
+                        end
                     end
                 end
 
@@ -841,6 +848,7 @@ job_proc.make_jobs = function()
         -- for each queue
         for _, job_type in pairs(job_types) do
             while next(global[job_type .. '_queue'][surface_index]) and (exitloop == nil) do
+                local new_job = nil
                 if global.horde_mode then
                     for _, _ in pairs(global[job_type .. '_queue'][surface_index]) do
                         local worker = job_proc.get_worker(surface_index)
@@ -850,7 +858,8 @@ job_proc.make_jobs = function()
                             break
                         end
                         global.job_index = global.job_index + 1
-                        global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                        new_job = job.new(global.job_index, surface_index, job_type, worker)
+                        global.jobs[global.job_index] = new_job
                         job_proc.check_robots()
                         -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
@@ -865,7 +874,8 @@ job_proc.make_jobs = function()
                         break
                     end
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                    new_job = job.new(global.job_index, surface_index, job_type, worker)
+                    global.jobs[global.job_index] = new_job
                     -- add robots to job
                     job_proc.check_robots()
                     -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
@@ -874,6 +884,17 @@ job_proc.make_jobs = function()
                     global.jobs[global.job_index]:get_chunk() -- need to check for overloaded chunk
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
+                end
+                for _, chunk in pairs(new_job.chunks) do
+                    for unit_num, unit_name in pairs(chunk.units) do
+                        local job_ref = global.unit_jobs[unit_num]
+                        if not job_ref then
+                            job_ref = {}
+                            global.unit_jobs[unit_num] = job_ref
+                        end
+                        job_ref.name = unit_name
+                        job_ref.job = new_job
+                    end
                 end
             end
         end
