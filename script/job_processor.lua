@@ -886,14 +886,17 @@ job_proc.make_jobs = function()
                     global.job_proc_trigger = true -- start job operations
                 end
                 for _, chunk in pairs(new_job.chunks) do
-                    for unit_num, unit_name in pairs(chunk.units) do
-                        local job_ref = global.unit_jobs[unit_num]
-                        if not job_ref then
-                            job_ref = {}
-                            global.unit_jobs[unit_num] = job_ref
+                    for unit_num, name_list in pairs(chunk.units) do
+                        for unit_name, quantity in pairs(name_list) do
+                            local job_ref = global.unit_jobs[unit_num]
+                            if not job_ref then
+                                job_ref = {}
+                                global.unit_jobs[unit_num] = job_ref
+                            end
+                            job_ref[unit_name] = {}
+                            job_ref[unit_name].job = new_job
+                            job_ref[unit_name].quantity = quantity
                         end
-                        job_ref.name = unit_name
-                        job_ref.job = new_job
                     end
                 end
             end

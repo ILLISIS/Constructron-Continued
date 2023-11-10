@@ -61,21 +61,24 @@ entity_proc.on_removed_entity = function(event)
     local unit_num = nil
     if event.ghost then
         unit_num = event.ghost.unit_number
-    else
+    elseif event.entity then
         unit_num = event.entity.unit_number
+    else
+        unit_num = event.unit_number
     end
-    local job_ref = global.unit_jobs[unit_num]
-    if job_ref then
-        local worker = job_ref.job.worker
-        job_ref.job.required_items[job_ref.name] = job_ref.job.required_items[job_ref.name] - 1
-        for i = 1, worker.request_slot_count do
-            local request = worker.get_vehicle_logistic_slot(i)
-            if request and request.name == job_ref.name then
-                worker.set_vehicle_logistic_slot(i, {
-                    name = request.name,
-                    min = request.min - 1,
-                    max = request.max - 1
-                })
+    if unit_num then
+        for item_name, job_ref in pairs(global.unit_jobs[unit_num]) do
+            local worker = job_ref.job.worker
+            job_ref.job.required_items[item_name] = job_ref.job.required_items[item_name] - job_ref.quantity
+            for i = 1, worker.request_slot_count do
+                local request = worker.get_vehicle_logistic_slot(i)
+                if request and request.name == item_name then
+                    worker.set_vehicle_logistic_slot(i, {
+                        name = request.name,
+                        min = request.min - job_ref.quantity,
+                        max = request.max - job_ref.quantity
+                    })
+                end
             end
         end
         global.unit_jobs[unit_num] = nil
@@ -255,6 +258,7 @@ end,
 ---| EventData.on_entity_destroyed
 ---| EventData.script_raised_destroy
 script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(event)
+    entity_proc.on_removed_entity(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         local surface_index = removed_entity.surface
@@ -289,6 +293,7 @@ script.on_event(ev.on_player_mined_entity, entity_proc.on_removed_entity,
 {
     {filter = "name", name = "entity-ghost", mode = "or"},
     {filter = "name", name = "tile-ghost", mode = "or"},
+    {filter = "name", name =  "item-request-proxy", mode= "or"},
 })
 -------------------------------------------------------------------------------
 --  Entity processing
@@ -440,7 +445,16 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
                     end
-                    queue_surface_key.units[entity.unit_number] = entity.ghost_name
+                    queue_surface_key.units[entity.unit_number] = {}
+                    if entity.name == 'entity-ghost' then
+                        queue_surface_key.units[entity.unit_number][entity.ghost_name] = 1
+                        script.register_on_entity_destroyed(entity)
+                    end
+                    if entity.item_requests then 
+                        for name, quantity in pairs(entity.item_requests) do
+                            queue_surface_key.units[entity.unit_number][name] = quantity
+                        end
+                    end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
                 end
             end
