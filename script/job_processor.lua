@@ -30,6 +30,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.surface_index = surface_index -- the surface of the job
     instance.chunks = {} -- these are what define task positions and required & trash items
     instance.required_items = {} -- these are the items required to complete the job
+    instance.entities = {} -- a list of entities this job is handling
     instance.trash_items = {} -- these are the items that is expected after the job completes
     instance.worker = worker -- this is the constructron that will work the job
     instance.station = {} -- used as the home point for item requests etc
@@ -560,10 +561,8 @@ job_proc.process_job_queue = function()
                         job.state = "in_progress"
 
                         -- job no longer modifiable
-                        for _, chunk in pairs(job.chunks) do
-                            for unit_num, _ in pairs(chunk.units) do
-                                global.unit_jobs[unit_num] = nil
-                            end
+                        for entity_num, _ in pairs(job.entities) do
+                            global.entity_jobs[entity_num] = nil
                         end
                     end
                 end
@@ -885,17 +884,13 @@ job_proc.make_jobs = function()
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
                 end
-                for _, chunk in pairs(new_job.chunks) do
-                    for unit_num, name_list in pairs(chunk.units) do
-                        for unit_name, quantity in pairs(name_list) do
-                            local job_ref = global.unit_jobs[unit_num]
-                            if not job_ref then
-                                job_ref = {}
-                                global.unit_jobs[unit_num] = job_ref
-                            end
-                            job_ref[unit_name] = {}
-                            job_ref[unit_name].job = new_job
-                            job_ref[unit_name].quantity = quantity
+
+                -- save entity (unit_number) to job mapping
+                if job_type == 'construction' or job_type == 'upgrade' then
+                    for _, chunk in pairs(new_job.chunks) do
+                        for unit_num, entity in pairs(chunk.units) do
+                            new_job.entities[unit_num] = entity
+                            global.entity_jobs[unit_num] = new_job
                         end
                     end
                 end

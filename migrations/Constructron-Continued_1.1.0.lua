@@ -8,7 +8,7 @@ game.print('Reset all parameters and queues complete.')
 -- Clear jobs/queues/entities
 global.jobs = {}
 global.job_index = 0
-global.unit_jobs = {}
+global.entity_jobs = {}
 cmd.clear_queues()
 -- Clear supporting globals
 global.stack_cache = {}

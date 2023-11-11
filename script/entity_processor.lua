@@ -19,8 +19,7 @@ entity_proc.on_built_entity = function(event)
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
     if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
-        global.construction_index = global.construction_index + 1
-        global.construction_entities[global.construction_index] = entity
+        global.construction_entities[entity.unit_number] = entity
         global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
@@ -67,21 +66,37 @@ entity_proc.on_removed_entity = function(event)
         unit_num = event.unit_number
     end
     if unit_num then
-        for item_name, job_ref in pairs(global.unit_jobs[unit_num]) do
-            local worker = job_ref.job.worker
-            job_ref.job.required_items[item_name] = job_ref.job.required_items[item_name] - job_ref.quantity
-            for i = 1, worker.request_slot_count do
-                local request = worker.get_vehicle_logistic_slot(i)
-                if request and request.name == item_name then
-                    worker.set_vehicle_logistic_slot(i, {
-                        name = request.name,
-                        min = request.min - job_ref.quantity,
-                        max = request.max - job_ref.quantity
-                    })
+        local entity_job = global.entity_jobs[unit_num]
+        if entity_job then
+            local entity = nil
+            if entity_job.job_index then
+                -- entity assigned to job
+                entity = entity_job.entities[unit_num]
+                -- make worker re-do logistic requests
+                entity_job.sub_state = nil
+            else
+                -- entity in unassigned chunk
+                entity = entity_job.units[unit_num]
+            end
+            local entity_type = entity.type
+            local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
+            if not (entity_type == 'item-request-proxy') then
+                entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+            end
+            -- module requests
+            if not (entity_type == "tile-ghost") then
+                for name, count in pairs(entity.item_requests) do
+                    entity_job.required_items[name] = entity_job.required_items[name] - count
                 end
             end
+            -- upgrades
+            local target_entity = entity.get_upgrade_target()
+            if target_entity then
+                local items_to_place_cache = global.items_to_place_cache[target_entity.name]
+                entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+            end
         end
-        global.unit_jobs[unit_num] = nil
+        global.entity_jobs[unit_num] = nil
     end
 end
 
@@ -119,8 +134,7 @@ script.on_event(ev.on_post_entity_died, function(event)
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
     if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
-        global.construction_index = global.construction_index + 1
-        global.construction_entities[global.construction_index] = entity
+        global.construction_entities[entity.unit_number] = entity
         global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     end
@@ -306,6 +320,7 @@ script.on_event(ev.on_player_mined_entity, entity_proc.on_removed_entity,
 entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event_tick) -- build_type: deconstruction, construction, upgrade, repair
     if next(entities) and (game.tick - event_tick) > global.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
         local entity_counter = global.entities_per_tick
+        local entity_jobs = global.entity_jobs
         for entity_key, entity in pairs(entities) do
             if entity.valid then
                 local registered
@@ -445,15 +460,10 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
                     end
-                    queue_surface_key.units[entity.unit_number] = {}
-                    if entity.name == 'entity-ghost' then
-                        queue_surface_key.units[entity.unit_number][entity.ghost_name] = 1
-                        script.register_on_entity_destroyed(entity)
-                    end
-                    if entity.item_requests then 
-                        for name, quantity in pairs(entity.item_requests) do
-                            queue_surface_key.units[entity.unit_number][name] = quantity
-                        end
+
+                    if build_type == 'construction' or build_type =='upgrade' then
+                        queue_surface_key.units[entity.unit_number] = entity
+                        entity_jobs[entity.unit_number] = queue_surface_key
                     end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
                 end
