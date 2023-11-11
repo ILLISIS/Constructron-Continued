@@ -78,22 +78,23 @@ entity_proc.on_removed_entity = function(event)
                 -- entity in unassigned chunk
                 entity = entity_job.units[unit_num]
             end
-            local entity_type = entity.type
-            local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
-            if not (entity_type == 'item-request-proxy') then
-                entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
-            end
-            -- module requests
-            if not (entity_type == "tile-ghost") then
-                for name, count in pairs(entity.item_requests) do
-                    entity_job.required_items[name] = entity_job.required_items[name] - count
-                end
-            end
             -- upgrades
             local target_entity = entity.get_upgrade_target()
             if target_entity then
                 local items_to_place_cache = global.items_to_place_cache[target_entity.name]
                 entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+            else
+                local entity_type = entity.type
+                if not (entity_type == 'item-request-proxy') then
+                    local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
+                    entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+                end
+                -- module requests
+                if not (entity_type == "tile-ghost") then
+                    for name, count in pairs(entity.item_requests) do
+                        entity_job.required_items[name] = entity_job.required_items[name] - count
+                    end
+                end
             end
         end
         global.entity_jobs[unit_num] = nil
@@ -309,6 +310,7 @@ script.on_event(ev.on_player_mined_entity, entity_proc.on_removed_entity,
     {filter = "name", name = "tile-ghost", mode = "or"},
     {filter = "name", name =  "item-request-proxy", mode= "or"},
 })
+
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
