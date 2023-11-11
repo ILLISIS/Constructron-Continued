@@ -22,18 +22,5 @@
     "Lua.diagnostics.disable": [
         "lowercase-global"
     ],
-    "Lua.runtime.version": "Lua 5.2",
-    "factorio.versions": [
-        {
-            "name": "Dev",
-            "factorioPath": "c:\\Factorio_1.1.94\\bin\\x64\\factorio.exe",
-            "active": true
-        }
-    ],
-    "Lua.workspace.library": [
-        "c:\\Factorio_1.1.94\\data"
-    ],
-    "Lua.workspace.userThirdParty": [
-        "c:\\Users\\peter\\AppData\\Roaming\\Code\\User\\workspaceStorage\\5de90e191509723c0923234a240ad10a\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
-    ]
+    "Lua.runtime.version": "Lua 5.2"
 }
