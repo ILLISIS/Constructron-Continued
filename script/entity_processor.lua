@@ -79,7 +79,7 @@ entity_proc.on_removed_entity = function(event)
                 entity = entity_job.units[unit_num]
             end
             -- upgrades
-            local target_entity = entity.get_upgrade_target()
+            local target_entity = entity.upgrade_target
             if target_entity then
                 local items_to_place_cache = global.items_to_place_cache[target_entity.name]
                 entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
@@ -311,6 +311,10 @@ script.on_event(ev.on_player_mined_entity, entity_proc.on_removed_entity,
     {filter = "name", name =  "item-request-proxy", mode= "or"},
 })
 
+---@param event
+---| EventData.on_cancelled_upgrade
+script.on_event(ev.on_cancelled_upgrade, entity_proc.on_removed_entity)
+
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
@@ -463,8 +467,13 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         end
                     end
 
-                    if build_type == 'construction' or build_type =='upgrade' then
-                        queue_surface_key.units[entity.unit_number] = entity
+                    -- cache only the needed parts of the LuaEntity
+                    if build_type =='upgrade' then
+                        queue_surface_key.units[entity.unit_number] = {upgrade_target=entity.get_upgrade_target()}
+                        entity_jobs[entity.unit_number] = queue_surface_key
+                    end
+                    if build_type == 'construction' then
+                        queue_surface_key.units[entity.unit_number] = {type=entity.type, ghost_name=entity.ghost_name, item_requests=entity.item_requests}
                         entity_jobs[entity.unit_number] = queue_surface_key
                     end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
