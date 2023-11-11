@@ -343,6 +343,8 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                     if (build_type == "construction") then
                         if not (entity_type == 'item-request-proxy') then
                             local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
+                            -- needed for building from inventory
+                            script.register_on_entity_destroyed(entity)
                             required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
                         end
                         -- module requests
@@ -473,7 +475,13 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         entity_jobs[entity.unit_number] = queue_surface_key
                     end
                     if build_type == 'construction' then
-                        queue_surface_key.units[entity.unit_number] = {type=entity.type, ghost_name=entity.ghost_name, item_requests=entity.item_requests}
+                        queue_surface_key.units[entity.unit_number] = {type=entity.type}
+                        if entity.name == 'entity-ghost' or entity.name == 'tile-ghost' then
+                            queue_surface_key.units[entity.unit_number].ghost_name=entity.ghost_name
+                        end
+                        if entity.name == 'entity-ghost' or entity.name == 'item-request-proxy' then
+                            queue_surface_key.units[entity.unit_number].item_requests=entity.item_requests
+                        end
                         entity_jobs[entity.unit_number] = queue_surface_key
                     end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
