@@ -67,37 +67,9 @@ entity_proc.on_removed_entity = function(event)
     end
     if unit_num then
         local entity_job = global.entity_jobs[unit_num]
-        if entity_job then
-            local entity = nil
-            if entity_job.job_index then
-                -- entity assigned to job
-                entity = entity_job.entities[unit_num]
-                -- make worker re-do logistic requests
-                entity_job.sub_state = nil
-            else
-                -- entity in unassigned chunk
-                entity = entity_job.units[unit_num]
-            end
-            -- upgrades
-            local target_entity = entity.upgrade_target
-            if target_entity then
-                local items_to_place_cache = global.items_to_place_cache[target_entity.name]
-                entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
-            else
-                local entity_type = entity.type
-                if not (entity_type == 'item-request-proxy') then
-                    local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
-                    entity_job.required_items[items_to_place_cache.item] = entity_job.required_items[items_to_place_cache.item] - items_to_place_cache.count
-                end
-                -- module requests
-                if not (entity_type == "tile-ghost") then
-                    for name, count in pairs(entity.item_requests) do
-                        entity_job.required_items[name] = entity_job.required_items[name] - count
-                    end
-                end
-            end
+        if entity_job.known then
+            entity_job.removed = true
         end
-        global.entity_jobs[unit_num] = nil
     end
 end
 
@@ -344,6 +316,8 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         if not (entity_type == 'item-request-proxy') then
                             local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
                             required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
+                            -- needed for building from inventory
+                            script.register_on_entity_destroyed(entity)
                         end
                         -- module requests
                         if not (entity_type == "tile-ghost") then
@@ -446,7 +420,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                             },
                             required_items = required_items or {},
                             trash_items = trash_items or {},
-                            units = {}
+                            entities = {}
                         }
                     else -- add to existing queued chunk
                         if entity_pos_x < queue_surface_key['minimum'].x then
@@ -469,13 +443,18 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
 
                     -- cache only the needed parts of the LuaEntity
                     if build_type =='upgrade' then
-                        queue_surface_key.units[entity.unit_number] = {upgrade_target=entity.get_upgrade_target()}
-                        entity_jobs[entity.unit_number] = queue_surface_key
+                        queue_surface_key.entities[entity.unit_number] = {upgrade_target=entity.get_upgrade_target()}
                     end
                     if build_type == 'construction' then
-                        queue_surface_key.units[entity.unit_number] = {type=entity.type, ghost_name=entity.ghost_name, item_requests=entity.item_requests}
-                        entity_jobs[entity.unit_number] = queue_surface_key
+                        queue_surface_key.entities[entity.unit_number] = {type=entity.type}
+                        if entity.name == 'entity-ghost' or entity.name == 'tile-ghost' then
+                            queue_surface_key.entities[entity.unit_number].ghost_name=entity.ghost_name
+                        end
+                        if entity.name == 'entity-ghost' or entity.name == 'item-request-proxy' then
+                            queue_surface_key.entities[entity.unit_number].item_requests=entity.item_requests
+                        end
                     end
+                    entity_jobs[entity.unit_number] = {known=true}
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
                 end
             end
