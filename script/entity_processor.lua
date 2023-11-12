@@ -279,8 +279,6 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         if not (entity_type == 'item-request-proxy') then
                             local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
                             required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
-                            -- needed for building from inventory
-                            script.register_on_entity_destroyed(entity)
                         end
                         -- module requests
                         if not (entity_type == "tile-ghost") then
