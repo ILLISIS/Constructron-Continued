@@ -59,7 +59,6 @@ function job:get_chunk()
     if (chunk.midpoint == nil) then -- establish chunk centre point
         chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
         -- check for chunk overload
-        job_proc.remove_entities(chunk)
         local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{chunk.required_items, chunk.trash_items})
         if total_required_slots > self.empty_slot_count then
             local divisor = math.ceil(total_required_slots / self.empty_slot_count)
@@ -102,7 +101,6 @@ job_proc.include_more_chunks = function(chunk_params, origin_chunk)
     for _, chunk in pairs(chunk_params.chunks) do
         if (chunk.midpoint == nil) then -- establish chunk centre point
             chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-            job_proc.remove_entities(chunk)
             local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{chunk.required_items, chunk.trash_items})
             if total_required_slots > chunk_params.empty_slot_count then
                 local divisor = math.ceil(total_required_slots / chunk_params.empty_slot_count)
@@ -482,7 +480,7 @@ job_proc.process_job_queue = function()
                     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
                     local inventory_items = inventory.get_contents()
                     if inventory then
-                        job_proc.remove_entities(job)
+                        job_proc.validate_entities(job)
                         if not (job.sub_state == "items_requested") then
                             local item_request = table.deepcopy(job.required_items)
                             for item, _ in pairs(inventory_items) do
@@ -562,11 +560,6 @@ job_proc.process_job_queue = function()
                         job.sub_state = nil
                         job.request_tick = nil
                         job.state = "in_progress"
-
-                        -- job no longer modifiable
-                        for entity_num, _ in pairs(job.entities) do
-                            global.entity_jobs[entity_num] = nil
-                        end
                     end
                 end
 
@@ -888,11 +881,11 @@ job_proc.make_jobs = function()
                     global.job_proc_trigger = true -- start job operations
                 end
 
-                -- save entity (unit_number) to job mapping
+                -- cache the entities this job will be handling
                 if job_type == 'construction' or job_type == 'upgrade' then
                     for _, chunk in pairs(new_job.chunks) do
-                        for unit_num, entity in pairs(chunk.entities) do
-                            new_job.entities[unit_num] = entity
+                        for unit_num, entity_cache in pairs(chunk.entities) do
+                            new_job.entities[unit_num] = entity_cache
                         end
                     end
                 end
@@ -976,29 +969,28 @@ job_proc.calculate_required_inventory_slot_count = function(required_items)
     return slots
 end
 
-job_proc.remove_entities = function(job)
-    for entity_num, entity in pairs(job.entities) do
-        if global.entity_jobs[entity_num].removed then
+job_proc.validate_entities = function(job)
+    for entity_num, entity_cache in pairs(job.entities) do
+        if not entity_cache.entity.valid then
             -- upgrades
-            local target_entity = entity.upgrade_target
+            local target_entity = entity_cache.upgrade_target
             if target_entity then
                 local items_to_place_cache = global.items_to_place_cache[target_entity.name]
                 job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
             else
-                local entity_type = entity.type
+                local entity_type = entity_cache.type
                 if not (entity_type == 'item-request-proxy') then
-                    local items_to_place_cache = global.items_to_place_cache[entity.ghost_name]
+                    local items_to_place_cache = global.items_to_place_cache[entity_cache.ghost_name]
                     job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
                 end
                 -- module requests
                 if not (entity_type == "tile-ghost") then
-                    for name, count in pairs(entity.item_requests) do
+                    for name, count in pairs(entity_cache.item_requests) do
                         job.required_items[name] = job.required_items[name] - count
                     end
                 end
             end
             job.entities[entity_num] = nil
-            global.entity_jobs[entity_num] = nil
             -- re-do worker requests
             job.sub_state = nil
         end
