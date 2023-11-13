@@ -30,6 +30,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.surface_index = surface_index -- the surface of the job
     instance.chunks = {} -- these are what define task positions and required & trash items
     instance.required_items = {} -- these are the items required to complete the job
+    instance.entities = {} -- a list of entities this job is handling
     instance.trash_items = {} -- these are the items that is expected after the job completes
     instance.worker = worker -- this is the constructron that will work the job
     instance.station = {} -- used as the home point for item requests etc
@@ -479,6 +480,7 @@ job_proc.process_job_queue = function()
                     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
                     local inventory_items = inventory.get_contents()
                     if inventory then
+                        job_proc.validate_entities(job)
                         if not (job.sub_state == "items_requested") then
                             local item_request = table.deepcopy(job.required_items)
                             for item, _ in pairs(inventory_items) do
@@ -841,6 +843,7 @@ job_proc.make_jobs = function()
         -- for each queue
         for _, job_type in pairs(job_types) do
             while next(global[job_type .. '_queue'][surface_index]) and (exitloop == nil) do
+                local new_job = nil
                 if global.horde_mode then
                     for _, _ in pairs(global[job_type .. '_queue'][surface_index]) do
                         local worker = job_proc.get_worker(surface_index)
@@ -850,7 +853,8 @@ job_proc.make_jobs = function()
                             break
                         end
                         global.job_index = global.job_index + 1
-                        global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                        new_job = job.new(global.job_index, surface_index, job_type, worker)
+                        global.jobs[global.job_index] = new_job
                         job_proc.check_robots()
                         -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
@@ -865,7 +869,8 @@ job_proc.make_jobs = function()
                         break
                     end
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                    new_job = job.new(global.job_index, surface_index, job_type, worker)
+                    global.jobs[global.job_index] = new_job
                     -- add robots to job
                     job_proc.check_robots()
                     -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
@@ -874,6 +879,15 @@ job_proc.make_jobs = function()
                     global.jobs[global.job_index]:get_chunk() -- need to check for overloaded chunk
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
+                end
+
+                -- cache the entities this job will be handling
+                if job_type == 'construction' or job_type == 'upgrade' then
+                    for _, chunk in pairs(new_job.chunks) do
+                        for unit_num, entity_cache in pairs(chunk.entities) do
+                            new_job.entities[unit_num] = entity_cache
+                        end
+                    end
                 end
             end
         end
@@ -953,6 +967,34 @@ job_proc.calculate_required_inventory_slot_count = function(required_items)
         slots = slots + math.ceil(count / stack_size)
     end
     return slots
+end
+
+job_proc.validate_entities = function(job)
+    for entity_num, entity_cache in pairs(job.entities) do
+        if not entity_cache.entity.valid then
+            -- upgrades
+            local target_entity = entity_cache.upgrade_target
+            if target_entity then
+                local items_to_place_cache = global.items_to_place_cache[target_entity.name]
+                job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+            else
+                local entity_type = entity_cache.type
+                if not (entity_type == 'item-request-proxy') then
+                    local items_to_place_cache = global.items_to_place_cache[entity_cache.ghost_name]
+                    job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+                end
+                -- module requests
+                if not (entity_type == "tile-ghost") then
+                    for name, count in pairs(entity_cache.item_requests) do
+                        job.required_items[name] = job.required_items[name] - count
+                    end
+                end
+            end
+            job.entities[entity_num] = nil
+            -- re-do worker requests
+            job.sub_state = nil
+        end
+    end
 end
 
 return job_proc
