@@ -127,7 +127,7 @@ job_proc.include_more_chunks = function(chunk_params, origin_chunk)
     return chunk_params.used_chunks, chunk_params.required_items
 end
 
-job_proc.check_robots = function()
+job_proc.validate_robot_name = function()
     if game.item_prototypes[global.desired_robot_name] then
         return true
     else
@@ -255,17 +255,24 @@ function job:enable_roboports() -- doesn't really enable roboports, it resets th
     end
 end
 
-function job:request_items(items)
+function job:check_items(item_list)
+    for item_name in pairs(item_list) do
+        if (global.allowed_items[item_name] == false) then
+            item_list[item_name] = nil
+        end
+    end
+    return item_list
+end
+
+function job:request_items(item_list)
     local slot = 1
-    for name, count in pairs(items) do
-        if (global.allowed_items[name] == true) then
+    for item_name, item_count in pairs(item_list) do
             self.worker.set_vehicle_logistic_slot(slot, {
-                name = name,
-                min = count,
-                max = count
+            name = item_name,
+            min = item_count,
+            max = item_count
             })
             slot = slot + 1
-        end
     end
 end
 
@@ -423,7 +430,7 @@ job_proc.process_job_queue = function()
                 -- set job service station
                 job.station = ctron.get_closest_service_station(worker)
                 -- check robot name
-                if job_proc.check_robots() then
+                if job_proc.validate_robot_name() then
                     if next(job.chunks) then
                         -- calculate chunk build positions
                         for _, chunk in pairs(job.chunks) do
@@ -480,13 +487,14 @@ job_proc.process_job_queue = function()
                     local inventory_items = inventory.get_contents()
                     if inventory then
                         if not (job.sub_state == "items_requested") then
-                            local item_request = table.deepcopy(job.required_items)
+                            local item_request_list = table.deepcopy(job.required_items)
                             for item, _ in pairs(inventory_items) do
                                 if not job.required_items[item] then
-                                    item_request[item] = 0
+                                    item_request_list[item] = 0
                                 end
                             end
-                            job:request_items(item_request)
+                            item_request_list = job:check_items(item_request_list)
+                            job:request_items(item_request_list)
                             logistic_condition = false
                             job.sub_state = "items_requested"
                             job.request_tick = game.tick
@@ -531,7 +539,7 @@ job_proc.process_job_queue = function()
                                     if request and request.name then
                                         local logistic_network = station.logistic_network
                                         if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                            debug_lib.VisualDebugText("Trying a different station", worker, -0.5, 5)
+                                            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
                                             job.station = station
                                             goto continue
                                         end
@@ -772,6 +780,32 @@ job_proc.process_job_queue = function()
                             if trash_inventory then
                                 trash_items = trash_inventory.get_contents()
                                 if next(trash_items) then
+                                    local logistic_network = job.station.logistic_network
+                                    if (logistic_network.all_logistic_robots <= 0) then
+                                        debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
+                                    end
+                                    if not next(logistic_network.storages) then
+                                        debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
+                                    else
+                                        for item_name, item_count in pairs(trash_items) do
+                                            local can_drop = logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+                                            if can_drop then
+                                                debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+                                                goto continue
+                                            end
+                                        end
+                                    end
+                                    -- check if other station networks can store items
+                                    local surface_stations = ctron.get_service_stations(job.surface_index)
+                                    for _, station in pairs(surface_stations) do
+                                        for item_name, item_count in pairs(trash_items) do
+                                            local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+                                            if can_drop then
+                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                                job.station = station
+                                            end
+                                        end
+                                    end
                                     goto continue
                                 else
                                     job.sub_state = nil
@@ -851,7 +885,7 @@ job_proc.make_jobs = function()
                         end
                         global.job_index = global.job_index + 1
                         global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
-                        job_proc.check_robots()
+                        job_proc.validate_robot_name()
                         -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                         global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
@@ -867,7 +901,7 @@ job_proc.make_jobs = function()
                     global.job_index = global.job_index + 1
                     global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
-                    job_proc.check_robots()
+                    job_proc.validate_robot_name()
                     -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                     global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})

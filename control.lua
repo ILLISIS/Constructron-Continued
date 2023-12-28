@@ -96,7 +96,7 @@ local ensure_globals = function()
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
     end
-    -- build allowed items cache (used in add_entities_to_chunks)
+    -- build allowed items cache (this is used to filter out entities that do not have recipes)
     global.allowed_items = {}
     for item_name, _ in pairs(game.item_prototypes) do
         local recipes = game.get_filtered_recipe_prototypes({
