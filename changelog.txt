@@ -13,6 +13,7 @@ Date: 2023-10-31
     - Fixed Constructrons getting stuck while building long trains.
     - Fixed request / inventory overload.
     - Fixed items-on-ground not being actioned upon being market for deconstruction due to legacy code.
+    - Fixed roboport radius not being reset when a reset command was run.
   Other:
     - Removed clear robots setting as this is now done by default.
 ---------------------------------------------------------------------------------------------------

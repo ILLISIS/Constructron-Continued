@@ -166,6 +166,22 @@ me.reacquire_ctrons = function()
             -- Reset Hardcodes
             constructron.grid.inhibit_movement_bonus = false
 
+            local grid = constructron.grid
+            if grid then
+                for _, eq in next, grid.equipment do
+                    if eq.type == "roboport-equipment" then
+                        local old_eq_name = eq.prototype.take_result.name
+                        local old_eq_pos = eq.position
+                        local old_eq_energy = eq.energy
+                        grid.take{ position = eq.position }
+                        local new_set = grid.put{ name = old_eq_name, position = old_eq_pos }
+                        if new_set then
+                            new_set.energy = old_eq_energy
+                        end
+                    end
+                end
+            end
+
             global.constructrons_count[surface.index] = global.constructrons_count[surface.index] + 1
         end
         game.print('Registered ' .. global.constructrons_count[surface.index] .. ' constructrons on ' .. surface.name .. '.')
