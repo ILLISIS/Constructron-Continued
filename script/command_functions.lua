@@ -265,6 +265,12 @@ me.rebuild_caches = function()
             global.allowed_items[item_name] = false
         end
     end
+    local autoplace_entities = game.get_filtered_entity_prototypes{{filter="autoplace"}}
+    for entity_name, entity in pairs(autoplace_entities) do
+        if entity.mineable_properties and entity.mineable_properties.products then
+            global.allowed_items[entity.mineable_properties.products[1].name] = true
+        end
+    end
     -- build required_items cache (used in add_entities_to_chunks)
     global.items_to_place_cache = {}
     for name, v in pairs(game.entity_prototypes) do

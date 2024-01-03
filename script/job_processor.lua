@@ -141,7 +141,7 @@ job_proc.validate_robot_name = function()
         return false
     end
 end
-
+-- TODO: move function to utility
 job_proc.combine_tables = function(tables)
     local combined = {}
     for _, t in pairs(tables) do
@@ -267,12 +267,12 @@ end
 function job:request_items(item_list)
     local slot = 1
     for item_name, item_count in pairs(item_list) do
-            self.worker.set_vehicle_logistic_slot(slot, {
+        self.worker.set_vehicle_logistic_slot(slot, {
             name = item_name,
             min = item_count,
             max = item_count
-            })
-            slot = slot + 1
+        })
+        slot = slot + 1
     end
 end
 
@@ -427,7 +427,7 @@ job_proc.process_job_queue = function()
                 job:validate_station()
             end
             if job.state == "new" then
-                -- set job service station
+                -- set job service station -- TODO: remove due to validation
                 job.station = ctron.get_closest_service_station(worker)
                 -- check robot name
                 if job_proc.validate_robot_name() then
@@ -861,7 +861,7 @@ end
 
 
 job_proc.make_jobs = function()
-    local var = false
+    local trigger_skip = false
     local job_types = {
         "deconstruction",
         "construction",
@@ -879,7 +879,7 @@ job_proc.make_jobs = function()
                     for _, _ in pairs(global[job_type .. '_queue'][surface_index]) do
                         local worker = job_proc.get_worker(surface_index)
                         if not (worker and worker.valid) then
-                            var = true
+                            trigger_skip = true
                             exitloop = true
                             break
                         end
@@ -895,7 +895,7 @@ job_proc.make_jobs = function()
                 else
                     local worker = job_proc.get_worker(surface_index)
                     if not (worker and worker.valid) then
-                        var = true
+                        trigger_skip = true
                         break
                     end
                     global.job_index = global.job_index + 1

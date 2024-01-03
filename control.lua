@@ -32,8 +32,6 @@ script.on_nth_tick(54000, (function()
     debug_lib.DebugLog('Surface job validation & cleanup')
     for _, surface in pairs(game.surfaces) do
         if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
-            debug_lib.DebugLog('No Constructrons or Service Stations found on ' .. surface.name)
-            debug_lib.DebugLog('All job queues on '.. surface.name ..' cleared!')
             global.construction_queue[surface.index] = {}
             global.deconstruction_queue[surface.index] = {}
             global.upgrade_queue[surface.index] = {}
@@ -109,6 +107,12 @@ local ensure_globals = function()
         end
         if global.allowed_items[item_name] == nil then -- some items do not have recipes so set the item to disallowed
             global.allowed_items[item_name] = false
+        end
+    end
+    local autoplace_entities = game.get_filtered_entity_prototypes{{filter="autoplace"}}
+    for entity_name, entity in pairs(autoplace_entities) do
+        if entity.mineable_properties and entity.mineable_properties.products then
+            global.allowed_items[entity_name] = true
         end
     end
     -- build required_items cache (used in add_entities_to_chunks)
