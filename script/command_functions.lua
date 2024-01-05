@@ -13,82 +13,93 @@ me.reset_settings = function()
     settings.global["desired_robot_count"] = {value = 50}
     settings.global["desired_robot_name"] = {value = "construction-robot"}
     settings.global["entities_per_tick"] = {value = 1000}
-    settings.global["clear_robots_when_idle"] = {value = false}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
 end
 
 me.clear_queues = function()
-    global.ghost_entities = {}
+    global.construction_entities = {}
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
     global.repair_entities = {}
 
-    global.ghost_index = 0
-    global.decon_index = 0
+    global.construction_index = 0
+    global.deconstruction_index = 0
     global.updgrade_index = 0
     global.repair_index = 0
 
-    global.construct_queue = {}
-    global.deconstruct_queue = {}
+    global.construction_queue = {}
+    global.deconstruction_queue = {}
     global.upgrade_queue = {}
     global.repair_queue = {}
 
-    for s, surface in pairs(game.surfaces) do
-        global.construct_queue[surface.index] = global.construct_queue[surface.index] or {}
-        global.deconstruct_queue[surface.index] = global.deconstruct_queue[surface.index] or {}
+    for _, surface in pairs(game.surfaces) do
+        global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
+        global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
     end
 end
 
-me.reacquire_construction_jobs = function()
+me.clear_single_job_type = function(job_type)
+    global[job_type .. '_entities'] = {}
+    global[job_type ..'_index'] = 0
+    global[job_type .. '_queue'] = {}
     for _, surface in pairs(game.surfaces) do
-        local ghosts = surface.find_entities_filtered {
-            name = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+        global[job_type .. '_queue'][surface.index] = {}
+    end
+end
+
+me.reacquire_construction_jobs = function()
+    if not settings.global["construct_jobs"] then return end
+    for _, surface in pairs(game.surfaces) do
+        local entities = surface.find_entities_filtered {
+            name = {"entity-ghost", "tile-ghost"},
             force = {"player", "neutral"},
             surface = surface.name
         }
-        game.print('found '.. #ghosts ..' entities on '.. surface.name ..' to construct.')
-        for _, entity in ipairs(ghosts) do
-            global.ghost_index = global.ghost_index + 1
-            global.ghost_entities[global.ghost_index] = entity
+        game.print('found '.. #entities ..' entities on '.. surface.name ..' to construct.')
+        for _, entity in ipairs(entities) do
+            global.construction_index = global.construction_index + 1
+            global.construction_entities[global.construction_index] = entity
         end
-        global.ghost_tick = game.tick
+        global.construction_tick = game.tick
         global.entity_proc_trigger = true
     end
 end
 
 me.reacquire_deconstruction_jobs = function()
+    if not settings.global["deconstruct_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
-        local decons = surface.find_entities_filtered {
+        local entities = surface.find_entities_filtered {
             to_be_deconstructed = true,
             force = {"player", "neutral"},
             surface = surface.name
         }
-        game.print('found '.. #decons ..' entities on '.. surface.name ..' to deconstruct.')
-        for _, entity in ipairs(decons) do
-            global.decon_index = global.decon_index + 1
-            global.deconstruction_entities[global.decon_index] = entity
+        game.print('found '.. #entities ..' entities on '.. surface.name ..' to deconstruct.')
+        for _, entity in ipairs(entities) do
+            global.deconstruction_index = global.deconstruction_index + 1
+            global.deconstruction_entities[global.deconstruction_index] = entity
         end
-        global.deconstruct_marked_tick = game.tick
+        global.deconstruction_tick = game.tick
         global.entity_proc_trigger = true
     end
 end
 
 me.reacquire_upgrade_jobs = function()
+    if not settings.global["upgrade_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
-        local upgrades = surface.find_entities_filtered {
+        local entities = surface.find_entities_filtered {
             to_be_upgraded = true,
             force = "player",
             surface = surface.name
         }
-        game.print('found '.. #upgrades ..' entities on '.. surface.name ..' to upgrade.')
-        for _, entity in ipairs(upgrades) do
+        game.print('found '.. #entities ..' entities on '.. surface.name ..' to upgrade.')
+        for _, entity in ipairs(entities) do
             global.upgrade_index = global.upgrade_index + 1
             global.upgrade_entities[global.upgrade_index] = entity
         end
-        global.upgrade_marked_tick = game.tick
+        global.upgrade_tick = game.tick
         global.entity_proc_trigger = true
     end
 end
@@ -104,10 +115,25 @@ me.reload_entities = function()
 
     me.reacquire_stations()
     me.reacquire_ctrons()
+
+    -- determine manage surfaces
+    me.reset_managed_surfaces()
+end
+
+me.reset_managed_surfaces = function()
+    global.managed_surfaces = {}
+    for _, surface in pairs(game.surfaces) do
+        surface_index = surface.index
+        if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
+            global.managed_surfaces[game.surfaces[surface_index].name] = surface_index
+        else
+            global.managed_surfaces[game.surfaces[surface_index].name] = nil
+        end
+    end
 end
 
 me.reacquire_stations = function()
-    for s, surface in pairs(game.surfaces) do
+    for _, surface in pairs(game.surfaces) do
         global.stations_count[surface.index] = 0
         local stations = surface.find_entities_filtered {
             name = "service_station",
@@ -115,7 +141,7 @@ me.reacquire_stations = function()
             surface = surface.name
         }
 
-        for k, station in pairs(stations) do
+        for _, station in pairs(stations) do
             local unit_number = station.unit_number
             if not global.service_stations[unit_number] then
                 global.service_stations[unit_number] = station
@@ -134,7 +160,7 @@ me.reacquire_stations = function()
 end
 
 me.reacquire_ctrons = function()
-    for s, surface in pairs(game.surfaces) do
+    for _, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = 0
         local constructrons = surface.find_entities_filtered {
             name = {"constructron", "constructron-rocket-powered"},
@@ -142,7 +168,7 @@ me.reacquire_ctrons = function()
             surface = surface.name
         }
 
-        for k, constructron in pairs(constructrons) do
+        for _, constructron in pairs(constructrons) do
             local unit_number = constructron.unit_number
             if not global.constructrons[unit_number] then
                 global.constructrons[unit_number] = constructron
@@ -155,8 +181,23 @@ me.reacquire_ctrons = function()
             }
 
             -- Reset Hardcodes
-            ctron.enable_roboports(constructron.grid)
             constructron.grid.inhibit_movement_bonus = false
+
+            local grid = constructron.grid
+            if grid then
+                for _, eq in next, grid.equipment do
+                    if eq.type == "roboport-equipment" then
+                        local old_eq_name = eq.prototype.take_result.name
+                        local old_eq_pos = eq.position
+                        local old_eq_energy = eq.energy
+                        grid.take{ position = eq.position }
+                        local new_set = grid.put{ name = old_eq_name, position = old_eq_pos }
+                        if new_set then
+                            new_set.energy = old_eq_energy
+                        end
+                    end
+                end
+            end
 
             global.constructrons_count[surface.index] = global.constructrons_count[surface.index] + 1
         end
@@ -165,13 +206,13 @@ me.reacquire_ctrons = function()
 end
 
 me.reload_ctron_status = function()
-    for k, constructron in pairs(global.constructrons) do
+    for _, constructron in pairs(global.constructrons) do
         ctron.set_constructron_status(constructron, 'busy', false)
     end
 end
 
 me.reload_ctron_color = function()
-    for k, constructron in pairs(global.constructrons) do
+    for _, constructron in pairs(global.constructrons) do
         ctron.paint_constructron(constructron, 'idle')
     end
 end
@@ -185,8 +226,14 @@ me.recall_ctrons = function()
                 surface = surface.name
             }
             for _, constructron in pairs(constructrons) do
+                constructron.autopilot_destination = nil
                 local closest_station = ctron.get_closest_service_station(constructron)
-                pathfinder.init_path_request(constructron, closest_station.position) -- find path to station
+                if closest_station then
+                    global.job_index = global.job_index + 1
+                    global.jobs[global.job_index] = job.new(global.job_index, constructron.surface.index, "upgrade", constructron)
+                    global.jobs[global.job_index].state = "finishing"
+                    global.job_proc_trigger = true -- start job operations
+                end
             end
         else
             game.print('No stations to recall Constructrons to on ' .. surface.name .. '.')
@@ -197,7 +244,7 @@ end
 me.clear_ctron_inventory = function()
     local slot = 1
 
-    for c, constructron in pairs(global.constructrons) do
+    for _, constructron in pairs(global.constructrons) do
         local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
         local filtered_items = {}
 
@@ -235,6 +282,12 @@ me.rebuild_caches = function()
             global.allowed_items[item_name] = false
         end
     end
+    local autoplace_entities = game.get_filtered_entity_prototypes{{filter="autoplace"}}
+    for entity_name, entity in pairs(autoplace_entities) do
+        if entity.mineable_properties and entity.mineable_properties.products then
+            global.allowed_items[entity.mineable_properties.products[1].name] = true
+        end
+    end
     -- build required_items cache (used in add_entities_to_chunks)
     global.items_to_place_cache = {}
     for name, v in pairs(game.entity_prototypes) do
@@ -257,7 +310,15 @@ me.rebuild_caches = function()
                     global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
                 end
             end
+        else
+            global.trash_items_cache[entity_name] = {}
         end
+    end
+    -- build water tile cache
+    global.water_tile_cache = {}
+    local water_tile_prototypes = game.get_filtered_tile_prototypes{{filter="collision-mask",mask={["water-tile"]=true},mask_mode="contains-any"}}
+    for tile_name, _ in pairs(water_tile_prototypes) do
+        global.water_tile_cache[tile_name] = true
     end
 end
 
@@ -265,11 +326,11 @@ me.stats = function()
     local queues = {
         "registered_entities",
         "constructron_statuses",
-        "ghost_entities",
+        "construction_entities",
         "deconstruction_entities",
         "upgrade_entities",
         "repair_entities",
-        "job_bundles",
+        "jobs",
         "constructrons",
         "service_stations",
     }
@@ -286,17 +347,17 @@ me.stats = function()
     local surface_queues = {
         "constructrons_count",
         "stations_count",
-        "construct_queue",
-        "deconstruct_queue",
+        "construction_queue",
+        "deconstruction_queue",
         "upgrade_queue",
         "repair_queue",
     }
-    for s, surface in pairs(game.surfaces) do
+    for _, surface in pairs(game.surfaces) do
         for _, data_name in pairs(surface_queues) do
             local data = global[data_name][surface.index]
             if type(data)=="table" then
                 -- log(serpent.block(data))
-                global_stats[surface.name .. ":" .. data_name] = table_size(data)
+                global_stats[surface.name .. ": " .. data_name] = table_size(data)
             else
                 global_stats[surface.name .. ":" .. data_name] = tostring(data)
             end
@@ -310,7 +371,7 @@ me.help_text = function()
     game.print('/ctron help - show this help message')
     game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|all) - toggle job types.')
     game.print('/ctron reset (settings|queues|entities|all)')
-    game.print('/ctron clear all - clears all jobs, queued jobs and unprocessed entities')
+    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair)')
     game.print('/ctron stats for a basic display of queue length')
     game.print('See Factorio mod portal for further assistance https://mods.factorio.com/mod/Constructron-Continued')
 end

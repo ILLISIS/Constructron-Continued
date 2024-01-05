@@ -1,23 +1,25 @@
-MIT License
+FMLDOL
+Factorio Mod Limited Distribution Only Licence
+This software is provided without warranty and the software author/license owner cannot be held liable for damages.
 
-Copyright (c) 2021 Apollo314 ILLISIS
+Commercial Use
+No. 
+You are not allowed to make money off this mod or any of the contained assets.
+You are allowed to feature the mods in other media, such as Twitch or YouTube. 
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Modification
+Restricted. 
+You may make alterations for your own private personal use only.
+You are not allowed to distribute any content from the mod, or anything altered or derived from this mod with the following exception:
+You may post partial modified sections of this mod in Constructron-Continued's discord and the Factorio discord https://discord.gg/m9TDSsH3u2 for the purpose of providing bug fixes or enhancements.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Distribution
+You cannot distribute any content of the mod separate from the complete mod package.
+You can distribute the complete and unmodified mod package with the following conditions: 
+The mod must not be modified. (Packaging the mod into a larger zip file does not count as modification. It can be used in mod set packs.)
+You must disclose the source by providing a link to the mod on the mod portal https://mods.factorio.com, a link to the Constructron-Continued's discord https://discord.gg/m9TDSsH3u2 for bug reporting and discussion, and a link to Constructron-Continued's Github repository https://github.com/ILLISIS/Constructron-continued to support further development.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+For more information, clarification or exemption authorization please contact: ILLISIS via Constructron-Continued discord, the Factorio discord or github https://github.com/ILLISIS
 
-Credit to Apollo314(original creator) of Factorio mod portal.
+Additional credits:
+Apollo314 for the concept and minority of code functions from the original mod Constructron.
