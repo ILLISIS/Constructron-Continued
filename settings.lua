@@ -82,12 +82,6 @@ data:extend({
         default_value = false
     }, {
         type = "bool-setting",
-        name = "clear_robots_when_idle",
-        order = "a10",
-        setting_type = "runtime-global",
-        default_value = false
-    }, {
-        type = "bool-setting",
         name = "horde_mode",
         order = "a11",
         setting_type = "runtime-global",

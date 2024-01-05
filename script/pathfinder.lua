@@ -7,215 +7,307 @@ local debug_lib = require("script/debug_lib")
 -------------------------------------------------------------------------------
 
 local clean_linear_path_enabled = true
-local clean_path_steps_enabled = false
+local clean_path_steps_enabled = true
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
-local pathfinder = {}
+pathfinder = {}
+pathfinder.__index = pathfinder
+script.register_metatable("constructron_pathfinder_table", pathfinder)
 
-pathfinder.init_globals = function()
-    global.pathfinder_requests = global.pathfinder_requests or {}
-    --So, when path cache is enabled, negative path cache is also enabled.
-    --The problem is, when a single unit inside a nest can't get to the silo,
-    --He tells all other biters nearby that they also can't get to the silo.
-    --Which causes whole groups of them just to chillout and idle...
-    --This applies to all paths as the pathfinder is generic - Klonan
-    global.pathfinder_queue = global.pathfinder_queue or {}
-    global.path_queue_trigger = global.path_queue_trigger or true
-    game.map_settings.path_finder.use_path_cache = false
-end
 
-script.on_event(defines.events.on_script_path_request_finished, (function(event)
-    pathfinder.on_script_path_request_finished(event)
-end))
-
--------------------------------------------------------------------------------
---  Request path
--------------------------------------------------------------------------------
-
----@param unit LuaEntity[]
----@param destination MapPosition
----@param job Job?
-function pathfinder.init_path_request(unit, destination, job)
-    ---@type LuaSurface.request_path_param
-    local request_params = {unit = unit, goal = destination, job = job}
-    if request_params.unit.name == "constructron-rocket-powered" then
-        if request_params.job then
-            request_params.job.path_active = true
-        end
-        pathfinder.set_autopilot(unit, {{position = destination}})
-    else
-        if (job ~= nil) and job.landfill_job then
-            local spot = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", destination, 1, 4, false)
-            if spot then -- check position is reachable
-                debug_lib.VisualDebugCircle(spot, request_params.unit.surface, "yellow", 0.75, 1200)
-                pathfinder.request_path(request_params)
-            else -- position is unreachable so find the mainland
-                local mainland = request_params.unit.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "64", destination, 800, 4, false)
-                if mainland then
-                    -- I would like to find a more accurate / closer shore position
-                    -- local params = {
-                    --     {size = 12, radius = 32},
-                    --     {size = 5, radius = 16},
-                    --     {size = 5, radius = 8},
-                    --     {size = 1, radius = 12},
-                    --     {size = 1, radius = 5}
-                    --     }
-                    -- for _, param in pairs(params) do
-                    --     new_position = surface.find_non_colliding_position("constructron_pathing_proxy_" .. param.size, position, param.radius, non_colliding_position_accuracy, false)
-                    --     if new_position then
-                    --         bb = param
-                    --     end
-                    -- end
-                    request_params.initial_target = destination
-                    request_params.landfill_job = job.landfill_job
-                    request_params.goal = mainland
-                    pathfinder.request_path(request_params)
-                end
-            end
-        else
-            pathfinder.request_path(request_params)
-        end
-    end
-end
-
----@param request_params LuaSurface.request_path_param
-function pathfinder.request_path(request_params)
-    local pathing_collision_mask = {"water-tile", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"}
-    if game.active_mods["space-exploration"] then
-        local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-        local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-        table.insert(pathing_collision_mask, spaceship_collision_layer)
-        table.insert(pathing_collision_mask, empty_space_collision_layer)
-    end
-    pathfinder.set_autopilot(request_params.unit, {}) -- stop walking if walking
-    local bounding_box = request_params.bounding_box or {{-5, -5}, {5, 5}}
-    local path_resolution_modifier = request_params.path_resolution_modifier or -2
-    local landfill_job = request_params.landfill_job or false
-    if landfill_job then
-        bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
-        path_resolution_modifier = 0
-    end
-    local request = { -- template
-        job = request_params.job or nil, -- The job that initiated this request. Used to update the job. Not used by the factorio-pathfinder
-        unit = request_params.unit, -- Unit that this path request is for. Used to add waypoints to the unit and surface id. not used by the factorio-pathfinder
-        surface = request_params.unit.surface, -- The surface this path request is for. Not used by the factorio-pathfinder
-        landfill_job = landfill_job, -- Identifies if this path request is for a landfill job. Not used by the factorio-pathfinder
-        bounding_box = bounding_box,
-        collision_mask = pathing_collision_mask,
-        start = request_params.start or request_params.unit.position,
-        goal = request_params.goal,
-        force = request_params.unit.force,
-        radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        path_resolution_modifier = path_resolution_modifier,
-        pathfinding_flags = {
-            cache = true,
-            low_priority = false
-        },
-        attempt = request_params.attempt or 1, -- The count of path attemps. Not used by the factorio-pathfinder
-        try_again_later = request_params.try_again_later or 0 -- The count of path requests that have been put back because the path finder is busy. Not used by the factorio-pathfinder
+function pathfinder.new(start, goal, job)
+    start = { x = math.floor(start.x), y = math.floor(start.y) }
+    goal = { x = math.floor(goal.x), y = math.floor(goal.y) }
+    local instance = setmetatable({}, pathfinder)
+    instance.path_index = global.custom_pathfinder_index
+    instance.start = start
+    instance.goal = goal
+    instance.job = job
+    instance.surface = job.worker.surface
+    job.pathfinding = true
+    instance.openSet = {} -- Nodes to be evaluated
+    local node = {
+        x = start.x,
+        y = start.y,
+        g = 0,
+        h = math.abs(start.x - goal.x) + math.abs(start.y - goal.y) + 1,
     }
-    if request_params.initial_target then -- landfill goal
-        request.initial_target = request_params.initial_target
-    end
-    request.initial_target = request.initial_target or request_params.goal -- The initial goal of the job request. Not used by the factorio-pathfinder
-    local request_id = request.surface.request_path(request) -- request the path from the game
-    global.pathfinder_requests[request_id] = request
-    if request_params.job then -- if there is a job update the job with the path request id so we can track it
-        request_params.job.request_pathid = request_id
-    end
+    instance.openSet[start.x] = {}
+    instance.openSet[start.x][start.y] = node
+    instance.closedSet = {} -- Nodes already evaluated
+    local lowh_bundle = math.floor(node.h)
+    instance.lowh_bundles = {
+        [lowh_bundle] = {
+            [1] = node
+        }
+    } -- heuristic cache
+    instance.lowesth_value = lowh_bundle
+    instance.path_iterations = 0 -- number of path iterations * TilesProcessed
+    return instance
 end
 
 -------------------------------------------------------------------------------
 --  Path request finished
 -------------------------------------------------------------------------------
 
+script.on_event(defines.events.on_script_path_request_finished, (function(event)
+    on_script_path_request_finished(event)
+end))
+
 ---@param event EventData.on_script_path_request_finished
-function pathfinder.on_script_path_request_finished(event)
-    local request = global.pathfinder_requests[event.id]
-    if request and request.unit and request.unit.valid then
-        local path = event.path
-        if event.try_again_later then -- try_again_later is a return of the event handler
-            table.insert(global.pathfinder_queue, request)
-            global.path_queue_trigger = true
-        elseif not path then
-            request.attempt = request.attempt + 1
-            if request.attempt < 5 then
-                local start, goal
-                debug_lib.VisualDebugCircle(request.start, request.surface, "green", 0.75, 600)
-                start = pathfinder.find_non_colliding_position(request.surface, request.start) or request.start
-                debug_lib.VisualDebugCircle(request.start, request.surface, "purple", 0.75, 600)
-                debug_lib.VisualDebugCircle(request.goal, request.surface, "green", 0.75, 600)
-                goal = pathfinder.find_non_colliding_position(request.surface, request.goal, request.job) or request.goal
-                debug_lib.VisualDebugCircle(request.goal, request.surface, "purple", 0.75, 600)
-                if (goal.x ~= request.goal.x) or (goal.y ~= request.goal.y) then
-                    request.goal = goal
-                elseif (start.x ~= request.start.x) or (start.y ~= request.start.y) then
-                    request.start = start
-                else
-                    request.bounding_box = {{-0.015, -0.015}, {0.015, 0.015}}
-                    request.path_resolution_modifier = 0
-                end
-                request.request_tick = game.tick
-                pathfinder.request_path(request) -- try again
-            else -- 5. f*ck it... just try to walk there in a straight line
-                pathfinder.set_autopilot(request.unit, {{position = {x = request.initial_target.x, y = request.initial_target.y}}})
+function on_script_path_request_finished(event)
+    local job = global.pathfinder_requests[event.id]
+    if not job or not job.worker or not job.worker.valid then return end
+    local path = event.path
+    if event.try_again_later then
+        -- COMMENT: job should handle itself
+    elseif not path then
+        job.path_request_params.path_attempt = job.path_request_params.path_attempt + 1
+        if job.path_request_params.path_attempt < 5 then
+            local start, goal
+            debug_lib.VisualDebugCircle(job.path_request_params.start, job.path_request_params.surface, "green", 0.75, 600)
+            start = pathfinder.find_non_colliding_position(job, job.path_request_params.start) or job.path_request_params.start
+            debug_lib.VisualDebugCircle(job.path_request_params.start, job.path_request_params.surface, "purple", 0.75, 600)
+            debug_lib.VisualDebugCircle(job.path_request_params.goal, job.path_request_params.surface, "green", 0.75, 600)
+            goal = pathfinder.find_non_colliding_position(job, job.path_request_params.goal) or job.path_request_params.goal
+            debug_lib.VisualDebugCircle(job.path_request_params.goal, job.path_request_params.surface, "purple", 0.75, 600)
+            if (goal.x ~= job.path_request_params.goal.x) or (goal.y ~= job.path_request_params.goal.y) then
+                job.path_request_params.goal = goal
+            elseif (start.x ~= job.path_request_params.start.x) or (start.y ~= job.path_request_params.start.y) then
+                job.path_request_params.start = start
+            else
+                job.path_request_params.bounding_box = {{-0.01, -0.01}, {0.01, 0.01}}
+                job.path_request_params.path_resolution_modifier = 0
             end
+            job:request_path(job.path_request_params) -- try again
         else
-            if clean_linear_path_enabled then
-                path = pathfinder.clean_linear_path(path)
-            end
-            if clean_path_steps_enabled then
-                path = pathfinder.clean_path_steps(path, clean_path_steps_distance)
-            end
-            if request.landfill_job then
-                table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}}) -- add the desired destination after the walkable path
-            end
-            -- table.insert(path, {position = {x = request.initial_target.x, y = request.initial_target.y}}) -- add the desired destination after the walkable path
-            -- we currently cannot do this as the job condition will not match. Additionally, if we account for that it could result in a waypoint loop with FNCP.
-            -- possibly the poisition_done condition could be changed to check for proximity to both initial and updated destination.
-            pathfinder.set_autopilot(request.unit, path)
+            debug_lib.VisualDebugText("No Path!", job.worker, -0.5, 1)
         end
-        if request.job and (path or (request.attempt > 4)) and next(request.job.constructron.autopilot_destination) then
-            request.job.path_active = true
+    else
+        if clean_linear_path_enabled then
+            path = pathfinder.clean_linear_path(path)
         end
+        if clean_path_steps_enabled then
+            path = pathfinder.clean_path_steps(path, clean_path_steps_distance)
+        end
+        -- update instance
+        job.path_attempt = nil
+        job.path_request_params = nil
+        -- request path from game engine
+        pathfinder.set_autopilot(job.worker, path)
+    end
+    if job.path_request_id == event.id then
+        job.path_request_id = nil
     end
     global.pathfinder_requests[event.id] = nil
+end
+
+-------------------------------------------------------------------------------
+--  Custom Pathfinder
+-------------------------------------------------------------------------------
+
+-- A* pathfinding function
+function pathfinder:findpath()
+    local start = self.start
+    local goal = self.goal
+    local openSet = self.openSet -- nodes to be evaluated
+    local closedSet = self.closedSet -- nodes already evaluated
+    local TilesProcessed = 0 -- tiles processed per iteration
+    local lowesth_value = self.lowesth_value -- lowest heuristic value found
+    self.path_iterations = self.path_iterations + 1 -- iteration count
+
+    while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
+        TilesProcessed = TilesProcessed + 1
+
+        local lowh_bundle = self.lowh_bundles[lowesth_value]
+        local bundle_index, current_node = next(lowh_bundle)
+
+        -- remove current_node from openSet and add to closedSet
+        openSet[current_node.x][current_node.y] = nil
+        if not next(openSet[current_node.x]) then
+            openSet[current_node.x] = nil
+        end
+        closedSet[current_node.x] = closedSet[current_node.x] or {}
+        closedSet[current_node.x][current_node.y] = current_node
+
+        -- remove from heuristic cache
+        self.lowh_bundles[lowesth_value][bundle_index] = nil
+        if not next(self.lowh_bundles[lowesth_value]) then
+            self.lowh_bundles[lowesth_value] = nil
+            local new_lowesth_value, _ = next(self.lowh_bundles)
+            if new_lowesth_value and (new_lowesth_value > 1024) then
+                for heuristic, _ in pairs(self.lowh_bundles) do
+                    if (heuristic < new_lowesth_value) then
+                        new_lowesth_value = heuristic
+                    end
+                end
+            end
+            lowesth_value = new_lowesth_value
+            self.lowesth_value = new_lowesth_value
+        end
+        -- debug_lib.VisualDebugText("".. current_node.h .."", {}, 0, 30, "green")
+
+        -- check for path result
+        if current_node.h < 5 then
+            if current_node.x == goal.x and current_node.y == goal.y then
+                local path = {}
+                while current_node.parent do
+                    table.insert(path, 1, current_node)
+                    current_node = current_node.parent
+                end
+                table.insert(path, 1, start)
+                table.insert(path, goal)
+                -- because the path is searched for in reverse, it needs to be swapped around
+                local tableLength = #path
+                local reversed_path = {}
+                for i = tableLength, 1, -1 do
+                    local waypoint = {
+                        position = {
+                            x = path[i].x,
+                            y = path[i].y
+                        }
+                    }
+                    debug_lib.VisualDebugCircle(waypoint.position, self.surface, "green", 0.75, 1800)
+                    table.insert(reversed_path, waypoint)
+                end
+                if clean_linear_path_enabled then
+                    reversed_path = pathfinder.clean_linear_path(reversed_path)
+                end
+                if clean_path_steps_enabled then
+                    reversed_path = pathfinder.clean_path_steps(reversed_path, clean_path_steps_distance)
+                end
+                self.job.custom_path = reversed_path
+                self.job.pathfinding = nil
+                global.custom_pathfinder_requests[self.path_index] = nil
+                return
+            end
+        end
+
+        -- get neighboring nodes
+        local maxDistance = 1
+        -- IDEA: pathfinding backwards seems to make it easier to island hop
+        -- IDEA: make maxDistance configurable
+        -- IDEA: make maxDistance dynamic - try +15 tiles first, then lower to 1
+        for dx = -maxDistance, maxDistance do
+            for dy = -maxDistance, maxDistance do
+                local neighbor = {
+                    x = current_node.x + dx,
+                    y = current_node.y + dy,
+                    g = current_node.g + 1,
+                    h = 0,
+                    parent = current_node
+                }
+                neighbor.h = math.abs(neighbor.x - goal.x) + math.abs(neighbor.y - goal.y) + 1
+                -- debug_lib.VisualDebugText("".. neighbor.h .."", neighbor, 0, 30)
+                if not closedSet[neighbor.x] or not closedSet[neighbor.x][neighbor.y] then
+                    if not openSet[neighbor.x] or not openSet[neighbor.x][neighbor.y] then
+                        local collides = self.surface.entity_prototype_collides("constructron_pathing_proxy_1", neighbor, false)
+                        if not collides or self:isWalkable(neighbor) then
+                            if not collides then
+                                -- check if the virtual chunk that this node is in is the mainland
+                                local var = self:mainland_finder({x = neighbor.x, y = neighbor.y})
+                                if var and not self.mainland_found then
+                                    -- mainland found, set the goal of the pathfinder to be this particular neighbor
+                                    self.mainland_found = true
+                                    self.goal = {x = neighbor.x, y = neighbor.y}
+                                    goal = self.goal
+                                    neighbor.h = 1
+                                end
+                            end
+                            if openSet[neighbor.x] and openSet[neighbor.x][neighbor.y] then
+                                local openNode = openSet[neighbor.x][neighbor.y]
+                                if neighbor.g < openNode.g then
+                                    openNode.g = neighbor.g
+                                    openNode.parent = current_node
+                                end
+                            else
+                                -- add to openSet table
+                                openSet[neighbor.x] = openSet[neighbor.x] or {}
+                                openSet[neighbor.x][neighbor.y] = neighbor
+                                -- add to heuristic table
+                                heuristic = math.floor(neighbor.h)
+                                if (lowesth_value == nil) or (heuristic < lowesth_value) then
+                                    lowesth_value = heuristic
+                                    self.lowesth_value = heuristic
+                                end
+                                if not self.lowh_bundles[heuristic] then self.lowh_bundles[heuristic] = {} end
+                                table.insert(self.lowh_bundles[heuristic], neighbor)
+                            end
+                        else
+                            debug_lib.VisualDebugCircle(neighbor, self.surface, "red", 0.5, 300)
+                            closedSet[neighbor.x] = closedSet[neighbor.x] or {}
+                            closedSet[neighbor.x][neighbor.y] = neighbor
+                        end
+                    end
+                else
+                    -- these are already processed blocks/tiles
+                    -- debug_lib.VisualDebugCircle(neighbor, self.surface, "charcoal", 0.5, 150)
+                end
+            end
+        end
+    end
+    if (self.path_iterations > 200) or not next(openSet) then
+        -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
+        if not self.job.task_positions[1].reattempt then
+            self.job.task_positions[1].reattempt = true
+            table.insert(self.job.task_positions, self.job.task_positions[1])
+            table.remove(self.job.task_positions, 1)
+        else
+            -- second failed attempt to reach the position
+            table.remove(self.job.task_positions, 1)
+        end
+        self.job.pathfinding = nil
+        global.custom_pathfinder_requests[self.path_index] = nil
+        debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
+    end
+    return -- No path found
 end
 
 -------------------------------------------------------------------------------
 --  Utility
 -------------------------------------------------------------------------------
 
-script.on_nth_tick(10, function() -- pathfinder is busy requeue function
-    if global.path_queue_trigger then
-        if next(global.pathfinder_queue) then
-            if global.pathfinder_queue[1].unit and global.pathfinder_queue[1].unit.valid then
-                pathfinder.request_path(global.pathfinder_queue[1])
-            end
-            table.remove(global.pathfinder_queue, 1)
-        else
-            global.path_queue_trigger = false
+function pathfinder:isWalkable(position)
+    tile = self.surface.get_tile(position.x, position.y)
+    tile_ghost = tile.has_tile_ghost()
+
+    if global.water_tile_cache[tile.name] then
+        if not tile_ghost then
+            return false
         end
     end
-end)
 
----@param unit LuaEntity
----@param path PathfinderWaypoint[]
-function pathfinder.set_autopilot(unit, path) -- set path
-    if unit and unit.valid then
-        unit.autopilot_destination = nil
-        for i, waypoint in ipairs(path) do
-            unit.add_autopilot_destination(waypoint.position)
+    return true
+end
+
+
+-- finds the mainland by looking for an area where a size 96 entity will fit
+function pathfinder:mainland_finder(position)
+    local chunk = {
+        y = math.floor((position.y) / 96),
+        x = math.floor((position.x) / 96)
+    }
+    local chunk_key = chunk.y .. ',' .. chunk.x
+    if (global.mainland_chunks[chunk_key] == nil) then
+        chunk.minimum = {y = chunk.y * 96, x = chunk.x * 96}
+        chunk.maximum = {y = (chunk.y + 1) * 96, x = (chunk.x + 1) * 96}
+        local collides = self.surface.find_non_colliding_position_in_box("constructron_pathing_proxy_" .. "96", {chunk.minimum, chunk.maximum}, 128, true)
+        if (collides ~= nil) then
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "green", true, 300)
+            global.mainland_chunks[chunk_key] = true
+            return true
+        else
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "red", true, 300)
+            global.mainland_chunks[chunk_key] = false
+            return false
         end
+    else
+        return global.mainland_chunks[chunk_key]
     end
 end
 
----@param surface LuaSurface
----@param position MapPosition
----@param job Job?
----@return MapPosition?
-function pathfinder.find_non_colliding_position(surface, position, job) -- find a position to stand / walk to
+function pathfinder.find_non_colliding_position(job, position) -- find a position to stand / walk to
     local new_position
     local params = {
         {size = 12, radius = 64},
@@ -225,13 +317,24 @@ function pathfinder.find_non_colliding_position(surface, position, job) -- find 
         {size = 1, radius = 5}
         }
     for _, param in pairs(params) do
-        new_position = surface.find_non_colliding_position("constructron_pathing_proxy_" .. param.size, position, param.radius, non_colliding_position_accuracy, false)
+        new_position = job.worker.surface.find_non_colliding_position("constructron_pathing_proxy_" .. param.size, position, param.radius, non_colliding_position_accuracy, false)
     end
     if new_position then
         if job then -- update the job for condition check
-            job.leave_args[1] = new_position
+            job.task_positions[1] = new_position
         end
         return new_position -- return for the new request
+    end
+end
+
+---@param unit LuaEntity
+---@param path PathfinderWaypoint[]
+function pathfinder.set_autopilot(unit, path) -- set path
+    if unit and unit.valid then
+        -- unit.autopilot_destination = nil -- removed for 2.0
+        for i, waypoint in ipairs(path) do
+            unit.add_autopilot_destination(waypoint.position)
+        end
     end
 end
 

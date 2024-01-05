@@ -56,14 +56,14 @@
 ---@field request_tick uint?
 ---@field initial_target MapPosition?
 
----@class Chunk
+-- -@class Chunk
 ---@field area Area
 ---@field key string
 ---@field surface uint
----@field force LuaForce
+-- -@field force LuaForce
 ---@field minimum MapPosition
 ---@field maximum MapPosition
----@field position MapPosition
+-- -@field position MapPosition
 ---@field merged boolean?
 ---@field required_items ItemCounts
 ---@field trash_items ItemCounts
@@ -85,6 +85,7 @@
 ---@field path_active boolean?
 ---@field path_requestid uint
 ---@field start_tick integer
+---@field robot_positions table
 
 ---@class RegisteredEntity
 ---@field name string
@@ -132,7 +133,6 @@
 ---@field desired_robot_name string
 ---@field construction_mat_alert uint
 ---@field entities_per_tick uint
----@field clear_robots_when_idle boolean
 ---@field spider_remote_toggle boolean
 
 -- set type of global (this will never get executed, only intellisense will see this)

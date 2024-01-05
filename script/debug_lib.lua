@@ -13,7 +13,7 @@ end
 ---@param entity LuaEntity
 ---@param offset float
 ---@param ttl uint
-me.VisualDebugText = function(message, entity, offset, ttl)
+me.VisualDebugText = function(message, entity, offset, ttl, color)
     if global.debug_toggle then
         rendering.draw_text {
             text = message or "",
@@ -23,7 +23,7 @@ me.VisualDebugText = function(message, entity, offset, ttl)
             time_to_live = (ttl * 60) or 60,
             target_offset = {0, (offset or 0)},
             alignment = "center",
-            color = {
+            color = color_lib.colors[color] or {
                 r = 255,
                 g = 255,
                 b = 255,

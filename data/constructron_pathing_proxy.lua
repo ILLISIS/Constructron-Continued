@@ -4,6 +4,7 @@ local pathing_collision_mask = {
   "colliding-with-tiles-only",
   "not-colliding-with-itself"
 }
+
 if mods["space-exploration"] then
   local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
   table.insert(pathing_collision_mask, spaceship_collision_layer)
@@ -45,7 +46,7 @@ local template_item = {
   stack_size = 1
 }
 
-for _, size in pairs({64, 32, 16, 12, 10, 8, 6, 5, 4, 2, 1}) do
+for _, size in pairs({96, 64, 32, 16, 12, 10, 8, 6, 5, 4, 2, 1}) do
   local proxy_entity = table.deepcopy(template_entity)
   proxy_entity.collision_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
   proxy_entity.selection_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
