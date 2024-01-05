@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: 2024-1-??
+  Changes:
+    - Improved Rocket Powered Constructron aesthetic (#144).
+    - Rocket Powered Constructron can now fly anywhere (#144).
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-1-05
   Features:
