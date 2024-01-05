@@ -1,21 +1,25 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
-Date: 2023-10-31
+Date: 2024-1-05
   Features:
-    - Implemented a custom pathfinder to augment the games pathfinder for landfill jobs.
+    - [MAJOR] Implemented a custom pathfinder to augment the games pathfinder for landfill jobs.
   Changes:
-    - Completely overhauled the job operation code.
+    - [MAJOR] Completely overhauled the job operation code.
     - Aligned the Constructron collision mask to the Spidertron which allows Constructrons to path through shallow water.
     - [SE] Added event handler for teleportation of Constructrons and Stations.
+    - The reset command no longer triggers jobs for job types that are disabled.
+    - It is now possible to clear an individual job types queue and unprocessed entities. see /ctron help
+    - The minimum supported Factorio version for this mod is now 1.1.77.
   Bugfixes:
     - Fixed managed surfaces not being repopulated when performing the reset command.
     - Fixed infamous line 285 crash during deconstruction processing of modded entities that did not return a product upon mining the entity.
     - Fixed Constructrons getting stuck while building long trains.
     - Fixed request / inventory overload.
-    - Fixed items-on-ground not being actioned upon being market for deconstruction due to legacy code.
-    - Fixed roboport radius not being reset when a reset command was run.
+    - Fixed items-on-ground not being actioned upon being marked for deconstruction due to legacy code.
+    - Fixed roboport radius not being reset when a reset command was run dueing landfill jobs.
   Other:
     - Removed clear robots setting as this is now done by default.
+    - Robot name is validated on mod setting change rather than within a job and will be reset if it is invalid with a message displayed.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.74
 Date: 2023-05-05

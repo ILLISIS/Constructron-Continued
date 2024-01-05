@@ -14,11 +14,11 @@ service_station.construction_radius = 0
 
 for _, layer in pairs(service_station.base.layers) do
   if layer.filename == "__base__/graphics/entity/roboport/roboport-base.png" then
-    layer.filename = "__project_terraverse__/graphics/entity/constructron-service-station.png"
+    layer.filename = "__Constructron-Continued__/graphics/entity/constructron-service-station.png"
     layer.width = 114
     layer.height = 139
     layer.shift = layer.hr_version.shift
-    layer.hr_version.filename = "__project_terraverse__/graphics/entity/hr-constructron-service-station.png"
+    layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructron-service-station.png"
   end
 end
 -- Beacon Antenna
@@ -27,7 +27,7 @@ local shft_2 = util.by_pixel(100.5, 15.5)
 service_station.base_animation = {
     layers = { -- Base
     {
-        filename = "__project_terraverse__/graphics/entity/antenna.png",
+        filename = "__Constructron-Continued__/graphics/entity/antenna.png",
         width = 54,
         height = 50,
         line_length = 8,
@@ -36,7 +36,7 @@ service_station.base_animation = {
         shift = {shft_1[1] - 0.5, shft_1[2] - 0.5}
     }, -- Shadow
     {
-        filename = "__project_terraverse__/graphics/entity/antenna-shadow.png",
+        filename = "__Constructron-Continued__/graphics/entity/antenna-shadow.png",
         width = 63,
         height = 49,
         line_length = 8,
@@ -50,7 +50,7 @@ service_station.base_animation = {
 local service_station_item = {
   icons = {
     {
-      icon = "__project_terraverse__/graphics/icon_texture.png",
+      icon = "__Constructron-Continued__/graphics/icon_texture.png",
       icon_size = 256,
       -- scale = 0.25
     },

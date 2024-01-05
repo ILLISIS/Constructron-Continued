@@ -41,7 +41,17 @@ me.clear_queues = function()
     end
 end
 
+me.clear_single_job_type = function(job_type)
+    global[job_type .. '_entities'] = {}
+    global[job_type ..'_index'] = 0
+    global[job_type .. '_queue'] = {}
+    for _, surface in pairs(game.surfaces) do
+        global[job_type .. '_queue'][surface.index] = {}
+    end
+end
+
 me.reacquire_construction_jobs = function()
+    if not settings.global["construct_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
         local entities = surface.find_entities_filtered {
             name = {"entity-ghost", "tile-ghost"},
@@ -59,6 +69,7 @@ me.reacquire_construction_jobs = function()
 end
 
 me.reacquire_deconstruction_jobs = function()
+    if not settings.global["deconstruct_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
         local entities = surface.find_entities_filtered {
             to_be_deconstructed = true,
@@ -76,6 +87,7 @@ me.reacquire_deconstruction_jobs = function()
 end
 
 me.reacquire_upgrade_jobs = function()
+    if not settings.global["upgrade_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
         local entities = surface.find_entities_filtered {
             to_be_upgraded = true,
@@ -105,6 +117,11 @@ me.reload_entities = function()
     me.reacquire_ctrons()
 
     -- determine manage surfaces
+    me.reset_managed_surfaces()
+end
+
+me.reset_managed_surfaces = function()
+    global.managed_surfaces = {}
     for _, surface in pairs(game.surfaces) do
         surface_index = surface.index
         if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
@@ -354,7 +371,7 @@ me.help_text = function()
     game.print('/ctron help - show this help message')
     game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|all) - toggle job types.')
     game.print('/ctron reset (settings|queues|entities|all)')
-    game.print('/ctron clear all - clears all jobs, queued jobs and unprocessed entities')
+    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair)')
     game.print('/ctron stats for a basic display of queue length')
     game.print('See Factorio mod portal for further assistance https://mods.factorio.com/mod/Constructron-Continued')
 end

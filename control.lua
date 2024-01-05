@@ -241,8 +241,21 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
     elseif setting == "desired_robot_count" then
         global.desired_robot_count = settings.global["desired_robot_count"].value
     elseif setting == "desired_robot_name" then
-        -- IDEA: validate robot name here
-        global.desired_robot_name = settings.global["desired_robot_name"].value
+        -- validate robot name
+        if not game.item_prototypes[settings.global["desired_robot_name"].value] then
+            if game.item_prototypes["construction-robot"] then
+                settings.global["desired_robot_name"] = {value = "construction-robot"}
+                global.desired_robot_name = "construction-robot"
+                game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
+            else
+                local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+                local valid_robot_name = pairs(valid_robots)(nil,nil)
+                settings.global["desired_robot_name"] = {value = valid_robot_name}
+                game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
+            end
+        else
+            global.desired_robot_name = settings.global["desired_robot_name"].value
+        end
     elseif setting == "entities_per_tick" then
         global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
     elseif setting == "horde_mode" then
@@ -324,6 +337,18 @@ local function clear(player, parameters)
     elseif parameters[1] == "inventory" then
         game.print('All Constructron inventories will be reset')
         cmd.clear_ctron_inventory()
+    elseif parameters[1] == "construction" then
+        cmd.clear_single_job_type("construction")
+        game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
+    elseif parameters[1] == "deconstruction" then
+        cmd.clear_single_job_type("deconstruction")
+        game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
+    elseif parameters[1] == "upgrade" then
+        cmd.clear_single_job_type("upgrade")
+        game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
+    elseif parameters[1] == "repair" then
+        cmd.clear_single_job_type("repair")
+        game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
     else
         game.print('Command parameter does not exist.')
         cmd.help_text()
@@ -465,7 +490,7 @@ local function stats(player, _)
     local global_stats = cmd.stats()
     log(serpent.block(global_stats))
     if global_stats and player then
-        for k,v in pairs(global_stats) do
+        for k, v in pairs(global_stats) do
             player.print(k .. ": " .. tostring(v))
         end
     end
@@ -518,7 +543,7 @@ commands.add_command(
             local params = custom_lib.string_split(param.parameter, " ")
             local command = table.remove(params, 1) --[[@as string]]
             if command and ctron_commands[command] then
-                ctron_commands[command](player,params)
+                ctron_commands[command](player, params)
             else
                 game.print('Command parameter does not exist.')
                 cmd.help_text()

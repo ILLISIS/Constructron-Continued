@@ -61,13 +61,11 @@ function on_script_path_request_finished(event)
     if not job or not job.worker or not job.worker.valid then return end
     local path = event.path
     if event.try_again_later then
-        -- TODO
-        -- update instance
+        -- COMMENT: job should handle itself
     elseif not path then
         job.path_request_params.path_attempt = job.path_request_params.path_attempt + 1
         if job.path_request_params.path_attempt < 5 then
             local start, goal
-            -- check this tomorrow
             debug_lib.VisualDebugCircle(job.path_request_params.start, job.path_request_params.surface, "green", 0.75, 600)
             start = pathfinder.find_non_colliding_position(job, job.path_request_params.start) or job.path_request_params.start
             debug_lib.VisualDebugCircle(job.path_request_params.start, job.path_request_params.surface, "purple", 0.75, 600)
@@ -284,7 +282,6 @@ function pathfinder:isWalkable(position)
 end
 
 
--- TODO: fix draw calls into debug mode
 -- finds the mainland by looking for an area where a size 96 entity will fit
 function pathfinder:mainland_finder(position)
     local chunk = {

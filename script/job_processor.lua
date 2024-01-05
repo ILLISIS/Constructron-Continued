@@ -7,16 +7,6 @@ local collision_mask_util_extended = require("script/collision-mask-util-control
 
 local job_proc = {}
 
--- A job should not have a predetermined path (action list)
-
--- It should be based on the condition of the Ctron (state)
-
--- A job should be fully self contained, and tell the Ctron what to do
-
--- Ultimately there are only three actions a ctron can do; move, request, build
-
--- Move is a pre-requisite to basically any action
-
 job = {}
 job.__index = job
 script.register_metatable("job_table", job)
@@ -125,31 +115,6 @@ job_proc.include_more_chunks = function(chunk_params, origin_chunk)
         end
     end
     return chunk_params.used_chunks, chunk_params.required_items
-end
-
-job_proc.validate_robot_name = function()
-    if game.item_prototypes[global.desired_robot_name] then
-        return true
-    else
-        if game.item_prototypes["construction-robot"] then
-            settings.global["desired_robot_name"] = {value = "construction-robot"}
-            global.desired_robot_name = "construction-robot"
-            game.print("Constructron-Continued: desired_robot_name is not a valid name in mod settings! Robot name reset!")
-        else
-            game.print("Constructron-Continued: desired_robot_name is not a valid name in mod settings!")
-        end
-        return false
-    end
-end
--- TODO: move function to utility
-job_proc.combine_tables = function(tables)
-    local combined = {}
-    for _, t in pairs(tables) do
-        for k, v in pairs(t) do
-            combined[k] = (combined[k] or 0) + v
-        end
-    end
-    return combined
 end
 
 function job:move_to_position(position)
@@ -341,7 +306,7 @@ function job:mobility_check()
     end
     worker = self.worker
     local last_distance = self.last_distance
-    local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0 -- TODO: is 'or 0' apropriate when ap destination is nil?
+    local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
     if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) then -- if movement has not progressed at least two tiles
         return false -- is not mobile
     end
@@ -404,14 +369,6 @@ end
 --  Job processing
 -------------------------------------------------------------------------------
 
--- do I have the right items
----- no -> request
----- yes -> next check
--- am I in the right position
----- no -> move to position
----- yes -> start building
-
-
 job_proc.process_job_queue = function()
     -- job creation
     if global.queue_proc_trigger then  -- there is something to do start processing
@@ -427,33 +384,29 @@ job_proc.process_job_queue = function()
                 job:validate_station()
             end
             if job.state == "new" then
-                -- set job service station -- TODO: remove due to validation
                 job.station = ctron.get_closest_service_station(worker)
-                -- check robot name
-                if job_proc.validate_robot_name() then
-                    if next(job.chunks) then
-                        -- calculate chunk build positions
-                        for _, chunk in pairs(job.chunks) do
-                            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, job.surface_index, "yellow", false, 3600)
-                            local positions = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
-                            for _, position in ipairs(positions) do
-                                debug_lib.VisualDebugCircle(position, job.surface_index, "yellow", 0.5, 3600)
-                                table.insert(job.task_positions, position)
-                            end
-                            if chunk.required_items["landfill"] then
-                                job.landfill_job = true
-                            end
+                if next(job.chunks) then
+                    -- calculate chunk build positions
+                    for _, chunk in pairs(job.chunks) do
+                        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, job.surface_index, "yellow", false, 3600)
+                        local positions = chunk_util.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
+                        for _, position in ipairs(positions) do
+                            debug_lib.VisualDebugCircle(position, job.surface_index, "yellow", 0.5, 3600)
+                            table.insert(job.task_positions, position)
                         end
-                        job.state = "starting"
-                    else
-                        -- unlock constructron
-                        ctron.set_constructron_status(worker, 'busy', false)
-                        -- change constructron colour
-                        ctron.paint_constructron(worker, 'idle')
-                        -- remove job from list
-                        global.jobs[job.job_index] = nil
-                        game.print("Constructron-Continued: No chunk was included in job, job removed. Please report this to mod author.")
+                        if chunk.required_items["landfill"] then
+                            job.landfill_job = true
+                        end
                     end
+                    job.state = "starting"
+                else
+                    -- unlock constructron
+                    ctron.set_constructron_status(worker, 'busy', false)
+                    -- change constructron colour
+                    ctron.paint_constructron(worker, 'idle')
+                    -- remove job from list
+                    global.jobs[job.job_index] = nil
+                    game.print("Constructron-Continued: No chunk was included in job, job removed. Please report this to mod author.")
                 end
 
 
@@ -514,7 +467,7 @@ job_proc.process_job_queue = function()
                     end
                     -- station roaming
                     local ticks = (game.tick - job.request_tick)
-                    if (ticks > 900) and not logistic_condition then -- !!! TODO
+                    if (ticks > 900) and not logistic_condition then
                         if (global.stations_count[(job.surface_index)] > 1) then
                             -- check if current station network can provide
                             for i = 1, worker.request_slot_count do ---@cast i uint
@@ -593,13 +546,11 @@ job_proc.process_job_queue = function()
                     logistic_network = logistic_cell.logistic_network
                 else
                     -- IDEA: Factorio v2 request equipment
-                    -- TODO: add more logic, state transition
                     debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
                     goto continue
                 end
                 -- check that the worker has contruction robots
                 if (logistic_network.all_construction_robots < 1) then
-                    -- TODO: add more logic
                     debug_lib.VisualDebugText("Missing robots! returning to station.", worker, -0.5, 5)
                     job.state = "starting"
                     goto continue
@@ -639,7 +590,6 @@ job_proc.process_job_queue = function()
                     local construction_robots = logistic_network.construction_robots
                     local entities
 
-                    -- TODO: label is confusing on deconstruction jobs
                     debug_lib.VisualDebugText("Constructing", worker, -1, 1)
 
                     if not job.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
@@ -841,7 +791,7 @@ job_proc.process_job_queue = function()
 
             elseif job.state == "deferred" then
                 if job.deffered_tick < game.tick then
-                    --TODO: deffered logic
+                    --TODO: deffered logic [currently unused]
                 end
             end
             ::continue::
@@ -885,11 +835,10 @@ job_proc.make_jobs = function()
                         end
                         global.job_index = global.job_index + 1
                         global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
-                        job_proc.validate_robot_name()
-                        -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
+                        -- add robots to job
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                         global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
-                        global.jobs[global.job_index]:get_chunk() -- need to check for overloaded chunk
+                        global.jobs[global.job_index]:get_chunk()
                         global.job_proc_trigger = true -- start job operations
                     end
                 else
@@ -901,18 +850,16 @@ job_proc.make_jobs = function()
                     global.job_index = global.job_index + 1
                     global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
-                    job_proc.validate_robot_name()
-                    -- TODO: it is expected that if the default construction robot is removed or renamed by another mod the next line will cause a crash
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                     global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
-                    global.jobs[global.job_index]:get_chunk() -- need to check for overloaded chunk
+                    global.jobs[global.job_index]:get_chunk()
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
                 end
             end
         end
     end
-    if not var then
+    if not trigger_skip then
         global.queue_proc_trigger = false -- stop queue processing
     end
 end
@@ -987,6 +934,16 @@ job_proc.calculate_required_inventory_slot_count = function(required_items)
         slots = slots + math.ceil(count / stack_size)
     end
     return slots
+end
+
+job_proc.combine_tables = function(tables)
+    local combined = {}
+    for _, t in pairs(tables) do
+        for k, v in pairs(t) do
+            combined[k] = (combined[k] or 0) + v
+        end
+    end
+    return combined
 end
 
 return job_proc
