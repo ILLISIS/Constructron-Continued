@@ -922,8 +922,6 @@ job_proc.get_worker = function(surface_index)
                         return constructron
                     else
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
-                        -- attempt to rectify issue
-                        ctron.enable_roboports(constructron.grid)
                     end
                 end
             end

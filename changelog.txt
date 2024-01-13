@@ -5,6 +5,7 @@ Date: 2024-01-??
     - Reimplemented chunk splitting for deconstruction jobs. This will use more constructrons when a chunk has more than one inventory worth of items to collect.
   Bugfixes:
     - Fixed an issue where full constructrons would not return to the station.
+    - Fixed a crash when a constructron did not have any roboports and was being considered for a job.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-1-05
