@@ -57,6 +57,17 @@ function job:get_chunk()
             for item, count in pairs(chunk.trash_items) do
                 chunk.trash_items[item] = math.ceil(count / divisor)
             end
+            -- duplicate the chunk so another constructron will perform the same job
+            if divisor > 1 and (self.job_type == "deconstruction") then
+                for i = 1, (divisor - 1) do
+                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i] = table.deepcopy(chunk)
+                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i]["key"] = chunk_key .. "-" .. i
+                    if (i ~= (divisor - 1)) then
+                        global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i].skip_chunk_checks = true -- skips chunk_checks in split chunks
+                    end
+                end
+            end
+            chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
         end
     end
     self.chunks[chunk_key] = chunk
@@ -317,10 +328,10 @@ function job:mobility_check()
 end
 
 function job:check_chunks()
-    if self.skip_chunk_checks then return end
     local color
     local entity_filter = {}
     for _, chunk in pairs(self.chunks) do
+        if not chunk.skip_chunk_checks then
         if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
             chunk.minimum.x = chunk.minimum.x - 1
             chunk.minimum.y = chunk.minimum.y - 1
@@ -364,6 +375,7 @@ function job:check_chunks()
             global.entity_proc_trigger = true -- there is something to do start processing
         end
     end
+end
 end
 
 -------------------------------------------------------------------------------
