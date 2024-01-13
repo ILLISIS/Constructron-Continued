@@ -1,5 +1,4 @@
 local cust_lib = require("script/custom_lib")
-local collision_mask_util_extended = require("script/collision-mask-util-control")
 local debug_lib = require("script/debug_lib")
 
 -------------------------------------------------------------------------------
@@ -226,7 +225,7 @@ function pathfinder:findpath()
                                 openSet[neighbor.x] = openSet[neighbor.x] or {}
                                 openSet[neighbor.x][neighbor.y] = neighbor
                                 -- add to heuristic table
-                                heuristic = math.floor(neighbor.h)
+                                local heuristic = math.floor(neighbor.h)
                                 if (lowesth_value == nil) or (heuristic < lowesth_value) then
                                     lowesth_value = heuristic
                                     self.lowesth_value = heuristic
@@ -269,8 +268,8 @@ end
 -------------------------------------------------------------------------------
 
 function pathfinder:isWalkable(position)
-    tile = self.surface.get_tile(position.x, position.y)
-    tile_ghost = tile.has_tile_ghost()
+    local tile = self.surface.get_tile(position.x, position.y)
+    local tile_ghost = tile.has_tile_ghost()
 
     if global.water_tile_cache[tile.name] then
         if not tile_ghost then

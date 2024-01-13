@@ -185,12 +185,10 @@ end,
     {filter = "name", name = "service_station", mode = "or"},
 })
 
--- TODO: teleported
----@param event
----| EventData.script_raised_teleported
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
-    if not (entity.surface_index == event.old_surface_index) then
+    local surface_index = entity.surface_index
+    if not (surface_index == event.old_surface_index) then
         if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
             ctron.paint_constructron(entity, 'idle')
             ctron.set_constructron_status(entity, 'busy', false)

@@ -332,50 +332,50 @@ function job:check_chunks()
     local entity_filter = {}
     for _, chunk in pairs(self.chunks) do
         if not chunk.skip_chunk_checks then
-        if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
-            chunk.minimum.x = chunk.minimum.x - 1
-            chunk.minimum.y = chunk.minimum.y - 1
-            chunk.maximum.x = chunk.maximum.x + 1
-            chunk.maximum.y = chunk.maximum.y + 1
-        end
-        if self.job_type == "deconstruction" then
-            color = "red"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                to_be_deconstructed = true,
-                force = {"player", "neutral"}
-            }
-        elseif self.job_type == "construction" then
-            color = "blue"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-                force = "player"
-            }
-        elseif self.job_type == "upgrade" then
-            color = "green"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                force = "player",
-                to_be_upgraded = true
-            }
-        elseif self.job_type == "repair" then
-            return -- repairs do not check
-        end
-        local surface = game.surfaces[chunk.surface]
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
-        local entities = surface.find_entities_filtered(entity_filter) or {}
-        if next(entities) then
-            debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
-            for _, entity in ipairs(entities) do
-                global[self.job_type ..'_index'] = global[self.job_type ..'_index'] + 1
-                global[self.job_type ..'_entities'][global[self.job_type ..'_index']] = entity
+            if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
+                chunk.minimum.x = chunk.minimum.x - 1
+                chunk.minimum.y = chunk.minimum.y - 1
+                chunk.maximum.x = chunk.maximum.x + 1
+                chunk.maximum.y = chunk.maximum.y + 1
             end
-            global[self.job_type .. '_tick'] = game.tick
-            global.entity_proc_trigger = true -- there is something to do start processing
+            if self.job_type == "deconstruction" then
+                color = "red"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    to_be_deconstructed = true,
+                    force = {"player", "neutral"}
+                }
+            elseif self.job_type == "construction" then
+                color = "blue"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+                    force = "player"
+                }
+            elseif self.job_type == "upgrade" then
+                color = "green"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    force = "player",
+                    to_be_upgraded = true
+                }
+            elseif self.job_type == "repair" then
+                return -- repairs do not check
+            end
+            local surface = game.surfaces[chunk.surface]
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
+            local entities = surface.find_entities_filtered(entity_filter) or {}
+            if next(entities) then
+                debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
+                for _, entity in ipairs(entities) do
+                    global[self.job_type ..'_index'] = global[self.job_type ..'_index'] + 1
+                    global[self.job_type ..'_entities'][global[self.job_type ..'_index']] = entity
+                end
+                global[self.job_type .. '_tick'] = game.tick
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
         end
     end
-end
 end
 
 -------------------------------------------------------------------------------

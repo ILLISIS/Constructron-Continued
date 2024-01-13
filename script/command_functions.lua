@@ -1,5 +1,4 @@
 local ctron = require("script/constructron")
-local pathfinder = require("script/pathfinder")
 
 local me = {}
 
@@ -123,7 +122,7 @@ end
 me.reset_managed_surfaces = function()
     global.managed_surfaces = {}
     for _, surface in pairs(game.surfaces) do
-        surface_index = surface.index
+        local surface_index = surface.index
         if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[game.surfaces[surface_index].name] = surface_index
         else
@@ -283,7 +282,7 @@ me.rebuild_caches = function()
         end
     end
     local autoplace_entities = game.get_filtered_entity_prototypes{{filter="autoplace"}}
-    for entity_name, entity in pairs(autoplace_entities) do
+    for _, entity in pairs(autoplace_entities) do
         if entity.mineable_properties and entity.mineable_properties.products then
             global.allowed_items[entity.mineable_properties.products[1].name] = true
         end
