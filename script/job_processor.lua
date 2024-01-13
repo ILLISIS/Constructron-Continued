@@ -316,7 +316,7 @@ function job:mobility_check()
     if not ((game_tick - (self.mobility_tick or 0)) > 180) then
         return true
     end
-    worker = self.worker
+    local worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
     if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) then -- if movement has not progressed at least two tiles

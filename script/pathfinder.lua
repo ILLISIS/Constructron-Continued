@@ -51,11 +51,6 @@ end
 -------------------------------------------------------------------------------
 
 script.on_event(defines.events.on_script_path_request_finished, (function(event)
-    on_script_path_request_finished(event)
-end))
-
----@param event EventData.on_script_path_request_finished
-function on_script_path_request_finished(event)
     local job = global.pathfinder_requests[event.id]
     if not job or not job.worker or not job.worker.valid then return end
     local path = event.path
@@ -100,7 +95,7 @@ function on_script_path_request_finished(event)
         job.path_request_id = nil
     end
     global.pathfinder_requests[event.id] = nil
-end
+end))
 
 -------------------------------------------------------------------------------
 --  Custom Pathfinder
