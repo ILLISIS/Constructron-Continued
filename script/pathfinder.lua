@@ -171,7 +171,16 @@ function pathfinder:findpath()
                 if clean_path_steps_enabled then
                     reversed_path = pathfinder.clean_path_steps(reversed_path, clean_path_steps_distance)
                 end
-                self.job.custom_path = reversed_path
+                if self.partial_path then
+                    self.job.custom_path = reversed_path
+                    self.job.path_request_params.goal = reversed_path[1].position
+                    debug_lib.VisualDebugCircle(reversed_path[1].position, self.job.worker.surface, "blue", 1.25, 900)
+                    self.job:request_path()
+                else
+                    for _, waypoint in ipairs(reversed_path) do
+                        self.job.worker.add_autopilot_destination(waypoint.position)
+                    end
+                end
                 self.job.pathfinding = nil
                 global.custom_pathfinder_requests[self.path_index] = nil
                 return
@@ -205,6 +214,7 @@ function pathfinder:findpath()
                                     -- mainland found, set the goal of the pathfinder to be this particular neighbor
                                     self.mainland_found = true
                                     self.goal = {x = neighbor.x, y = neighbor.y}
+                                    self.partial_path = true
                                     goal = self.goal
                                     neighbor.h = 1
                                 end

@@ -162,9 +162,11 @@ function job:move_to_position(position)
         table.insert(path_request_params.collision_mask, empty_space_collision_layer)
     end
 
+    self.path_request_params = path_request_params
+
     if distance > 12 then
         if self.pathfinding then return end
-        if self.landfill_job and (self.state == "in_progress") then
+        if self.landfill_job and not self.custom_path and (self.state == "in_progress") then
             worker.enable_logistics_while_moving = true
             self:disable_roboports(1)
             local spot = worker.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", position, 1, 4, false)
@@ -175,12 +177,12 @@ function job:move_to_position(position)
                     debug_lib.VisualDebugText("Waiting for pathfinder", worker, -0.5, 1)
                     return
                 end
-                path_request_params.goal = self.custom_path[1]
-                debug_lib.VisualDebugCircle(self.custom_path[1], worker.surface, "blue", 1.25, 900)
+            else
+                self:request_path()
             end
+        else
+            self:request_path()
         end
-        self.path_request_params = path_request_params
-        self:request_path()
     else
         worker.autopilot_destination = position -- does not use path finder!
     end
@@ -577,16 +579,14 @@ job_proc.process_job_queue = function()
                 if distance_from_pos > 3 then
                     debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
                     if not worker.autopilot_destination and (job.path_request_id == nil) then
-                        if job.landfill_job and job.custom_path then
-                            for _, waypoint in ipairs(job.custom_path) do
-                                worker.add_autopilot_destination(waypoint.position)
-                            end
-                            job.custom_path = nil
-                        else
-                            job:move_to_position(task_position)
+                        job:move_to_position(task_position)
+                    elseif job.landfill_job and job.custom_path then
+                        for _, waypoint in ipairs(job.custom_path) do
+                            worker.add_autopilot_destination(waypoint.position)
                         end
+                        job.custom_path = nil
                     else
-                        if job.landfill_job and not worker.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
+                        if job.landfill_job and not logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
                             debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
                             worker.autopilot_destination = nil
                             job:check_chunks()
