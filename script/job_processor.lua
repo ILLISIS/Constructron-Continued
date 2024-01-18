@@ -283,7 +283,7 @@ end
 
 function job:validate_worker()
     if self.worker and self.worker.valid then
-        return
+        return true
     else
         self.worker = job_proc.get_worker(self.surface_index)
         if self.worker and self.worker.valid then
@@ -301,11 +301,11 @@ end
 
 function job:validate_station()
     if self.station and self.station.valid then
-        return
-    elseif job.worker and job.worker.valid then
+        return true
+    elseif self.worker and self.worker.valid then
         self.station = ctron.get_closest_service_station(self.worker)
         if self.station and self.station.valid then
-            return
+            return true
         else
             debug_lib.VisualDebugText("No suitable Stations available to resume job", self.worker, -2, 1)
         end
@@ -393,7 +393,7 @@ job_proc.process_job_queue = function()
     if global.job_proc_trigger then
         for job_index, job in pairs(global.jobs) do
             if not (job.state == "deffered") then
-                local validation
+                local validation = true
                 validation = job:validate_worker()
                 validation = job:validate_station()
                 if not validation then
