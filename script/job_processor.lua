@@ -291,8 +291,8 @@ function job:validate_worker()
             ctron.paint_constructron(self.worker, self.job_type)
             self.state = "new"
         else
-            self.state = "error"
             debug_lib.DebugLog('No suitable Constructrons available to resume job')
+            return false
         end
     end
 end
@@ -300,15 +300,15 @@ end
 function job:validate_station()
     if self.station and self.station.valid then
         return
-    else
+    elseif job.worker and job.worker.valid then
         self.station = ctron.get_closest_service_station(self.worker)
         if self.station and self.station.valid then
             return
         else
-            self.state = "error"
             debug_lib.VisualDebugText("No suitable Stations available to resume job", self.worker, -2, 1)
         end
     end
+    return false
 end
 
 function job:mobility_check()
@@ -390,14 +390,17 @@ job_proc.process_job_queue = function()
     -- job operation
     if global.job_proc_trigger then
         for job_index, job in pairs(global.jobs) do
-            local worker
             if not (job.state == "deffered") then
-                job:validate_worker()
-                worker = job.worker
-                job:validate_station()
+                local validation
+                validation = job:validate_worker()
+                validation = job:validate_station()
+                if not validation then
+                    goto continue
+                end
             end
+            local worker
+            worker = job.worker
             if job.state == "new" then
-                job.station = ctron.get_closest_service_station(worker)
                 if next(job.chunks) then
                     -- calculate chunk build positions
                     for _, chunk in pairs(job.chunks) do
