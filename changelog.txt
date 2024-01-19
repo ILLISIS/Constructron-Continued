@@ -1,12 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
-Date: 2024-01-??
+Date: 2024-01-19
   Changes:
-    - Reimplemented chunk splitting for deconstruction jobs. This will use more constructrons when a chunk has more than one inventory worth of items to collect.
+    - Reimplemented chunk splitting for deconstruction jobs. This will use more Constructrons when a chunk has more than one inventory worth of items to collect.
   Bugfixes:
-    - Fixed an issue where full constructrons would not return to the station.
-    - Fixed a crash when a constructron did not have any roboports and was being considered for a job.
+    - Fixed an issue that caused Constructrons to not use the games pathfinder during landfill jobs.
+    - Fixed an issue where Constructrons could not path to or from proximity to water.
+    - Fixed an issue where full Constructrons would not return to the station.
+    - Fixed a crash when a Constructron did not have any roboports and was being considered for a job.
     - Fixed a crash when the station was assigned to a job is removed and no Constructrons were available.
+    - Fixed a crash in the custom pathfinder after iterations completed and there was no more task positions left.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-1-05

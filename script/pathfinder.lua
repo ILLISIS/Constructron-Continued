@@ -253,7 +253,7 @@ function pathfinder:findpath()
     end
     if (self.path_iterations > 200) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
-        if not self.job.task_positions[1].reattempt then
+        if next(self.job.task_positions) and not self.job.task_positions[1].reattempt then
             self.job.task_positions[1].reattempt = true
             table.insert(self.job.task_positions, self.job.task_positions[1])
             table.remove(self.job.task_positions, 1)
