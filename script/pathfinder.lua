@@ -1,5 +1,4 @@
 local cust_lib = require("script/custom_lib")
-local collision_mask_util_extended = require("script/collision-mask-util-control")
 local debug_lib = require("script/debug_lib")
 
 -------------------------------------------------------------------------------
@@ -52,11 +51,6 @@ end
 -------------------------------------------------------------------------------
 
 script.on_event(defines.events.on_script_path_request_finished, (function(event)
-    on_script_path_request_finished(event)
-end))
-
----@param event EventData.on_script_path_request_finished
-function on_script_path_request_finished(event)
     local job = global.pathfinder_requests[event.id]
     if not job or not job.worker or not job.worker.valid then return end
     local path = event.path
@@ -101,7 +95,7 @@ function on_script_path_request_finished(event)
         job.path_request_id = nil
     end
     global.pathfinder_requests[event.id] = nil
-end
+end))
 
 -------------------------------------------------------------------------------
 --  Custom Pathfinder
@@ -177,7 +171,16 @@ function pathfinder:findpath()
                 if clean_path_steps_enabled then
                     reversed_path = pathfinder.clean_path_steps(reversed_path, clean_path_steps_distance)
                 end
-                self.job.custom_path = reversed_path
+                if self.partial_path then
+                    self.job.custom_path = reversed_path
+                    self.job.path_request_params.goal = reversed_path[1].position
+                    debug_lib.VisualDebugCircle(reversed_path[1].position, self.job.worker.surface, "blue", 1.25, 900)
+                    self.job:request_path()
+                else
+                    for _, waypoint in ipairs(reversed_path) do
+                        self.job.worker.add_autopilot_destination(waypoint.position)
+                    end
+                end
                 self.job.pathfinding = nil
                 global.custom_pathfinder_requests[self.path_index] = nil
                 return
@@ -211,6 +214,7 @@ function pathfinder:findpath()
                                     -- mainland found, set the goal of the pathfinder to be this particular neighbor
                                     self.mainland_found = true
                                     self.goal = {x = neighbor.x, y = neighbor.y}
+                                    self.partial_path = true
                                     goal = self.goal
                                     neighbor.h = 1
                                 end
@@ -226,7 +230,7 @@ function pathfinder:findpath()
                                 openSet[neighbor.x] = openSet[neighbor.x] or {}
                                 openSet[neighbor.x][neighbor.y] = neighbor
                                 -- add to heuristic table
-                                heuristic = math.floor(neighbor.h)
+                                local heuristic = math.floor(neighbor.h)
                                 if (lowesth_value == nil) or (heuristic < lowesth_value) then
                                     lowesth_value = heuristic
                                     self.lowesth_value = heuristic
@@ -249,7 +253,7 @@ function pathfinder:findpath()
     end
     if (self.path_iterations > 200) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
-        if not self.job.task_positions[1].reattempt then
+        if next(self.job.task_positions) and not self.job.task_positions[1].reattempt then
             self.job.task_positions[1].reattempt = true
             table.insert(self.job.task_positions, self.job.task_positions[1])
             table.remove(self.job.task_positions, 1)
@@ -269,8 +273,8 @@ end
 -------------------------------------------------------------------------------
 
 function pathfinder:isWalkable(position)
-    tile = self.surface.get_tile(position.x, position.y)
-    tile_ghost = tile.has_tile_ghost()
+    local tile = self.surface.get_tile(position.x, position.y)
+    local tile_ghost = tile.has_tile_ghost()
 
     if global.water_tile_cache[tile.name] then
         if not tile_ghost then

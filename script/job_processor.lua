@@ -57,6 +57,17 @@ function job:get_chunk()
             for item, count in pairs(chunk.trash_items) do
                 chunk.trash_items[item] = math.ceil(count / divisor)
             end
+            -- duplicate the chunk so another constructron will perform the same job
+            if divisor > 1 and (self.job_type == "deconstruction") then
+                for i = 1, (divisor - 1) do
+                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i] = table.deepcopy(chunk)
+                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i]["key"] = chunk_key .. "-" .. i
+                    if (i ~= (divisor - 1)) then
+                        global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i].skip_chunk_checks = true -- skips chunk_checks in split chunks
+                    end
+                end
+            end
+            chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
         end
     end
     self.chunks[chunk_key] = chunk
@@ -151,9 +162,11 @@ function job:move_to_position(position)
         table.insert(path_request_params.collision_mask, empty_space_collision_layer)
     end
 
+    self.path_request_params = path_request_params
+
     if distance > 12 then
         if self.pathfinding then return end
-        if self.landfill_job and (self.state == "in_progress") then
+        if self.landfill_job and not self.custom_path and (self.state == "in_progress") then
             worker.enable_logistics_while_moving = true
             self:disable_roboports(1)
             local spot = worker.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", position, 1, 4, false)
@@ -164,12 +177,12 @@ function job:move_to_position(position)
                     debug_lib.VisualDebugText("Waiting for pathfinder", worker, -0.5, 1)
                     return
                 end
-                path_request_params.goal = self.custom_path[1]
-                debug_lib.VisualDebugCircle(self.custom_path[1], worker.surface, "blue", 1.25, 900)
+            else
+                self:request_path()
             end
+        else
+            self:request_path()
         end
-        self.path_request_params = path_request_params
-        self:request_path()
     else
         worker.autopilot_destination = position -- does not use path finder!
     end
@@ -257,6 +270,7 @@ function job:check_robot_activity(construction_robots)
                 for _, bot in pairs(construction_robots) do
                     self.last_robot_positions[bot.unit_number] = current_position
                 end
+                break
             end
         else
             self.last_robot_positions[robot.unit_number] = current_position
@@ -269,7 +283,7 @@ end
 
 function job:validate_worker()
     if self.worker and self.worker.valid then
-        return
+        return true
     else
         self.worker = job_proc.get_worker(self.surface_index)
         if self.worker and self.worker.valid then
@@ -279,24 +293,24 @@ function job:validate_worker()
             ctron.paint_constructron(self.worker, self.job_type)
             self.state = "new"
         else
-            self.state = "error"
             debug_lib.DebugLog('No suitable Constructrons available to resume job')
+            return false
         end
     end
 end
 
 function job:validate_station()
     if self.station and self.station.valid then
-        return
-    else
+        return true
+    elseif self.worker and self.worker.valid then
         self.station = ctron.get_closest_service_station(self.worker)
         if self.station and self.station.valid then
-            return
+            return true
         else
-            self.state = "error"
             debug_lib.VisualDebugText("No suitable Stations available to resume job", self.worker, -2, 1)
         end
     end
+    return false
 end
 
 function job:mobility_check()
@@ -304,7 +318,7 @@ function job:mobility_check()
     if not ((game_tick - (self.mobility_tick or 0)) > 180) then
         return true
     end
-    worker = self.worker
+    local worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
     if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) then -- if movement has not progressed at least two tiles
@@ -316,51 +330,52 @@ function job:mobility_check()
 end
 
 function job:check_chunks()
-    if self.skip_chunk_checks then return end
     local color
     local entity_filter = {}
     for _, chunk in pairs(self.chunks) do
-        if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
-            chunk.minimum.x = chunk.minimum.x - 1
-            chunk.minimum.y = chunk.minimum.y - 1
-            chunk.maximum.x = chunk.maximum.x + 1
-            chunk.maximum.y = chunk.maximum.y + 1
-        end
-        if self.job_type == "deconstruction" then
-            color = "red"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                to_be_deconstructed = true,
-                force = {"player", "neutral"}
-            }
-        elseif self.job_type == "construction" then
-            color = "blue"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
-                force = "player"
-            }
-        elseif self.job_type == "upgrade" then
-            color = "green"
-            entity_filter = {
-                area = {chunk.minimum, chunk.maximum},
-                force = "player",
-                to_be_upgraded = true
-            }
-        elseif self.job_type == "repair" then
-            return -- repairs do not check
-        end
-        local surface = game.surfaces[chunk.surface]
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
-        local entities = surface.find_entities_filtered(entity_filter) or {}
-        if next(entities) then
-            debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
-            for _, entity in ipairs(entities) do
-                global[self.job_type ..'_index'] = global[self.job_type ..'_index'] + 1
-                global[self.job_type ..'_entities'][global[self.job_type ..'_index']] = entity
+        if not chunk.skip_chunk_checks then
+            if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
+                chunk.minimum.x = chunk.minimum.x - 1
+                chunk.minimum.y = chunk.minimum.y - 1
+                chunk.maximum.x = chunk.maximum.x + 1
+                chunk.maximum.y = chunk.maximum.y + 1
             end
-            global[self.job_type .. '_tick'] = game.tick
-            global.entity_proc_trigger = true -- there is something to do start processing
+            if self.job_type == "deconstruction" then
+                color = "red"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    to_be_deconstructed = true,
+                    force = {"player", "neutral"}
+                }
+            elseif self.job_type == "construction" then
+                color = "blue"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+                    force = "player"
+                }
+            elseif self.job_type == "upgrade" then
+                color = "green"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    force = "player",
+                    to_be_upgraded = true
+                }
+            elseif self.job_type == "repair" then
+                return -- repairs do not check
+            end
+            local surface = game.surfaces[chunk.surface]
+            debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
+            local entities = surface.find_entities_filtered(entity_filter) or {}
+            if next(entities) then
+                debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
+                for _, entity in ipairs(entities) do
+                    global[self.job_type ..'_index'] = global[self.job_type ..'_index'] + 1
+                    global[self.job_type ..'_entities'][global[self.job_type ..'_index']] = entity
+                end
+                global[self.job_type .. '_tick'] = game.tick
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
         end
     end
 end
@@ -377,14 +392,17 @@ job_proc.process_job_queue = function()
     -- job operation
     if global.job_proc_trigger then
         for job_index, job in pairs(global.jobs) do
-            local worker
             if not (job.state == "deffered") then
-                job:validate_worker()
-                worker = job.worker
-                job:validate_station()
+                local validation = true
+                validation = job:validate_worker()
+                validation = job:validate_station()
+                if not validation then
+                    goto continue
+                end
             end
+            local worker
+            worker = job.worker
             if job.state == "new" then
-                job.station = ctron.get_closest_service_station(worker)
                 if next(job.chunks) then
                     -- calculate chunk build positions
                     for _, chunk in pairs(job.chunks) do
@@ -561,16 +579,14 @@ job_proc.process_job_queue = function()
                 if distance_from_pos > 3 then
                     debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
                     if not worker.autopilot_destination and (job.path_request_id == nil) then
-                        if job.landfill_job and job.custom_path then
-                            for _, waypoint in ipairs(job.custom_path) do
-                                worker.add_autopilot_destination(waypoint.position)
-                            end
-                            job.custom_path = nil
-                        else
-                            job:move_to_position(task_position)
+                        job:move_to_position(task_position)
+                    elseif job.landfill_job and job.custom_path then
+                        for _, waypoint in ipairs(job.custom_path) do
+                            worker.add_autopilot_destination(waypoint.position)
                         end
+                        job.custom_path = nil
                     else
-                        if job.landfill_job and not worker.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
+                        if job.landfill_job and not logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
                             debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
                             worker.autopilot_destination = nil
                             job:check_chunks()
@@ -909,8 +925,6 @@ job_proc.get_worker = function(surface_index)
                         return constructron
                     else
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
-                        -- attempt to rectify issue
-                        ctron.enable_roboports(constructron.grid)
                     end
                 end
             end

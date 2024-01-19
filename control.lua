@@ -163,10 +163,8 @@ end
 
 local init = function()
     ensure_globals()
-    --
-    -- TODO: check if this is needed to cross water bridges
-    -- game.map_settings.path_finder.use_path_cache = false
-    -- Klonan's explanation:
+    game.map_settings.path_finder.use_path_cache = false
+    -- use_path_cache Klonan's explanation:
     -- So, when path cache is enabled, negative path cache is also enabled.
     -- The problem is, when a single unit inside a nest can't get to the silo,
     -- He tells all other biters nearby that they also can't get to the silo.
