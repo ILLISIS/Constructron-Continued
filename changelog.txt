@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.2
+Date: 2024-01-21
+  Changes:
+    - Fixed an issue that caused the Constructron waypoints to be out of order on landfill jobs.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2024-01-19
   Changes:
@@ -8,7 +13,7 @@ Date: 2024-01-19
     - Fixed an issue where Constructrons could not path to or from proximity to water.
     - Fixed an issue where full Constructrons would not return to the station.
     - Fixed a crash when a Constructron did not have any roboports and was being considered for a job.
-    - Fixed a crash when the station was assigned to a job is removed and no Constructrons were available.
+    - Fixed a crash when the station was assigned to a job, is removed, and no Constructrons were available.
     - Fixed a crash in the custom pathfinder after iterations completed and there was no more task positions left.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0

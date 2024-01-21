@@ -578,13 +578,8 @@ job_proc.process_job_queue = function()
                 local distance_from_pos = chunk_util.distance_between(worker.position, task_position)
                 if distance_from_pos > 3 then
                     debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
-                    if not worker.autopilot_destination and (job.path_request_id == nil) then
+                    if not worker.autopilot_destination and job.path_request_id == nil then
                         job:move_to_position(task_position)
-                    elseif job.landfill_job and job.custom_path then
-                        for _, waypoint in ipairs(job.custom_path) do
-                            worker.add_autopilot_destination(waypoint.position)
-                        end
-                        job.custom_path = nil
                     else
                         if job.landfill_job and not logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
                             debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)

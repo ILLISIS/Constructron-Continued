@@ -90,6 +90,12 @@ script.on_event(defines.events.on_script_path_request_finished, (function(event)
         job.path_request_params = nil
         -- request path from game engine
         pathfinder.set_autopilot(job.worker, path)
+        if job.landfill_job and job.custom_path then
+            for _, waypoint in ipairs(job.custom_path) do
+                job.worker.add_autopilot_destination(waypoint.position)
+            end
+            job.custom_path = nil
+        end
     end
     if job.path_request_id == event.id then
         job.path_request_id = nil
@@ -335,7 +341,7 @@ end
 ---@param path PathfinderWaypoint[]
 function pathfinder.set_autopilot(unit, path) -- set path
     if unit and unit.valid then
-        -- unit.autopilot_destination = nil -- removed for 2.0
+        unit.autopilot_destination = nil
         for i, waypoint in ipairs(path) do
             unit.add_autopilot_destination(waypoint.position)
         end
