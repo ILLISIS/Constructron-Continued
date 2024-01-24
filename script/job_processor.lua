@@ -626,7 +626,14 @@ job_proc.process_job_queue = function()
                                 to_be_deconstructed = true,
                                 force = {worker.force, "neutral"}
                             } -- only detects entities in range
-                            if not next(entities) then
+                            local can_remove_entity = false
+                            for _, entity in pairs(entities) do
+                                if not entity.type == "cliff" or logistic_network.can_satisfy_request("cliff-explosives", 1) then
+                                    can_remove_entity = true
+                                    break
+                                end
+                            end
+                            if not can_remove_entity then
                                 table.remove(job.task_positions, 1)
                             end
                         --===========================================================================--

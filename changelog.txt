@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.3
+Date: 2024-01-25
+  Bugfixes:
+    - Fixed Constructrons getting stuck deconstructing cliffs with no cliff-explosives in inventory.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: 2024-01-21
   Changes:
