@@ -377,7 +377,8 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                                 y = entity_pos_y
                             },
                             required_items = required_items or {},
-                            trash_items = trash_items or {}
+                            trash_items = trash_items or {},
+                            entities = {}
                         }
                     else -- add to existing queued chunk
                         if entity_pos_x < queue_surface_key['minimum'].x then
@@ -395,6 +396,22 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         end
                         for item, count in pairs(trash_items) do
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
+                        end
+                    end
+                     -- cache the entities that are in this chunk
+                     if entity.unit_number then
+                        queue_surface_key.entities[entity.unit_number] = {entity=entity}
+                        if build_type =='upgrade' then
+                            queue_surface_key.entities[entity.unit_number].upgrade_target=entity.get_upgrade_target()
+                        end
+                        if build_type == 'construction' then
+                            queue_surface_key.entities[entity.unit_number].type=entity.type
+                            if entity.name == 'entity-ghost' or entity.name == 'tile-ghost' then
+                                queue_surface_key.entities[entity.unit_number].ghost_name=entity.ghost_name
+                            end
+                            if entity.name == 'entity-ghost' or entity.name == 'item-request-proxy' then
+                                queue_surface_key.entities[entity.unit_number].item_requests=entity.item_requests
+                            end
                         end
                     end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue

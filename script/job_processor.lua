@@ -21,6 +21,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.chunks = {} -- these are what define task positions and required & trash items
     instance.required_items = {} -- these are the items required to complete the job
     instance.trash_items = {} -- these are the items that is expected after the job completes
+    instance.entities = {} -- a list of entities this job is handling
     instance.worker = worker -- this is the constructron that will work the job
     instance.station = {} -- used as the home point for item requests etc
     instance.task_positions = {} -- positions where the job will act
@@ -457,6 +458,7 @@ job_proc.process_job_queue = function()
                     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
                     local inventory_items = inventory.get_contents()
                     if inventory then
+                        job_proc.validate_entities(job)
                         if not (job.sub_state == "items_requested") then
                             local item_request_list = table.deepcopy(job.required_items)
                             for item, _ in pairs(inventory_items) do
@@ -525,6 +527,7 @@ job_proc.process_job_queue = function()
                     if trash_inventory then
                         trash_items = trash_inventory.get_contents()
                         if next(trash_items) then
+                            job_proc.handle_trash_logistics(job, trash_items)
                             logistic_condition = false
                         end
                     end
@@ -748,32 +751,7 @@ job_proc.process_job_queue = function()
                             if trash_inventory then
                                 trash_items = trash_inventory.get_contents()
                                 if next(trash_items) then
-                                    local logistic_network = job.station.logistic_network
-                                    if (logistic_network.all_logistic_robots <= 0) then
-                                        debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
-                                    end
-                                    if not next(logistic_network.storages) then
-                                        debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
-                                    else
-                                        for item_name, item_count in pairs(trash_items) do
-                                            local can_drop = logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                                            if can_drop then
-                                                debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
-                                                goto continue
-                                            end
-                                        end
-                                    end
-                                    -- check if other station networks can store items
-                                    local surface_stations = ctron.get_service_stations(job.surface_index)
-                                    for _, station in pairs(surface_stations) do
-                                        for item_name, item_count in pairs(trash_items) do
-                                            local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                                            if can_drop then
-                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                                job.station = station
-                                            end
-                                        end
-                                    end
+                                    job_proc.handle_trash_logistics(job, trash_items)
                                     goto continue
                                 else
                                     job.sub_state = nil
@@ -838,6 +816,7 @@ job_proc.make_jobs = function()
     }
 
     -- for each surface
+    local new_job = nil
     for _, surface_index in pairs(global.managed_surfaces) do
         local exitloop
         -- for each queue
@@ -852,12 +831,21 @@ job_proc.make_jobs = function()
                             break
                         end
                         global.job_index = global.job_index + 1
-                        global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                        new_job = job.new(global.job_index, surface_index, job_type, worker)
+                        global.jobs[global.job_index] = new_job
                         -- add robots to job
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                         global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
                         global.jobs[global.job_index]:get_chunk()
                         global.job_proc_trigger = true -- start job operations
+                        -- cache the entities this job will be handling
+                        if job_type == 'construction' or job_type == 'upgrade' then
+                            for _, chunk in pairs(new_job.chunks) do
+                                for unit_num, entity_cache in pairs(chunk.entities) do
+                                    new_job.entities[unit_num] = entity_cache
+                                end
+                            end
+                        end
                     end
                 else
                     local worker = job_proc.get_worker(surface_index)
@@ -866,13 +854,22 @@ job_proc.make_jobs = function()
                         break
                     end
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                    new_job = job.new(global.job_index, surface_index, job_type, worker)
+                    global.jobs[global.job_index] = new_job
                     -- add robots to job
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                     global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
                     global.jobs[global.job_index]:get_chunk()
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
+                    -- cache the entities this job will be handling
+                    if job_type == 'construction' or job_type == 'upgrade' then
+                        for _, chunk in pairs(new_job.chunks) do
+                            for unit_num, entity_cache in pairs(chunk.entities) do
+                                new_job.entities[unit_num] = entity_cache
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -960,6 +957,63 @@ job_proc.combine_tables = function(tables)
         end
     end
     return combined
+end
+
+job_proc.validate_entities = function(job)
+    for entity_num, entity_cache in pairs(job.entities) do
+        if not entity_cache.entity.valid then
+            -- upgrades
+            local target_entity = entity_cache.upgrade_target
+            if target_entity then
+                local items_to_place_cache = global.items_to_place_cache[target_entity.name]
+                job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+            else
+                local entity_type = entity_cache.type
+                if not (entity_type == 'item-request-proxy') then
+                    local items_to_place_cache = global.items_to_place_cache[entity_cache.ghost_name]
+                    job.required_items[items_to_place_cache.item] = job.required_items[items_to_place_cache.item] - items_to_place_cache.count
+                end
+                -- module requests
+                if not (entity_type == "tile-ghost") then
+                    for name, count in pairs(entity_cache.item_requests) do
+                        job.required_items[name] = job.required_items[name] - count
+                    end
+                end
+            end
+            job.entities[entity_num] = nil
+            -- re-do worker requests
+            job.sub_state = nil
+        end
+    end
+end
+
+job_proc.handle_trash_logistics = function (job, trash_items)
+    local logistic_network = job.station.logistic_network
+    if (logistic_network.all_logistic_robots <= 0) then
+        debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
+    end
+    if not next(logistic_network.storages) then
+        debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
+    else
+        for item_name, item_count in pairs(trash_items) do
+            local can_drop = logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+            if can_drop then
+                debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+                return
+            end
+        end
+    end
+    -- check if other station networks can store items
+    local surface_stations = ctron.get_service_stations(job.surface_index)
+    for _, station in pairs(surface_stations) do
+        for item_name, item_count in pairs(trash_items) do
+            local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+            if can_drop then
+                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                job.station = station
+            end
+        end
+    end
 end
 
 return job_proc
