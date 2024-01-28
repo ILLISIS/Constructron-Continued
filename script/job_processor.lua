@@ -169,17 +169,13 @@ function job:move_to_position(position)
         if self.landfill_job and not self.custom_path and (self.state == "in_progress") then
             worker.enable_logistics_while_moving = true
             self:disable_roboports(1)
-            local spot = worker.surface.find_non_colliding_position("constructron_pathing_proxy_" .. "1", position, 1, 4, false)
-            if not spot then -- position is unreachable so find the mainland
-                global.custom_pathfinder_index = global.custom_pathfinder_index + 1
-                global.custom_pathfinder_requests[global.custom_pathfinder_index] = pathfinder.new(position, worker.position, self)
-                if not self.custom_path then
-                    debug_lib.VisualDebugText("Waiting for pathfinder", worker, -0.5, 1)
-                    return
-                end
-            else
-                self:request_path()
+            global.custom_pathfinder_index = global.custom_pathfinder_index + 1
+            global.custom_pathfinder_requests[global.custom_pathfinder_index] = pathfinder.new(position, worker.position, self)
+            if not self.custom_path then
+                debug_lib.VisualDebugText("Waiting for pathfinder", worker, -0.5, 1)
+                return
             end
+            self:request_path()
         else
             self:request_path()
         end
@@ -300,7 +296,7 @@ function job:validate_worker()
 end
 
 function job:validate_station()
-    if self.station and self.station.valid then
+    if self.station and self.station.valid and self.station.logistic_network then
         return true
     elseif self.worker and self.worker.valid then
         self.station = ctron.get_closest_service_station(self.worker)
@@ -393,10 +389,7 @@ job_proc.process_job_queue = function()
     if global.job_proc_trigger then
         for job_index, job in pairs(global.jobs) do
             if not (job.state == "deffered") then
-                local validation = true
-                validation = job:validate_worker()
-                validation = job:validate_station()
-                if not validation then
+                if not job:validate_work() or not job:validate_station() then
                     goto continue
                 end
             end
