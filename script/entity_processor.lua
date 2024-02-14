@@ -106,7 +106,7 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
         global.deconstruction_tick = event.tick
         global.deconstruction_entities[global.deconstruction_index] = entity
     end
-end)
+end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
 ---@param event EventData.on_marked_for_upgrade
