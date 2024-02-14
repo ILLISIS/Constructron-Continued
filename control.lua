@@ -383,6 +383,9 @@ local function enable(player, parameters)
         global.repair_job_toggle = true
         settings.global["repair_jobs"] = {value = true}
         game.print('Repair jobs enabled.')
+    elseif parameters[1] == "horde" then
+        global.horde_mode = true
+        settings.global["horde_mode"] = {value = true}
     elseif parameters[1] == "all" then
         global.construction_job_toggle = true
         settings.global["construct_jobs"] = {value = true}
@@ -449,6 +452,9 @@ local function disable(player, parameters)
         global.repair_job_toggle = false
         settings.global["repair_jobs"] = {value = false}
         game.print('Repair jobs disabled.')
+    elseif parameters[1] == "horde" then
+        global.horde_mode = false
+        settings.global["horde_mode"] = {value = false}
     elseif parameters[1] == "all" then
         global.construction_job_toggle = false
         settings.global["construct_jobs"] = {value = false}

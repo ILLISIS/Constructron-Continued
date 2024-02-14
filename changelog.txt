@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.6
+Date: 2024-02-14
+  Bugfixes:
+    - Fixed a crash when a station had no power.
+    - Fixed item request proxies not being found by a reset all command.
+  Changes:
+    - Added /ctron (enable|disable) horde to enable/disable horde mode via command.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.5
 Date: 2024-01-28
   Changes:

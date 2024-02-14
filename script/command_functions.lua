@@ -53,7 +53,7 @@ me.reacquire_construction_jobs = function()
     if not settings.global["construct_jobs"] then return end
     for _, surface in pairs(game.surfaces) do
         local entities = surface.find_entities_filtered {
-            name = {"entity-ghost", "tile-ghost"},
+            name = {"entity-ghost", "tile-ghost", "item-request-proxy"},
             force = {"player", "neutral"},
             surface = surface.name
         }

@@ -498,14 +498,16 @@ job_proc.process_job_queue = function()
                             -- check if other station networks can provide
                             local surface_stations = ctron.get_service_stations(job.surface_index)
                             for _, station in pairs(surface_stations) do
-                                for i = 1, worker.request_slot_count do ---@cast i uint
-                                    local request = worker.get_vehicle_logistic_slot(i)
-                                    if request and request.name then
-                                        local logistic_network = station.logistic_network
-                                        if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                            job.station = station
-                                            goto continue
+                                local logistic_network = station.logistic_network
+                                if logistic_network then
+                                    for i = 1, worker.request_slot_count do ---@cast i uint
+                                        local request = worker.get_vehicle_logistic_slot(i)
+                                        if request and request.name then
+                                            if logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                                job.station = station
+                                                goto continue
+                                            end
                                         end
                                     end
                                 end
@@ -759,11 +761,14 @@ job_proc.process_job_queue = function()
                                     -- check if other station networks can store items
                                     local surface_stations = ctron.get_service_stations(job.surface_index)
                                     for _, station in pairs(surface_stations) do
-                                        for item_name, item_count in pairs(trash_items) do
-                                            local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                                            if can_drop then
-                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                                job.station = station
+                                        if station.logistic_network then
+                                            for item_name, item_count in pairs(trash_items) do
+                                                local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+                                                if can_drop then
+                                                    debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                                    job.station = station
+                                                    goto continue
+                                                end
                                             end
                                         end
                                     end

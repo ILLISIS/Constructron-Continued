@@ -217,7 +217,7 @@ end,
 {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "name", name = "constructron-rocket-powered", mode = "or"},
-    {filter = "name", name = "service_station", mode = "or"},
+    {filter = "name", name = "service_station", mode = "or"}
 })
 
 ---@param event
