@@ -1,13 +1,16 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.6
-Date: 2024-02-14
+Date: 2024-02-16
   Bugfixes:
     - Fixed a crash when a station has no power.
     - Fixed item request proxies not being found by a reset all command.
+    - Fixed entities not being scanned which prevents the subsequent job from being created after a construction chunk was overloaded.
+    - Fixed robots not being factored in to the total required slot calculation on the first chunk of a job which could lead to inventory overload.
+    - Fixed (or at least significantly improved) construction job slot calculation to prevent inventory / request overload.
   Changes:
     - Added /ctron (enable|disable) horde to enable/disable horde mode via command.
     - Added robot check in the migration script to check that robots are valid.
-    - Filtered out fish from the entity processor to stop Constructrons attempting to walk on water.
+    - Filtered out fish from the entity processor to stop Constructrons attempting to walk on water. Sorry no fishing zone.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.5
 Date: 2024-01-28
