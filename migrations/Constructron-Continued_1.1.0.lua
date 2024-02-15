@@ -28,6 +28,23 @@ cmd.reacquire_construction_jobs()
 -- Reacquire Upgrade jobs
 cmd.reacquire_upgrade_jobs()
 
+----
+
+if not game.item_prototypes[settings.global["desired_robot_name"].value] then
+    if game.item_prototypes["construction-robot"] then
+        settings.global["desired_robot_name"] = {value = "construction-robot"}
+        global.desired_robot_name = "construction-robot"
+        game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
+    else
+        local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+        local valid_robot_name = pairs(valid_robots)(nil,nil)
+        settings.global["desired_robot_name"] = {value = valid_robot_name}
+        game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
+    end
+else
+    global.desired_robot_name = settings.global["desired_robot_name"].value
+end
+
 -------------------------------------------------------------------------------
 -- deprecated globals
 -------------------------------------------------------------------------------

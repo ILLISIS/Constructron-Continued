@@ -48,9 +48,9 @@ function job:get_chunk()
     if (chunk.midpoint == nil) then -- establish chunk centre point
         chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
         -- check for chunk overload
-        local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{chunk.required_items, chunk.trash_items})
+        local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{self.required_items, chunk.required_items, chunk.trash_items})
         if total_required_slots > self.empty_slot_count then
-            local divisor = math.ceil(total_required_slots / self.empty_slot_count)
+            local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items
             for item, count in pairs(chunk.required_items) do
                 chunk.required_items[item] = math.ceil(count / divisor)
             end
@@ -66,8 +66,8 @@ function job:get_chunk()
                         global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i].skip_chunk_checks = true -- skips chunk_checks in split chunks
                     end
                 end
+                chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
             end
-            chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
         end
     end
     self.chunks[chunk_key] = chunk
@@ -498,14 +498,16 @@ job_proc.process_job_queue = function()
                             -- check if other station networks can provide
                             local surface_stations = ctron.get_service_stations(job.surface_index)
                             for _, station in pairs(surface_stations) do
-                                for i = 1, worker.request_slot_count do ---@cast i uint
-                                    local request = worker.get_vehicle_logistic_slot(i)
-                                    if request and request.name then
-                                        local logistic_network = station.logistic_network
-                                        if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                            job.station = station
-                                            goto continue
+                                local logistic_network = station.logistic_network
+                                if logistic_network then
+                                    for i = 1, worker.request_slot_count do ---@cast i uint
+                                        local request = worker.get_vehicle_logistic_slot(i)
+                                        if request and request.name then
+                                            if logistic_network.can_satisfy_request(request.name, request.min, true) then
+                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                                job.station = station
+                                                goto continue
+                                            end
                                         end
                                     end
                                 end
@@ -759,11 +761,14 @@ job_proc.process_job_queue = function()
                                     -- check if other station networks can store items
                                     local surface_stations = ctron.get_service_stations(job.surface_index)
                                     for _, station in pairs(surface_stations) do
-                                        for item_name, item_count in pairs(trash_items) do
-                                            local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                                            if can_drop then
-                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                                job.station = station
+                                        if station.logistic_network then
+                                            for item_name, item_count in pairs(trash_items) do
+                                                local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
+                                                if can_drop then
+                                                    debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                                    job.station = station
+                                                    goto continue
+                                                end
                                             end
                                         end
                                     end
@@ -848,7 +853,6 @@ job_proc.make_jobs = function()
                         global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
                         -- add robots to job
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
-                        global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
                         global.jobs[global.job_index]:get_chunk()
                         global.job_proc_trigger = true -- start job operations
                     end
@@ -862,7 +866,6 @@ job_proc.make_jobs = function()
                     global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
-                    global.jobs[global.job_index].required_slots = job_proc.calculate_required_inventory_slot_count({[global.desired_robot_name] = global.desired_robot_count})
                     global.jobs[global.job_index]:get_chunk()
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
