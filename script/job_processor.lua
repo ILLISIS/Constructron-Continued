@@ -103,7 +103,7 @@ job_proc.include_more_chunks = function(chunk_params, origin_chunk)
             chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
             local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{chunk.required_items, chunk.trash_items})
             if total_required_slots > chunk_params.empty_slot_count then
-                local divisor = math.ceil(total_required_slots / chunk_params.empty_slot_count)
+                local divisor = math.ceil(total_required_slots / (chunk_params.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items
                 for item, count in pairs(chunk.required_items) do
                     chunk.required_items[item] = math.ceil(count / divisor)
                 end
@@ -623,7 +623,7 @@ job_proc.process_job_queue = function()
                             } -- only detects entities in range
                             local can_remove_entity = false
                             for _, entity in pairs(entities) do
-                                if not entity.type == "cliff" or logistic_network.can_satisfy_request("cliff-explosives", 1) then
+                                if not (entity.type == "cliff") or logistic_network.can_satisfy_request("cliff-explosives", 1) then
                                     can_remove_entity = true
                                     break
                                 end
