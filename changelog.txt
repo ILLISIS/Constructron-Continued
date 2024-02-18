@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.7
+Date: 2024-02-19
+  Bugfixes:
+    - Fixed Constructrons prematurely walking away before all entities are deconstructed.
+    - Fixed request / inventory overload potential in chunk merging process.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.6
 Date: 2024-02-16
   Bugfixes:
