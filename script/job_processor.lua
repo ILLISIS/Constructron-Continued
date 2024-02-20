@@ -299,11 +299,19 @@ function job:validate_station()
     if self.station and self.station.valid and self.station.logistic_network then
         return true
     elseif self.worker and self.worker.valid then
-        self.station = ctron.get_closest_service_station(self.worker)
-        if self.station and self.station.valid then
+        new_station = ctron.get_closest_service_station(self.worker)
+        if new_station and new_station.valid and new_station.logistic_network then
+            self.station = new_station
             return true
         else
-            debug_lib.VisualDebugText("No suitable Stations available to resume job", self.worker, -2, 1)
+            local surface_stations = ctron.get_service_stations(self.surface_index)
+            surface_stations[new_station.unit_number] = nil
+            for _, station in pairs(surface_stations) do
+                if station and station.valid and station.logistic_network then
+                    self.station = station
+                    return true
+                end
+            end
         end
     end
     return false
