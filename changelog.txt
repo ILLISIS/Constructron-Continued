@@ -1,3 +1,14 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.1.9
+Date: 2024-02-24
+  Changes:
+    - Added confirmation messages to horde mode enable/disable command.
+    - Updated /ctron help to include horde mode enable/disable command.
+  Bugfixes:
+    - Fixed a crash when commands were ran from the server console.
+    - Fixed a crash when jobs were in progress and the last station was removed or has no power.
+    - Hopefully fixed the intermittent inventory overload issue once and for all.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.8
 Date: 2024-02-20
   Bugfixes:

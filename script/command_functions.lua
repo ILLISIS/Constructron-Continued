@@ -368,7 +368,7 @@ end
 me.help_text = function()
     game.print('Constructron-Continued command help:')
     game.print('/ctron help - show this help message')
-    game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|all) - toggle job types.')
+    game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|horde|all)')
     game.print('/ctron reset (settings|queues|entities|all)')
     game.print('/ctron clear (all|construction|deconstruction|upgrade|repair)')
     game.print('/ctron stats for a basic display of queue length')

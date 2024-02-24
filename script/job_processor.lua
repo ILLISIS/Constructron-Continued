@@ -45,29 +45,27 @@ function job:get_chunk()
     -- calculate empty slots
     local inventory = self.worker.get_inventory(defines.inventory.spider_trunk)
     self.empty_slot_count = inventory.count_empty_stacks()
-    if (chunk.midpoint == nil) then -- establish chunk centre point
-        chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-        -- check for chunk overload
-        local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{self.required_items, chunk.required_items, chunk.trash_items})
-        if total_required_slots > self.empty_slot_count then
-            local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items
-            for item, count in pairs(chunk.required_items) do
-                chunk.required_items[item] = math.ceil(count / divisor)
-            end
-            for item, count in pairs(chunk.trash_items) do
-                chunk.trash_items[item] = math.ceil(count / divisor)
-            end
-            -- duplicate the chunk so another constructron will perform the same job
-            if divisor > 1 and (self.job_type == "deconstruction") then
-                for i = 1, (divisor - 1) do
-                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i] = table.deepcopy(chunk)
-                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i]["key"] = chunk_key .. "-" .. i
-                    if (i ~= (divisor - 1)) then
-                        global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i].skip_chunk_checks = true -- skips chunk_checks in split chunks
-                    end
+    chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+    -- check for chunk overload
+    local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{self.required_items, chunk.required_items, chunk.trash_items})
+    if total_required_slots > self.empty_slot_count then
+        local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items
+        for item, count in pairs(chunk.required_items) do
+            chunk.required_items[item] = math.ceil(count / divisor)
+        end
+        for item, count in pairs(chunk.trash_items) do
+            chunk.trash_items[item] = math.ceil(count / divisor)
+        end
+        -- duplicate the chunk so another constructron will perform the same job
+        if divisor > 1 and (self.job_type == "deconstruction") then
+            for i = 1, (divisor - 1) do
+                global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i] = table.deepcopy(chunk)
+                global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i]["key"] = chunk_key .. "-" .. i
+                if (i ~= (divisor - 1)) then
+                    global[self.job_type .. "_queue"][self.surface_index][chunk_key .. "-" .. i].skip_chunk_checks = true -- skips chunk_checks in split chunks
                 end
-                chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
             end
+            chunk.skip_chunk_checks = true -- skips chunk_checks in split chunks
         end
     end
     self.chunks[chunk_key] = chunk
@@ -99,20 +97,9 @@ end
 
 job_proc.include_more_chunks = function(chunk_params, origin_chunk)
     for _, chunk in pairs(chunk_params.chunks) do
-        if (chunk.midpoint == nil) then -- establish chunk centre point
-            chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-            local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{chunk.required_items, chunk.trash_items})
-            if total_required_slots > chunk_params.empty_slot_count then
-                local divisor = math.ceil(total_required_slots / (chunk_params.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items
-                for item, count in pairs(chunk.required_items) do
-                    chunk.required_items[item] = math.ceil(count / divisor)
-                end
-                for item, count in pairs(chunk.trash_items) do
-                    chunk.trash_items[item] = math.ceil(count / divisor)
-                end
-            end
-        end
-        if (chunk_util.distance_between(origin_chunk.midpoint, chunk.midpoint) < 160) then -- seek to include chunk in job
+        chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+        if (chunk_util.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
+            chunk.midpoint = chunk_midpoint
             local merged_items = job_proc.combine_tables{chunk_params.required_items, chunk.required_items}
             local merged_trash = job_proc.combine_tables{chunk_params.trash_items, chunk.trash_items}
             local total_required_slots = job_proc.calculate_required_inventory_slot_count(job_proc.combine_tables{merged_items, merged_trash})
@@ -299,13 +286,12 @@ function job:validate_station()
     if self.station and self.station.valid and self.station.logistic_network then
         return true
     elseif self.worker and self.worker.valid then
-        new_station = ctron.get_closest_service_station(self.worker)
+        local new_station = ctron.get_closest_service_station(self.worker)
         if new_station and new_station.valid and new_station.logistic_network then
             self.station = new_station
             return true
         else
             local surface_stations = ctron.get_service_stations(self.surface_index)
-            surface_stations[new_station.unit_number] = nil
             for _, station in pairs(surface_stations) do
                 if station and station.valid and station.logistic_network then
                     self.station = station
@@ -932,6 +918,8 @@ job_proc.get_worker = function(surface_index)
                     else
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
                     end
+                else
+                    debug_lib.VisualDebugText("Awaiting robots to return", constructron, -1, 3)
                 end
             end
         end
