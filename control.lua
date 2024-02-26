@@ -386,6 +386,7 @@ local function enable(player, parameters)
     elseif parameters[1] == "horde" then
         global.horde_mode = true
         settings.global["horde_mode"] = {value = true}
+        game.print('Horde Mode enabled.')
     elseif parameters[1] == "all" then
         global.construction_job_toggle = true
         settings.global["construct_jobs"] = {value = true}
@@ -455,6 +456,7 @@ local function disable(player, parameters)
     elseif parameters[1] == "horde" then
         global.horde_mode = false
         settings.global["horde_mode"] = {value = false}
+        game.print('Horde Mode disabled.')
     elseif parameters[1] == "all" then
         global.construction_job_toggle = false
         settings.global["construct_jobs"] = {value = false}
@@ -539,11 +541,14 @@ local ctron_commands = {
 
 commands.add_command(
     "ctron",
-    "/ctron reset",
+    "help",
     function(param)
         log("/ctron " .. (param.parameter or ""))
         if param.parameter then
-            local player = game.players[param.player_index] --[[@as LuaPlayer]]
+            local player = {name="server"}
+            if param.player_index ~= nil then
+                player = game.players[param.player_index] --[[@as LuaPlayer]]
+            end
             local params = custom_lib.string_split(param.parameter, " ")
             local command = table.remove(params, 1) --[[@as string]]
             if command and ctron_commands[command] then
