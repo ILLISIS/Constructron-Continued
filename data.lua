@@ -4,3 +4,5 @@ require("data/service_station")
 if mods["space-exploration"] and settings.startup["enable_rocket_powered_constructron"].value then
     require("data/constructron-rocket-powered")
 end
+
+require("data/compatibility/nullius")
