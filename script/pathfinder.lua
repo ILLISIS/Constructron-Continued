@@ -115,6 +115,7 @@ function pathfinder:findpath()
     local closedSet = self.closedSet -- nodes already evaluated
     local TilesProcessed = 0 -- tiles processed per iteration
     local lowesth_value = self.lowesth_value -- lowest heuristic value found
+    local tile_distance = self.tile_distance or global.custom_pathfinder_neighbour_maxdistance or 1 -- max neighbour distance of each node
     self.path_iterations = self.path_iterations + 1 -- iteration count
 
     while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
@@ -194,7 +195,7 @@ function pathfinder:findpath()
         end
 
         -- get neighboring nodes
-        local maxDistance = 1
+        local maxDistance = self.neighbour_maxdistance
         -- IDEA: pathfinding backwards seems to make it easier to island hop
         -- IDEA: make maxDistance configurable
         -- IDEA: make maxDistance dynamic - try +15 tiles first, then lower to 1

@@ -19,12 +19,14 @@
 ---| "construction"
 ---| "repair"
 ---| "upgrade"
+---| "destroy"
 
 ---@alias JobType
 ---| "deconstruct"
 ---| "construct"
 ---| "upgrade"
 ---| "repair"
+---| "destroy"
 
 ---@alias JobAction
 ---| "request_items"
@@ -108,11 +110,13 @@
 ---@field deconstruction_entities table<string, LuaEntity>
 ---@field upgrade_entities table<string, UpgradeEntity>
 ---@field repair_entities table<string, LuaEntity>
+---@field destroy_entities table<string, LuaEntity>
 --- QUEUES
 ---@field construct_queue EntityQueue
 ---@field deconstruct_queue EntityQueue
 ---@field upgrade_queue EntityQueue
 ---@field repair_queue EntityQueue
+---@field destroy_queue EntityQueue
 --- JOBS
 ---@field job_bundles JobBundle
 ---@field job_bundle_index uint
@@ -132,8 +136,10 @@
 ---@field desired_robot_count uint
 ---@field desired_robot_name string
 ---@field construction_mat_alert uint
----@field entities_per_tick uint
+---@field entities_per_second uint
 ---@field spider_remote_toggle boolean
+---@field ammo_name string
+---@field ammo_count uint
 
 -- set type of global (this will never get executed, only intellisense will see this)
 ---@type Global

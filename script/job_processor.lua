@@ -353,6 +353,12 @@ function job:check_chunks()
                 }
             elseif self.job_type == "repair" then
                 return -- repairs do not check
+            elseif self.job_type == "destroy" then
+                color = "black"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    force = "enemy",
+                }
             end
             local surface = game.surfaces[chunk.surface]
             debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
@@ -403,6 +409,11 @@ job_proc.process_job_queue = function()
                             job.landfill_job = true
                         end
                     end
+                    -- set default ammo request
+                    if global.ammo_count > 0 then
+                        job.required_items[global.ammo_name] = global.ammo_count
+                    end
+                    -- state change
                     job.state = "starting"
                 else
                     -- unlock constructron
@@ -443,11 +454,21 @@ job_proc.process_job_queue = function()
                     -- request items / check inventory
                     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
                     local inventory_items = inventory.get_contents()
-                    if inventory then
+                    local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
+                    local ammunition = ammo_slots.get_contents()
+                    if inventory and ammunition then
+                        local supply_items = job_proc.combine_tables({inventory_items, ammunition})
                         if not (job.sub_state == "items_requested") then
                             local item_request_list = table.deepcopy(job.required_items)
-                            for item, _ in pairs(inventory_items) do
+                            -- check inventory for unwanted items
+                            for item, _ in pairs(supply_items) do
                                 if not job.required_items[item] then
+                                    item_request_list[item] = 0
+                                end
+                            end
+                            -- check ammo slots for unwanted items
+                            for item, _ in pairs(ammunition) do
+                                if not item.name ~= global.ammo_name then
                                     item_request_list[item] = 0
                                 end
                             end
@@ -461,7 +482,8 @@ job_proc.process_job_queue = function()
                             for i = 1, worker.request_slot_count do ---@cast i uint
                                 local request = worker.get_vehicle_logistic_slot(i)
                                 if request then
-                                    if not (((inventory_items[request.name] or 0) >= request.min) and ((inventory_items[request.name] or 0) <= request.max)) then
+                                    local supply_check = (((supply_items[request.name] or 0) >= request.min) and ((supply_items[request.name] or 0) <= request.max))
+                                    if not supply_check then
                                         logistic_condition = false
                                     else
                                         worker.clear_vehicle_logistic_slot(i)
@@ -590,10 +612,18 @@ job_proc.process_job_queue = function()
                     local construction_robots = logistic_network.construction_robots
                     local entities
 
-                    debug_lib.VisualDebugText("Constructing", worker, -1, 1)
+                    debug_lib.VisualDebugText("Constructing", worker, -1, 1) -- move this
 
                     if not job.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
                         job:enable_roboports()
+                        goto continue
+                    end
+
+                    -- check health
+                    local health = worker.get_health_ratio()
+                    if health < 0.5 then
+                        debug_lib.VisualDebugText("Fleeing!", worker, -0.5, 1)
+                        job.state = "finishing"
                         goto continue
                     end
 
@@ -682,6 +712,23 @@ job_proc.process_job_queue = function()
                         elseif job.job_type == "repair" then
                             if not job.repair_started then
                                 job.repair_started = true -- flag to ensure that at least 1 second passes before changing job state
+                                goto continue
+                            end
+                            table.remove(job.task_positions, 1)
+                        --===========================================================================--
+                        --  Destroy logic
+                        --===========================================================================--
+                        elseif job.job_type == "destroy" then
+                            worker.enable_logistics_while_moving = true
+                            -- check ammo
+                            local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
+                            local ammunition = ammo_slots.get_contents()
+                            -- retreat when at 25% of ammo
+                            if ammunition and ammunition[global.ammo_name] and ammunition[global.ammo_name] < (math.ceil(global.ammo_count * 25 / 100)) then
+                                job.state = "finishing"
+                            end
+                            if not job.destroy_started then
+                                job.destroy_started = true -- flag to ensure that at least 1 second passes before changing job state
                                 goto continue
                             end
                             table.remove(job.task_positions, 1)
@@ -826,7 +873,8 @@ job_proc.make_jobs = function()
         "deconstruction",
         "construction",
         "upgrade",
-        "repair"
+        "repair",
+        "destroy"
     }
 
     -- for each surface

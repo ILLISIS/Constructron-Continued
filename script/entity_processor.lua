@@ -53,6 +53,7 @@ entity_proc.on_built_entity = function(event)
     end
 end
 
+---@param event EventData.on_built_entity
 script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
@@ -68,6 +69,7 @@ script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "force",  force = "player", mode = "and"}
 })
 
+---@param event EventData.script_raised_built
 script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "name", name = "constructron-rocket-powered", mode = "or"},
@@ -77,6 +79,7 @@ script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "item-request-proxy", mode = "or"}
 })
 
+---@param event EventData.on_robot_built_entity
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "service_station", mode = "or"}
 })
@@ -185,6 +188,7 @@ end,
     {filter = "name", name = "service_station", mode = "or"},
 })
 
+---@param event EventData.script_raised_teleported
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
     local surface_index = entity.surface_index
@@ -248,6 +252,71 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(eve
     end
 end)
 
+---@param event EventData.on_sector_scanned
+script.on_event(ev.on_sector_scanned, function(event)
+    if not global.destroy_job_toggle then return end
+    local surface = event.radar.surface
+    local enemies = surface.find_entities_filtered({
+        force = {"enemy"},
+        area = event.area
+    })
+    if next(enemies) then
+        for _, entity in pairs(enemies) do
+            global.destroy_index = global.destroy_index + 1
+            global.destroy_entities[global.destroy_index] = entity
+            global.destroy_tick = event.tick
+            global.entity_proc_trigger = true
+        end
+    end
+end)
+
+---@param event EventData.on_player_selected_area
+script.on_event(ev.on_player_selected_area, function(event)
+    if event.item ~= "ctron-selection-tool" then return end
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid then
+            if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
+                global.construction_index = global.construction_index + 1
+                global.construction_entities[global.construction_index] = entity
+                global.construction_tick = event.tick
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
+        end
+    end
+end)
+
+---@param event EventData.on_player_reverse_selected_area
+script.on_event(ev.on_player_reverse_selected_area, function(event)
+    if event.item ~= "ctron-selection-tool" then return end
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid then
+            local force_name = entity.force.name
+            if force_name == "player" or force_name == "neutral" then
+                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index])
+                global.deconstruction_tick = event.tick
+                global.deconstruction_entities[global.deconstruction_index] = entity
+                global.deconstruction_index = global.deconstruction_index + 1
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
+        end
+    end
+end)
+
+---@param event EventData.on_player_alt_selected_area
+script.on_event(ev.on_player_alt_selected_area, function(event)
+    if event.item ~= "ctron-selection-tool" then return end
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid then
+            if entity.force.name == "enemy" then
+                global.destroy_index = global.destroy_index + 1
+                global.destroy_entities[global.destroy_index] = entity
+                global.destroy_tick = event.tick
+                global.entity_proc_trigger = true  -- there is something to do start processing
+            end
+        end
+    end
+end)
+
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
@@ -256,13 +325,15 @@ end)
 ---@param entities table
 ---@param queue EntityQueue
 ---@param event_tick integer
-entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event_tick) -- build_type: deconstruction, construction, upgrade, repair
+entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event_tick) -- build_type: deconstruction, construction, upgrade, repair, destroy
     if next(entities) and (game.tick - event_tick) > global.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
-        local entity_counter = global.entities_per_tick
+        local entity_counter = global.entities_per_second
         for entity_key, entity in pairs(entities) do
             if entity.valid then
                 local registered
-                if build_type == "deconstruction" then
+                if build_type == "destroy" then
+                    registered = true
+                elseif build_type == "deconstruction" then
                     registered = entity.is_registered_for_deconstruction(game.forces.player)
                 else
                     registered = entity["is_registered_for_" .. build_type]()
@@ -349,6 +420,9 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
                     -- repair
                     elseif (build_type == "repair") then
+                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 3
+                    -- destroy
+                    elseif (build_type == "destroy") then
                         required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 3
                     end
                     -- entity chunking

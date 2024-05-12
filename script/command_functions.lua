@@ -14,6 +14,9 @@ me.reset_settings = function()
     settings.global["entities_per_tick"] = {value = 1000}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
+    settings.global["destroy_jobs"] = {value = false}
+    settings.global["ammo_name"] = {value = "rocket"}
+    settings.global["job-start-delay"] = {value = 0}
 end
 
 me.clear_queues = function()
@@ -21,22 +24,26 @@ me.clear_queues = function()
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
     global.repair_entities = {}
+    global.destroy_entities = {}
 
     global.construction_index = 0
     global.deconstruction_index = 0
     global.updgrade_index = 0
     global.repair_index = 0
+    global.destroy_index = 0
 
     global.construction_queue = {}
     global.deconstruction_queue = {}
     global.upgrade_queue = {}
     global.repair_queue = {}
+    global.destroy_queue = {}
 
     for _, surface in pairs(game.surfaces) do
         global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
         global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
+        global.destroy_queue[surface.index] = global.destroy_queue[surface.index] or {}
     end
 end
 
@@ -327,6 +334,7 @@ me.stats = function()
         "constructron_statuses",
         "construction_entities",
         "deconstruction_entities",
+        "destroy_entities",
         "upgrade_entities",
         "repair_entities",
         "jobs",
@@ -350,6 +358,7 @@ me.stats = function()
         "deconstruction_queue",
         "upgrade_queue",
         "repair_queue",
+        "destroy_queue",
     }
     for _, surface in pairs(game.surfaces) do
         for _, data_name in pairs(surface_queues) do
@@ -370,7 +379,7 @@ me.help_text = function()
     game.print('/ctron help - show this help message')
     game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|horde|all)')
     game.print('/ctron reset (settings|queues|entities|all)')
-    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair)')
+    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair|destroy)')
     game.print('/ctron stats for a basic display of queue length')
     game.print('See Factorio mod portal for further assistance https://mods.factorio.com/mod/Constructron-Continued')
 end

@@ -91,19 +91,21 @@ ctron.get_closest_service_station = function(constructron) -- used to get the cl
 end
 
 ---@param constructron LuaEntity
----@param color_state "idle" | "construction" | "deconstruction" | "upgrade" | "repair"
+---@param color_state "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair"
 ctron.paint_constructron = function(constructron, color_state)
     if constructron and constructron.valid then
-    if color_state == 'idle' then
-        constructron.color = color_lib.colors.white
+        if color_state == 'idle' then
+            constructron.color = color_lib.colors.white
         elseif color_state == 'construction' then
-        constructron.color = color_lib.colors.blue
+            constructron.color = color_lib.colors.blue
         elseif color_state == 'deconstruction' then
-        constructron.color = color_lib.colors.red
-    elseif color_state == 'upgrade' then
-        constructron.color = color_lib.colors.green
-    elseif color_state == 'repair' then
-        constructron.color = color_lib.colors.charcoal
+            constructron.color = color_lib.colors.red
+        elseif color_state == 'destroy' then
+            constructron.color = color_lib.colors.black
+        elseif color_state == 'upgrade' then
+            constructron.color = color_lib.colors.green
+        elseif color_state == 'repair' then
+            constructron.color = color_lib.colors.purple
         end
     end
 end
