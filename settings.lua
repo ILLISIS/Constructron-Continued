@@ -111,3 +111,7 @@ data:extend({
         default_value = false
     }
 })
+
+if mods["nullius"] then
+    data.raw["string-setting"]["desired_robot_name"].default_value = "nullius-construction-bot-1"
+end
