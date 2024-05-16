@@ -998,12 +998,10 @@ script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
             item_name = logistic_request.name,
             item_count = logistic_request.max
         }
-        game.print('requested ' .. logistic_request.name .. ' ' .. logistic_request.max .. '')
         job_proc.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.max)
     else
         local item_request = global.constructron_requests[unit_number]["requests"][slot]
         if not item_request then return end
-        game.print('unrequested ' .. item_request.item_name .. ' ' .. (item_request.item_count * -1) .. '')
         job_proc.update_combinator(global.constructron_requests[unit_number].station, item_request.item_name, (item_request.item_count * -1))
         global.constructron_requests[unit_number]["requests"][slot] = nil
     end

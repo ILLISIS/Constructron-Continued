@@ -4,7 +4,7 @@ data:extend({
     name = "ctron-selection-tool",
     icons = {
     --   { icon = data_util.black_image, icon_size = 1, scale = 64 },
-      { icon = "__Constructron-Continued__/graphics/icon_texture.png", icon_size = 32, mipmap_count = 2 }
+      { icon = "__Constructron-Continued__/graphics/icon_texture.png", icon_size = 128, mipmap_count = 2 }
     },
 
     selection_color = { r = 1, g = 0, b = 1 },
