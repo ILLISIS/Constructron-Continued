@@ -84,14 +84,18 @@ local ensure_globals = function()
     global.repair_queue = global.repair_queue or {}
     global.destroy_queue = global.destroy_queue or {}
     --
-    global.constructrons = global.constructrons or {}
-    global.service_stations = global.service_stations or {}
+    global.constructrons = global.constructrons or {} -- all constructron entities.
+    global.service_stations = global.service_stations or {} -- all service stations entities.
+    global.station_combinators = global.station_combinators or {} -- all combinator entities.
+    global.constructron_requests = global.constructron_requests or {} -- caches logistic requests as they are nil after slot is cleared. This was needed for combinators.
     --
     global.constructrons_count = global.constructrons_count or {}
+    global.available_ctron_count = global.available_ctron_count or {}
     global.stations_count = global.stations_count or {}
     --
     for _, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
+        global.available_ctron_count[surface.index] = global.available_ctron_count[surface.index] or global.constructrons_count[surface.index]
         global.stations_count[surface.index] = global.stations_count[surface.index] or 0
         global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
         global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
@@ -339,10 +343,13 @@ local function reset(player, parameters)
         cmd.rebuild_caches()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
+        cmd.reset_available_ctron_count()
         cmd.reload_ctron_status()
         cmd.reload_ctron_color()
         -- Recall Ctrons
         cmd.recall_ctrons()
+        -- Reset combinators
+        cmd.reset_combinator_signals()
         -- Clear Constructron inventory
         cmd.clear_ctron_inventory()
         -- Reacquire Deconstruction jobs

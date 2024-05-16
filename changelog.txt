@@ -8,7 +8,8 @@ Date: 2024-04-24
       - Right click select to deconstruct
       - Shift right click select to destroy
     - [MAJOR] Destroy jobs: Constructrons will seek and destroy biter nests found via radar reveal.
-    - [MAJOR] Added the ability to request a default amount of ammo for Constructrions to defend themselves with.
+    - [MAJOR] Added the ability to request a default amount of ammo for Constructrons to defend themselves with.
+    - [MAJOR] Added circuit output to Stations which output what Constructrons are requesting at that particular Station and general stats.
   Changes:
     - Corrected setting name enties_per_tick to entities_per_second.
     - Repair jobs now paint the Constructron's purple and black is now used for destroy jobs.

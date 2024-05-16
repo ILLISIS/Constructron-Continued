@@ -11,11 +11,12 @@ me.reset_settings = function()
     settings.global["constructron-debug-enabled"] = {value = false}
     settings.global["desired_robot_count"] = {value = 50}
     settings.global["desired_robot_name"] = {value = "construction-robot"}
-    settings.global["entities_per_tick"] = {value = 1000}
+    settings.global["entities_per_second"] = {value = 1000}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
     settings.global["destroy_jobs"] = {value = false}
     settings.global["ammo_name"] = {value = "rocket"}
+    settings.global["ammo_count"] = {value = 0}
     settings.global["job-start-delay"] = {value = 0}
 end
 
@@ -244,6 +245,34 @@ me.recall_ctrons = function()
         else
             game.print('No stations to recall Constructrons to on ' .. surface.name .. '.')
         end
+    end
+end
+
+me.reset_combinator_signals = function()
+    -- reset combinator item_request cache
+    for _, constructron in pairs(global.constructrons) do
+        global.constructron_requests[constructron.unit_number] = {
+            station = ctron.get_closest_service_station(constructron),
+            requests = {}
+        }
+    end
+    -- reset combinator signals
+    for _, station in pairs(global.service_stations) do
+        -- reset signal cache
+        global.station_combinators[station.unit_number].signals = {}
+        local signals = {
+            [1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[station.surface.index]},
+            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[station.surface.index]}
+        }
+        -- set signals
+        global.station_combinators[station.unit_number].entity.get_control_behavior().parameters = signals
+    end
+end
+
+me.reset_available_ctron_count = function()
+    global.available_ctron_count = {}
+    for _, surface in pairs(game.surfaces) do
+        global.available_ctron_count[surface.index] = global.constructrons_count[surface.index]
     end
 end
 

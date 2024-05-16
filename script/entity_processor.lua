@@ -35,6 +35,7 @@ entity_proc.on_built_entity = function(event)
             surface = surface_index
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
+        global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] + 1
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
@@ -50,6 +51,26 @@ entity_proc.on_built_entity = function(event)
         if (global.constructrons_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
+        -- combinator setup
+        local control_behavior = entity.get_or_create_control_behavior()
+        control_behavior.read_logistics = false
+        local combinator = entity.surface.create_entity{
+            name = "ctron-combinator",
+            position = {(entity.position.x + 1), (entity.position.y + 1)},
+            direction = defines.direction.west,
+            force = entity.force,
+            raise_built = true
+        }
+        local circuit1 = { wire = defines.wire_type.red, target_entity = entity }
+        local circuit2 = { wire = defines.wire_type.green, target_entity = entity }
+        combinator.connect_neighbour(circuit1)
+        combinator.connect_neighbour(circuit2)
+        local signals = {
+            [1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[entity.surface.index]},
+            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[entity.surface.index]}
+        }
+        global.station_combinators[entity.unit_number] = {entity = combinator, signals = {}}
+        combinator.get_control_behavior().parameters = signals
     end
 end
 
@@ -164,6 +185,7 @@ script.on_event(ev.on_entity_cloned, function(event)
             surface = surface_index
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
+        global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] + 1
         -- configure surface management
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
@@ -180,6 +202,26 @@ script.on_event(ev.on_entity_cloned, function(event)
         if (global.constructrons_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
+        -- combinator setup
+        local control_behavior = entity.get_or_create_control_behavior()
+        control_behavior.read_logistics = false
+        local combinator = entity.surface.create_entity{
+            name = "ctron-combinator",
+            position = {(entity.position.x + 1), (entity.position.y + 1)},
+            direction = defines.direction.west,
+            force = entity.force,
+            raise_built = true
+        }
+        local circuit1 = { wire = defines.wire_type.red, target_entity = entity }
+        local circuit2 = { wire = defines.wire_type.green, target_entity = entity }
+        combinator.connect_neighbour(circuit1)
+        combinator.connect_neighbour(circuit2)
+        local signals = {
+            [1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[entity.surface.index]},
+            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count}
+        }
+        global.station_combinators[entity.unit_number] = {entity = combinator, signals = {}}
+        combinator.get_control_behavior().parameters = signals
     end
 end,
 {
@@ -198,6 +240,8 @@ script.on_event(ev.script_raised_teleported, function(event)
             ctron.set_constructron_status(entity, 'busy', false)
             global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
             global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
+            global.available_ctron_count[event.old_surface_index] = global.available_ctron_count[event.old_surface_index] - 1
+            global.available_ctron_count[entity.surface_index] = global.available_ctron_count[entity.surface_index] + 1
             for _, job in pairs(global.jobs) do
                 if (job.worker.unit_number == entity.unit_number) then
                     -- remove worker from job
@@ -227,13 +271,14 @@ end,
 ---@param event
 ---| EventData.on_entity_destroyed
 ---| EventData.script_raised_destroy
-script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(event)
+entity_proc.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         local surface_index = removed_entity.surface
         local surface_name = game.surfaces[surface_index].name
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
             global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
+            global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
             -- configure surface management
@@ -247,10 +292,20 @@ script.on_event({ev.on_entity_destroyed, ev.script_raised_destroy}, function(eve
             if (global.constructrons_count[surface_index] <= 0) then
                 global.managed_surfaces[surface_name] = nil
             end
+            global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
+            global.station_combinators[event.unit_number] = nil
         end
         global.registered_entities[event.registration_number] = nil
     end
-end)
+end
+
+script.on_event(ev.on_entity_destroyed, entity_proc.on_entity_destroyed)
+
+script.on_event(ev.script_raised_destroy, entity_proc.on_entity_destroyed, {
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"},
+    {filter = "name", name = "service_station", mode = "or"}
+})
 
 ---@param event EventData.on_sector_scanned
 script.on_event(ev.on_sector_scanned, function(event)
