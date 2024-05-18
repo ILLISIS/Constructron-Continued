@@ -1,34 +1,3 @@
-local cmd = require("script/command_functions")
-
--------------------------------------------------------------------------------
--- equivalent to reset all command
--------------------------------------------------------------------------------
-global.pathfinder_requests = {}
-game.print('Reset all parameters and queues complete.')
--- Clear jobs/queues/entities
-global.jobs = {}
-global.job_index = 0
-cmd.clear_queues()
--- Clear supporting globals
-global.stack_cache = {}
-global.entity_inventory_cache = {}
-cmd.rebuild_caches()
--- Clear and reacquire Constructrons & Stations
-cmd.reload_entities()
-cmd.reload_ctron_status()
-cmd.reload_ctron_color()
--- Recall Ctrons
-cmd.recall_ctrons()
--- Clear Constructron inventory
-cmd.clear_ctron_inventory()
--- Reacquire Deconstruction jobs
-cmd.reacquire_deconstruction_jobs()
--- Reacquire Construction jobs
-cmd.reacquire_construction_jobs()
--- Reacquire Upgrade jobs
-cmd.reacquire_upgrade_jobs()
-
-----
 
 if not game.item_prototypes[settings.global["desired_robot_name"].value] then
     if game.item_prototypes["construction-robot"] then

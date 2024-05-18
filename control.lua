@@ -265,6 +265,8 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
     elseif setting == "repair_jobs" then
         global.repair_job_toggle = settings.global["repair_jobs"].value
+    elseif setting == "destroy_jobs" then
+        global.destroy_job_toggle = settings.global["destroy_jobs"].value
     elseif setting == "constructron-debug-enabled" then
         global.debug_toggle = settings.global["constructron-debug-enabled"].value
     elseif setting == "job-start-delay" then

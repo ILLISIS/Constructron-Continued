@@ -459,8 +459,6 @@ job_proc.process_job_queue = function()
                     if global.ammo_count > 0 then
                         job.required_items[global.ammo_name] = global.ammo_count
                     end
-                    -- set request station
-                    global.constructron_requests[worker.unit_number].station = job.station
                     -- state change
                     job.state = "starting"
                 else
@@ -499,6 +497,9 @@ job_proc.process_job_queue = function()
                 else -- constructron is in range of a station
                     debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
                     local logistic_condition = true
+                    if not global.constructron_requests[worker.unit_number].station then
+                        global.constructron_requests[worker.unit_number].station = job.station
+                    end
                     -- request items / check inventory
                     local inventory = worker.get_inventory(defines.inventory.spider_trunk) -- spider inventory
                     local inventory_items = inventory.get_contents() -- spider inventory contents
@@ -517,7 +518,7 @@ job_proc.process_job_queue = function()
                             end
                             -- check ammo slots for unwanted items
                             for item, _ in pairs(ammunition) do
-                                if not item.name ~= global.ammo_name then
+                                if item ~= global.ammo_name then
                                     item_request_list[item] = 0
                                 end
                             end
