@@ -1,6 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.10
-Date: 2024-04-24
+Date: 2024-05-18
+  Features:
+    - [MAJOR] Entity selection tool: Bypass job toggle settings by manually selecting which entities you want constructed & deconstructed.
+      - SHIFT + C To activate
+      - Left click select to build
+      - Right click select to deconstruct
+      - Shift right click select to destroy
   Changes:
     - Added compatibility with Nullius
 ---------------------------------------------------------------------------------------------------

@@ -181,6 +181,27 @@ script.on_configuration_changed(init)
 
 local ev = defines.events
 
+---@param event EventData.on_lua_shortcut
+script.on_event(ev.on_lua_shortcut, function (event)
+    local name = event.prototype_name
+    if name ~= "ctron-get-selection-tool" then return end
+    local player = game.get_player(event.player_index)
+    if not player then return end
+    local cursor_stack = player.cursor_stack
+    if not cursor_stack then return end
+    cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+end)
+
+script.on_event("ctron-get-selection-tool", function (event)
+    local name = event.input_name or event.prototype_name
+    if name ~= "ctron-get-selection-tool" then return end
+    local player = game.get_player(event.player_index)
+    if not player then return end
+    local cursor_stack = player.cursor_stack
+    if not cursor_stack then return end
+    cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+end)
+
 ---@param event EventData.on_surface_created
 script.on_event(ev.on_surface_created, function(event)
     local index = event.surface_index
