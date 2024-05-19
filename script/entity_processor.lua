@@ -482,10 +482,10 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
                     -- repair
                     elseif (build_type == "repair") then
-                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 3
+                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
                     -- destroy
                     elseif (build_type == "destroy") then
-                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 3
+                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
                     end
                     -- entity chunking
                     local entity_surface = entity.surface.index

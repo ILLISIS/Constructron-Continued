@@ -13,6 +13,7 @@ Date: 2024-04-24
   Changes:
     - Corrected setting name enties_per_tick to entities_per_second.
     - Repair jobs now paint the Constructron's purple and black is now used for destroy jobs.
+    - Changed the amount of repair packs a repair job takes per entity to 1 instead of 3.
     - Added compatibility with Nullius
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.9

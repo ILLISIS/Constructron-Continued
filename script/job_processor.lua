@@ -382,7 +382,7 @@ end
 ---@param item_name string
 ---@param item_count integer
 job_proc.update_combinator = function(station, item_name, item_count)
-    if not station or not station.unit_number or not item_name or not item_count then return end
+    if not station or not station.valid or not item_name or not item_count then return end
 
     -- update master list
     local signals = global.station_combinators[station.unit_number]["signals"]
