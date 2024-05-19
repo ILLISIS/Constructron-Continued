@@ -595,6 +595,18 @@ job_proc.process_job_queue = function()
                         end
                     end
                     if logistic_condition then -- requested items have been delivered and trash items have been taken
+                        -- divide ammo evenly between slots
+                        if ammunition and ammunition[global.ammo_name] then
+                            local ammo_count = ammunition[global.ammo_name]
+                            local ammo_per_slot = math.ceil(ammo_count / #ammo_slots)
+                            for i = 1, #ammo_slots do
+                                local slot = ammo_slots[i]
+                                if slot then
+                                    slot.clear()
+                                    slot.set_stack({name = global.ammo_name, count = ammo_per_slot})
+                                end
+                            end
+                        end
                         -- clear logistic request and proceed with job
                         for i = 1, worker.request_slot_count do --[[@cast i uint]]
                             worker.clear_vehicle_logistic_slot(i)
@@ -997,7 +1009,7 @@ script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
     if logistic_request.name then
         global.constructron_requests[unit_number]["requests"][slot] = {
             item_name = logistic_request.name,
-            item_count = logistic_request.max
+            item_count = logistic_request.min
         }
         job_proc.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.max)
     else
