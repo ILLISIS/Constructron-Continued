@@ -574,10 +574,10 @@ job_proc.process_job_queue = function()
                             -- check if other station networks can provide
                             local surface_stations = ctron.get_service_stations(job.surface_index)
                             for _, station in pairs(surface_stations) do
-                                local logistic_network = station.logistic_network
-                                if logistic_network then
+                                local station_logistic_network = station.logistic_network
+                                if station_logistic_network then
                                     for request_name, value in pairs(current_requests) do
-                                        if logistic_network.can_satisfy_request(request_name, value.count, true) then
+                                        if station_logistic_network.can_satisfy_request(request_name, value.count, true) then
                                             debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
                                             job:remove_combinator_requests(current_requests) -- remove all requests from circuit
                                             global.constructron_requests[worker.unit_number].station = station -- update request station
