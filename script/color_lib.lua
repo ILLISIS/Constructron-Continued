@@ -20,10 +20,10 @@ me.colors.blue = {
     a = 0.4
 }
 me.colors.yellow = {
-    r = 128,
-    g = 128,
+    r = 255,
+    g = 255,
     b = 0,
-    a = 1
+    a = 128
 }
 me.colors.purple = {
     r = 255,

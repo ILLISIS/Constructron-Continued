@@ -41,6 +41,10 @@ entity_proc.on_built_entity = function(event)
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
+        entity.vehicle_automatic_targeting_parameters = {
+            auto_target_without_gunner = true,
+            auto_target_with_gunner = true
+        }
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_entity_destroyed(entity)
         local surface_index = entity.surface.index
@@ -194,6 +198,10 @@ script.on_event(ev.on_entity_cloned, function(event)
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
+        entity.vehicle_automatic_targeting_parameters = {
+            auto_target_without_gunner = true,
+            auto_target_with_gunner = true
+        }
     elseif entity.name == "service_station" then
         local registration_number = script.register_on_entity_destroyed(entity)
         global.service_stations[entity.unit_number] = entity
@@ -497,12 +505,12 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         x = (math.floor((entity_pos_x) / 80))
                     }
                     local key = chunk.y .. ',' .. chunk.x
+                    -- local queue_surface_key = queue[entity_surface][chunk.y][chunk.x] -- TODO: Optimization candidate
                     local queue_surface_key = queue[entity_surface][key]
                     if not queue_surface_key then -- initialize a new chunk
                         queue_surface_key = {
                             key = key,
                             surface = entity_surface,
-                            -- position = chunk_util.position_from_chunk(chunk), -- !! check if needed
                             area = chunk_util.get_area_from_chunk(chunk),
                             minimum = {
                                 x = entity_pos_x,

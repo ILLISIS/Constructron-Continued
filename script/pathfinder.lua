@@ -10,12 +10,12 @@ local clean_path_steps_enabled = true
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
-pathfinder = {}
+local pathfinder = {}
 pathfinder.__index = pathfinder
 script.register_metatable("constructron_pathfinder_table", pathfinder)
 
 
-function pathfinder.new(start, goal, job)
+    debug_lib.VisualDebugLine(job.worker.position, job.path_request_params.goal, job.worker.surface, "green", 600)
     start = { x = math.floor(start.x), y = math.floor(start.y) }
     goal = { x = math.floor(goal.x), y = math.floor(goal.y) }
     local instance = setmetatable({}, pathfinder)

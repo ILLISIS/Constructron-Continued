@@ -13,28 +13,28 @@ local ctron = {}
 -- abilities
 --===========================================================================--
 
--- Spidertron waypoint orbit countermeasure
--- made redundant by fgardt orbit mod?
+-- Function to calculate the average speed of a Spidertron with equipment bonuses
+ctron.calculate_spidertron_speed = function(spidertron)
+    -- Base speed of the Spidertron
+    local base_speed = 0.18
+    -- Initialize total speed multiplier
+    local speed_multiplier = 1.0
+    -- Check if the Spidertron has an equipment grid
+    if spidertron.grid then
+        -- Iterate through the equipment grid
+        for _, equipment in pairs(spidertron.grid.equipment) do
+            -- Check if the equipment is an exoskeleton
+            if equipment.type == "movement-bonus-equipment" then
+                -- Multiply the speed multiplier by the exoskeleton's movement bonus
+                speed_multiplier = speed_multiplier * (1 + equipment.prototype.movement_bonus)
+            end
+        end
+    end
+    -- Calculate the total speed with bonuses
+    local total_speed = base_speed * speed_multiplier
+    return total_speed
+end
 
--- script.on_nth_tick(1, (function()
---     for _, job in pairs(global.jobs) do
---         local worker = job.worker
---         if worker and worker.valid then
---             if worker.autopilot_destination then
---                 if (worker.speed > 0.5) then  -- 0.5 tiles per second is about the fastest a spider can move with 5 vanilla Exoskeletons.
---                     local distance = chunk_util.distance_between(worker.position, worker.autopilot_destination)
---                     local last_distance = job.wp_last_distance
---                     if distance < 1 or (last_distance and distance > last_distance) then
---                         worker.stop_spider()
---                         job.wp_last_distance = nil
---                     else
---                         job.wp_last_distance = distance
---                     end
---                 end
---             end
---         end
---     end
--- end))
 
 ---@param constructron LuaEntity
 ---@param state ConstructronStatus
@@ -91,7 +91,7 @@ ctron.get_closest_service_station = function(constructron) -- used to get the cl
 end
 
 ---@param constructron LuaEntity
----@param color_state "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair"
+---@param color_state "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair" | "utility"
 ctron.paint_constructron = function(constructron, color_state)
     if constructron and constructron.valid then
         if color_state == 'idle' then
@@ -106,6 +106,8 @@ ctron.paint_constructron = function(constructron, color_state)
             constructron.color = color_lib.colors.green
         elseif color_state == 'repair' then
             constructron.color = color_lib.colors.purple
+        elseif color_state == 'utility' then
+            constructron.color = color_lib.colors.yellow
         end
     end
 end

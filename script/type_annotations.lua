@@ -27,6 +27,7 @@
 ---| "upgrade"
 ---| "repair"
 ---| "destroy"
+---| "utility"
 
 ---@alias JobAction
 ---| "request_items"

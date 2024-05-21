@@ -7,11 +7,11 @@ local collision_mask_util_extended = require("script/collision-mask-util-control
 
 local job_proc = {}
 
-job = {}
+local job = {}
 job.__index = job
 script.register_metatable("job_table", job)
 
-function job.new(job_index, surface_index, job_type, worker)
+function job_proc.new(job_index, surface_index, job_type, worker)
     local instance = setmetatable({}, job)
     instance.job_index = job_index -- the global index of the job
     instance.state = "new" -- the state of the job
@@ -98,7 +98,7 @@ end
 
 job_proc.include_more_chunks = function(chunk_params, origin_chunk)
     for _, chunk in pairs(chunk_params.chunks) do
-        chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+        local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
         if (chunk_util.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
             chunk.midpoint = chunk_midpoint
             local merged_items = job_proc.combine_tables{chunk_params.required_items, chunk.required_items}
@@ -174,6 +174,7 @@ end
 
 function job:request_path()
     local request_id = self.worker.surface.request_path(self.path_request_params) -- request the path from the game
+    debug_lib.VisualDebugLine(self.worker.position, self.path_request_params.goal, self.worker.surface, "blue", 600)
     self.path_request_id = request_id
     global.pathfinder_requests[request_id] = self
 end
@@ -312,7 +313,7 @@ function job:mobility_check()
     local worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
-    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) then -- if movement has not progressed at least two tiles
+    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) and not worker.stickers[1] then -- if movement has not progressed at least two tiles
         return false -- is not mobile
     end
     self.last_distance = current_distance
@@ -458,6 +459,10 @@ job_proc.process_job_queue = function()
                     -- set default ammo request
                     if global.ammo_count > 0 then
                         job.required_items[global.ammo_name] = global.ammo_count
+                    end
+                    -- enable_logistics_while_moving for destroy jobs
+                    if job.job_type == "destroy" then
+                        worker.enable_logistics_while_moving = true
                     end
                     -- state change
                     job.state = "starting"
@@ -651,6 +656,17 @@ job_proc.process_job_queue = function()
                     goto continue
                 end
 
+                -- check health
+                local health = worker.get_health_ratio()
+                if health < 0.6 then
+                    debug_lib.VisualDebugText("Fleeing!", worker, -0.5, 1)
+                    -- set the station as an iterim retreat target but request a path to take over
+                    worker.autopilot_destination = job.station.position
+                    job:move_to_position(job.station.position)
+                    job.state = "finishing"
+                    goto continue
+                end
+
                 -- Am I in the correct position?
                 local distance_from_pos = chunk_util.distance_between(worker.position, task_position)
                 if distance_from_pos > 3 then
@@ -682,14 +698,6 @@ job_proc.process_job_queue = function()
 
                     if not job.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
                         job:enable_roboports()
-                        goto continue
-                    end
-
-                    -- check health
-                    local health = worker.get_health_ratio()
-                    if health < 0.5 then
-                        debug_lib.VisualDebugText("Fleeing!", worker, -0.5, 1)
-                        job.state = "finishing"
                         goto continue
                     end
 
@@ -785,7 +793,6 @@ job_proc.process_job_queue = function()
                         --  Destroy logic
                         --===========================================================================--
                         elseif job.job_type == "destroy" then
-                            worker.enable_logistics_while_moving = true
                             -- check ammo
                             local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
                             local ammunition = ammo_slots.get_contents()
@@ -916,6 +923,44 @@ job_proc.process_job_queue = function()
 
 
 
+            elseif job.state == "robot_collection" then
+                local logistic_network = worker.logistic_cell.logistic_network
+                if next(logistic_network) and logistic_network.construction_robots[1] then
+                    local distance = chunk_util.distance_between(worker.position, logistic_network.construction_robots[1].position)
+                    if not worker.autopilot_destination and job.path_request_id == nil then
+                        if distance > 3 then
+                            -- Get the positions of the Spidertron and the robot
+                            local spidertron_pos = worker.position
+                            local robot_pos = logistic_network.construction_robots[1].position
+                            -- Get the speed of the Spidertron and the robot
+                            local spidertron_speed = ctron.calculate_spidertron_speed(worker)
+                            game.print('calc speed ' .. spidertron_speed .. '')
+                            local robot_speed = 0.05 -- hardcoded estimated speed of the Robot
+                            -- Calculate the vector from the Spidertron to the robot
+                            local dx = robot_pos.x - spidertron_pos.x
+                            local dy = robot_pos.y - spidertron_pos.y
+                            -- Calculate the distance between the Spidertron and the robot
+                            local distance1 = math.sqrt(dx * dx + dy * dy)
+                            -- Calculate the time it takes for them to meet
+                            local time_to_meet = distance / (spidertron_speed + robot_speed)
+                            -- Calculate the approximate meeting point
+                            local meeting_point = {
+                                x = spidertron_pos.x + spidertron_speed * time_to_meet * (dx / distance1),
+                                y = spidertron_pos.y + spidertron_speed * time_to_meet * (dy / distance1)
+                            }
+                            job:move_to_position(meeting_point)
+                        else
+                            -- check that robots are charging and if not, change job state to finishing
+                            local logistic_cell = worker.logistic_cell
+                            if logistic_cell and (logistic_cell.charging_robot_count == 0) then
+                                job.state = "finishing"
+                            end
+                        end
+                    end
+                else
+                    job.state = "finishing"
+                end
+
 
             elseif job.state == "deferred" then
                 if job.deffered_tick < game.tick then
@@ -966,7 +1011,7 @@ job_proc.make_jobs = function()
                             break
                         end
                         global.job_index = global.job_index + 1
-                        global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                        global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                         -- add robots to job
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                         global.jobs[global.job_index]:get_chunk()
@@ -979,7 +1024,7 @@ job_proc.make_jobs = function()
                         break
                     end
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                    global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                     global.jobs[global.job_index]:get_chunk()
@@ -1047,7 +1092,13 @@ job_proc.get_worker = function(surface_index)
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
                     end
                 else
-                    debug_lib.VisualDebugText("Awaiting robots to return", constructron, -1, 3)
+                    -- move to robots
+                    debug_lib.VisualDebugText("Moving to robots", constructron, -1, 3)
+                    ctron.set_constructron_status(constructron, 'busy', true)
+                    global.job_index = global.job_index + 1
+                    global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, "utility", constructron)
+                    global.jobs[global.job_index].state = "robot_collection"
+                    global.job_proc_trigger = true
                 end
             end
         end
