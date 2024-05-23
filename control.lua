@@ -201,7 +201,9 @@ script.on_event(ev.on_lua_shortcut, function (event)
     if not player then return end
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
-    cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    if player.clear_cursor() then
+        cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    end
 end)
 
 script.on_event("ctron-get-selection-tool", function (event)
@@ -297,7 +299,9 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
                 global.desired_robot_name = "rocket"
                 game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo name reset!")
             else
-                -- unfinished
+                game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo requests disabled!")
+                settings.global["ammo_count"] = {value = 0}
+                global.ammo_count = 0
             end
         else
             global.ammo_name = settings.global["ammo_name"].value

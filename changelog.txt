@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.1.10
-Date: 2024-04-24
+Version: 1.1.11
+Date: 2024-05-24
   Features:
     - [MAJOR] Entity selection tool: Bypass job toggle settings by manually selecting which entities you want constructed & deconstructed.
       - SHIFT + C To activate
@@ -18,6 +18,18 @@ Date: 2024-04-24
     - Repair jobs now paint the Constructron's purple and black is now used for destroy jobs.
     - Constructron's that cannot find a path now present a red line to the failed destination in debug mode.
     - Changed the amount of repair packs a repair job takes per entity to 1 instead of 3.
+    - Added compatibility with Nullius
+  Bugfixes:
+    - Fixed a crash when the custom pathfinder iterated into ungenerated chunks.
+---------------------------------------------------------------------------------------------------
+Version: 1.1.10
+Date: 2024-05-18
+  Features:
+    - [MAJOR] Entity selection tool: Bypass job toggle settings by manually selecting which entities you want constructed & deconstructed.
+      - SHIFT + C To activate
+      - Left click select to build
+      - Right click select to deconstruct
+  Changes:
     - Added compatibility with Nullius
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.9
