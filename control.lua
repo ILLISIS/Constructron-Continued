@@ -566,3 +566,26 @@ commands.add_command(
 --===========================================================================--
 
 remote.add_interface("ctron_interface", ctron_commands)
+
+---@param entity LuaEntity
+local function remote_entity_built(entity)
+    ---@type EventData.script_raised_built
+    local event = {
+        tick = game.tick,
+        name = defines.events.script_raised_built,
+        entity = entity,
+    }
+    entity_proc.on_built_entity(event)
+end
+
+---@param entities LuaEntity[]
+local function remote_entities_built(entities)
+    for _, entity in pairs(entities) do
+        remote_entity_built(entity)
+    end
+end
+
+remote.add_interface("ctron", {
+    ["scan-entity"] = remote_entity_built,
+    ["scan-entities"] = remote_entities_built
+})
