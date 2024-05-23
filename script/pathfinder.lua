@@ -78,6 +78,7 @@ script.on_event(defines.events.on_script_path_request_finished, (function(event)
             job:request_path(job.path_request_params) -- try again
         else
             debug_lib.VisualDebugText("No Path!", job.worker, -0.5, 1)
+            debug_lib.VisualDebugLine(job.path_request_params.start, job.path_request_params.goal, job.worker.surface, "red", 1200)
         end
     else
         if clean_linear_path_enabled then
@@ -272,6 +273,7 @@ function pathfinder:findpath()
         self.job.pathfinding = nil
         global.custom_pathfinder_requests[self.path_index] = nil
         debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
+        debug_lib.VisualDebugLine(start, goal, self.surface, "red", 1200)
     end
     return -- No path found
 end
@@ -282,6 +284,8 @@ end
 
 function pathfinder:isWalkable(position)
     local tile = self.surface.get_tile(position.x, position.y)
+    if not tile.valid then return false end -- if the tile is invalid then likely the chunk is not generated
+
     local tile_ghost = tile.has_tile_ghost()
 
     if global.water_tile_cache[tile.name] then

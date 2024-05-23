@@ -1,6 +1,7 @@
 local ctron = require("script/constructron")
 local chunk_util = require("script/chunk_util")
 local debug_lib = require("script/debug_lib")
+local job_proc = require("script/job_processor")
 
 local entity_proc = {}
 
@@ -36,8 +37,13 @@ entity_proc.on_built_entity = function(event)
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
         global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] + 1
+        -- combinator related
         global.constructron_requests[entity.unit_number] = {}
         global.constructron_requests[entity.unit_number].requests = {}
+        for _, station in pairs(global.service_stations) do
+            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+        end
+        -- utility
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
@@ -192,9 +198,13 @@ script.on_event(ev.on_entity_cloned, function(event)
         }
         global.constructrons_count[surface_index] = global.constructrons_count[surface_index] + 1
         global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] + 1
+        -- combinator related
         global.constructron_requests[entity.unit_number] = {}
         global.constructron_requests[entity.unit_number].requests = {}
-        -- configure surface management
+        for _, station in pairs(global.service_stations) do
+            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+        end
+        -- utility
         if (global.stations_count[surface_index] > 0) then
             global.managed_surfaces[entity.surface.name] = surface_index
         end
@@ -299,6 +309,9 @@ entity_proc.on_entity_destroyed = function(event)
             end
             -- combinator management
             global.constructron_requests[event.unit_number] = nil
+            for _, station in pairs(global.service_stations) do
+                job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+            end
         elseif removed_entity.name == "service_station" then
             global.stations_count[surface_index] = global.stations_count[surface_index] - 1
             global.service_stations[event.unit_number] = nil

@@ -573,11 +573,11 @@ local function stats(player, _)
             available_count = available_count + 1
         end
     end
-    game.print('Constructrons on a job:' .. used_count ..'')
-    game.print('Idle Constructrons:' .. available_count .. '')
-    game.print('global.entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
-    game.print('global.queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
-    game.print('global.job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
+    game.print('Constructrons on a job: ' .. used_count ..'')
+    game.print('Idle Constructrons: ' .. available_count .. '')
+    game.print('entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
+    game.print('queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
+    game.print('job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
     return global_stats
 end
 

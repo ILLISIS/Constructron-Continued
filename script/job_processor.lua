@@ -313,7 +313,7 @@ function job:mobility_check()
     local worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
-    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) and not worker.stickers[1] then -- if movement has not progressed at least two tiles
+    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) and not next(worker.stickers or {}) then -- if movement has not progressed at least two tiles
         return false -- is not mobile
     end
     self.last_distance = current_distance
@@ -463,6 +463,7 @@ job_proc.process_job_queue = function()
                     -- enable_logistics_while_moving for destroy jobs
                     if job.job_type == "destroy" then
                         worker.enable_logistics_while_moving = true
+                        job.required_items["repair-pack"] = (job.required_items["repair-pack"] or 0) + 50
                     end
                     -- state change
                     job.state = "starting"
@@ -934,7 +935,6 @@ job_proc.process_job_queue = function()
                             local robot_pos = logistic_network.construction_robots[1].position
                             -- Get the speed of the Spidertron and the robot
                             local spidertron_speed = ctron.calculate_spidertron_speed(worker)
-                            game.print('calc speed ' .. spidertron_speed .. '')
                             local robot_speed = 0.05 -- hardcoded estimated speed of the Robot
                             -- Calculate the vector from the Spidertron to the robot
                             local dx = robot_pos.x - spidertron_pos.x
