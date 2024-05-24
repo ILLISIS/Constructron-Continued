@@ -20,10 +20,10 @@ me.colors.blue = {
     a = 0.4
 }
 me.colors.yellow = {
-    r = 128,
-    g = 128,
+    r = 255,
+    g = 255,
     b = 0,
-    a = 1
+    a = 128
 }
 me.colors.purple = {
     r = 255,
@@ -41,11 +41,16 @@ me.colors.white = {
     b = 0.65,
     a = 0.25
 }
-me.colors.charcoal = {
-    r = 0.1,
-    g = 0.1,
-    b = 0.1,
+me.colors.black = {
+    r = 0,
+    g = 0,
+    b = 0,
     a = 0.4
 }
-
+me.colors.purple = {
+    r = 90,
+    g = 0,
+    b = 45,
+    a = 128
+}
 return me

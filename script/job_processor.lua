@@ -7,11 +7,11 @@ local collision_mask_util_extended = require("script/collision-mask-util-control
 
 local job_proc = {}
 
-job = {}
+local job = {}
 job.__index = job
 script.register_metatable("job_table", job)
 
-function job.new(job_index, surface_index, job_type, worker)
+function job_proc.new(job_index, surface_index, job_type, worker)
     local instance = setmetatable({}, job)
     instance.job_index = job_index -- the global index of the job
     instance.state = "new" -- the state of the job
@@ -34,6 +34,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.roboports_enabled = true -- used to flag if roboports are enabled or not
     instance.deffered_tick = nil -- used to delay job start until xyz tick in conjunction with the deffered job state
     -- lock constructron
+    global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
     ctron.set_constructron_status(worker, 'busy', true)
     -- change selected constructron colour
     ctron.paint_constructron(worker, job_type)
@@ -97,7 +98,7 @@ end
 
 job_proc.include_more_chunks = function(chunk_params, origin_chunk)
     for _, chunk in pairs(chunk_params.chunks) do
-        chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+        local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
         if (chunk_util.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
             chunk.midpoint = chunk_midpoint
             local merged_items = job_proc.combine_tables{chunk_params.required_items, chunk.required_items}
@@ -173,6 +174,7 @@ end
 
 function job:request_path()
     local request_id = self.worker.surface.request_path(self.path_request_params) -- request the path from the game
+    debug_lib.VisualDebugLine(self.worker.position, self.path_request_params.goal, self.worker.surface, "blue", 600)
     self.path_request_id = request_id
     global.pathfinder_requests[request_id] = self
 end
@@ -311,7 +313,7 @@ function job:mobility_check()
     local worker = self.worker
     local last_distance = self.last_distance
     local current_distance = chunk_util.distance_between(worker.position, worker.autopilot_destination) or 0
-    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) then -- if movement has not progressed at least two tiles
+    if (worker.speed < 0.05) and last_distance and ((last_distance - current_distance) < 2) and not next(worker.stickers or {}) then -- if movement has not progressed at least two tiles
         return false -- is not mobile
     end
     self.last_distance = current_distance
@@ -353,6 +355,12 @@ function job:check_chunks()
                 }
             elseif self.job_type == "repair" then
                 return -- repairs do not check
+            elseif self.job_type == "destroy" then
+                color = "black"
+                entity_filter = {
+                    area = {chunk.minimum, chunk.maximum},
+                    force = "enemy",
+                }
             end
             local surface = game.surfaces[chunk.surface]
             debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
@@ -367,6 +375,51 @@ function job:check_chunks()
                 global.entity_proc_trigger = true -- there is something to do start processing
             end
         end
+    end
+end
+
+-- function to update a combinator of a station
+---@param station LuaEntity
+---@param item_name string
+---@param item_count integer
+job_proc.update_combinator = function(station, item_name, item_count)
+    if not station or not station.valid or not item_name or not item_count then return end
+
+    -- update master list
+    local signals = global.station_combinators[station.unit_number]["signals"]
+
+    signals[item_name] = ((signals[item_name] or 0) + item_count)
+
+    if signals[item_name] < 0 then
+        signals[item_name] = 0
+    end
+
+    -- update combinator signals
+    local index = 2
+    local parameters = {}
+    local surface_index = station.surface.index
+    parameters[1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[surface_index]}
+    parameters[2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[surface_index]}
+    for item, count in pairs(signals) do
+        index = index + 1
+        parameters[index] = {
+            index = index,
+            signal = {
+                type = "item",
+                name = item
+            },
+            count = count
+        }
+    end
+
+    global.station_combinators[station.unit_number]["signals"] = signals
+    global.station_combinators[station.unit_number].entity.get_control_behavior().parameters = parameters
+end
+
+-- method to remove all requests of a job from a combinator
+function job:remove_combinator_requests(items)
+    for item, value in pairs(items) do
+        job_proc.update_combinator(self.station, item, (value.count * -1))
     end
 end
 
@@ -403,6 +456,16 @@ job_proc.process_job_queue = function()
                             job.landfill_job = true
                         end
                     end
+                    -- set default ammo request
+                    if global.ammo_count > 0 and (worker.name ~= "constructron-rocket-powered") then
+                        job.required_items[global.ammo_name] = global.ammo_count
+                    end
+                    -- enable_logistics_while_moving for destroy jobs
+                    if job.job_type == "destroy" then
+                        worker.enable_logistics_while_moving = true
+                        job.required_items["repair-pack"] = (job.required_items["repair-pack"] or 0) + 50
+                    end
+                    -- state change
                     job.state = "starting"
                 else
                     -- unlock constructron
@@ -440,14 +503,28 @@ job_proc.process_job_queue = function()
                 else -- constructron is in range of a station
                     debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
                     local logistic_condition = true
+                    if not global.constructron_requests[worker.unit_number].station then
+                        global.constructron_requests[worker.unit_number].station = job.station
+                    end
                     -- request items / check inventory
-                    local inventory = worker.get_inventory(defines.inventory.spider_trunk)
-                    local inventory_items = inventory.get_contents()
-                    if inventory then
+                    local inventory = worker.get_inventory(defines.inventory.spider_trunk) -- spider inventory
+                    local inventory_items = inventory.get_contents() -- spider inventory contents
+                    local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo) -- ammo inventory
+                    local ammunition = ammo_slots.get_contents() -- ammo inventory contents
+                    local current_requests = {} -- current reqests that a spider is making
+                    if inventory and ammunition then
+                        local supply_items = job_proc.combine_tables({inventory_items, ammunition})
                         if not (job.sub_state == "items_requested") then
                             local item_request_list = table.deepcopy(job.required_items)
-                            for item, _ in pairs(inventory_items) do
+                            -- check inventory for unwanted items
+                            for item, _ in pairs(supply_items) do
                                 if not job.required_items[item] then
+                                    item_request_list[item] = 0
+                                end
+                            end
+                            -- check ammo slots for unwanted items
+                            for item, _ in pairs(ammunition) do
+                                if item ~= global.ammo_name then
                                     item_request_list[item] = 0
                                 end
                             end
@@ -458,14 +535,23 @@ job_proc.process_job_queue = function()
                             job.request_tick = game.tick
                             goto continue
                         else
+                            --populate current requests
                             for i = 1, worker.request_slot_count do ---@cast i uint
                                 local request = worker.get_vehicle_logistic_slot(i)
-                                if request then
-                                    if not (((inventory_items[request.name] or 0) >= request.min) and ((inventory_items[request.name] or 0) <= request.max)) then
-                                        logistic_condition = false
-                                    else
-                                        worker.clear_vehicle_logistic_slot(i)
-                                    end
+                                if request and request.name then
+                                    current_requests[request.name] = {
+                                        count = request.max,
+                                        slot = i
+                                    }
+                                end
+                            end
+                            -- check if requested items have been delivered
+                            for request_name, value in pairs(current_requests) do
+                                local supply_check = (((supply_items[request_name] or 0) >= value.count) and ((supply_items[request_name] or 0) <= value.count))
+                                if not supply_check then
+                                    logistic_condition = false
+                                else
+                                    worker.clear_vehicle_logistic_slot(value.slot)
                                 end
                             end
                         end
@@ -475,33 +561,30 @@ job_proc.process_job_queue = function()
                     if (ticks > 900) and not logistic_condition then
                         if (global.stations_count[(job.surface_index)] > 1) then
                             -- check if current station network can provide
-                            for i = 1, worker.request_slot_count do ---@cast i uint
-                                local request = worker.get_vehicle_logistic_slot(i)
-                                if request and request.name then
-                                    local logistic_network = job.station.logistic_network
-                                    if logistic_network and logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                        if not (logistic_network.all_logistic_robots <= 0) then
-                                            goto continue
-                                        else
-                                            debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
-                                            goto continue
-                                        end
+                            local logistic_network = job.station.logistic_network
+                            for request_name, value in pairs(current_requests) do
+                                if logistic_network and logistic_network.can_satisfy_request(request_name, value.count, true) then
+                                    if not (logistic_network.all_logistic_robots <= 0) then
+                                        goto continue
+                                    else
+                                        debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
+                                        goto continue
                                     end
                                 end
                             end
                             -- check if other station networks can provide
                             local surface_stations = ctron.get_service_stations(job.surface_index)
                             for _, station in pairs(surface_stations) do
-                                local logistic_network = station.logistic_network
-                                if logistic_network then
-                                    for i = 1, worker.request_slot_count do ---@cast i uint
-                                        local request = worker.get_vehicle_logistic_slot(i)
-                                        if request and request.name then
-                                            if logistic_network.can_satisfy_request(request.name, request.min, true) then
-                                                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                                                job.station = station
-                                                goto continue
-                                            end
+                                local station_logistic_network = station.logistic_network
+                                if station_logistic_network then
+                                    for request_name, value in pairs(current_requests) do
+                                        if station_logistic_network.can_satisfy_request(request_name, value.count, true) then
+                                            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+                                            job:remove_combinator_requests(current_requests) -- remove all requests from circuit
+                                            global.constructron_requests[worker.unit_number].station = station -- update request station
+                                            job.sub_state = nil
+                                            job.station = station
+                                            goto continue
                                         end
                                     end
                                 end
@@ -518,6 +601,18 @@ job_proc.process_job_queue = function()
                         end
                     end
                     if logistic_condition then -- requested items have been delivered and trash items have been taken
+                        -- divide ammo evenly between slots
+                        if ammunition and ammunition[global.ammo_name] then
+                            local ammo_count = ammunition[global.ammo_name]
+                            local ammo_per_slot = math.ceil(ammo_count / #ammo_slots)
+                            for i = 1, #ammo_slots do
+                                local slot = ammo_slots[i]
+                                if slot then
+                                    slot.clear()
+                                    slot.set_stack({name = global.ammo_name, count = ammo_per_slot})
+                                end
+                            end
+                        end
                         -- clear logistic request and proceed with job
                         for i = 1, worker.request_slot_count do --[[@cast i uint]]
                             worker.clear_vehicle_logistic_slot(i)
@@ -536,7 +631,6 @@ job_proc.process_job_queue = function()
 
 
             elseif job.state == "in_progress" then
-                -- IDEA: health checks to avoid unit destruction
                 local _, task_position = next(job.task_positions)
                 if not next(job.task_positions) then
                     job:check_chunks()
@@ -560,6 +654,17 @@ job_proc.process_job_queue = function()
                 if (logistic_network.all_construction_robots < 1) then
                     debug_lib.VisualDebugText("Missing robots! returning to station.", worker, -0.5, 5)
                     job.state = "starting"
+                    goto continue
+                end
+
+                -- check health
+                local health = worker.get_health_ratio()
+                if health < 0.6 then
+                    debug_lib.VisualDebugText("Fleeing!", worker, -0.5, 1)
+                    -- set the station as an iterim retreat target but request a path to take over
+                    worker.autopilot_destination = job.station.position
+                    job:move_to_position(job.station.position)
+                    job.state = "finishing"
                     goto continue
                 end
 
@@ -590,7 +695,7 @@ job_proc.process_job_queue = function()
                     local construction_robots = logistic_network.construction_robots
                     local entities
 
-                    debug_lib.VisualDebugText("Constructing", worker, -1, 1)
+                    debug_lib.VisualDebugText("Constructing", worker, -1, 1) -- move this
 
                     if not job.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
                         job:enable_roboports()
@@ -682,6 +787,22 @@ job_proc.process_job_queue = function()
                         elseif job.job_type == "repair" then
                             if not job.repair_started then
                                 job.repair_started = true -- flag to ensure that at least 1 second passes before changing job state
+                                goto continue
+                            end
+                            table.remove(job.task_positions, 1)
+                        --===========================================================================--
+                        --  Destroy logic
+                        --===========================================================================--
+                        elseif job.job_type == "destroy" then
+                            -- check ammo
+                            local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
+                            local ammunition = ammo_slots.get_contents()
+                            -- retreat when at 25% of ammo
+                            if ammunition and ammunition[global.ammo_name] and ammunition[global.ammo_name] < (math.ceil(global.ammo_count * 25 / 100)) then
+                                job.state = "finishing"
+                            end
+                            if not job.destroy_started then
+                                job.destroy_started = true -- flag to ensure that at least 1 second passes before changing job state
                                 goto continue
                             end
                             table.remove(job.task_positions, 1)
@@ -778,6 +899,8 @@ job_proc.process_job_queue = function()
                                     end
                                 end
                             end
+                            -- clear combinator request cache
+                            global.constructron_requests[worker.unit_number].requests = {}
                         end
                     end
                     if (global.constructrons_count[job.surface_index] > 10) then
@@ -789,6 +912,9 @@ job_proc.process_job_queue = function()
                     end
                     -- unlock constructron
                     ctron.set_constructron_status(worker, 'busy', false)
+                    global.available_ctron_count[job.surface_index] = global.available_ctron_count[job.surface_index] + 1
+                    -- update combinator with dummy entity to reconcile available_ctron_count
+                    job_proc.update_combinator(job.station, "constructron_pathing_proxy_1", 0)
                     -- change selected constructron colour
                     ctron.paint_constructron(worker, 'idle')
                     -- remove job from list
@@ -797,6 +923,43 @@ job_proc.process_job_queue = function()
                 end
 
 
+
+            elseif job.state == "robot_collection" then
+                local logistic_network = worker.logistic_cell.logistic_network
+                if next(logistic_network) and logistic_network.construction_robots[1] then
+                    local distance = chunk_util.distance_between(worker.position, logistic_network.construction_robots[1].position)
+                    if not worker.autopilot_destination and job.path_request_id == nil then
+                        if distance > 3 then
+                            -- Get the positions of the Spidertron and the robot
+                            local spidertron_pos = worker.position
+                            local robot_pos = logistic_network.construction_robots[1].position
+                            -- Get the speed of the Spidertron and the robot
+                            local spidertron_speed = ctron.calculate_spidertron_speed(worker)
+                            local robot_speed = 0.05 -- hardcoded estimated speed of the Robot
+                            -- Calculate the vector from the Spidertron to the robot
+                            local dx = robot_pos.x - spidertron_pos.x
+                            local dy = robot_pos.y - spidertron_pos.y
+                            -- Calculate the distance between the Spidertron and the robot
+                            local distance1 = math.sqrt(dx * dx + dy * dy)
+                            -- Calculate the time it takes for them to meet
+                            local time_to_meet = distance / (spidertron_speed + robot_speed)
+                            -- Calculate the approximate meeting point
+                            local meeting_point = {
+                                x = spidertron_pos.x + spidertron_speed * time_to_meet * (dx / distance1),
+                                y = spidertron_pos.y + spidertron_speed * time_to_meet * (dy / distance1)
+                            }
+                            job:move_to_position(meeting_point)
+                        else
+                            -- check that robots are charging and if not, change job state to finishing
+                            local logistic_cell = worker.logistic_cell
+                            if logistic_cell and (logistic_cell.charging_robot_count == 0) then
+                                job.state = "finishing"
+                            end
+                        end
+                    end
+                else
+                    job.state = "finishing"
+                end
 
 
             elseif job.state == "deferred" then
@@ -819,6 +982,9 @@ end
 
 
 
+-------------------------------------------------------------------------------
+--  Utility
+-------------------------------------------------------------------------------
 
 job_proc.make_jobs = function()
     local trigger_skip = false
@@ -826,7 +992,8 @@ job_proc.make_jobs = function()
         "deconstruction",
         "construction",
         "upgrade",
-        "repair"
+        "repair",
+        "destroy"
     }
 
     -- for each surface
@@ -844,7 +1011,7 @@ job_proc.make_jobs = function()
                             break
                         end
                         global.job_index = global.job_index + 1
-                        global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                        global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                         -- add robots to job
                         global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                         global.jobs[global.job_index]:get_chunk()
@@ -857,7 +1024,7 @@ job_proc.make_jobs = function()
                         break
                     end
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, surface_index, job_type, worker)
+                    global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
                     global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
                     global.jobs[global.job_index]:get_chunk()
@@ -872,25 +1039,31 @@ job_proc.make_jobs = function()
     end
 end
 
+---@param event EventData.on_entity_logistic_slot_changed
+script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
+    local entity = event.entity
+    local entity_name = entity.name
+    if entity_name ~= "constructron" and entity_name ~= "rocket-powered-constructron" then
+        return
+    end
 
+    local slot = event.slot_index
+    local logistic_request = entity.get_vehicle_logistic_slot(slot)
+    local unit_number = entity.unit_number
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--------------------------------------------------------------------------------
---  Utility
--------------------------------------------------------------------------------
+    if logistic_request.name then
+        global.constructron_requests[unit_number]["requests"][slot] = {
+            item_name = logistic_request.name,
+            item_count = logistic_request.min
+        }
+        job_proc.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.max)
+    else
+        local item_request = global.constructron_requests[unit_number]["requests"][slot]
+        if not item_request then return end
+        job_proc.update_combinator(global.constructron_requests[unit_number].station, item_request.item_name, (item_request.item_count * -1))
+        global.constructron_requests[unit_number]["requests"][slot] = nil
+    end
+end)
 
 ---@param surface_index uint
 ---@return LuaEntity?
@@ -919,7 +1092,13 @@ job_proc.get_worker = function(surface_index)
                         debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
                     end
                 else
-                    debug_lib.VisualDebugText("Awaiting robots to return", constructron, -1, 3)
+                    -- move to robots
+                    debug_lib.VisualDebugText("Moving to robots", constructron, -1, 3)
+                    ctron.set_constructron_status(constructron, 'busy', true)
+                    global.job_index = global.job_index + 1
+                    global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, "utility", constructron)
+                    global.jobs[global.job_index].state = "robot_collection"
+                    global.job_proc_trigger = true
                 end
             end
         end

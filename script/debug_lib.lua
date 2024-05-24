@@ -72,4 +72,17 @@ me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
     end
 end
 
+me.VisualDebugLine = function (from, to, surface, color, ttl)
+    if global.debug_toggle then
+        rendering.draw_line {
+            width = 4,
+            color = color_lib.colors[color],
+            surface = surface,
+            from = from,
+            to = to,
+            time_to_live = ttl
+        }
+    end
+end
+
 return me

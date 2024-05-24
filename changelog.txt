@@ -1,11 +1,35 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.11
-Date: ????
+Date: 2024-05-24
+  Features:
+    - [MAJOR] Entity selection tool: Bypass job toggle settings by manually selecting which entities you want constructed & deconstructed.
+      - SHIFT + C To activate
+      - Left click select to build
+      - Right click select to deconstruct
+      - Shift right click select to destroy
+    - [MAJOR] Destroy jobs: Constructrons will seek and destroy biter nests found via radar reveal.
+    - [MAJOR] Added the ability to request a default amount of ammo for Constructrons to defend themselves with.
+    - [MAJOR] Added circuit output to Stations which output what Constructrons are requesting at that particular Station and general stats.
+    - Utility jobs - a new job type that allows for the Constructron to perform a variety of tasks. Represented by the color yellow.
+    - Robot collection: Constructrons will now go and collect robots left behind after a job (E.g. after a deconstruction job with full inventory) instead of waiting for them at the station.
+    - Constructrons that get dammaged below 60% health will now cancel the job and attempt to retreat to the service station.
   Changes:
-    - Added interface for other mods to notify Constructron about new entities
+    - Corrected setting name enties_per_tick to entities_per_second.
+    - Repair jobs now paint the Constructron's purple and black is now used for destroy jobs.
+    - Constructron's that cannot find a path now present a red line to the failed destination in debug mode.
+    - Changed the amount of repair packs a repair job takes per entity to 1 instead of 3.
+    - Added interface for other mods to notify Constructron about new entities. [fgardt]
+    - Added compatibility with Nullius. [fgardt]
+  Bugfixes:
+    - Fixed a crash when the custom pathfinder iterated into ungenerated chunks.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.10
-Date: 2024-04-24
+Date: 2024-05-18
+  Features:
+    - [MAJOR] Entity selection tool: Bypass job toggle settings by manually selecting which entities you want constructed & deconstructed.
+      - SHIFT + C To activate
+      - Left click select to build
+      - Right click select to deconstruct
   Changes:
     - Added compatibility with Nullius
 ---------------------------------------------------------------------------------------------------
