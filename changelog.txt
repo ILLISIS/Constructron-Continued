@@ -19,7 +19,6 @@ Date: 2024-05-24
     - Constructron's that cannot find a path now present a red line to the failed destination in debug mode.
     - Changed the amount of repair packs a repair job takes per entity to 1 instead of 3.
     - Added interface for other mods to notify Constructron about new entities. [fgardt]
-    - Added compatibility with Nullius. [fgardt]
   Bugfixes:
     - Fixed a crash when the custom pathfinder iterated into ungenerated chunks.
 ---------------------------------------------------------------------------------------------------
@@ -31,7 +30,7 @@ Date: 2024-05-18
       - Left click select to build
       - Right click select to deconstruct
   Changes:
-    - Added compatibility with Nullius
+    - Added compatibility with Nullius [fgardt]
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.9
 Date: 2024-02-26
@@ -365,7 +364,7 @@ Date: 2022-12-06
   Bugfixes:
     - A bug where which caused jobs not to trigger when clear_robots_when_idle was enabled.
   Other:
-    - Added type annotations to functions. Thanks BrainGamer!
+    - Added type annotations to functions. [fgardt]
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.46
 Date: 2022-12-01
