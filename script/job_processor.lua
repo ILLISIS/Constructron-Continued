@@ -401,6 +401,7 @@ job_proc.update_combinator = function(station, item_name, item_count)
     parameters[1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[surface_index]}
     parameters[2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[surface_index]}
     for item, count in pairs(signals) do
+        if index > 98 then break end -- the combinator only has 100 slots
         index = index + 1
         parameters[index] = {
             index = index,
