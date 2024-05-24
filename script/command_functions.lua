@@ -1,4 +1,5 @@
 local ctron = require("script/constructron")
+local job_proc = require("script/job_processor")
 
 local me = {}
 
@@ -11,9 +12,13 @@ me.reset_settings = function()
     settings.global["constructron-debug-enabled"] = {value = false}
     settings.global["desired_robot_count"] = {value = 50}
     settings.global["desired_robot_name"] = {value = "construction-robot"}
-    settings.global["entities_per_tick"] = {value = 1000}
+    settings.global["entities_per_second"] = {value = 1000}
     settings.global["job-start-delay"] = {value = 5}
     settings.global["horde_mode"] = {value = false}
+    settings.global["destroy_jobs"] = {value = false}
+    settings.global["ammo_name"] = {value = "rocket"}
+    settings.global["ammo_count"] = {value = 0}
+    settings.global["job-start-delay"] = {value = 0}
 end
 
 me.clear_queues = function()
@@ -21,22 +26,26 @@ me.clear_queues = function()
     global.deconstruction_entities = {}
     global.upgrade_entities = {}
     global.repair_entities = {}
+    global.destroy_entities = {}
 
     global.construction_index = 0
     global.deconstruction_index = 0
     global.updgrade_index = 0
     global.repair_index = 0
+    global.destroy_index = 0
 
     global.construction_queue = {}
     global.deconstruction_queue = {}
     global.upgrade_queue = {}
     global.repair_queue = {}
+    global.destroy_queue = {}
 
     for _, surface in pairs(game.surfaces) do
         global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
         global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
+        global.destroy_queue[surface.index] = global.destroy_queue[surface.index] or {}
     end
 end
 
@@ -229,7 +238,7 @@ me.recall_ctrons = function()
                 local closest_station = ctron.get_closest_service_station(constructron)
                 if closest_station then
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job.new(global.job_index, constructron.surface.index, "upgrade", constructron)
+                    global.jobs[global.job_index] = job_proc.new(global.job_index, constructron.surface.index, "utility", constructron)
                     global.jobs[global.job_index].state = "finishing"
                     global.job_proc_trigger = true -- start job operations
                 end
@@ -237,6 +246,34 @@ me.recall_ctrons = function()
         else
             game.print('No stations to recall Constructrons to on ' .. surface.name .. '.')
         end
+    end
+end
+
+me.reset_combinator_signals = function()
+    -- reset combinator item_request cache
+    for _, constructron in pairs(global.constructrons) do
+        global.constructron_requests[constructron.unit_number] = {
+            station = ctron.get_closest_service_station(constructron),
+            requests = {}
+        }
+    end
+    -- reset combinator signals
+    for _, station in pairs(global.service_stations) do
+        -- reset signal cache
+        global.station_combinators[station.unit_number].signals = {}
+        local signals = {
+            [1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[station.surface.index]},
+            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[station.surface.index]}
+        }
+        -- set signals
+        global.station_combinators[station.unit_number].entity.get_control_behavior().parameters = signals
+    end
+end
+
+me.reset_available_ctron_count = function()
+    global.available_ctron_count = {}
+    for _, surface in pairs(game.surfaces) do
+        global.available_ctron_count[surface.index] = global.constructrons_count[surface.index]
     end
 end
 
@@ -327,6 +364,7 @@ me.stats = function()
         "constructron_statuses",
         "construction_entities",
         "deconstruction_entities",
+        "destroy_entities",
         "upgrade_entities",
         "repair_entities",
         "jobs",
@@ -350,6 +388,7 @@ me.stats = function()
         "deconstruction_queue",
         "upgrade_queue",
         "repair_queue",
+        "destroy_queue",
     }
     for _, surface in pairs(game.surfaces) do
         for _, data_name in pairs(surface_queues) do
@@ -370,7 +409,7 @@ me.help_text = function()
     game.print('/ctron help - show this help message')
     game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|horde|all)')
     game.print('/ctron reset (settings|queues|entities|all)')
-    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair)')
+    game.print('/ctron clear (all|construction|deconstruction|upgrade|repair|destroy)')
     game.print('/ctron stats for a basic display of queue length')
     game.print('See Factorio mod portal for further assistance https://mods.factorio.com/mod/Constructron-Continued')
 end

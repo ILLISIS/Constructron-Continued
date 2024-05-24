@@ -1,6 +1,5 @@
 local custom_lib = require("script/custom_lib")
 local debug_lib = require("script/debug_lib")
--- local pathfinder = require("script/pathfinder")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")
@@ -21,6 +20,8 @@ script.on_nth_tick(15, function()
         entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_tick)
     elseif next(global.repair_entities) then
         entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_tick)
+    elseif next(global.destroy_entities) then
+        entity_proc.add_entities_to_chunks("destroy", global.destroy_entities, global.destroy_queue, global.destroy_tick)
     else
         global.entity_proc_trigger = false -- stop entity processing
         global.queue_proc_trigger = true -- start queue processing
@@ -69,30 +70,38 @@ local ensure_globals = function()
     global.deconstruction_index = global.deconstruction_index or 0
     global.upgrade_index = global.upgrade_index or 0
     global.repair_index = global.repair_index or 0
+    global.destroy_index = global.destroy_index or 0
     --
     global.construction_entities = global.construction_entities or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
     global.upgrade_entities = global.upgrade_entities or {}
     global.repair_entities = global.repair_entities or {}
+    global.destroy_entities = global.destroy_entities or {}
     --
     global.construction_queue = global.construction_queue or {}
     global.deconstruction_queue = global.deconstruction_queue or {}
     global.upgrade_queue = global.upgrade_queue or {}
     global.repair_queue = global.repair_queue or {}
+    global.destroy_queue = global.destroy_queue or {}
     --
-    global.constructrons = global.constructrons or {}
-    global.service_stations = global.service_stations or {}
+    global.constructrons = global.constructrons or {} -- all constructron entities.
+    global.service_stations = global.service_stations or {} -- all service stations entities.
+    global.station_combinators = global.station_combinators or {} -- all combinator entities.
+    global.constructron_requests = global.constructron_requests or {} -- caches logistic requests as they are nil after slot is cleared. This was needed for combinators.
     --
     global.constructrons_count = global.constructrons_count or {}
+    global.available_ctron_count = global.available_ctron_count or {}
     global.stations_count = global.stations_count or {}
     --
     for _, surface in pairs(game.surfaces) do
         global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
+        global.available_ctron_count[surface.index] = global.available_ctron_count[surface.index] or global.constructrons_count[surface.index]
         global.stations_count[surface.index] = global.stations_count[surface.index] or 0
         global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
         global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
         global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
         global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
+        global.destroy_queue[surface.index] = global.destroy_queue[surface.index] or {}
     end
     -- build allowed items cache (this is used to filter out entities that do not have recipes)
     global.allowed_items = {}
@@ -153,11 +162,14 @@ local ensure_globals = function()
     global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
     global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
     global.repair_job_toggle = settings.global["repair_jobs"].value
+    global.destroy_job_toggle = settings.global["destroy_jobs"].value
+    global.ammo_name = settings.global["ammo_name"].value
+    global.ammo_count = settings.global["ammo_count"].value
     global.debug_toggle = settings.global["constructron-debug-enabled"].value
     global.job_start_delay = (settings.global["job-start-delay"].value * 60)
     global.desired_robot_count = settings.global["desired_robot_count"].value
     global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
+    global.entities_per_second = settings.global["entities_per_second"].value --[[@as uint]]
     global.horde_mode = settings.global["horde_mode"].value
 end
 
@@ -189,7 +201,9 @@ script.on_event(ev.on_lua_shortcut, function (event)
     if not player then return end
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
-    cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    if player.clear_cursor() then
+        cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    end
 end)
 
 script.on_event("ctron-get-selection-tool", function (event)
@@ -253,6 +267,8 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
     elseif setting == "repair_jobs" then
         global.repair_job_toggle = settings.global["repair_jobs"].value
+    elseif setting == "destroy_jobs" then
+        global.destroy_job_toggle = settings.global["destroy_jobs"].value
     elseif setting == "constructron-debug-enabled" then
         global.debug_toggle = settings.global["constructron-debug-enabled"].value
     elseif setting == "job-start-delay" then
@@ -275,8 +291,25 @@ script.on_event(ev.on_runtime_mod_setting_changed, function(event)
         else
             global.desired_robot_name = settings.global["desired_robot_name"].value
         end
-    elseif setting == "entities_per_tick" then
-        global.entities_per_tick = settings.global["entities_per_tick"].value --[[@as uint]]
+    elseif setting == "ammo_name" then
+        -- validate ammo name
+        if not game.item_prototypes[settings.global["ammo_name"].value] then
+            if game.item_prototypes["rocket"] then
+                settings.global["ammo_name"] = {value = "rocket"}
+                global.desired_robot_name = "rocket"
+                game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo name reset!")
+            else
+                game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo requests disabled!")
+                settings.global["ammo_count"] = {value = 0}
+                global.ammo_count = 0
+            end
+        else
+            global.ammo_name = settings.global["ammo_name"].value
+        end
+    elseif setting == "ammo_count" then
+        global.ammo_count = settings.global["ammo_count"].value
+    elseif setting == "entities_per_second" then
+        global.entities_per_second = settings.global["entities_per_second"].value --[[@as uint]]
     elseif setting == "horde_mode" then
         global.horde_mode = settings.global["horde_mode"].value
     end
@@ -316,10 +349,13 @@ local function reset(player, parameters)
         cmd.rebuild_caches()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
+        cmd.reset_available_ctron_count()
         cmd.reload_ctron_status()
         cmd.reload_ctron_color()
         -- Recall Ctrons
         cmd.recall_ctrons()
+        -- Reset combinators
+        cmd.reset_combinator_signals()
         -- Clear Constructron inventory
         cmd.clear_ctron_inventory()
         -- Reacquire Deconstruction jobs
@@ -368,6 +404,9 @@ local function clear(player, parameters)
     elseif parameters[1] == "repair" then
         cmd.clear_single_job_type("repair")
         game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
+    elseif parameters[1] == "destroy" then
+        cmd.clear_single_job_type("destroy")
+        game.print('All queued ' .. parameters[1] .. ' jobs and unprocessed entities cleared.')
     else
         game.print('Command parameter does not exist.')
         cmd.help_text()
@@ -404,6 +443,10 @@ local function enable(player, parameters)
         global.repair_job_toggle = true
         settings.global["repair_jobs"] = {value = true}
         game.print('Repair jobs enabled.')
+    elseif parameters[1] == "destroy" then
+        global.destroy_job_toggle = true
+        settings.global["destroy_jobs"] = {value = true}
+        game.print('Destroy jobs enabled.')
     elseif parameters[1] == "horde" then
         global.horde_mode = true
         settings.global["horde_mode"] = {value = true}
@@ -474,6 +517,10 @@ local function disable(player, parameters)
         global.repair_job_toggle = false
         settings.global["repair_jobs"] = {value = false}
         game.print('Repair jobs disabled.')
+    elseif parameters[1] == "destroy" then
+        global.destroy_job_toggle = false
+        settings.global["destroy_jobs"] = {value = false}
+        game.print('Destroy jobs disabled.')
     elseif parameters[1] == "horde" then
         global.horde_mode = false
         settings.global["horde_mode"] = {value = false}
@@ -530,11 +577,11 @@ local function stats(player, _)
             available_count = available_count + 1
         end
     end
-    game.print('Constructrons on a job:' .. used_count ..'')
-    game.print('Idle Constructrons:' .. available_count .. '')
-    game.print('global.entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
-    game.print('global.queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
-    game.print('global.job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
+    game.print('Constructrons on a job: ' .. used_count ..'')
+    game.print('Idle Constructrons: ' .. available_count .. '')
+    game.print('entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
+    game.print('queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
+    game.print('job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
     return global_stats
 end
 

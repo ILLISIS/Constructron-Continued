@@ -10,12 +10,13 @@ local clean_path_steps_enabled = true
 local clean_path_steps_distance = 5
 local non_colliding_position_accuracy = 0.5
 
-pathfinder = {}
+local pathfinder = {}
 pathfinder.__index = pathfinder
 script.register_metatable("constructron_pathfinder_table", pathfinder)
 
 
 function pathfinder.new(start, goal, job)
+    debug_lib.VisualDebugLine(job.worker.position, job.path_request_params.goal, job.worker.surface, "green", 600)
     start = { x = math.floor(start.x), y = math.floor(start.y) }
     goal = { x = math.floor(goal.x), y = math.floor(goal.y) }
     local instance = setmetatable({}, pathfinder)
@@ -77,6 +78,7 @@ script.on_event(defines.events.on_script_path_request_finished, (function(event)
             job:request_path(job.path_request_params) -- try again
         else
             debug_lib.VisualDebugText("No Path!", job.worker, -0.5, 1)
+            debug_lib.VisualDebugLine(job.path_request_params.start, job.path_request_params.goal, job.worker.surface, "red", 1200)
         end
     else
         if clean_linear_path_enabled then
@@ -115,6 +117,7 @@ function pathfinder:findpath()
     local closedSet = self.closedSet -- nodes already evaluated
     local TilesProcessed = 0 -- tiles processed per iteration
     local lowesth_value = self.lowesth_value -- lowest heuristic value found
+    local neighbour_maxdistance = self.neighbour_maxdistance or global.custom_pathfinder_neighbour_maxdistance or 1 -- max neighbour distance of each node
     self.path_iterations = self.path_iterations + 1 -- iteration count
 
     while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
@@ -194,7 +197,7 @@ function pathfinder:findpath()
         end
 
         -- get neighboring nodes
-        local maxDistance = 1
+        local maxDistance = neighbour_maxdistance
         -- IDEA: pathfinding backwards seems to make it easier to island hop
         -- IDEA: make maxDistance configurable
         -- IDEA: make maxDistance dynamic - try +15 tiles first, then lower to 1
@@ -270,6 +273,7 @@ function pathfinder:findpath()
         self.job.pathfinding = nil
         global.custom_pathfinder_requests[self.path_index] = nil
         debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
+        debug_lib.VisualDebugLine(start, goal, self.surface, "red", 1200)
     end
     return -- No path found
 end
@@ -280,6 +284,8 @@ end
 
 function pathfinder:isWalkable(position)
     local tile = self.surface.get_tile(position.x, position.y)
+    if not tile.valid then return false end -- if the tile is invalid then likely the chunk is not generated
+
     local tile_ghost = tile.has_tile_ghost()
 
     if global.water_tile_cache[tile.name] then
