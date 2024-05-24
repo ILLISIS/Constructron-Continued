@@ -29,6 +29,10 @@ Date: 2024-05-18
       - SHIFT + C To activate
       - Left click select to build
       - Right click select to deconstruct
+<<<<<<< job_logic_rewrite
+=======
+      - Shift right click select to destroy
+>>>>>>> main
   Changes:
     - Added compatibility with Nullius
 ---------------------------------------------------------------------------------------------------

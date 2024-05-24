@@ -400,6 +400,38 @@ script.on_event(ev.on_player_alt_selected_area, function(event)
     end
 end)
 
+---@param event EventData.on_player_selected_area
+script.on_event(ev.on_player_selected_area, function(event)
+    if event.item ~= "ctron-selection-tool" then return end
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid then
+            if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
+                global.construction_index = global.construction_index + 1
+                global.construction_entities[global.construction_index] = entity
+                global.construction_tick = event.tick
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
+        end
+    end
+end)
+
+---@param event EventData.on_player_reverse_selected_area
+script.on_event(ev.on_player_reverse_selected_area, function(event)
+    if event.item ~= "ctron-selection-tool" then return end
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid then
+            local force_name = entity.force.name
+            if force_name == "player" or force_name == "neutral" then
+                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index])
+                global.deconstruction_tick = event.tick
+                global.deconstruction_entities[global.deconstruction_index] = entity
+                global.deconstruction_index = global.deconstruction_index + 1
+                global.entity_proc_trigger = true -- there is something to do start processing
+            end
+        end
+    end
+end)
+
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
