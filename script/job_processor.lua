@@ -457,7 +457,7 @@ job_proc.process_job_queue = function()
                         end
                     end
                     -- set default ammo request
-                    if global.ammo_count > 0 then
+                    if global.ammo_count > 0 and (worker.name ~= "constructron-rocket-powered") then
                         job.required_items[global.ammo_name] = global.ammo_count
                     end
                     -- enable_logistics_while_moving for destroy jobs
