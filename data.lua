@@ -1,10 +1,7 @@
 require("data/constructron")
 require("data/constructron_pathing_proxy")
 require("data/service_station")
-<<<<<<< job_logic_rewrite
 require("data/station_combinator")
-=======
->>>>>>> main
 require("data/selection_tool")
 require("data/shortcut")
 require("data/custom_input")
