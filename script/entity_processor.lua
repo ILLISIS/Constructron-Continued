@@ -16,10 +16,9 @@ local ev = defines.events
 ---| EventData.on_robot_built_entity
 ---| EventData.script_raised_built
 entity_proc.on_built_entity = function(event)
-    if not global.construction_job_toggle then return end
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
-    if entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
+    if global.construction_job_toggle and entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
         global.construction_tick = event.tick
@@ -353,6 +352,7 @@ script.on_event(ev.on_sector_scanned, function(event)
     end
 end)
 
+-- left click
 ---@param event EventData.on_player_selected_area
 script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
@@ -368,6 +368,7 @@ script.on_event(ev.on_player_selected_area, function(event)
     end
 end)
 
+-- right click
 ---@param event EventData.on_player_reverse_selected_area
 script.on_event(ev.on_player_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
@@ -385,8 +386,9 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
     end
 end)
 
----@param event EventData.on_player_alt_selected_area
-script.on_event(ev.on_player_alt_selected_area, function(event)
+-- shift right click
+---@param event EventData.on_player_alt_reverse_selected_area
+script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
         if entity and entity.valid then
@@ -395,38 +397,6 @@ script.on_event(ev.on_player_alt_selected_area, function(event)
                 global.destroy_entities[global.destroy_index] = entity
                 global.destroy_tick = event.tick
                 global.entity_proc_trigger = true  -- there is something to do start processing
-            end
-        end
-    end
-end)
-
----@param event EventData.on_player_selected_area
-script.on_event(ev.on_player_selected_area, function(event)
-    if event.item ~= "ctron-selection-tool" then return end
-    for _, entity in pairs(event.entities) do
-        if entity and entity.valid then
-            if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                global.construction_index = global.construction_index + 1
-                global.construction_entities[global.construction_index] = entity
-                global.construction_tick = event.tick
-                global.entity_proc_trigger = true -- there is something to do start processing
-            end
-        end
-    end
-end)
-
----@param event EventData.on_player_reverse_selected_area
-script.on_event(ev.on_player_reverse_selected_area, function(event)
-    if event.item ~= "ctron-selection-tool" then return end
-    for _, entity in pairs(event.entities) do
-        if entity and entity.valid then
-            local force_name = entity.force.name
-            if force_name == "player" or force_name == "neutral" then
-                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index])
-                global.deconstruction_tick = event.tick
-                global.deconstruction_entities[global.deconstruction_index] = entity
-                global.deconstruction_index = global.deconstruction_index + 1
-                global.entity_proc_trigger = true -- there is something to do start processing
             end
         end
     end

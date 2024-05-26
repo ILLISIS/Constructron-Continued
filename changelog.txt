@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.13
+Date: 2024-05-26
+  Bugfixes:
+    - Fixed an issue with the selection tool not triggering destroy jobs.
+    - Fixed a crash when a logistic slot was manually set on a Constructron and the max request was 'infinity'.
+    - Fixed an issue where construction jobs were disabled and Constructrons and Stations were not registered.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.12
 Date: 2024-05-25
   Bugfixes:

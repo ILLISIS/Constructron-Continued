@@ -1057,7 +1057,7 @@ script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
             item_name = logistic_request.name,
             item_count = logistic_request.min
         }
-        job_proc.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.max)
+        job_proc.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.min)
     else
         local item_request = global.constructron_requests[unit_number]["requests"][slot]
         if not item_request then return end
