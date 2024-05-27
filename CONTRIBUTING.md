@@ -1,6 +1,6 @@
 # Contributing to Constructron-Continued
 
-Thank you for considering contributing to Constructron-Continued!\
+Thank you for your interest in contributing to Constructron-Continued!\
 For the best coordination and communication, please consider to join our [Discord](https://discord.gg/m9TDSsH3u2). _This is not a requirement, but would be appreciated._
 
 ## Pull Requests
