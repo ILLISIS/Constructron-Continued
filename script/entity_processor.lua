@@ -340,10 +340,19 @@ script.on_event(ev.on_sector_scanned, function(event)
     local surface = event.radar.surface
     local enemies = surface.find_entities_filtered({
         force = {"enemy"},
-        area = event.area
+        area = event.area,
+        is_military_target = true,
+        type = {"unit-spawner", "turret"}
     })
     if next(enemies) then
-        for _, entity in pairs(enemies) do
+        local enemies_list = {}
+        for _, enemy in pairs(enemies) do
+            if not enemies_list[enemy.unit_number] then
+                enemies_list[enemy.unit_number] = enemy
+                enemies_list = recursive_search(enemy, enemies_list)
+            end
+        end
+        for _, entity in pairs(enemies_list) do
             global.destroy_index = global.destroy_index + 1
             global.destroy_entities[global.destroy_index] = entity
             global.destroy_tick = event.tick
@@ -508,7 +517,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
                     -- destroy
                     elseif (build_type == "destroy") then
-                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
+                        -- repair packs are hard coded to robot count * 4
                     end
                     -- entity chunking
                     local entity_surface = entity.surface.index
@@ -573,6 +582,37 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
             end
         end
     end
+end
+
+-------------------------------------------------------------------------------
+--  Utility functions
+-------------------------------------------------------------------------------
+
+-- function to recursively search for other biter nests around a nest
+function recursive_search(enemy, enemies_list)
+    local enemy_pos = enemy.position
+    local search = enemy.surface.find_entities_filtered({
+        force = {"enemy"},
+        area = {
+            left_top = {
+                x = enemy_pos.x - 5,
+                y = enemy_pos.y - 5
+            },
+            right_bottom = {
+                x = enemy_pos.x + 5,
+                y = enemy_pos.y + 5
+            }
+        },
+        is_military_target = true,
+        type = {"unit-spawner", "turret"}
+    })
+    for _, entity in pairs(search) do
+        if not enemies_list[entity.unit_number] then
+            enemies_list[entity.unit_number] = entity
+            enemies_list = recursive_search(entity, enemies_list)
+        end
+    end
+    return enemies_list
 end
 
 return entity_proc

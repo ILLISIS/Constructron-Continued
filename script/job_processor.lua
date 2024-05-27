@@ -360,6 +360,8 @@ function job:check_chunks()
                 entity_filter = {
                     area = {chunk.minimum, chunk.maximum},
                     force = "enemy",
+                    is_military_target = true,
+                    type = {"unit-spawner", "turret"}
                 }
             end
             local surface = game.surfaces[chunk.surface]
@@ -464,7 +466,7 @@ job_proc.process_job_queue = function()
                     -- enable_logistics_while_moving for destroy jobs
                     if job.job_type == "destroy" then
                         worker.enable_logistics_while_moving = true
-                        job.required_items["repair-pack"] = (job.required_items["repair-pack"] or 0) + 50
+                        job.required_items["repair-pack"] = global.desired_robot_count * 4
                     end
                     -- state change
                     job.state = "starting"
@@ -801,12 +803,17 @@ job_proc.process_job_queue = function()
                             -- retreat when at 25% of ammo
                             if ammunition and ammunition[global.ammo_name] and ammunition[global.ammo_name] < (math.ceil(global.ammo_count * 25 / 100)) then
                                 job.state = "finishing"
-                            end
-                            if not job.destroy_started then
-                                job.destroy_started = true -- flag to ensure that at least 1 second passes before changing job state
                                 goto continue
                             end
-                            table.remove(job.task_positions, 1)
+                            entities = worker.surface.find_entities_filtered {
+                                position = worker.position,
+                                radius = 32,
+                                force = {"enemy"},
+                                is_military_target = true
+                            } -- only detects entities in range
+                            if not next(entities) then
+                                table.remove(job.task_positions, 1)
+                            end
                         end
                     end
                 end

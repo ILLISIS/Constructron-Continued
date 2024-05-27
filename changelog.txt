@@ -1,6 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.14
 Date: ????
+  Changes:
+    - Radar reveal will now only detect spawners and worms to trigger a destroy job to reduce the amount of jobs triggered.
+    - An entity proximity search has been added to radar scanning to discover the full nest size to reduce the amount of jobs triggered.
+    - Chunk checks now only detect military targets, which filters out worm splashes, reducing the amount of jobs triggered.
+    - Destroy jobs will now progress conditionally on enemies in range rather than potentially terminating early based on arbitrary timing.
+    - Repair pack count is now based on robot count times 4 instead of 50 + 2 per entity in the case of destroy jobs.
   Translation:
     - updated russian locale [thanks Eldrinn-Elantey]
 ---------------------------------------------------------------------------------------------------
