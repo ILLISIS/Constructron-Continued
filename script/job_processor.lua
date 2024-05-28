@@ -1047,7 +1047,6 @@ job_proc.make_jobs = function()
     end
 end
 
----@param event EventData.on_entity_logistic_slot_changed
 script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
     local entity = event.entity
     local entity_name = entity.name

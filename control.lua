@@ -193,7 +193,6 @@ script.on_configuration_changed(init)
 
 local ev = defines.events
 
----@param event EventData.on_lua_shortcut
 script.on_event(ev.on_lua_shortcut, function (event)
     local name = event.prototype_name
     if name ~= "ctron-get-selection-tool" then return end
@@ -216,7 +215,6 @@ script.on_event("ctron-get-selection-tool", function (event)
     cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
 end)
 
----@param event EventData.on_surface_created
 script.on_event(ev.on_surface_created, function(event)
     local index = event.surface_index
     global.construction_queue[index] = {}
@@ -227,7 +225,6 @@ script.on_event(ev.on_surface_created, function(event)
     global.stations_count[index] = 0
 end)
 
----@param event EventData.on_surface_deleted
 script.on_event(ev.on_surface_deleted, function(event)
     local index = event.surface_index
     global.construction_queue[index] = nil
@@ -253,7 +250,6 @@ script.on_nth_tick(10, function()
     end
 end)
 
----@param event EventData.on_runtime_mod_setting_changed
 script.on_event(ev.on_runtime_mod_setting_changed, function(event)
     log("mod setting change: " .. event.setting)
     local setting = event.setting

@@ -85,7 +85,6 @@ entity_proc.on_built_entity = function(event)
     end
 end
 
----@param event EventData.on_built_entity
 script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
@@ -101,7 +100,6 @@ script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "force",  force = "player", mode = "and"}
 })
 
----@param event EventData.script_raised_built
 script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "name", name = "constructron-rocket-powered", mode = "or"},
@@ -111,13 +109,11 @@ script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "item-request-proxy", mode = "or"}
 })
 
----@param event EventData.on_robot_built_entity
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "service_station", mode = "or"}
 })
 
 -- for entities that die and need rebuilding
----@param event EventData.on_post_entity_died
 script.on_event(ev.on_post_entity_died, function(event)
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
@@ -130,7 +126,6 @@ script.on_event(ev.on_post_entity_died, function(event)
 end)
 
 -- for entity deconstruction
----@param event EventData.on_marked_for_deconstruction
 script.on_event(ev.on_marked_for_deconstruction, function(event)
     if not global.deconstruction_job_toggle then return end
     local entity = event.entity
@@ -144,7 +139,6 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
 end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
----@param event EventData.on_marked_for_upgrade
 script.on_event(ev.on_marked_for_upgrade, function(event)
     if not global.upgrade_job_toggle then return end
     local entity = event.entity
@@ -157,7 +151,6 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
 end)
 
 -- for entity repair
----@param event EventData.on_entity_damaged
 script.on_event(ev.on_entity_damaged, function(event)
     if not global.repair_job_toggle then return end
     local entity = event.entity
@@ -183,7 +176,6 @@ end,
     {filter = "type", type = "fish", invert = true, mode = "and"}
 })
 
----@param event EventData.on_entity_cloned
 script.on_event(ev.on_entity_cloned, function(event)
     local entity = event.destination
     local surface_index = entity.surface.index
@@ -251,7 +243,6 @@ end,
     {filter = "name", name = "service_station", mode = "or"},
 })
 
----@param event EventData.script_raised_teleported
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
     local surface_index = entity.surface_index
@@ -334,7 +325,6 @@ script.on_event(ev.script_raised_destroy, entity_proc.on_entity_destroyed, {
     {filter = "name", name = "service_station", mode = "or"}
 })
 
----@param event EventData.on_sector_scanned
 script.on_event(ev.on_sector_scanned, function(event)
     if not global.destroy_job_toggle then return end
     local surface = event.radar.surface
@@ -362,7 +352,6 @@ script.on_event(ev.on_sector_scanned, function(event)
 end)
 
 -- left click
----@param event EventData.on_player_selected_area
 script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
@@ -378,7 +367,6 @@ script.on_event(ev.on_player_selected_area, function(event)
 end)
 
 -- right click
----@param event EventData.on_player_reverse_selected_area
 script.on_event(ev.on_player_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
@@ -396,7 +384,6 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
 end)
 
 -- shift right click
----@param event EventData.on_player_alt_reverse_selected_area
 script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
