@@ -342,7 +342,7 @@ script.on_event(ev.on_sector_scanned, function(event)
         for _, enemy in pairs(enemies) do
             if not enemies_list[enemy.unit_number] then
                 enemies_list[enemy.unit_number] = enemy
-                enemies_list = recursive_search(enemy, enemies_list)
+                enemies_list = entity_proc.recursive_search(enemy, enemies_list)
             end
         end
         for _, entity in pairs(enemies_list) do
@@ -579,7 +579,10 @@ end
 -------------------------------------------------------------------------------
 
 -- function to recursively search for other biter nests around a nest
-function recursive_search(enemy, enemies_list)
+---@param enemy LuaEntity
+---@param enemies_list table<uint32, LuaEntity>
+---@return table<uint32, LuaEntity>
+entity_proc.recursive_search = function(enemy, enemies_list)
     local enemy_pos = enemy.position
     local search = enemy.surface.find_entities_filtered({
         force = {"enemy"},
@@ -599,7 +602,7 @@ function recursive_search(enemy, enemies_list)
     for _, entity in pairs(search) do
         if not enemies_list[entity.unit_number] then
             enemies_list[entity.unit_number] = entity
-            enemies_list = recursive_search(entity, enemies_list)
+            enemies_list = entity_proc.recursive_search(entity, enemies_list)
         end
     end
     return enemies_list

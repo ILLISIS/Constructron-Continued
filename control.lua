@@ -239,15 +239,6 @@ script.on_event(ev.on_surface_deleted, function(event)
     global.stations_count[index] = nil
 end)
 
----@param event EventData.on_player_used_spider_remote
-script.on_event(ev.on_player_used_spider_remote, (function(event)
-    if global.spider_remote_toggle and event.vehicle.name == "constructron" then
-        pathfinder.set_autopilot(event.vehicle, {})
-        local request_params = {unit = event.vehicle, goal = event.position}
-        pathfinder.request_path(request_params)
-    end
-end))
-
 script.on_nth_tick(10, function()
     for _, pathfinder in pairs(global.custom_pathfinder_requests) do
         pathfinder:findpath()
