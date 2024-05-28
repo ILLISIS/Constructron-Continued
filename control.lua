@@ -221,7 +221,9 @@ script.on_event(ev.on_surface_created, function(event)
     global.deconstruction_queue[index] = {}
     global.upgrade_queue[index] = {}
     global.repair_queue[index] = {}
+    global.destroy_queue[index] = {}
     global.constructrons_count[index] = 0
+    global.available_ctron_count[index] = 0
     global.stations_count[index] = 0
 end)
 
@@ -231,7 +233,9 @@ script.on_event(ev.on_surface_deleted, function(event)
     global.deconstruction_queue[index] = nil
     global.upgrade_queue[index] = nil
     global.repair_queue[index] = nil
+    global.destroy_queue[index] = nil
     global.constructrons_count[index] = nil
+    global.available_ctron_count[index] = nil
     global.stations_count[index] = nil
 end)
 

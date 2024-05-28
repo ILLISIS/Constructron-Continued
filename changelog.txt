@@ -1,6 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.14
-Date: ????
+Date: 2024-05-28
+  Bugfixes:
+    - Fixed a crash after a new surface was created and a Constructron and / or station was placed on that surface.
+    - Fixed a crash when a surface was deleted and a Constructron and / or station was present on that surface.
   Changes:
     - Radar reveal will now only detect spawners and worms to trigger a destroy job to reduce the amount of jobs triggered.
     - An entity proximity search has been added to radar scanning to discover the full nest size to reduce the amount of jobs triggered.

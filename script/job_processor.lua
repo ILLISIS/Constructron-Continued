@@ -278,7 +278,6 @@ function job:validate_worker()
             ctron.paint_constructron(self.worker, self.job_type)
             self.state = "new"
         else
-            debug_lib.DebugLog('No suitable Constructrons available to resume job')
             return false
         end
     end
@@ -440,6 +439,9 @@ job_proc.process_job_queue = function()
         for job_index, job in pairs(global.jobs) do
             if not (job.state == "deffered") then
                 if not job:validate_worker() or not job:validate_station() then
+                    if not game.surfaces[job.surface_index] then
+                        global.jobs[job_index] = nil
+                    end
                     goto continue
                 end
             end
@@ -476,7 +478,7 @@ job_proc.process_job_queue = function()
                     -- change constructron colour
                     ctron.paint_constructron(worker, 'idle')
                     -- remove job from list
-                    global.jobs[job.job_index] = nil
+                    global.jobs[job_index] = nil
                     game.print("Constructron-Continued: No chunk was included in job, job removed. Please report this to mod author.")
                 end
 
@@ -926,7 +928,7 @@ job_proc.process_job_queue = function()
                     -- change selected constructron colour
                     ctron.paint_constructron(worker, 'idle')
                     -- remove job from list
-                    global.jobs[job.job_index] = nil
+                    global.jobs[job_index] = nil
                     debug_lib.VisualDebugText("Job complete!", worker, -1, 1)
                 end
 
@@ -1005,7 +1007,7 @@ job_proc.make_jobs = function()
     }
 
     -- for each surface
-    for _, surface_index in pairs(global.managed_surfaces) do
+    for surface_index, _ in pairs(global.managed_surfaces) do
         local exitloop
         -- for each queue
         for _, job_type in pairs(job_types) do

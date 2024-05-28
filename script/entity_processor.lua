@@ -44,7 +44,7 @@ entity_proc.on_built_entity = function(event)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         entity.vehicle_automatic_targeting_parameters = {
             auto_target_without_gunner = true,
@@ -60,7 +60,7 @@ entity_proc.on_built_entity = function(event)
         }
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
         if (global.constructrons_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         -- combinator setup
         local control_behavior = entity.get_or_create_control_behavior()
@@ -197,7 +197,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         entity.vehicle_automatic_targeting_parameters = {
             auto_target_without_gunner = true,
@@ -213,7 +213,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
         -- configure surface management
         if (global.constructrons_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         -- combinator setup
         local control_behavior = entity.get_or_create_control_behavior()
@@ -262,14 +262,14 @@ script.on_event(ev.script_raised_teleported, function(event)
             end
             -- configure surface management
             if (global.stations_count[entity.surface_index] > 0) then
-                global.managed_surfaces[entity.surface.name] = surface_index
+                global.managed_surfaces[surface_index] = entity.surface.name
             end
         elseif entity.name == "service_station" then
             global.stations_count[event.old_surface_index] = global.stations_count[event.old_surface_index] - 1
             global.stations_count[entity.surface_index] = global.stations_count[event.old_surface_index] + 1
             -- configure surface management
             if (global.constructrons_count[entity.surface_index] > 0) then
-                global.managed_surfaces[entity.surface.name] = surface_index
+                global.managed_surfaces[surface_index] = entity.surface.name
             end
         end
     end
@@ -287,15 +287,16 @@ entity_proc.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         local surface_index = removed_entity.surface
-        local surface_name = game.surfaces[surface_index].name
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
-            global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
-            global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
+            if game.surfaces[surface_index] then
+                global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
+                global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
+            end
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
             -- surface management
-            if (global.stations_count[surface_index] <= 0) then
-                global.managed_surfaces[surface_name] = nil
+            if (global.stations_count[surface_index] or 0) <= 0 then
+                global.managed_surfaces[surface_index] = nil
             end
             -- combinator management
             global.constructron_requests[event.unit_number] = nil
@@ -303,11 +304,13 @@ entity_proc.on_entity_destroyed = function(event)
                 job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
             end
         elseif removed_entity.name == "service_station" then
-            global.stations_count[surface_index] = global.stations_count[surface_index] - 1
+            if game.surfaces[surface_index] then
+                global.stations_count[surface_index] = global.stations_count[surface_index] - 1
+            end
             global.service_stations[event.unit_number] = nil
             -- surface management
-            if (global.constructrons_count[surface_index] <= 0) then
-                global.managed_surfaces[surface_name] = nil
+            if (global.constructrons_count[surface_index] or 0) <= 0 then
+                global.managed_surfaces[surface_index] = nil
             end
             -- combinator management
             global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
