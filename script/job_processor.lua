@@ -278,7 +278,6 @@ function job:validate_worker()
             ctron.paint_constructron(self.worker, self.job_type)
             self.state = "new"
         else
-            debug_lib.DebugLog('No suitable Constructrons available to resume job')
             return false
         end
     end
@@ -360,6 +359,8 @@ function job:check_chunks()
                 entity_filter = {
                     area = {chunk.minimum, chunk.maximum},
                     force = "enemy",
+                    is_military_target = true,
+                    type = {"unit-spawner", "turret"}
                 }
             end
             local surface = game.surfaces[chunk.surface]
@@ -438,6 +439,9 @@ job_proc.process_job_queue = function()
         for job_index, job in pairs(global.jobs) do
             if not (job.state == "deffered") then
                 if not job:validate_worker() or not job:validate_station() then
+                    if not game.surfaces[job.surface_index] then
+                        global.jobs[job_index] = nil
+                    end
                     goto continue
                 end
             end
@@ -464,7 +468,7 @@ job_proc.process_job_queue = function()
                     -- enable_logistics_while_moving for destroy jobs
                     if job.job_type == "destroy" then
                         worker.enable_logistics_while_moving = true
-                        job.required_items["repair-pack"] = (job.required_items["repair-pack"] or 0) + 50
+                        job.required_items["repair-pack"] = global.desired_robot_count * 4
                     end
                     -- state change
                     job.state = "starting"
@@ -474,7 +478,7 @@ job_proc.process_job_queue = function()
                     -- change constructron colour
                     ctron.paint_constructron(worker, 'idle')
                     -- remove job from list
-                    global.jobs[job.job_index] = nil
+                    global.jobs[job_index] = nil
                     game.print("Constructron-Continued: No chunk was included in job, job removed. Please report this to mod author.")
                 end
 
@@ -801,12 +805,17 @@ job_proc.process_job_queue = function()
                             -- retreat when at 25% of ammo
                             if ammunition and ammunition[global.ammo_name] and ammunition[global.ammo_name] < (math.ceil(global.ammo_count * 25 / 100)) then
                                 job.state = "finishing"
-                            end
-                            if not job.destroy_started then
-                                job.destroy_started = true -- flag to ensure that at least 1 second passes before changing job state
                                 goto continue
                             end
-                            table.remove(job.task_positions, 1)
+                            entities = worker.surface.find_entities_filtered {
+                                position = worker.position,
+                                radius = 32,
+                                force = {"enemy"},
+                                is_military_target = true
+                            } -- only detects entities in range
+                            if not next(entities) then
+                                table.remove(job.task_positions, 1)
+                            end
                         end
                     end
                 end
@@ -919,7 +928,7 @@ job_proc.process_job_queue = function()
                     -- change selected constructron colour
                     ctron.paint_constructron(worker, 'idle')
                     -- remove job from list
-                    global.jobs[job.job_index] = nil
+                    global.jobs[job_index] = nil
                     debug_lib.VisualDebugText("Job complete!", worker, -1, 1)
                 end
 
@@ -998,7 +1007,7 @@ job_proc.make_jobs = function()
     }
 
     -- for each surface
-    for _, surface_index in pairs(global.managed_surfaces) do
+    for surface_index, _ in pairs(global.managed_surfaces) do
         local exitloop
         -- for each queue
         for _, job_type in pairs(job_types) do
@@ -1040,7 +1049,6 @@ job_proc.make_jobs = function()
     end
 end
 
----@param event EventData.on_entity_logistic_slot_changed
 script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
     local entity = event.entity
     local entity_name = entity.name

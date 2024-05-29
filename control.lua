@@ -193,7 +193,6 @@ script.on_configuration_changed(init)
 
 local ev = defines.events
 
----@param event EventData.on_lua_shortcut
 script.on_event(ev.on_lua_shortcut, function (event)
     local name = event.prototype_name
     if name ~= "ctron-get-selection-tool" then return end
@@ -216,36 +215,29 @@ script.on_event("ctron-get-selection-tool", function (event)
     cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
 end)
 
----@param event EventData.on_surface_created
 script.on_event(ev.on_surface_created, function(event)
     local index = event.surface_index
     global.construction_queue[index] = {}
     global.deconstruction_queue[index] = {}
     global.upgrade_queue[index] = {}
     global.repair_queue[index] = {}
+    global.destroy_queue[index] = {}
     global.constructrons_count[index] = 0
+    global.available_ctron_count[index] = 0
     global.stations_count[index] = 0
 end)
 
----@param event EventData.on_surface_deleted
 script.on_event(ev.on_surface_deleted, function(event)
     local index = event.surface_index
     global.construction_queue[index] = nil
     global.deconstruction_queue[index] = nil
     global.upgrade_queue[index] = nil
     global.repair_queue[index] = nil
+    global.destroy_queue[index] = nil
     global.constructrons_count[index] = nil
+    global.available_ctron_count[index] = nil
     global.stations_count[index] = nil
 end)
-
----@param event EventData.on_player_used_spider_remote
-script.on_event(ev.on_player_used_spider_remote, (function(event)
-    if global.spider_remote_toggle and event.vehicle.name == "constructron" then
-        pathfinder.set_autopilot(event.vehicle, {})
-        local request_params = {unit = event.vehicle, goal = event.position}
-        pathfinder.request_path(request_params)
-    end
-end))
 
 script.on_nth_tick(10, function()
     for _, pathfinder in pairs(global.custom_pathfinder_requests) do
@@ -253,7 +245,6 @@ script.on_nth_tick(10, function()
     end
 end)
 
----@param event EventData.on_runtime_mod_setting_changed
 script.on_event(ev.on_runtime_mod_setting_changed, function(event)
     log("mod setting change: " .. event.setting)
     local setting = event.setting

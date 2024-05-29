@@ -133,9 +133,9 @@ me.reset_managed_surfaces = function()
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
         if (global.constructrons_count[surface_index] > 0) and (global.stations_count[surface_index] > 0) then
-            global.managed_surfaces[game.surfaces[surface_index].name] = surface_index
+            global.managed_surfaces[surface_index] = game.surfaces[surface_index].name
         else
-            global.managed_surfaces[game.surfaces[surface_index].name] = nil
+            global.managed_surfaces[surface_index] = nil
         end
     end
 end

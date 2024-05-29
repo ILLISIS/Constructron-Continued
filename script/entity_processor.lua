@@ -44,7 +44,7 @@ entity_proc.on_built_entity = function(event)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         entity.vehicle_automatic_targeting_parameters = {
             auto_target_without_gunner = true,
@@ -60,7 +60,7 @@ entity_proc.on_built_entity = function(event)
         }
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
         if (global.constructrons_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         -- combinator setup
         local control_behavior = entity.get_or_create_control_behavior()
@@ -85,7 +85,6 @@ entity_proc.on_built_entity = function(event)
     end
 end
 
----@param event EventData.on_built_entity
 script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
@@ -101,7 +100,6 @@ script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
     {filter = "force",  force = "player", mode = "and"}
 })
 
----@param event EventData.script_raised_built
 script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "constructron", mode = "or"},
     {filter = "name", name = "constructron-rocket-powered", mode = "or"},
@@ -111,13 +109,11 @@ script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
     {filter = "name", name = "item-request-proxy", mode = "or"}
 })
 
----@param event EventData.on_robot_built_entity
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
     {filter = "name", name = "service_station", mode = "or"}
 })
 
 -- for entities that die and need rebuilding
----@param event EventData.on_post_entity_died
 script.on_event(ev.on_post_entity_died, function(event)
     if not global.rebuild_job_toggle then return end
     local entity = event.ghost
@@ -130,7 +126,6 @@ script.on_event(ev.on_post_entity_died, function(event)
 end)
 
 -- for entity deconstruction
----@param event EventData.on_marked_for_deconstruction
 script.on_event(ev.on_marked_for_deconstruction, function(event)
     if not global.deconstruction_job_toggle then return end
     local entity = event.entity
@@ -144,7 +139,6 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
 end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
----@param event EventData.on_marked_for_upgrade
 script.on_event(ev.on_marked_for_upgrade, function(event)
     if not global.upgrade_job_toggle then return end
     local entity = event.entity
@@ -157,7 +151,6 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
 end)
 
 -- for entity repair
----@param event EventData.on_entity_damaged
 script.on_event(ev.on_entity_damaged, function(event)
     if not global.repair_job_toggle then return end
     local entity = event.entity
@@ -183,7 +176,6 @@ end,
     {filter = "type", type = "fish", invert = true, mode = "and"}
 })
 
----@param event EventData.on_entity_cloned
 script.on_event(ev.on_entity_cloned, function(event)
     local entity = event.destination
     local surface_index = entity.surface.index
@@ -205,7 +197,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         entity.vehicle_automatic_targeting_parameters = {
             auto_target_without_gunner = true,
@@ -221,7 +213,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         global.stations_count[surface_index] = global.stations_count[surface_index] + 1
         -- configure surface management
         if (global.constructrons_count[surface_index] > 0) then
-            global.managed_surfaces[entity.surface.name] = surface_index
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
         -- combinator setup
         local control_behavior = entity.get_or_create_control_behavior()
@@ -251,7 +243,6 @@ end,
     {filter = "name", name = "service_station", mode = "or"},
 })
 
----@param event EventData.script_raised_teleported
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
     local surface_index = entity.surface_index
@@ -271,14 +262,14 @@ script.on_event(ev.script_raised_teleported, function(event)
             end
             -- configure surface management
             if (global.stations_count[entity.surface_index] > 0) then
-                global.managed_surfaces[entity.surface.name] = surface_index
+                global.managed_surfaces[surface_index] = entity.surface.name
             end
         elseif entity.name == "service_station" then
             global.stations_count[event.old_surface_index] = global.stations_count[event.old_surface_index] - 1
             global.stations_count[entity.surface_index] = global.stations_count[event.old_surface_index] + 1
             -- configure surface management
             if (global.constructrons_count[entity.surface_index] > 0) then
-                global.managed_surfaces[entity.surface.name] = surface_index
+                global.managed_surfaces[surface_index] = entity.surface.name
             end
         end
     end
@@ -296,15 +287,16 @@ entity_proc.on_entity_destroyed = function(event)
     if global.registered_entities[event.registration_number] then
         local removed_entity = global.registered_entities[event.registration_number]
         local surface_index = removed_entity.surface
-        local surface_name = game.surfaces[surface_index].name
         if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
-            global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
-            global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
+            if game.surfaces[surface_index] then
+                global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
+                global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
+            end
             global.constructrons[event.unit_number] = nil
             global.constructron_statuses[event.unit_number] = nil
             -- surface management
-            if (global.stations_count[surface_index] <= 0) then
-                global.managed_surfaces[surface_name] = nil
+            if (global.stations_count[surface_index] or 0) <= 0 then
+                global.managed_surfaces[surface_index] = nil
             end
             -- combinator management
             global.constructron_requests[event.unit_number] = nil
@@ -312,11 +304,13 @@ entity_proc.on_entity_destroyed = function(event)
                 job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
             end
         elseif removed_entity.name == "service_station" then
-            global.stations_count[surface_index] = global.stations_count[surface_index] - 1
+            if game.surfaces[surface_index] then
+                global.stations_count[surface_index] = global.stations_count[surface_index] - 1
+            end
             global.service_stations[event.unit_number] = nil
             -- surface management
-            if (global.constructrons_count[surface_index] <= 0) then
-                global.managed_surfaces[surface_name] = nil
+            if (global.constructrons_count[surface_index] or 0) <= 0 then
+                global.managed_surfaces[surface_index] = nil
             end
             -- combinator management
             global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
@@ -334,16 +328,24 @@ script.on_event(ev.script_raised_destroy, entity_proc.on_entity_destroyed, {
     {filter = "name", name = "service_station", mode = "or"}
 })
 
----@param event EventData.on_sector_scanned
 script.on_event(ev.on_sector_scanned, function(event)
     if not global.destroy_job_toggle then return end
     local surface = event.radar.surface
     local enemies = surface.find_entities_filtered({
         force = {"enemy"},
-        area = event.area
+        area = event.area,
+        is_military_target = true,
+        type = {"unit-spawner", "turret"}
     })
     if next(enemies) then
-        for _, entity in pairs(enemies) do
+        local enemies_list = {}
+        for _, enemy in pairs(enemies) do
+            if not enemies_list[enemy.unit_number] then
+                enemies_list[enemy.unit_number] = enemy
+                enemies_list = entity_proc.recursive_enemy_search(enemy, enemies_list)
+            end
+        end
+        for _, entity in pairs(enemies_list) do
             global.destroy_index = global.destroy_index + 1
             global.destroy_entities[global.destroy_index] = entity
             global.destroy_tick = event.tick
@@ -353,7 +355,6 @@ script.on_event(ev.on_sector_scanned, function(event)
 end)
 
 -- left click
----@param event EventData.on_player_selected_area
 script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
@@ -369,7 +370,6 @@ script.on_event(ev.on_player_selected_area, function(event)
 end)
 
 -- right click
----@param event EventData.on_player_reverse_selected_area
 script.on_event(ev.on_player_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
@@ -387,7 +387,6 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
 end)
 
 -- shift right click
----@param event EventData.on_player_alt_reverse_selected_area
 script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
@@ -508,7 +507,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
                     -- destroy
                     elseif (build_type == "destroy") then
-                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
+                        -- repair packs are hard coded to robot count * 4
                     end
                     -- entity chunking
                     local entity_surface = entity.surface.index
@@ -573,6 +572,40 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
             end
         end
     end
+end
+
+-------------------------------------------------------------------------------
+--  Utility functions
+-------------------------------------------------------------------------------
+
+-- function to recursively search for other biter nests around a nest
+---@param enemy LuaEntity
+---@param enemies_list table<uint32, LuaEntity>
+---@return table<uint32, LuaEntity>
+entity_proc.recursive_enemy_search = function(enemy, enemies_list)
+    local enemy_pos = enemy.position
+    local search = enemy.surface.find_entities_filtered({
+        force = {"enemy"},
+        area = {
+            left_top = {
+                x = enemy_pos.x - 5,
+                y = enemy_pos.y - 5
+            },
+            right_bottom = {
+                x = enemy_pos.x + 5,
+                y = enemy_pos.y + 5
+            }
+        },
+        is_military_target = true,
+        type = {"unit-spawner", "turret"}
+    })
+    for _, entity in pairs(search) do
+        if not enemies_list[entity.unit_number] then
+            enemies_list[entity.unit_number] = entity
+            enemies_list = entity_proc.recursive_enemy_search(entity, enemies_list)
+        end
+    end
+    return enemies_list
 end
 
 return entity_proc
