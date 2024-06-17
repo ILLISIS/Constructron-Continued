@@ -1,7 +1,13 @@
 --  service_station images derived from:
 --    https://github.com/nEbul4/Factorio_Roboport_mk2/
 --    https://github.com/kirazy/classic-beacon/
+
 local util = require('util')
+
+-------------------------------------------------------------------------------
+-- Entity
+-------------------------------------------------------------------------------
+
 local service_station = table.deepcopy(data.raw["roboport"]["roboport"])
 service_station.name = "service_station"
 service_station.minable = {
@@ -47,6 +53,10 @@ service_station.base_animation = {
     }}
 }
 
+-------------------------------------------------------------------------------
+-- Item
+-------------------------------------------------------------------------------
+
 local service_station_item = {
   icons = {
     {
@@ -60,14 +70,6 @@ local service_station_item = {
       icon_mipmaps = 4,
       scale = 0.4
     }
-
-    -- {
-    --   icon = "__base__/graphics/icons/spidertron.png",
-    --   icon_size = 64,
-    --   icon_mipmaps = 4,
-    --   scale = 0.6,
-    --   shift = {-20, 20}
-    -- }
   },
   name = "service_station",
   order = "c[signal]-a[roboport]b",
@@ -76,21 +78,6 @@ local service_station_item = {
   subgroup = "logistic-network",
   type = "item"
 }
-
-local service_station_recipe = {
-    type = "recipe",
-    name = "service_station",
-    enabled = false,
-    ingredients =
-    {
-      {"steel-plate", 45},
-      {"iron-gear-wheel", 45},
-      {"advanced-circuit", 45},
-    },
-    result = "service_station",
-    result_count = 1,
-    energy = 1
-  }
 
 local service_station_easy_recipe = {
     type = "recipe",
@@ -105,11 +92,19 @@ local service_station_easy_recipe = {
     energy = 1
   }
 
-if settings.startup["constructron-easy-recipe-toggle"].value then
-  data:extend({service_station, service_station_item, service_station_easy_recipe})
-else
-  data:extend({service_station, service_station_item, service_station_recipe})
-end
+-------------------------------------------------------------------------------
+-- Technology
+-------------------------------------------------------------------------------
 
+table.insert(
+	data.raw["technology"]["spidertron"].effects,{
+		type = "unlock-recipe",
+		recipe="service_station"
+	}
+)
 
-table.insert(data.raw["technology"]["spidertron"].effects,{type = "unlock-recipe", recipe="service_station"})
+-------------------------------------------------------------------------------
+-- Extend
+-------------------------------------------------------------------------------
+
+data:extend({service_station, service_station_item, service_station_easy_recipe})
