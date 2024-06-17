@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.15
+Date: 2024-06-17
+  Features:
+    - Added support for Pyanodons mods.
+  Changes:
+    - Removed normal recipe for Constructrons opting for the simple recipe which only requires 1 Spidertron to craft a Constructron.
+  Bugfixes:
+    - [Nullius] Fixed an issue preventing equipment from being added to Constructron equipment grids.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.14
 Date: 2024-05-28
   Bugfixes:

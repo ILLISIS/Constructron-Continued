@@ -36,3 +36,14 @@ table.insert(
         recipe = "service_station"
     }
 )
+
+local spider = data.raw["spider-vehicle"]["constructron"]
+if spider then
+    local grid_name = spider.equipment_grid
+    if grid_name then
+        local grid = data.raw["equipment-grid"][grid_name]
+        if grid then
+            table.insert(grid.equipment_categories, "cybernetic")
+        end
+    end
+end
