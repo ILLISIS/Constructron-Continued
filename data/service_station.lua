@@ -79,7 +79,7 @@ local service_station_item = {
   type = "item"
 }
 
-local service_station_easy_recipe = {
+local service_station_recipe = {
     type = "recipe",
     name = "service_station",
     enabled = false,
@@ -107,4 +107,4 @@ table.insert(
 -- Extend
 -------------------------------------------------------------------------------
 
-data:extend({service_station, service_station_item, service_station_easy_recipe})
+data:extend({service_station, service_station_item, service_station_recipe})

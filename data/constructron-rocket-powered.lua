@@ -88,7 +88,7 @@ local constructron_item = {
     type = "item-with-entity-data"
 }
 
-local constructron_easy_recipe = {
+local constructron_recipe = {
     type = "recipe",
     name = "constructron-rocket-powered",
     enabled = false,
@@ -102,7 +102,7 @@ local constructron_easy_recipe = {
 }
 
 local ctron_rocket_powered = {constructron, constructron_item}
-table.insert(ctron_rocket_powered, constructron_easy_recipe)
+table.insert(ctron_rocket_powered, constructron_recipe)
 
 for _, leg in pairs(leg_entities) do
     leg.se_allow_in_space = true

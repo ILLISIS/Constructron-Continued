@@ -67,7 +67,7 @@ local constructron_item = {
     type = "item-with-entity-data"
 }
 
-local constructron_easy_recipe = {
+local constructron_recipe = {
     type = "recipe",
     name = "constructron",
     enabled = false,
@@ -102,7 +102,7 @@ if mods["space-exploration"] then
 end
 
 local ctron_classic = {constructron, constructron_item}
-table.insert(ctron_classic, constructron_easy_recipe)
+table.insert(ctron_classic, constructron_recipe)
 
 for _, leg in pairs(leg_entities) do
     table.insert(ctron_classic, leg)
