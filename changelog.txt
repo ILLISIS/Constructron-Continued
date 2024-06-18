@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.16
+Date: ????
+  Bugfixes:
+    - Fixed an issue that allowed item-request-proxies and tiles to be build with constructrion jobs disabled.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.15
 Date: 2024-06-17
   Features:

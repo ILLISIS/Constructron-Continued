@@ -18,7 +18,7 @@ local ev = defines.events
 entity_proc.on_built_entity = function(event)
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
-    if global.construction_job_toggle and entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
+    if global.construction_job_toggle and (entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy') then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
         global.construction_tick = event.tick
