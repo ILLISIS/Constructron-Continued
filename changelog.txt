@@ -1,8 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.16
-Date: ????
+Date: 22-6-24
   Bugfixes:
-    - Fixed an issue that allowed item-request-proxies and tiles to be build with constructrion jobs disabled.
+    - Fixed an issue that allowed item-request-proxies and tiles to be built with construction jobs disabled.
+    - [SE] Fixed a crash when a service station was placed on a space ship and moved to another surface.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.15
 Date: 2024-06-17

@@ -231,7 +231,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         combinator.connect_neighbour(circuit2)
         local signals = {
             [1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[entity.surface.index]},
-            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count}
+            [2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[entity.surface.index]}
         }
         global.station_combinators[entity.unit_number] = {entity = combinator, signals = {}}
         combinator.get_control_behavior().parameters = signals
