@@ -1,6 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.17
+Date: 2024-07-06
+  Changes:
+    - [SE] Changed rocket-powered-constructron recipe to conume 4 jetpacks instead of 200 cargo-rocket-sections.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.16
-Date: 22-6-24
+Date: 2024-06-22
   Bugfixes:
     - Fixed an issue that allowed item-request-proxies and tiles to be built with construction jobs disabled.
     - [SE] Fixed a crash when a service station was placed on a space ship and moved to another surface.
@@ -142,7 +147,7 @@ Date: 2024-01-19
     - Fixed a crash in the custom pathfinder after iterations completed and there was no more task positions left.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
-Date: 2024-1-05
+Date: 2024-01-05
   Features:
     - [MAJOR] Implemented a custom pathfinder to augment the games pathfinder for landfill jobs.
   Changes:

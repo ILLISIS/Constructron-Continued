@@ -94,7 +94,7 @@ local constructron_recipe = {
     enabled = false,
     ingredients = {
         {"constructron", 1},
-        {"se-cargo-rocket-section", 200}
+        {"jetpack-1", 4}
     },
     result = "constructron-rocket-powered",
     result_count = 1,
