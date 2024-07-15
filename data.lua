@@ -5,8 +5,9 @@ require("data/station_combinator")
 require("data/selection_tool")
 require("data/shortcut")
 require("data/custom_input")
+require("data/styles")
 
-if mods["space-exploration"] and settings.startup["enable_rocket_powered_constructron"].value then
+if mods["space-exploration"] then
     require("data/constructron-rocket-powered")
 end
 

@@ -141,6 +141,7 @@
 ---@field spider_remote_toggle boolean
 ---@field ammo_name string
 ---@field ammo_count uint
+---@field horde_mode boolean
 
 -- set type of global (this will never get executed, only intellisense will see this)
 ---@type Global

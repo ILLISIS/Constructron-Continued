@@ -17,15 +17,9 @@ if mods["space-exploration"] then
     -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
     -- table.insert(constructron_leg_collision_mask, spaceship_collision_layer)
 
-    if settings.startup["enable_rocket_powered_constructron"].value then
-        --collide with all of "space"
-        local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
-        table.insert(constructron_leg_collision_mask, collision_mask_space_tile)
-    else
-        --collide with "empty space"
-        local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-        table.insert(constructron_leg_collision_mask, empty_space_collision_layer)
-    end
+    --collide with "empty space"
+    local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
+    table.insert(constructron_leg_collision_mask, empty_space_collision_layer)
 end
 
 local constructron_definition = {
@@ -37,6 +31,10 @@ local constructron_leg_definition = {
     name = "constructron",
     collision_mask = constructron_leg_collision_mask
 }
+
+if mods["Krastorio2"] then
+    constructron_definition.equipment_grid = "kr-spidertron-equipment-grid"
+end
 
 local constructron = lib_spider.create_spidertron(constructron_definition)
 local leg_entities = lib_spider.create_spidertron_legs(constructron_leg_definition)
