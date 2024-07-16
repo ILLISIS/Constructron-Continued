@@ -106,6 +106,20 @@ local ensure_globals = function()
     global.destroy_job_toggle = global.destroy_job_toggle or {}
     -- ui
     global.user_interface = global.user_interface or {}
+    for _, player in pairs(game.players) do
+        global.user_interface[player.index] = global.user_interface[player.index] or {
+            surface = player.surface,
+            main_ui = {
+                elements = {}
+            },
+            settings_ui = {
+                elements = {}
+            },
+            job_ui = {
+                elements = {}
+            }
+        }
+    end
     -- ammo name
     local init_ammo_name
     if global.desired_robot_name == nil or not game.item_prototypes[global.desired_robot_name[1]] then

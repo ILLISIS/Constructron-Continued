@@ -1,18 +1,19 @@
 local gui_main = {}
 
-function gui_main.buildMainGui(player, surface)
+function gui_main.buildMainGui(player)
     local main_window = player.gui.screen.add{
         type="frame",
         name="ctron_main_window",
         direction = "vertical",
         tags = {
             mod = "constructron",
-            on_gui_closed = "close_main_window"
+            on_gui_closed = "on_gui_closed"
         }
     }
     player.opened = main_window
     main_window.auto_center = true
     -- build subsections
+    local surface = player.surface
     gui_main.buildMainTitleBar(player, surface, main_window)
     gui_main.buildStatsSection(player, surface, main_window)
     gui_main.buildMainContent(player, surface, main_window)
@@ -268,7 +269,7 @@ function gui_main.create_job_sections(player, surface, frame)
     for _, job_type in pairs(job_types) do
         for _, chunk in pairs(global[job_type .. '_queue'][surface.index]) do
             count = (count or 0) + 1
-            gui_main.create_chunk_card(chunk, pending_section, job_type, count)
+            gui_main.create_chunk_card(chunk, surface.index, pending_section, job_type, count)
         end
     end
     gui_main.empty_section_check(pending_section)
@@ -413,6 +414,7 @@ function gui_main.create_job_card(job, section)
         name = "ctron_details_button",
         caption = {"ctron_gui_locale.job_details_button"},
         style = "ctron_frame_button_style",
+        tooltip = {"ctron_gui_locale.job_details_button_tooltip"},
         tags = {
             mod = "constructron",
             on_gui_click = "open_job_window",
@@ -424,7 +426,7 @@ function gui_main.create_job_card(job, section)
 end
 
 
-function gui_main.create_chunk_card(chunk, section, job_type, count)
+function gui_main.create_chunk_card(chunk, surface_index, section, job_type, count)
     local chunk_key = chunk.key
 
     -- chunk card
@@ -471,6 +473,7 @@ function gui_main.create_chunk_card(chunk, section, job_type, count)
             mod = "constructron",
             on_gui_click = "ctron_locate_chunk",
             chunk_key = chunk_key,
+            surface_index = surface_index,
             job_type = job_type
         }
     }
@@ -485,6 +488,7 @@ function gui_main.create_chunk_card(chunk, section, job_type, count)
             mod = "constructron",
             on_gui_click = "ctron_cancel_chunk",
             chunk_key = chunk_key,
+            surface_index = surface_index,
             job_type = job_type
         }
     }

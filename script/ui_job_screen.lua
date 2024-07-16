@@ -1,7 +1,7 @@
  local gui_job = {}
 
 
- function gui_job.buildJobGui(player, surface, job)
+ function gui_job.buildJobGui(player, job)
     local job_window = player.gui.screen.add{
         type="frame",
         name="ctron_job_window",
@@ -13,7 +13,7 @@
     }
     job_window.auto_center = true
 
-    gui_job.buildJobTitleBar(player, surface, job_window)
+    gui_job.buildJobTitleBar(player, job_window)
 
     local job_inner_frame = job_window.add{
         type = "frame",
@@ -22,10 +22,10 @@
         direction = "vertical"
     }
 
-    gui_job.buildJobContent(player, surface, job_inner_frame, job)
+    gui_job.buildJobContent(player, job_inner_frame, job)
 end
 
-function gui_job.buildJobTitleBar(player, surface, frame)
+function gui_job.buildJobTitleBar(player, frame)
     local bar = frame.add{
         type = "flow",
         name = "ctron_title_bar",
@@ -64,12 +64,12 @@ function gui_job.buildJobTitleBar(player, surface, frame)
     }
 end
 
-function gui_job.buildJobContent(player, surface, frame, job)
+function gui_job.buildJobContent(player, frame, job)
     local job_index = job.job_index
     local worker = job.worker
     if not worker or not worker.valid then
         frame.parent.destroy()
-        game.print("Worker is invalid. A new Constructron will be assigned to this job when one becomes available") -- TODO: refactor this behavior
+        player.print("Worker is invalid. A new Constructron will be assigned to this job when one becomes available") -- TODO: refactor this behavior
         return
     end
 
@@ -118,6 +118,7 @@ function gui_job.buildJobContent(player, surface, frame, job)
         tags = {
             mod = "constructron",
             on_gui_click = "ctron_cancel_job",
+            job_screen = true,
             job_index = job_index
         }
     }

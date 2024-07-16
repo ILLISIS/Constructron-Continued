@@ -7,19 +7,16 @@ local gui_main = require("script/ui_main_screen")
 local gui_settings = require("script/ui_settings_screen")
 local gui_job = require("script/ui_job_screen")
 
--- TODO: handle surface add/remove/rename
--- TODO: anchored UI relative ctron -> job
-
 --===========================================================================--
 -- UI Handlers
 --===========================================================================--
 
 local gui_event_types = {
     [defines.events.on_gui_click] = "on_gui_click",
-    [defines.events.on_gui_closed] = "on_gui_closed",
     [defines.events.on_gui_selection_state_changed] = "on_gui_selection_state_changed",
     [defines.events.on_gui_checked_state_changed] = "on_gui_checked_state_changed",
-    [defines.events.on_gui_text_changed] = "on_gui_text_changed"
+    [defines.events.on_gui_text_changed] = "on_gui_text_changed",
+    [defines.events.on_player_created] = "on_player_created",
 }
 
 function gui_handlers.register()
@@ -28,9 +25,7 @@ function gui_handlers.register()
     end
 end
 
--- TODO: existing players
-
-script.on_event(defines.events.on_player_created, function(event)
+function gui_handlers.on_player_created(event)
     local player = game.get_player(event.player_index)
     if not player then return end
     global.user_interface[player.index] = {
@@ -45,6 +40,108 @@ script.on_event(defines.events.on_player_created, function(event)
             elements = {}
         }
     }
+end
+
+script.on_event(defines.events.on_gui_opened, function(event)
+    local entity = event.entity
+    if entity and (entity.name == "constructron" or entity.name == "rocket-powered-constructron") then
+        local player = game.players[event.player_index]
+        if player.gui.relative.ctron_worker_frame then return end
+        local ctron_frame = player.gui.relative.add{
+            type = "frame",
+            name = "ctron_worker_frame",
+            direction = "vertical",
+            anchor = {
+                gui = defines.relative_gui_type.spider_vehicle_gui,
+                position = defines.relative_gui_position.right
+            },
+            tags = {
+                mod = "constructron",
+            }
+        }
+        ctron_frame.style.width = 100
+
+        -- find job
+        local job
+        for _, iterated_job in pairs(global.jobs) do
+            if iterated_job.worker and iterated_job.worker.unit_number == event.entity.unit_number then
+                job = iterated_job
+                break
+            end
+        end
+
+        -- add remote button
+        ctron_frame.add{
+            type = "button",
+            name = "ctron_remote_button",
+            caption = {"ctron_gui_locale.job_remote_button"},
+            style = "ctron_frame_button_style",
+            tooltip = {"ctron_gui_locale.job_remote_button_tooltip"},
+            tags = {
+                mod = "constructron",
+                on_gui_click = "ctron_remote_control",
+                worker = entity.unit_number
+            }
+        }
+
+        if not job then return end
+
+        -- add locate button
+        ctron_frame.add{
+            type = "button",
+            name = "ctron_locate_button",
+            caption = {"ctron_gui_locale.job_locate_button"},
+            tooltip = {"ctron_gui_locale.job_locate_button_tooltip"},
+            style = "ctron_frame_button_style",
+            tags = {
+                mod = "constructron",
+                on_gui_click = "ctron_locate_job",
+                job_index = job.job_index
+            }
+        }
+
+        -- add details button
+        ctron_frame.add{
+            type = "button",
+            name = "ctron_details_button",
+            caption = {"ctron_gui_locale.job_details_button"},
+            style = "ctron_frame_button_style",
+            tooltip = {"ctron_gui_locale.job_details_button_tooltip"},
+            tags = {
+                mod = "constructron",
+                on_gui_click = "open_job_window",
+                job_index = job.job_index
+            }
+        }
+
+        -- add cancel button
+        ctron_frame.add{
+            type = "button",
+            name = "ctron_cancel_button",
+            caption = {"ctron_gui_locale.job_cancel_button"},
+            style = "ctron_frame_button_style",
+            tooltip = {"ctron_gui_locale.job_cancel_button_tooltip"},
+            tags = {
+                mod = "constructron",
+                on_gui_click = "ctron_cancel_job",
+                job_index = job.job_index
+            }
+        }
+    end
+end)
+
+script.on_event(defines.events.on_gui_closed, function(event)
+    local player = game.players[event.player_index]
+    if event.element and event.element.name == "ctron_main_window" then
+        gui_handlers.close_main_window(player)
+    elseif event.entity and (event.entity.name == "constructron" or event.entity.name == "rocket-powered-constructron") then
+        if player.gui.relative.ctron_worker_frame then
+            player.gui.relative.ctron_worker_frame.destroy()
+            if player.gui.screen.ctron_job_window then
+                player.gui.screen.ctron_job_window.destroy()
+            end
+        end
+    end
 end)
 
 function gui_handlers.gui_event(event)
@@ -61,8 +158,8 @@ function gui_handlers.gui_event(event)
     if not action_name then return end
     local event_handler = gui_handlers[action_name]
     if not event_handler then return end
-    -- call to handlers[event_name] function
-    event_handler(player, global.user_interface[player.index]["surface"], element)
+    -- call to gui_handlers.event_name function
+    event_handler(player, element)
 end
 
 function gui_handlers.update_ui_windows()
@@ -87,7 +184,7 @@ function gui_handlers.update_main_gui(player)
     local main_window = player.gui.screen.ctron_main_window
     if main_window then
         local main_ui_elements = global.user_interface[player.index].main_ui.elements
-        local surface_index = game.surfaces[main_ui_elements["surface_selector"].selected_index].index -- TODO: test in multiplayer
+        local surface_index = game.surfaces[main_ui_elements["surface_selector"].selected_index].index
         -- update stats values
         main_ui_elements.total.caption = global.constructrons_count[surface_index]
         main_ui_elements.available.caption = global.available_ctron_count[surface_index]
@@ -152,7 +249,7 @@ function gui_handlers.update_main_gui(player)
             local queue = global[job_type .. "_queue"][surface_index]
             for chunk_key, chunk in pairs(queue) do
                 if not pending_section_cards[job_type][chunk_key] then
-                    gui_main.create_chunk_card(chunk, pending_section, job_type, chunk_key) -- note: count is substituted for chunk_key
+                    gui_main.create_chunk_card(chunk, surface_index, pending_section, job_type, chunk_key) -- note: count is substituted for chunk_key
                 else
                     pending_section_cards[job_type][chunk_key] = nil
                 end
@@ -163,14 +260,6 @@ function gui_handlers.update_main_gui(player)
         end
         gui_main.empty_section_check(pending_section)
     end
-end
-
--- update settings
-function gui_handlers.update_settings_gui(player, surface)
-    local content_section = player.gui.screen.ctron_settings_window.ctron_settings_inner_frame.ctron_settings_scroll
-    if not content_section then return end
-    content_section.clear()
-    gui_settings.buildSettingsContent(player, surface, content_section)
 end
 
 function gui_handlers.update_job_gui(player)
@@ -214,17 +303,7 @@ function gui_handlers.update_job_gui(player)
     gui_job.build_logistic_display(job_worker, logistic_table)
 end
 
--- update job logistic requests
--- function gui_handlers.update_job_logistic_requests(player, job)
---     local job_window = player.gui.screen.ctron_job_window
---     if not job_window then return end
---     local content_section = job_window.ctron_job_inner_frame
---     if not content_section then return end
---     content_section.clear()
---     gui_builder.buildJobContent(player, job_window, content_section, job)
--- end
-
-function gui_handlers.toggle_section(player, surface, element)
+function gui_handlers.toggle_section(player, element)
     section_name = element.tags.section_name
     if global.user_interface[player.index].main_ui.elements[section_name].visible then
         element.sprite = "utility/expand"
@@ -240,19 +319,7 @@ end
 
 function gui_handlers.open_main_window(player)
     if not player.gui.screen.ctron_main_window then
-        global.user_interface[player.index] = {
-            surface = player.surface,
-            main_ui = {
-                elements = {}
-            },
-            settings_ui = {
-                elements = {}
-            },
-            job_ui = {
-                elements = {}
-            }
-        } -- TODO: refactor this
-        gui_main.buildMainGui(player, player.surface)
+        gui_main.buildMainGui(player)
     else
         player.gui.screen.ctron_main_window.bring_to_front()
     end
@@ -289,45 +356,33 @@ local job_colors = {
     ["destroy"] = "black"
 }
 
-function gui_handlers.ctron_locate_job(player, surface, element)
+function gui_handlers.ctron_locate_job(player, element)
     local job = global.jobs[element.tags.job_index]
-    if not job then return end
-    local surface_name = surface.name
-    local _, chunk = next(job.chunks)
-
-    -- Thanks Xorimuth
-    if remote.interfaces["space-exploration"] and remote.interfaces["space-exploration"]["remote_view_is_unlocked"] and
-        remote.call("space-exploration", "remote_view_is_unlocked", { player = player }) then
-        surface_name = surface_name:gsub("^%l", string.upper)
-        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = chunk.midpoint})
-        if remote.call("space-exploration", "remote_view_is_active", { player = player }) then
-            -- remote_view_start worked
-            remote_view_used = true
-            player.close_map()
-            player.zoom = 0.5
-        end
+    if not job then
+        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        return
     end
+    local _, chunk = next(job.chunks)
+    chunk = chunk or {}
+    local position = (chunk.midpoint or job.station.position or job.worker.position)
+    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
     if not remote_view_used then
-        player.zoom_to_world(chunk.midpoint, 0.5)
+        player.zoom_to_world(position, 0.5)
     end
     -- draw chunk
     for _, chunk_to_draw in pairs(job.chunks) do
-        debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, surface, job_colors[job.job_type], true, 300)
+        debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 300)
     end
 end
 
-function gui_handlers.ctron_locate_chunk(player, surface, element)
-    local job_type = element.tags.job_type
-    local chunk = global[job_type .. '_queue'][surface.index][element.tags.chunk_key]
-    if not chunk then return end
-    local surface_name = surface.name
-    chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-
+function gui_handlers.se_remote_view(player, surface, position)
     -- Thanks Xorimuth
+    local remote_view_used = false
+    local surface_name = surface.name
     if remote.interfaces["space-exploration"] and remote.interfaces["space-exploration"]["remote_view_is_unlocked"] and
         remote.call("space-exploration", "remote_view_is_unlocked", { player = player }) then
         surface_name = surface_name:gsub("^%l", string.upper)
-        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = chunk_midpoint})
+        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = position})
         if remote.call("space-exploration", "remote_view_is_active", { player = player }) then
             -- remote_view_start worked
             remote_view_used = true
@@ -335,24 +390,45 @@ function gui_handlers.ctron_locate_chunk(player, surface, element)
             player.zoom = 0.5
         end
     end
+    return remote_view_used
+end
+
+function gui_handlers.ctron_locate_chunk(player, element)
+    local job_type = element.tags.job_type
+    local surface_index = element.tags.surface_index
+    local chunk = global[job_type .. '_queue'][surface_index][element.tags.chunk_key]
+    if not chunk then return end
+    chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[surface_index], chunk_midpoint)
     if not remote_view_used then
         player.zoom_to_world(chunk_midpoint, 0.5)
     end
     -- draw chunk
-    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, job_colors[job_type], true, 300)
+    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface_index, job_colors[job_type], true, 300)
 end
 
-function gui_handlers.ctron_map_view(player, surface, element)
+function gui_handlers.ctron_map_view(player, element)
     local job = global.jobs[element.tags.job_index]
     if not job then return end
     if element.tags.follow_entity then
+        gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position)
         player.zoom_to_world(job.worker.position, 0.5, job.worker)
     else
-        player.zoom_to_world(job.task_positions[math.random(1, #job.task_positions)], 0.5)
+        local current_task
+        if #job.task_positions > 1 then
+            current_task = math.random(1, #job.task_positions)
+        elseif #job.task_positions == 1 then
+            current_task = job.task_positions[1]
+        end
+        local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
+        local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
+        if not remote_view_used then
+            player.zoom_to_world(position, 0.5)
+        end
     end
 end
 
-function gui_handlers.ctron_cancel_job(player, surface, element)
+function gui_handlers.ctron_cancel_job(player, element)
     local job = global.jobs[element.tags.job_index]
     if not job then
         player.print("This job no longer exists.") -- TODO: refactor this functionality
@@ -369,7 +445,9 @@ function gui_handlers.ctron_cancel_job(player, surface, element)
             chunk.skip_chunk_checks = true
         end
         -- update gui
+        if not player.gui.screen.ctron_main_window then return end
         gui_main.create_job_card(job, global.user_interface[player.index].main_ui.elements["finishing_section"])
+        if element.tags.job_screen then return end
         element.parent.destroy()
         gui_main.empty_section_check(global.user_interface[player.index].main_ui.elements["in_progress_section"])
     else
@@ -377,13 +455,17 @@ function gui_handlers.ctron_cancel_job(player, surface, element)
     end
 end
 
-function gui_handlers.open_job_window(player, surface, element)
+function gui_handlers.open_job_window(player, element)
     local job = global.jobs[element.tags.job_index]
-    if not job or not player.gui.screen.ctron_job_window then
-        gui_job.buildJobGui(player, surface, job)
+    if not job then
+        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        return
+    end
+    if not player.gui.screen.ctron_job_window then
+        gui_job.buildJobGui(player, job)
     else
         player.gui.screen.ctron_job_window.destroy()
-        gui_job.buildJobGui(player, surface, job)
+        gui_job.buildJobGui(player, job)
     end
 end
 
@@ -393,13 +475,14 @@ function gui_handlers.close_job_window(player)
     end
 end
 
-function gui_handlers.ctron_cancel_chunk(player, surface, element)
+function gui_handlers.ctron_cancel_chunk(player, element)
     local job_type = element.tags.job_type
-    global[job_type .. '_queue'][surface.index][element.tags.chunk_key] = nil
+    local surface_index = element.tags.surface_index
+    global[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
     element.parent.destroy()
 end
 
-function gui_handlers.selected_new_surface(player, surface, element)
+function gui_handlers.selected_new_surface(player, element)
     local new_surface = game.surfaces[element.selected_index]
     if not new_surface then return end
     if element.tags["surface_selector"] == "ctron_main" then
@@ -410,38 +493,45 @@ function gui_handlers.selected_new_surface(player, surface, element)
     end
 end
 
-function gui_handlers.toggle_job_setting(player, surface, element)
+function gui_handlers.update_settings_gui(player, surface)
+    local content_section = player.gui.screen.ctron_settings_window.ctron_settings_inner_frame.ctron_settings_scroll
+    if not content_section then return end
+    content_section.clear()
+    gui_settings.buildSettingsContent(player, surface, content_section)
+end
+
+function gui_handlers.toggle_job_setting(player, element)
     local setting = element.tags.setting
     local setting_surface = element.tags.setting_surface
     global[setting .. "_job_toggle"][setting_surface] = not global[setting .. "_job_toggle"][setting_surface]
 end
 
-function gui_handlers.change_robot_count(player, surface, element)
+function gui_handlers.change_robot_count(player, element)
     local setting_surface = element.tags.setting_surface
     global.desired_robot_count[setting_surface] = (tonumber(element.text) or 50)
 end
 
-function gui_handlers.select_new_robot(player, surface, element)
+function gui_handlers.select_new_robot(player, element)
     local setting_surface = element.tags.setting_surface
     global.desired_robot_name[setting_surface] = element.items[element.selected_index]
 end
 
-function gui_handlers.selected_new_ammo(player, surface, element)
+function gui_handlers.selected_new_ammo(player, element)
     local setting_surface = element.tags.setting_surface
     global.ammo_name[setting_surface] = element.items[element.selected_index]
 end
 
-function gui_handlers.change_ammo_count(player, surface, element)
+function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
     global.ammo_count[setting_surface] = (tonumber(element.text) or 0)
 end
 
-function gui_handlers.selected_new_repair_tool(player, surface, element)
+function gui_handlers.selected_new_repair_tool(player, element)
     local setting_surface = element.tags.setting_surface
     global.repair_tool_name[setting_surface] = element.items[element.selected_index]
 end
 
-function gui_handlers.toggle_debug_mode(player, surface, element)
+function gui_handlers.toggle_debug_mode(player, element)
     global.debug_toggle = not global.debug_toggle
     if global.debug_toggle then
         element.caption = {"ctron_gui_locale.debug_button_on"}
@@ -450,19 +540,19 @@ function gui_handlers.toggle_debug_mode(player, surface, element)
     end
 end
 
-function gui_handlers.toggle_horde_mode(player, surface, element)
+function gui_handlers.toggle_horde_mode(player, element)
     global.horde_mode = not global.horde_mode
 end
 
-function gui_handlers.change_job_start_delay(player, surface, element)
+function gui_handlers.change_job_start_delay(player, element)
     global.job_start_delay = ((tonumber(element.text) or 0) * 60)
 end
 
-function gui_handlers.change_entities_per_second(player, surface, element)
+function gui_handlers.change_entities_per_second(player, element)
     global.entities_per_second = (tonumber(element.text) or 1000)
 end
 
-function gui_handlers.clear_logistic_request(player, surface, element)
+function gui_handlers.clear_logistic_request(player, element)
     local logistic_slot = element.tags.logistic_slot
     local worker = global.constructrons[element.tags.unit_number]
     worker.clear_vehicle_logistic_slot(logistic_slot)
@@ -474,7 +564,7 @@ function gui_handlers.clear_logistic_request(player, surface, element)
     }
 end
 
-function gui_handlers.ctron_remote_control(player, surface, element)
+function gui_handlers.ctron_remote_control(player, element)
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
     if not player.clear_cursor() then return end
@@ -482,11 +572,15 @@ function gui_handlers.ctron_remote_control(player, surface, element)
     if not cursor_stack.can_set_stack(remote) then return end
     local worker = global.constructrons[element.tags.worker]
     if not worker then return end
+    if player.surface.index ~= worker.surface.index then
+        player.print("Remote control is not possible whilst player is on a different surface.")
+        return
+    end
     cursor_stack.set_stack(remote)
     cursor_stack.connected_entity = worker
 end
 
-function gui_handlers.apply_settings_template(player, _, element)
+function gui_handlers.apply_settings_template(player, element)
     local current_surface = element.tags.setting_surface
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
