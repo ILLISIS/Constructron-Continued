@@ -52,7 +52,6 @@ entity_proc.on_built_entity = function(event)
         }
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_entity_destroyed(entity)
-        local surface_index = entity.surface.index
         global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "service_station",

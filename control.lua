@@ -1,5 +1,4 @@
 local custom_lib = require("script/custom_lib")
-local debug_lib = require("script/debug_lib")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")

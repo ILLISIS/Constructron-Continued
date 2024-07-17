@@ -267,8 +267,9 @@ function gui_main.create_job_sections(player, surface, frame)
 
     -- populate pending section with chunk cards
     for _, job_type in pairs(job_types) do
+        local count = 0
         for _, chunk in pairs(global[job_type .. '_queue'][surface.index]) do
-            count = (count or 0) + 1
+            count = count + 1
             gui_main.create_chunk_card(chunk, surface.index, pending_section, job_type, count)
         end
     end

@@ -5,8 +5,9 @@ cmd.reset_settings()
 global.available_ctron_count = global.available_ctron_count or {}
 for _, surface in pairs(game.surfaces) do
     local count = 0
-    for _, constructron in pairs(global.constructron_statuses) do
-        if not (constructron.busy == true) then
+    for unit_number, status in pairs(global.constructron_statuses) do
+        local constructron = global.constructrons[unit_number]
+        if constructron and constructron.surface.index == surface.index and not (status.busy == true) then
             count = count + 1
         end
     end

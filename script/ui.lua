@@ -1,7 +1,6 @@
 local debug_lib = require("script/debug_lib")
 
 local gui_handlers = {}
-local gui_builder = {}
 
 local gui_main = require("script/ui_main_screen")
 local gui_settings = require("script/ui_settings_screen")
@@ -44,7 +43,7 @@ end
 
 script.on_event(defines.events.on_gui_opened, function(event)
     local entity = event.entity
-    if entity and (entity.name == "constructron" or entity.name == "rocket-powered-constructron") then
+    if entity and (entity.name == "constructron" or entity.name == "constructron-rocket-powered") then
         local player = game.players[event.player_index]
         if player.gui.relative.ctron_worker_frame then return end
         local ctron_frame = player.gui.relative.add{
@@ -134,7 +133,7 @@ script.on_event(defines.events.on_gui_closed, function(event)
     local player = game.players[event.player_index]
     if event.element and event.element.name == "ctron_main_window" then
         gui_handlers.close_main_window(player)
-    elseif event.entity and (event.entity.name == "constructron" or event.entity.name == "rocket-powered-constructron") then
+    elseif event.entity and (event.entity.name == "constructron" or event.entity.name == "constructron-rocket-powered") then
         if player.gui.relative.ctron_worker_frame then
             player.gui.relative.ctron_worker_frame.destroy()
             if player.gui.screen.ctron_job_window then
@@ -307,7 +306,7 @@ function gui_handlers.update_job_gui(player)
 end
 
 function gui_handlers.toggle_section(player, element)
-    section_name = element.tags.section_name
+    local section_name = element.tags.section_name
     if global.user_interface[player.index].main_ui.elements[section_name].visible then
         element.sprite = "utility/expand"
         element.hovered_sprite = "utility/expand_dark"
@@ -435,10 +434,11 @@ function gui_handlers.ctron_locate_chunk(player, element)
     local surface_index = element.tags.surface_index
     local chunk = global[job_type .. '_queue'][surface_index][element.tags.chunk_key]
     if not chunk then return end
-    chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[surface_index], chunk_midpoint)
-    if not remote_view_used then
+    local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+    if player.surface.index == surface_index then
         player.zoom_to_world(chunk_midpoint, 0.5)
+    else
+        gui_handlers.se_remote_view(player, game.surfaces[surface_index], chunk_midpoint)
     end
     -- move UI for visibility
     gui_handlers.resize_gui(player)

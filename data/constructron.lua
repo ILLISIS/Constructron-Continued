@@ -17,9 +17,9 @@ if mods["space-exploration"] then
     -- local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
     -- table.insert(constructron_leg_collision_mask, spaceship_collision_layer)
 
-    --collide with "empty space"
-    local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-    table.insert(constructron_leg_collision_mask, empty_space_collision_layer)
+    --collide with all of "space"
+    local collision_mask_space_tile = collision_mask_util_extended.get_named_collision_mask("space-tile")
+    table.insert(constructron_leg_collision_mask, collision_mask_space_tile)
 end
 
 local constructron_definition = {

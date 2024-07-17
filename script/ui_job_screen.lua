@@ -415,9 +415,9 @@ function gui_job.build_logistic_display(worker, logistic_table)
     -- get worker logistic requests
     local slot_count = worker.request_slot_count
     -- Ensure the value is at least 10
-    min_slot_count = math.max(slot_count, 10)
+    local min_slot_count = math.max(slot_count, 10)
     -- Round up to the nearest 20
-    logistic_request_count = math.ceil(min_slot_count / 20) * 20
+    local logistic_request_count = math.ceil(min_slot_count / 20) * 20
     for i = 1, logistic_request_count do
         local slot = worker.get_vehicle_logistic_slot(i)
         if slot.name ~= nil then
