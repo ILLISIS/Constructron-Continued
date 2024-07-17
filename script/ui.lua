@@ -15,7 +15,6 @@ local gui_event_types = {
     [defines.events.on_gui_selection_state_changed] = "on_gui_selection_state_changed",
     [defines.events.on_gui_checked_state_changed] = "on_gui_checked_state_changed",
     [defines.events.on_gui_text_changed] = "on_gui_text_changed",
-    [defines.events.on_player_created] = "on_player_created",
 }
 
 function gui_handlers.register()
@@ -24,7 +23,7 @@ function gui_handlers.register()
     end
 end
 
-function gui_handlers.on_player_created(event)
+script.on_event(defines.events.on_player_created, function(event)
     local player = game.get_player(event.player_index)
     if not player then return end
     global.user_interface[player.index] = {
@@ -39,7 +38,7 @@ function gui_handlers.on_player_created(event)
             elements = {}
         }
     }
-end
+end)
 
 script.on_event(defines.events.on_gui_opened, function(event)
     local entity = event.entity

@@ -1,6 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.19
+Date: 2024-07-18
+  Bugfixes:
+    - Fixed a crash when the UI is opened for the first time on a new game.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.18
-Date: 2024-07-16
+Date: 2024-07-17
   Features:
     - [MAJOR] Constructron Control Center: A graphical user interface to have oversight and control over Constructrons.
       - SHIFT + C + C to activate. (hold shift and double tap C)
