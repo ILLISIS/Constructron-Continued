@@ -1,4 +1,19 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.18
+Date: 2024-07-16
+  Features:
+    - [MAJOR] Constructron Control Center: A graphical user interface to have oversight and control over Constructrons.
+      - SHIFT + C + C to activate. (hold shift and double tap C)
+    - [MAJOR] Most settings can now be configured per surface.
+    - Added the ability to select the repair-tool used by Constructrons to repair.
+  Bugfixes:
+    - Fixed a mismatch in available Constructron count on circuits when a Constructron was invalidated during a job.
+  Changes:
+    - Settings have been moved from game mod settings to the GUI.
+    - Debug rendering now renders under entities instead of over them.
+    - Removed percent health repair setting. Constructrons will simply repair any entity if it gets damaged.
+    - [K2] Standardised the equipment grid for Constructrons to match the Spidertron in order to support the K2 spidertron equipment.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.17
 Date: 2024-07-06
   Changes:

@@ -4,21 +4,68 @@ local job_proc = require("script/job_processor")
 local me = {}
 
 me.reset_settings = function()
-    settings.global["construct_jobs"] = {value = true}
-    settings.global["rebuild_jobs"] = {value = true}
-    settings.global["deconstruct_jobs"] = {value = true}
-    settings.global["upgrade_jobs"] = {value = true}
-    settings.global["repair_jobs"] = {value = false}
-    settings.global["constructron-debug-enabled"] = {value = false}
-    settings.global["desired_robot_count"] = {value = 50}
-    settings.global["desired_robot_name"] = {value = "construction-robot"}
-    settings.global["entities_per_second"] = {value = 1000}
-    settings.global["job-start-delay"] = {value = 5}
-    settings.global["horde_mode"] = {value = false}
-    settings.global["destroy_jobs"] = {value = false}
-    settings.global["ammo_name"] = {value = "rocket"}
-    settings.global["ammo_count"] = {value = 0}
-    settings.global["job-start-delay"] = {value = 0}
+    global.construction_job_toggle = {}
+    global.rebuild_job_toggle = {}
+    global.deconstruction_job_toggle = {}
+    global.upgrade_job_toggle = {}
+    global.repair_job_toggle = {}
+    global.destroy_job_toggle = {}
+    local init_ammo_name
+    global.ammo_name = {}
+    if game.item_prototypes["rocket"] then
+        init_ammo_name = "rocket"
+    else
+        local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
+        for _, ammo in pairs(ammo_prototypes) do
+            local ammo_type = ammo.get_ammo_type() or {}
+            if ammo_type.category == "rocket" then
+                init_ammo_name = ammo.name
+            end
+        end
+    end
+    global.ammo_count = {}
+    global.desired_robot_count = {}
+    local init_robot_name
+    global.desired_robot_name = {}
+    if game.item_prototypes["construction-robot"] then
+        init_robot_name = "construction-robot"
+    else
+        local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+        local valid_robot_name = pairs(valid_robots)(nil,nil)
+        init_robot_name = valid_robot_name
+    end
+    local init_repair_tool_name
+    if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
+        global.repair_tool_name = {}
+        if game.item_prototypes["repair-pack"] then
+            init_repair_tool_name = "repair-pack"
+        else
+            local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
+            local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
+            init_repair_tool_name = valid_repair_tool_name
+        end
+    end
+    -- non surface specific settings
+    global.job_start_delay = 300 -- five seconds
+    global.entities_per_second = 1000
+    global.debug_toggle = false
+    global.horde_mode = false
+    -- set per surface setting values
+    for _, surface in pairs(game.surfaces) do
+        -- per surface settings
+        local surface_index = surface.index
+        global.construction_job_toggle[surface_index] = true
+        global.rebuild_job_toggle[surface_index] = true
+        global.deconstruction_job_toggle[surface_index] = true
+        global.upgrade_job_toggle[surface_index] = true
+        global.repair_job_toggle[surface_index] = true
+        global.destroy_job_toggle[surface_index] = false
+        global.ammo_name[surface_index] = init_ammo_name
+        global.ammo_count[surface_index] = 0
+        global.desired_robot_count[surface_index] = 50
+        global.desired_robot_name[surface_index] = init_robot_name
+        global.repair_tool_name[surface_index] = init_repair_tool_name
+    end
 end
 
 me.clear_queues = function()
@@ -407,7 +454,6 @@ end
 me.help_text = function()
     game.print('Constructron-Continued command help:')
     game.print('/ctron help - show this help message')
-    game.print('/ctron (enable|disable) (debug|construction|deconstruction|upgrade|repair|horde|all)')
     game.print('/ctron reset (settings|queues|entities|all)')
     game.print('/ctron clear (all|construction|deconstruction|upgrade|repair|destroy)')
     game.print('/ctron stats for a basic display of queue length')

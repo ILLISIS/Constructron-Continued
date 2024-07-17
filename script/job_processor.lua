@@ -301,6 +301,7 @@ function job:validate_station()
             end
         end
     end
+    debug_lib.VisualDebugText("No stations found!", self.worker, -0.5, 5)
     return false
 end
 
@@ -462,13 +463,13 @@ job_proc.process_job_queue = function()
                         end
                     end
                     -- set default ammo request
-                    if global.ammo_count > 0 and (worker.name ~= "constructron-rocket-powered") then
-                        job.required_items[global.ammo_name] = global.ammo_count
+                    if global.ammo_count[job.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
+                        job.required_items[global.ammo_name[job.surface_index]] = global.ammo_count[job.surface_index]
                     end
                     -- enable_logistics_while_moving for destroy jobs
                     if job.job_type == "destroy" then
                         worker.enable_logistics_while_moving = true
-                        job.required_items["repair-pack"] = global.desired_robot_count * 4
+                        job.required_items[global.repair_tool_name[job.surface_index]] = global.desired_robot_count[job.surface_index] * 4
                     end
                     -- state change
                     job.state = "starting"
@@ -529,7 +530,7 @@ job_proc.process_job_queue = function()
                             end
                             -- check ammo slots for unwanted items
                             for item, _ in pairs(ammunition) do
-                                if item ~= global.ammo_name then
+                                if item ~= global.ammo_name[job.surface_index] then
                                     item_request_list[item] = 0
                                 end
                             end
@@ -607,14 +608,14 @@ job_proc.process_job_queue = function()
                     end
                     if logistic_condition then -- requested items have been delivered and trash items have been taken
                         -- divide ammo evenly between slots
-                        if ammunition and ammunition[global.ammo_name] then
-                            local ammo_count = ammunition[global.ammo_name]
+                        if ammunition and ammunition[global.ammo_name[job.surface_index]] then
+                            local ammo_count = ammunition[global.ammo_name[job.surface_index]]
                             local ammo_per_slot = math.ceil(ammo_count / #ammo_slots)
                             for i = 1, #ammo_slots do
                                 local slot = ammo_slots[i]
                                 if slot then
                                     slot.clear()
-                                    slot.set_stack({name = global.ammo_name, count = ammo_per_slot})
+                                    slot.set_stack({name = global.ammo_name[job.surface_index], count = ammo_per_slot})
                                 end
                             end
                         end
@@ -803,7 +804,8 @@ job_proc.process_job_queue = function()
                             local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
                             local ammunition = ammo_slots.get_contents()
                             -- retreat when at 25% of ammo
-                            if ammunition and ammunition[global.ammo_name] and ammunition[global.ammo_name] < (math.ceil(global.ammo_count * 25 / 100)) then
+                            local ammo_name = global.ammo_name[job.surface_index]
+                            if ammunition and ammunition[ammo_name] and ammunition[ammo_name] < (math.ceil(global.ammo_count[job.surface_index] * 25 / 100)) then
                                 job.state = "finishing"
                                 goto continue
                             end
@@ -1023,7 +1025,7 @@ job_proc.make_jobs = function()
                         global.job_index = global.job_index + 1
                         global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                         -- add robots to job
-                        global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
+                        global.jobs[global.job_index].required_items = {[global.desired_robot_name[surface_index]] = global.desired_robot_count[surface_index]}
                         global.jobs[global.job_index]:get_chunk()
                         global.job_proc_trigger = true -- start job operations
                     end
@@ -1036,7 +1038,7 @@ job_proc.make_jobs = function()
                     global.job_index = global.job_index + 1
                     global.jobs[global.job_index] = job_proc.new(global.job_index, surface_index, job_type, worker)
                     -- add robots to job
-                    global.jobs[global.job_index].required_items = {[global.desired_robot_name] = global.desired_robot_count}
+                    global.jobs[global.job_index].required_items = {[global.desired_robot_name[surface_index]] = global.desired_robot_count[surface_index]}
                     global.jobs[global.job_index]:get_chunk()
                     global.jobs[global.job_index]:find_chunks_in_proximity()
                     global.job_proc_trigger = true -- start job operations
@@ -1052,7 +1054,7 @@ end
 script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
     local entity = event.entity
     local entity_name = entity.name
-    if entity_name ~= "constructron" and entity_name ~= "rocket-powered-constructron" then
+    if entity_name ~= "constructron" or entity_name ~= "constructron-rocket-powered" then
         return
     end
 
