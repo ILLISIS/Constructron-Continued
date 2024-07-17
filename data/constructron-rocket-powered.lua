@@ -21,6 +21,10 @@ local spidertron_definition = {
 local constructron = lib_spider.create_spidertron(spidertron_definition)
 constructron.se_allow_in_space = true
 
+if mods["Krastorio2"] then
+    constructron.equipment_grid = "kr-spidertron-equipment-grid"
+end
+
 --Rocket flames
 -- local layers = constructron.graphics_set.base_animation.layers
 -- for _, layer in pairs(layers) do

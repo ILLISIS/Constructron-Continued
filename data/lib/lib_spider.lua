@@ -54,7 +54,7 @@ function lib_spider.create_spidertron(arguments)
     local entity_name = arguments.name
     local scale = arguments.scale or 1
     local leg_scale = scale * (arguments.leg_scale or 1)
-    local grid = arguments.grid or "spidertron-equipment-grid"
+    local equipment_grid = arguments.equipment_grid or "spidertron-equipment-grid"
     local mining_result = arguments.name or "spidertron"
     local burner = arguments.burner
     local energy_source = arguments.energy_source
@@ -197,7 +197,7 @@ function lib_spider.create_spidertron(arguments)
         energy_per_hit_point = 1,
         guns = guns,
         inventory_size = inventory_size,
-        equipment_grid = grid,
+        equipment_grid = equipment_grid,
         allow_passengers = allow_passengers,
         trash_inventory_size = trash_inventory_size,
         height = 1.5 * scale * leg_scale,

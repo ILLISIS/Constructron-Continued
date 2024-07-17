@@ -67,7 +67,8 @@ me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
             width = 4,
             surface = surface,
             time_to_live = ttl,
-            color = color_lib.colors[color]
+            color = color_lib.colors[color],
+            draw_on_ground = true
         }
     end
 end

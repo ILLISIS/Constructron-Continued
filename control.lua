@@ -1,14 +1,18 @@
 local custom_lib = require("script/custom_lib")
-local debug_lib = require("script/debug_lib")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")
+
+local gui_handlers = require("script/ui")
 
 --===========================================================================--
 -- Main workers
 --===========================================================================--
 
-script.on_nth_tick(90, job_proc.process_job_queue)
+script.on_nth_tick(90, function ()
+    job_proc.process_job_queue()
+    gui_handlers.update_ui_windows()
+end)
 
 script.on_nth_tick(15, function()
     if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
@@ -30,13 +34,13 @@ end)
 
 -- cleanup
 script.on_nth_tick(54000, (function()
-    debug_lib.DebugLog('Surface job validation & cleanup')
     for _, surface in pairs(game.surfaces) do
-        if (global.constructrons_count[surface.index] <= 0) or (global.stations_count[surface.index] <= 0) then
-            global.construction_queue[surface.index] = {}
-            global.deconstruction_queue[surface.index] = {}
-            global.upgrade_queue[surface.index] = {}
-            global.repair_queue[surface.index] = {}
+        local surface_index = surface.index
+        if (global.constructrons_count[surface_index] <= 0) or (global.stations_count[surface_index] <= 0) then
+            global.construction_queue[surface_index] = {}
+            global.deconstruction_queue[surface_index] = {}
+            global.upgrade_queue[surface_index] = {}
+            global.repair_queue[surface_index] = {}
         end
     end
 end))
@@ -92,16 +96,100 @@ local ensure_globals = function()
     global.constructrons_count = global.constructrons_count or {}
     global.available_ctron_count = global.available_ctron_count or {}
     global.stations_count = global.stations_count or {}
-    --
+    -- settings
+    global.construction_job_toggle = global.construction_job_toggle or {}
+    global.rebuild_job_toggle = global.rebuild_job_toggle or {}
+    global.deconstruction_job_toggle = global.deconstruction_job_toggle or {}
+    global.upgrade_job_toggle = global.upgrade_job_toggle or {}
+    global.repair_job_toggle = global.repair_job_toggle or {}
+    global.destroy_job_toggle = global.destroy_job_toggle or {}
+    -- ui
+    global.user_interface = global.user_interface or {}
+    for _, player in pairs(game.players) do
+        global.user_interface[player.index] = global.user_interface[player.index] or {
+            surface = player.surface,
+            main_ui = {
+                elements = {}
+            },
+            settings_ui = {
+                elements = {}
+            },
+            job_ui = {
+                elements = {}
+            }
+        }
+    end
+    -- ammo name
+    local init_ammo_name
+    if global.desired_robot_name == nil or not game.item_prototypes[global.desired_robot_name[1]] then
+        global.ammo_name = {}
+        if game.item_prototypes["rocket"] then
+            init_ammo_name = "rocket"
+        else
+            local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
+            for _, ammo in pairs(ammo_prototypes) do
+                local ammo_type = ammo.get_ammo_type() or {}
+                if ammo_type.category == "rocket" then
+                    init_ammo_name = ammo.name
+                end
+            end
+        end
+    end
+    global.ammo_count = global.ammo_count or {}
+    global.desired_robot_count = global.desired_robot_count or {}
+    -- robot name
+    local init_robot_name
+    if global.desired_robot_name == nil or not game.item_prototypes[global.desired_robot_name[1]] then
+        global.desired_robot_name = {}
+        if game.item_prototypes["construction-robot"] then
+            init_robot_name = "construction-robot"
+        else
+            local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+            local valid_robot_name = pairs(valid_robots)(nil,nil)
+            init_robot_name = valid_robot_name
+        end
+    end
+    -- repair tool
+    local init_repair_tool_name
+    if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
+        global.repair_tool_name = {}
+        if game.item_prototypes["repair-pack"] then
+            init_repair_tool_name = "repair-pack"
+        else
+            local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
+            local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
+            init_repair_tool_name = valid_repair_tool_name
+        end
+    end
+    -- non surface specific settings
+    global.job_start_delay = global.job_start_delay or 300 -- five seconds
+    global.entities_per_second = global.entities_per_second or 1000
+    global.debug_toggle = global.debug_toggle or false
+    global.horde_mode = global.horde_mode or false
+    -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
-        global.constructrons_count[surface.index] = global.constructrons_count[surface.index] or 0
-        global.available_ctron_count[surface.index] = global.available_ctron_count[surface.index] or global.constructrons_count[surface.index]
-        global.stations_count[surface.index] = global.stations_count[surface.index] or 0
-        global.construction_queue[surface.index] = global.construction_queue[surface.index] or {}
-        global.deconstruction_queue[surface.index] = global.deconstruction_queue[surface.index] or {}
-        global.upgrade_queue[surface.index] = global.upgrade_queue[surface.index] or {}
-        global.repair_queue[surface.index] = global.repair_queue[surface.index] or {}
-        global.destroy_queue[surface.index] = global.destroy_queue[surface.index] or {}
+        -- per surface settings
+        local surface_index = surface.index
+        global.construction_job_toggle[surface_index] = global.construction_job_toggle[surface_index] or true
+        global.rebuild_job_toggle[surface_index] = global.rebuild_job_toggle[surface_index] or true
+        global.deconstruction_job_toggle[surface_index] = global.deconstruction_job_toggle[surface_index] or true
+        global.upgrade_job_toggle[surface_index] = global.upgrade_job_toggle[surface_index] or true
+        global.repair_job_toggle[surface_index] = global.repair_job_toggle[surface_index] or true
+        global.destroy_job_toggle[surface_index] = global.destroy_job_toggle[surface_index] or false
+        global.ammo_name[surface_index] = global.ammo_name[surface_index] or init_ammo_name
+        global.ammo_count[surface_index] = global.ammo_count[surface_index] or 0
+        global.desired_robot_count[surface_index] = global.desired_robot_count[surface_index] or 50
+        global.desired_robot_name[surface_index] = global.desired_robot_name[surface_index] or init_robot_name
+        global.repair_tool_name[surface_index] = global.repair_tool_name[surface_index] or init_repair_tool_name
+        -- per surface variables
+        global.constructrons_count[surface_index] = global.constructrons_count[surface_index] or 0
+        global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] or global.constructrons_count[surface_index]
+        global.stations_count[surface_index] = global.stations_count[surface_index] or 0
+        global.construction_queue[surface_index] = global.construction_queue[surface_index] or {}
+        global.deconstruction_queue[surface_index] = global.deconstruction_queue[surface_index] or {}
+        global.upgrade_queue[surface_index] = global.upgrade_queue[surface_index] or {}
+        global.repair_queue[surface_index] = global.repair_queue[surface_index] or {}
+        global.destroy_queue[surface_index] = global.destroy_queue[surface_index] or {}
     end
     -- build allowed items cache (this is used to filter out entities that do not have recipes)
     global.allowed_items = {}
@@ -156,21 +244,6 @@ local ensure_globals = function()
     for tile_name, _ in pairs(water_tile_prototypes) do
         global.water_tile_cache[tile_name] = true
     end
-    -- settings
-    global.construction_job_toggle = settings.global["construct_jobs"].value
-    global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
-    global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
-    global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
-    global.repair_job_toggle = settings.global["repair_jobs"].value
-    global.destroy_job_toggle = settings.global["destroy_jobs"].value
-    global.ammo_name = settings.global["ammo_name"].value
-    global.ammo_count = settings.global["ammo_count"].value
-    global.debug_toggle = settings.global["constructron-debug-enabled"].value
-    global.job_start_delay = (settings.global["job-start-delay"].value * 60)
-    global.desired_robot_count = settings.global["desired_robot_count"].value
-    global.desired_robot_name = settings.global["desired_robot_name"].value
-    global.entities_per_second = settings.global["entities_per_second"].value --[[@as uint]]
-    global.horde_mode = settings.global["horde_mode"].value
 end
 
 local init = function()
@@ -200,8 +273,10 @@ script.on_event(ev.on_lua_shortcut, function (event)
     if not player then return end
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
-    if player.clear_cursor() then
+    if not cursor_stack.valid_for_read or cursor_stack.name ~= "ctron-selection-tool" then
         cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    elseif cursor_stack.name == "ctron-selection-tool" and not player.gui.screen.ctron_main_frame then
+        gui_handlers.open_main_window(player)
     end
 end)
 
@@ -212,31 +287,79 @@ script.on_event("ctron-get-selection-tool", function (event)
     if not player then return end
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
-    cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    if not cursor_stack.valid_for_read or cursor_stack.name ~= "ctron-selection-tool" then
+        cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+    elseif cursor_stack.name == "ctron-selection-tool" and not player.gui.screen.ctron_main_frame then
+        gui_handlers.open_main_window(player)
+    end
 end)
 
 script.on_event(ev.on_surface_created, function(event)
-    local index = event.surface_index
-    global.construction_queue[index] = {}
-    global.deconstruction_queue[index] = {}
-    global.upgrade_queue[index] = {}
-    global.repair_queue[index] = {}
-    global.destroy_queue[index] = {}
-    global.constructrons_count[index] = 0
-    global.available_ctron_count[index] = 0
-    global.stations_count[index] = 0
+    local surface_index = event.surface_index
+    global.construction_queue[surface_index] = {}
+    global.deconstruction_queue[surface_index] = {}
+    global.upgrade_queue[surface_index] = {}
+    global.repair_queue[surface_index] = {}
+    global.destroy_queue[surface_index] = {}
+    global.constructrons_count[surface_index] = 0
+    global.available_ctron_count[surface_index] = 0
+    global.stations_count[surface_index] = 0
+
+    -- per surface settings
+    local init_ammo_name
+    if game.item_prototypes["rocket"] then
+        init_ammo_name = "rocket"
+    else
+        local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
+        for _, ammo in pairs(ammo_prototypes) do
+            local ammo_type = ammo.get_ammo_type() or {}
+            if ammo_type.category == "rocket" then
+                init_ammo_name = ammo.name
+            end
+        end
+    end
+    local init_robot_name
+    if game.item_prototypes["construction-robot"] then
+        init_robot_name = "construction-robot"
+    else
+        local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+        local valid_robot_name = pairs(valid_robots)(nil,nil)
+        init_robot_name = valid_robot_name
+    end
+    global.construction_job_toggle[surface_index] = true
+    global.rebuild_job_toggle[surface_index] = true
+    global.deconstruction_job_toggle[surface_index] = true
+    global.upgrade_job_toggle[surface_index] = true
+    global.repair_job_toggle[surface_index] = true
+    global.destroy_job_toggle[surface_index] = false
+    global.ammo_name[surface_index] = init_ammo_name
+    global.ammo_count[surface_index] = 0
+    global.desired_robot_count[surface_index] = 50
+    global.desired_robot_name[surface_index] = init_robot_name
 end)
 
 script.on_event(ev.on_surface_deleted, function(event)
-    local index = event.surface_index
-    global.construction_queue[index] = nil
-    global.deconstruction_queue[index] = nil
-    global.upgrade_queue[index] = nil
-    global.repair_queue[index] = nil
-    global.destroy_queue[index] = nil
-    global.constructrons_count[index] = nil
-    global.available_ctron_count[index] = nil
-    global.stations_count[index] = nil
+    local surface_index = event.surface_index
+    global.construction_queue[surface_index] = nil
+    global.deconstruction_queue[surface_index] = nil
+    global.upgrade_queue[surface_index] = nil
+    global.repair_queue[surface_index] = nil
+    global.destroy_queue[surface_index] = nil
+    global.constructrons_count[surface_index] = nil
+    global.available_ctron_count[surface_index] = nil
+    global.stations_count[surface_index] = nil
+
+    -- per surface settings
+    global.construction_job_toggle[surface_index] = nil
+    global.rebuild_job_toggle[surface_index] = nil
+    global.deconstruction_job_toggle[surface_index] = nil
+    global.upgrade_job_toggle[surface_index] = nil
+    global.repair_job_toggle[surface_index] = nil
+    global.destroy_job_toggle[surface_index] = nil
+    global.ammo_name[surface_index] = nil
+    global.ammo_count[surface_index] = nil
+    global.desired_robot_count[surface_index] = nil
+    global.desired_robot_name[surface_index] = nil
 end)
 
 script.on_nth_tick(10, function()
@@ -245,66 +368,7 @@ script.on_nth_tick(10, function()
     end
 end)
 
-script.on_event(ev.on_runtime_mod_setting_changed, function(event)
-    log("mod setting change: " .. event.setting)
-    local setting = event.setting
-    if setting == "construct_jobs" then
-        global.construction_job_toggle = settings.global["construct_jobs"].value
-    elseif setting == "rebuild_jobs" then
-        global.rebuild_job_toggle = settings.global["rebuild_jobs"].value
-    elseif setting == "deconstruct_jobs" then
-        global.deconstruction_job_toggle = settings.global["deconstruct_jobs"].value
-    elseif setting == "upgrade_jobs" then
-        global.upgrade_job_toggle = settings.global["upgrade_jobs"].value
-    elseif setting == "repair_jobs" then
-        global.repair_job_toggle = settings.global["repair_jobs"].value
-    elseif setting == "destroy_jobs" then
-        global.destroy_job_toggle = settings.global["destroy_jobs"].value
-    elseif setting == "constructron-debug-enabled" then
-        global.debug_toggle = settings.global["constructron-debug-enabled"].value
-    elseif setting == "job-start-delay" then
-        global.job_start_delay = (settings.global["job-start-delay"].value * 60)
-    elseif setting == "desired_robot_count" then
-        global.desired_robot_count = settings.global["desired_robot_count"].value
-    elseif setting == "desired_robot_name" then
-        -- validate robot name
-        if not game.item_prototypes[settings.global["desired_robot_name"].value] then
-            if game.item_prototypes["construction-robot"] then
-                settings.global["desired_robot_name"] = {value = "construction-robot"}
-                global.desired_robot_name = "construction-robot"
-                game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
-            else
-                local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
-                local valid_robot_name = pairs(valid_robots)(nil,nil)
-                settings.global["desired_robot_name"] = {value = valid_robot_name}
-                game.print("Constructron-Continued: **WARNING** desired_robot_name is not a valid name in mod settings! Robot name reset!")
-            end
-        else
-            global.desired_robot_name = settings.global["desired_robot_name"].value
-        end
-    elseif setting == "ammo_name" then
-        -- validate ammo name
-        if not game.item_prototypes[settings.global["ammo_name"].value] then
-            if game.item_prototypes["rocket"] then
-                settings.global["ammo_name"] = {value = "rocket"}
-                global.desired_robot_name = "rocket"
-                game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo name reset!")
-            else
-                game.print("Constructron-Continued: **WARNING** ammo_name is not a valid name in mod settings! Ammo requests disabled!")
-                settings.global["ammo_count"] = {value = 0}
-                global.ammo_count = 0
-            end
-        else
-            global.ammo_name = settings.global["ammo_name"].value
-        end
-    elseif setting == "ammo_count" then
-        global.ammo_count = settings.global["ammo_count"].value
-    elseif setting == "entities_per_second" then
-        global.entities_per_second = settings.global["entities_per_second"].value --[[@as uint]]
-    elseif setting == "horde_mode" then
-        global.horde_mode = settings.global["horde_mode"].value
-    end
-end)
+gui_handlers.register()
 
 --===========================================================================--
 -- command functions
@@ -319,9 +383,6 @@ local function reset(player, parameters)
     if parameters[1] == "entities" then
         game.print('Reset entities. Entity detection will now start.')
         cmd.reload_entities()
-    elseif parameters[1] == "settings" then
-        game.print('Reset settings to default.')
-        cmd.reset_settings()
     elseif parameters[1] == "recall" then
         game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
@@ -410,76 +471,7 @@ local function enable(player, parameters)
     log("control:enable")
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
-    if parameters[1] == "construction" then
-        global.construction_job_toggle = true
-        settings.global["construct_jobs"] = {value = true}
-        cmd.reload_entities()
-        cmd.reacquire_construction_jobs()
-        game.print('Construction jobs enabled.')
-    elseif parameters[1] == "rebuild" then
-        global.rebuild_job_toggle = true
-        settings.global["rebuild_jobs"] = {value = true}
-        game.print('Rebuild jobs enabled.')
-    elseif parameters[1] == "deconstruction" then
-        global.deconstruction_job_toggle = true
-        settings.global["deconstruct_jobs"] = {value = true}
-        cmd.reacquire_deconstruction_jobs()
-        game.print('Deconstruction jobs enabled.')
-    elseif parameters[1] == "upgrade" then
-        global.upgrade_job_toggle = true
-        settings.global["upgrade_jobs"] = {value = true}
-        cmd.reacquire_upgrade_jobs()
-        game.print('Upgrade jobs enabled.')
-    elseif parameters[1] == "repair" then
-        global.repair_job_toggle = true
-        settings.global["repair_jobs"] = {value = true}
-        game.print('Repair jobs enabled.')
-    elseif parameters[1] == "destroy" then
-        global.destroy_job_toggle = true
-        settings.global["destroy_jobs"] = {value = true}
-        game.print('Destroy jobs enabled.')
-    elseif parameters[1] == "horde" then
-        global.horde_mode = true
-        settings.global["horde_mode"] = {value = true}
-        game.print('Horde Mode enabled.')
-    elseif parameters[1] == "all" then
-        global.construction_job_toggle = true
-        settings.global["construct_jobs"] = {value = true}
-        cmd.reload_entities()
-        cmd.reacquire_construction_jobs()
-        game.print('Construction jobs enabled.')
-        global.rebuild_job_toggle = true
-        settings.global["rebuild_jobs"] = {value = true}
-        game.print('Rebuild jobs enabled.')
-        global.deconstruction_job_toggle = true
-        settings.global["deconstruct_jobs"] = {value = true}
-        cmd.reacquire_deconstruction_jobs()
-        game.print('Deconstruction jobs enabled.')
-        global.upgrade_job_toggle = true
-        settings.global["upgrade_jobs"] = {value = true}
-        cmd.reacquire_upgrade_jobs()
-        game.print('Upgrade jobs enabled.')
-        global.repair_job_toggle = true
-        settings.global["repair_jobs"] = {value = true}
-        game.print('Repair jobs enabled.')
-    elseif parameters[1] == "debug" then
-        global.debug_toggle = true
-        settings.global["constructron-debug-enabled"] = {value = true}
-        game.print('Debug view enabled.')
-    elseif parameters[1] == "landfill" then
-        game.print('Landfill is now permanently enabled.')
-    elseif parameters[1] == "remote" then
-        global.spider_remote_toggle = true
-        game.print('Spider remote enabled.')
-        if game.map_settings.path_finder.use_path_cache then
-            game.print('use_path_cache = true')
-        else
-            game.print('use_path_cache = false')
-        end
-    else
-        game.print('Command parameter does not exist.')
-        cmd.help_text()
-    end
+    game.print('Enable|Disable commands have been deprecated. Please use the GUI (shortcut SHIFT + C + C)')
 end
 
 ---@param player LuaPlayer
@@ -488,63 +480,7 @@ local function disable(player, parameters)
     log("control:disable")
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
-    if parameters[1] == "construction" then
-        global.construction_job_toggle = false
-        settings.global["construct_jobs"] = {value = false}
-        game.print('Construction jobs disabled.')
-    elseif parameters[1] == "rebuild" then
-        global.rebuild_job_toggle = false
-        settings.global["rebuild_jobs"] = {value = false}
-        game.print('Rebuild jobs disabled.')
-    elseif parameters[1] == "deconstruction" then
-        global.deconstruction_job_toggle = false
-        settings.global["deconstruct_jobs"] = {value = false}
-        game.print('Deconstruction jobs disabled.')
-    elseif parameters[1] == "upgrade" then
-        global.upgrade_job_toggle = false
-        settings.global["upgrade_jobs"] = {value = false}
-        game.print('Upgrade jobs disabled.')
-    elseif parameters[1] == "repair" then
-        global.repair_job_toggle = false
-        settings.global["repair_jobs"] = {value = false}
-        game.print('Repair jobs disabled.')
-    elseif parameters[1] == "destroy" then
-        global.destroy_job_toggle = false
-        settings.global["destroy_jobs"] = {value = false}
-        game.print('Destroy jobs disabled.')
-    elseif parameters[1] == "horde" then
-        global.horde_mode = false
-        settings.global["horde_mode"] = {value = false}
-        game.print('Horde Mode disabled.')
-    elseif parameters[1] == "all" then
-        global.construction_job_toggle = false
-        settings.global["construct_jobs"] = {value = false}
-        game.print('Construction jobs disabled.')
-        global.rebuild_job_toggle = false
-        settings.global["rebuild_jobs"] = {value = false}
-        game.print('Rebuild jobs disabled.')
-        global.deconstruction_job_toggle = false
-        settings.global["deconstruct_jobs"] = {value = false}
-        game.print('Deconstruction jobs disabled.')
-        global.upgrade_job_toggle = false
-        settings.global["upgrade_jobs"] = {value = false}
-        game.print('Upgrade jobs disabled.')
-        global.repair_job_toggle = false
-        settings.global["repair_jobs"] = {value = false}
-        game.print('Repair jobs disabled.')
-    elseif parameters[1] == "debug" then
-        global.debug_toggle = false
-        settings.global["constructron-debug-enabled"] = {value = false}
-        game.print('Debug view disabled.')
-    elseif parameters[1] == "landfill" then
-        game.print('Landfill is now permanently enabled.')
-    elseif parameters[1] == "remote" then
-        global.spider_remote_toggle = false
-        game.print('Spider remote disabled.')
-    else
-        game.print('Command parameter does not exist.')
-        cmd.help_text()
-    end
+    game.print('Enable|Disable commands have been deprecated. Please use the GUI (shortcut SHIFT + C + C)')
 end
 
 ---@param player LuaPlayer

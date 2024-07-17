@@ -18,14 +18,14 @@ local ev = defines.events
 entity_proc.on_built_entity = function(event)
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
-    if global.construction_job_toggle and (entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy') then
+    local surface_index = entity.surface.index
+    if global.construction_job_toggle[surface_index] and entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
         global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
-        local surface_index = entity.surface.index
         ctron.set_constructron_status(entity, 'busy', false)
         ctron.paint_constructron(entity, 'idle')
         entity.enable_logistics_while_moving = false
@@ -52,7 +52,6 @@ entity_proc.on_built_entity = function(event)
         }
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_entity_destroyed(entity)
-        local surface_index = entity.surface.index
         global.service_stations[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "service_station",
@@ -115,9 +114,8 @@ script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
 
 -- for entities that die and need rebuilding
 script.on_event(ev.on_post_entity_died, function(event)
-    if not global.rebuild_job_toggle then return end
     local entity = event.ghost
-    if entity and entity.valid and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
+    if entity and entity.valid and global.rebuild_job_toggle[entity.surface.index] and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
         global.construction_tick = event.tick
@@ -127,8 +125,8 @@ end)
 
 -- for entity deconstruction
 script.on_event(ev.on_marked_for_deconstruction, function(event)
-    if not global.deconstruction_job_toggle then return end
     local entity = event.entity
+    if not global.deconstruction_job_toggle[entity.surface.index] or not entity then return end
     global.deconstruction_index = global.deconstruction_index + 1
     global.entity_proc_trigger = true -- there is something to do start processing
     local force_name = entity.force.name
@@ -140,24 +138,22 @@ end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
 script.on_event(ev.on_marked_for_upgrade, function(event)
-    if not global.upgrade_job_toggle then return end
     local entity = event.entity
-    if entity.force.name == "player" then
-        global.upgrade_index = global.upgrade_index + 1
-        global.upgrade_tick = event.tick
-        global.upgrade_entities[global.upgrade_index] = entity
-        global.entity_proc_trigger = true -- there is something to do start processing
-    end
+    if not global.upgrade_job_toggle[entity.surface.index] or not entity or not entity.force.name == "player" then return end
+    global.upgrade_index = global.upgrade_index + 1
+    global.upgrade_tick = event.tick
+    global.upgrade_entities[global.upgrade_index] = entity
+    global.entity_proc_trigger = true -- there is something to do start processing
 end)
 
 -- for entity repair
 script.on_event(ev.on_entity_damaged, function(event)
-    if not global.repair_job_toggle then return end
     local entity = event.entity
+    if not global.repair_job_toggle[entity.surface.index] then return end
     local force = entity.force.name
     local entity_pos = entity.position
     local key = entity.surface.index .. ',' .. entity_pos.x .. ',' .. entity_pos.y
-    if (force == "player") and (((event.final_health / entity.prototype.max_health) * 100) <= settings.global["repair_percent"].value) then
+    if (force == "player") then
         if not global.repair_entities[key] then
             global.repair_tick = event.tick
             global.repair_entities[key] = entity
@@ -246,31 +242,32 @@ end,
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
     local surface_index = entity.surface_index
-    if not (surface_index == event.old_surface_index) then
-        if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
-            ctron.paint_constructron(entity, 'idle')
-            ctron.set_constructron_status(entity, 'busy', false)
-            global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
-            global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
+    if not (surface_index == event.old_surface_index) then return end
+    if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
+        ctron.paint_constructron(entity, 'idle')
+        ctron.set_constructron_status(entity, 'busy', false)
+        global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
+        global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
+        if global.constructron_statuses[event.unit_number] and not global.constructron_statuses[entity.unit_number]["busy"] then
             global.available_ctron_count[event.old_surface_index] = global.available_ctron_count[event.old_surface_index] - 1
-            global.available_ctron_count[entity.surface_index] = global.available_ctron_count[entity.surface_index] + 1
-            for _, job in pairs(global.jobs) do
-                if (job.worker.unit_number == entity.unit_number) then
-                    -- remove worker from job
-                    job.worker = nil
-                end
+        end
+        global.available_ctron_count[entity.surface_index] = global.available_ctron_count[entity.surface_index] + 1
+        for _, job in pairs(global.jobs) do
+            if (job.worker.unit_number == entity.unit_number) then
+                -- remove worker from job
+                job.worker = nil
             end
-            -- configure surface management
-            if (global.stations_count[entity.surface_index] > 0) then
-                global.managed_surfaces[surface_index] = entity.surface.name
-            end
-        elseif entity.name == "service_station" then
-            global.stations_count[event.old_surface_index] = global.stations_count[event.old_surface_index] - 1
-            global.stations_count[entity.surface_index] = global.stations_count[event.old_surface_index] + 1
-            -- configure surface management
-            if (global.constructrons_count[entity.surface_index] > 0) then
-                global.managed_surfaces[surface_index] = entity.surface.name
-            end
+        end
+        -- configure surface management
+        if (global.stations_count[entity.surface_index] > 0) then
+            global.managed_surfaces[surface_index] = entity.surface.name
+        end
+    elseif entity.name == "service_station" then
+        global.stations_count[event.old_surface_index] = global.stations_count[event.old_surface_index] - 1
+        global.stations_count[entity.surface_index] = global.stations_count[event.old_surface_index] + 1
+        -- configure surface management
+        if (global.constructrons_count[entity.surface_index] > 0) then
+            global.managed_surfaces[surface_index] = entity.surface.name
         end
     end
 end,
@@ -284,40 +281,41 @@ end,
 ---| EventData.on_entity_destroyed
 ---| EventData.script_raised_destroy
 entity_proc.on_entity_destroyed = function(event)
-    if global.registered_entities[event.registration_number] then
-        local removed_entity = global.registered_entities[event.registration_number]
-        local surface_index = removed_entity.surface
-        if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
-            if game.surfaces[surface_index] then
-                global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
+    if not global.registered_entities[event.registration_number] then return end
+    local removed_entity = global.registered_entities[event.registration_number]
+    local surface_index = removed_entity.surface
+    if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
+        if game.surfaces[surface_index] then
+            global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
+            if global.constructron_statuses[event.unit_number] and not global.constructron_statuses[event.unit_number]["busy"] then
                 global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
             end
-            global.constructrons[event.unit_number] = nil
-            global.constructron_statuses[event.unit_number] = nil
-            -- surface management
-            if (global.stations_count[surface_index] or 0) <= 0 then
-                global.managed_surfaces[surface_index] = nil
-            end
-            -- combinator management
-            global.constructron_requests[event.unit_number] = nil
-            for _, station in pairs(global.service_stations) do
-                job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
-            end
-        elseif removed_entity.name == "service_station" then
-            if game.surfaces[surface_index] then
-                global.stations_count[surface_index] = global.stations_count[surface_index] - 1
-            end
-            global.service_stations[event.unit_number] = nil
-            -- surface management
-            if (global.constructrons_count[surface_index] or 0) <= 0 then
-                global.managed_surfaces[surface_index] = nil
-            end
-            -- combinator management
-            global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
-            global.station_combinators[event.unit_number] = nil
         end
-        global.registered_entities[event.registration_number] = nil
+        global.constructrons[event.unit_number] = nil
+        global.constructron_statuses[event.unit_number] = nil
+        -- surface management
+        if (global.stations_count[surface_index] or 0) <= 0 then
+            global.managed_surfaces[surface_index] = nil
+        end
+        -- combinator management
+        global.constructron_requests[event.unit_number] = nil
+        for _, station in pairs(global.service_stations) do
+            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+        end
+    elseif removed_entity.name == "service_station" then
+        if game.surfaces[surface_index] then
+            global.stations_count[surface_index] = global.stations_count[surface_index] - 1
+        end
+        global.service_stations[event.unit_number] = nil
+        -- surface management
+        if (global.constructrons_count[surface_index] or 0) <= 0 then
+            global.managed_surfaces[surface_index] = nil
+        end
+        -- combinator management
+        global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
+        global.station_combinators[event.unit_number] = nil
     end
+    global.registered_entities[event.registration_number] = nil
 end
 
 script.on_event(ev.on_entity_destroyed, entity_proc.on_entity_destroyed)
@@ -329,28 +327,27 @@ script.on_event(ev.script_raised_destroy, entity_proc.on_entity_destroyed, {
 })
 
 script.on_event(ev.on_sector_scanned, function(event)
-    if not global.destroy_job_toggle then return end
     local surface = event.radar.surface
+    if not global.destroy_job_toggle[surface.index] then return end
     local enemies = surface.find_entities_filtered({
         force = {"enemy"},
         area = event.area,
         is_military_target = true,
         type = {"unit-spawner", "turret"}
     })
-    if next(enemies) then
-        local enemies_list = {}
-        for _, enemy in pairs(enemies) do
-            if not enemies_list[enemy.unit_number] then
-                enemies_list[enemy.unit_number] = enemy
-                enemies_list = entity_proc.recursive_enemy_search(enemy, enemies_list)
-            end
+    if not next(enemies) then return end
+    local enemies_list = {}
+    for _, enemy in pairs(enemies) do
+        if not enemies_list[enemy.unit_number] then
+            enemies_list[enemy.unit_number] = enemy
+            enemies_list = entity_proc.recursive_enemy_search(enemy, enemies_list)
         end
-        for _, entity in pairs(enemies_list) do
-            global.destroy_index = global.destroy_index + 1
-            global.destroy_entities[global.destroy_index] = entity
-            global.destroy_tick = event.tick
-            global.entity_proc_trigger = true
-        end
+    end
+    for _, entity in pairs(enemies_list) do
+        global.destroy_index = global.destroy_index + 1
+        global.destroy_entities[global.destroy_index] = entity
+        global.destroy_tick = event.tick
+        global.entity_proc_trigger = true
     end
 end)
 
@@ -426,6 +423,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                     local required_items = {}
                     local trash_items = {}
                     local entity_type = entity.type
+                    local entity_surface = entity.surface.index
                     -- construction
                     if (build_type == "construction") then
                         if not (entity_type == 'item-request-proxy') then
@@ -504,13 +502,12 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         required_items[items_to_place_cache.item] = (required_items[items_to_place_cache.item] or 0) + items_to_place_cache.count
                     -- repair
                     elseif (build_type == "repair") then
-                        required_items['repair-pack'] = (required_items['repair-pack'] or 0) + 1
+                        required_items[global.repair_tool_name[entity_surface]] = (required_items[global.repair_tool_name[entity_surface]] or 0) + 1
                     -- destroy
                     elseif (build_type == "destroy") then
                         -- repair packs are hard coded to robot count * 4
                     end
                     -- entity chunking
-                    local entity_surface = entity.surface.index
                     local entity_pos = entity.position
                     local entity_pos_y = entity_pos.y
                     local entity_pos_x = entity_pos.x
