@@ -249,7 +249,7 @@ script.on_event(ev.script_raised_teleported, function(event)
         ctron.set_constructron_status(entity, 'busy', false)
         global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
         global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
-        if not global.constructron_statuses[entity.unit_number]["busy"] then
+        if global.constructron_statuses[event.unit_number] and not global.constructron_statuses[entity.unit_number]["busy"] then
             global.available_ctron_count[event.old_surface_index] = global.available_ctron_count[event.old_surface_index] - 1
         end
         global.available_ctron_count[entity.surface_index] = global.available_ctron_count[entity.surface_index] + 1
@@ -288,7 +288,7 @@ entity_proc.on_entity_destroyed = function(event)
     if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
         if game.surfaces[surface_index] then
             global.constructrons_count[surface_index] = global.constructrons_count[surface_index] - 1
-            if not global.constructron_statuses[event.unit_number]["busy"] then
+            if global.constructron_statuses[event.unit_number] and not global.constructron_statuses[event.unit_number]["busy"] then
                 global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
             end
         end

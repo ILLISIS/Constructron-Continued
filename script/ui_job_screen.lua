@@ -221,6 +221,7 @@ function gui_job.buildJobContent(player, frame, job)
     global.user_interface[player.index].job_ui.elements["ammo_table"] = right_pane.add{
         type = "table",
         name = "ctron_ammo_table",
+        style = "ctron_ammo_table_style",
         column_count = 10,
     }
     gui_job.build_ammo_display(worker, global.user_interface[player.index].job_ui.elements["ammo_table"])

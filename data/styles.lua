@@ -18,6 +18,7 @@ styles.ctron_surface_dropdown_style = {
     parent = "dropdown",
     height = 24,
     minimal_width = 80,
+    maximal_width = 160,
     top_padding = -4,
     left_padding = 8,
     right_padding = 2,
@@ -285,6 +286,13 @@ styles.ctron_job_right_pane_style = {
     type = "frame_style",
     parent = "entity_frame",
     height = 770,
+}
+
+styles.ctron_ammo_table_style = {
+    type = "table_style",
+    parent = "table",
+    horizontal_spacing = 0,
+    vertical_spacing = 0
 }
 
 styles.ctron_inventory_table_style = {

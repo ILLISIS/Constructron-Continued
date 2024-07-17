@@ -141,6 +141,9 @@ script.on_event(defines.events.on_gui_closed, function(event)
                 player.gui.screen.ctron_job_window.destroy()
             end
         end
+        if player.gui.relative.ctron_invis_flow then
+            player.gui.relative.ctron_invis_flow.destroy()
+        end
     end
 end)
 
@@ -356,25 +359,6 @@ local job_colors = {
     ["destroy"] = "black"
 }
 
-function gui_handlers.ctron_locate_job(player, element)
-    local job = global.jobs[element.tags.job_index]
-    if not job then
-        player.print("This job no longer exists.") -- TODO: refactor this functionality
-        return
-    end
-    local _, chunk = next(job.chunks)
-    chunk = chunk or {}
-    local position = (chunk.midpoint or job.station.position or job.worker.position)
-    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
-    if not remote_view_used then
-        player.zoom_to_world(position, 0.5)
-    end
-    -- draw chunk
-    for _, chunk_to_draw in pairs(job.chunks) do
-        debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 300)
-    end
-end
-
 function gui_handlers.se_remote_view(player, surface, position)
     -- Thanks Xorimuth
     local remote_view_used = false
@@ -393,6 +377,59 @@ function gui_handlers.se_remote_view(player, surface, position)
     return remote_view_used
 end
 
+function gui_handlers.resize_gui(player)
+    local main_window = player.gui.screen.ctron_main_window
+    if main_window then
+        main_window.style.width = 647
+        main_window.location = {x = 25, y = main_window.location.y}
+        main_window.ctron_main_content_frame.style.width = 623
+        main_window.ctron_main_content_frame.job_scroll_pane.style.width = 623
+    end
+    local job_window = player.gui.screen.ctron_job_window
+    if job_window then
+        local resolution = player.display_resolution
+        local x_coord = (resolution.width - (750 * player.display_scale))
+        job_window.location = {x = x_coord, y = job_window.location.y}
+    end
+    if player.gui.relative.ctron_invis_flow then
+        player.gui.relative.ctron_invis_flow.destroy()
+    end
+    local ctron_frame = player.gui.relative.add{
+        type = "flow",
+        name = "ctron_invis_flow",
+        direction = "vertical",
+        anchor = {
+            gui = defines.relative_gui_type.spider_vehicle_gui,
+            position = defines.relative_gui_position.right
+        },
+        tags = {
+            mod = "constructron",
+        }
+    }
+    ctron_frame.style.width = 5000 -- push the base game spider UI all the way to the left
+end
+
+function gui_handlers.ctron_locate_job(player, element)
+    local job = global.jobs[element.tags.job_index]
+    if not job then
+        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        return
+    end
+    local _, chunk = next(job.chunks)
+    chunk = chunk or {}
+    local position = (chunk.midpoint or job.station.position or job.worker.position)
+    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
+    if not remote_view_used then
+        player.zoom_to_world(position, 0.5)
+    end
+    -- move UI for visibility
+    gui_handlers.resize_gui(player)
+    -- draw chunks
+    for _, chunk_to_draw in pairs(job.chunks) do
+        debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 120)
+    end
+end
+
 function gui_handlers.ctron_locate_chunk(player, element)
     local job_type = element.tags.job_type
     local surface_index = element.tags.surface_index
@@ -403,29 +440,40 @@ function gui_handlers.ctron_locate_chunk(player, element)
     if not remote_view_used then
         player.zoom_to_world(chunk_midpoint, 0.5)
     end
+    -- move UI for visibility
+    gui_handlers.resize_gui(player)
     -- draw chunk
-    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface_index, job_colors[job_type], true, 300)
+    debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface_index, job_colors[job_type], true, 120)
 end
 
 function gui_handlers.ctron_map_view(player, element)
     local job = global.jobs[element.tags.job_index]
     if not job then return end
     if element.tags.follow_entity then
-        gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position)
-        player.zoom_to_world(job.worker.position, 0.5, job.worker)
+        if player.surface.index == job.surface_index then
+            player.zoom_to_world(job.worker.position, 0.5, job.worker)
+        else
+            gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position)
+            player.zoom_to_world(job.worker.position, 0.5, job.worker)
+        end
     else
-        local current_task
+        local current_task = 1
         if #job.task_positions > 1 then
             current_task = math.random(1, #job.task_positions)
-        elseif #job.task_positions == 1 then
-            current_task = job.task_positions[1]
         end
         local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
-        local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
-        if not remote_view_used then
+        if player.surface.index == job.surface_index then
+            gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
+        else
             player.zoom_to_world(position, 0.5)
         end
+        -- draw chunks
+        for _, chunk_to_draw in pairs(job.chunks) do
+            debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 120)
+        end
     end
+    -- move UI for visibility
+    gui_handlers.resize_gui(player)
 end
 
 function gui_handlers.ctron_cancel_job(player, element)
