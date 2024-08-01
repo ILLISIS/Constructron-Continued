@@ -326,7 +326,10 @@ function gui_job.build_ammo_display(worker, ammo_table)
                 type = "sprite-button",
                 name = "ctron_ammo_button_" .. i,
                 style = "inventory_slot",
-                tooltip = ammo.name,
+                elem_tooltip = {
+                    type = "item",
+                    name = ammo.name
+                },
                 sprite = "item/" .. ammo.name,
                 number = ammo.count,
                 tags = {
@@ -359,7 +362,10 @@ function gui_job.build_inventory_display(worker, inventory_table)
                 type = "sprite-button",
                 name = "ctron_inventory_button_" .. i,
                 style = "inventory_slot",
-                tooltip = item.name,
+                elem_tooltip = {
+                    type = "item",
+                    name = item.name
+                },
                 sprite = "item/" .. item.name,
                 number = item.count,
                 tags = {
@@ -389,7 +395,10 @@ function gui_job.build_trash_display(worker, trash_table)
                 type = "sprite-button",
                 name = "ctron_inventory_button_" .. i,
                 style = "inventory_slot",
-                tooltip = item.name,
+                elem_tooltip = {
+                    type = "item",
+                    name = item.name
+                },
                 sprite = "item/" .. item.name,
                 number = item.count,
                 tags = {
@@ -425,7 +434,10 @@ function gui_job.build_logistic_display(worker, logistic_table)
                 type = "sprite-button",
                 name = "ctron_logistic_button_" .. i,
                 style = "logistic_slot_button",
-                tooltip = slot.name,
+                elem_tooltip = {
+                    type = "item",
+                    name = slot.name
+                },
                 sprite = "item/" .. slot.name,
                 number = slot.max,
                 tags = {
