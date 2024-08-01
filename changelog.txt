@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.20
+Date: 2024-08-01
+  Changes:
+    - Added a shortcut to open the Constructron Control Center in addition to the hotkey combination.
+  Bugfixes:
+    - Fixed a crash caused by the repair tool name not being set on newly created surfaces.
+    - Fixed an issue that caused map view not to work when Space Exploration mod was not enabled.
+    - Fixed an issue where what was in the cursor would be deleted when the hotkey was used.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.19
 Date: 2024-07-18
   Bugfixes:

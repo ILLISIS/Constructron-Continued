@@ -62,7 +62,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
         -- find job
         local job
         for _, iterated_job in pairs(global.jobs) do
-            if iterated_job.worker and iterated_job.worker.unit_number == event.entity.unit_number then
+            if iterated_job.worker and iterated_job.worker.valid and iterated_job.worker.unit_number == event.entity.unit_number then
                 job = iterated_job
                 break
             end
@@ -324,7 +324,6 @@ function gui_handlers.open_main_window(player)
     else
         player.gui.screen.ctron_main_window.bring_to_front()
     end
-    player.cursor_stack.clear()
 end
 
 function gui_handlers.close_main_window(player)
@@ -357,24 +356,6 @@ local job_colors = {
     ["destroy"] = "black"
 }
 
-function gui_handlers.se_remote_view(player, surface, position)
-    -- Thanks Xorimuth
-    local remote_view_used = false
-    local surface_name = surface.name
-    if remote.interfaces["space-exploration"] and remote.interfaces["space-exploration"]["remote_view_is_unlocked"] and
-        remote.call("space-exploration", "remote_view_is_unlocked", { player = player }) then
-        surface_name = surface_name:gsub("^%l", string.upper)
-        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = position})
-        if remote.call("space-exploration", "remote_view_is_active", { player = player }) then
-            -- remote_view_start worked
-            remote_view_used = true
-            player.close_map()
-            player.zoom = 0.5
-        end
-    end
-    return remote_view_used
-end
-
 function gui_handlers.resize_gui(player)
     local main_window = player.gui.screen.ctron_main_window
     if main_window then
@@ -405,6 +386,24 @@ function gui_handlers.resize_gui(player)
         }
     }
     ctron_frame.style.width = 5000 -- push the base game spider UI all the way to the left
+end
+
+function gui_handlers.se_remote_view(player, surface, position)
+    -- Thanks Xorimuth
+    local remote_view_used = false
+    local surface_name = surface.name
+    if remote.interfaces["space-exploration"] and remote.interfaces["space-exploration"]["remote_view_is_unlocked"] and
+        remote.call("space-exploration", "remote_view_is_unlocked", { player = player }) then
+        surface_name = surface_name:gsub("^%l", string.upper)
+        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = position})
+        if remote.call("space-exploration", "remote_view_is_active", { player = player }) then
+            -- remote_view_start worked
+            remote_view_used = true
+            player.close_map()
+            player.zoom = 0.5
+        end
+    end
+    return remote_view_used
 end
 
 function gui_handlers.ctron_locate_job(player, element)
@@ -452,8 +451,9 @@ function gui_handlers.ctron_map_view(player, element)
         if player.surface.index == job.surface_index then
             player.zoom_to_world(job.worker.position, 0.5, job.worker)
         else
-            gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position)
-            player.zoom_to_world(job.worker.position, 0.5, job.worker)
+            if gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position) then
+                player.zoom_to_world(job.worker.position, 0.5, job.worker)
+            end
         end
     else
         local current_task = 1
@@ -462,9 +462,11 @@ function gui_handlers.ctron_map_view(player, element)
         end
         local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
         if player.surface.index == job.surface_index then
-            gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
-        else
             player.zoom_to_world(position, 0.5)
+        else
+            if gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position) then
+                player.zoom_to_world(position, 0.5)
+            end
         end
         -- draw chunks
         for _, chunk_to_draw in pairs(job.chunks) do

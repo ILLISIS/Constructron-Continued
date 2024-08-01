@@ -268,14 +268,21 @@ local ev = defines.events
 
 script.on_event(ev.on_lua_shortcut, function (event)
     local name = event.prototype_name
-    if name ~= "ctron-get-selection-tool" then return end
-    local player = game.get_player(event.player_index)
-    if not player then return end
-    local cursor_stack = player.cursor_stack
-    if not cursor_stack then return end
-    if not cursor_stack.valid_for_read or cursor_stack.name ~= "ctron-selection-tool" then
-        cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
-    elseif cursor_stack.name == "ctron-selection-tool" and not player.gui.screen.ctron_main_frame then
+    if name == "ctron-get-selection-tool" then
+        local player = game.get_player(event.player_index)
+        if not player then return end
+        local cursor_stack = player.cursor_stack
+        if not cursor_stack then return end
+        if not cursor_stack.valid_for_read or cursor_stack.name ~= "ctron-selection-tool" then
+            if not player.clear_cursor() then return end
+            cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
+        elseif cursor_stack.name == "ctron-selection-tool" and not player.gui.screen.ctron_main_frame then
+            player.clear_cursor()
+            gui_handlers.open_main_window(player)
+        end
+    elseif name == "ctron-open-ui" then
+        local player = game.get_player(event.player_index)
+        if not player then return end
         gui_handlers.open_main_window(player)
     end
 end)
@@ -288,8 +295,10 @@ script.on_event("ctron-get-selection-tool", function (event)
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
     if not cursor_stack.valid_for_read or cursor_stack.name ~= "ctron-selection-tool" then
+        if not player.clear_cursor() then return end
         cursor_stack.set_stack({ name = "ctron-selection-tool", count = 1 })
     elseif cursor_stack.name == "ctron-selection-tool" and not player.gui.screen.ctron_main_frame then
+        player.clear_cursor()
         gui_handlers.open_main_window(player)
     end
 end)
@@ -326,6 +335,17 @@ script.on_event(ev.on_surface_created, function(event)
         local valid_robot_name = pairs(valid_robots)(nil,nil)
         init_robot_name = valid_robot_name
     end
+    local init_repair_tool_name
+    if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
+        global.repair_tool_name = {}
+        if game.item_prototypes["repair-pack"] then
+            init_repair_tool_name = "repair-pack"
+        else
+            local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
+            local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
+            init_repair_tool_name = valid_repair_tool_name
+        end
+    end
     global.construction_job_toggle[surface_index] = true
     global.rebuild_job_toggle[surface_index] = true
     global.deconstruction_job_toggle[surface_index] = true
@@ -336,6 +356,7 @@ script.on_event(ev.on_surface_created, function(event)
     global.ammo_count[surface_index] = 0
     global.desired_robot_count[surface_index] = 50
     global.desired_robot_name[surface_index] = init_robot_name
+    global.repair_tool_name[surface_index] = init_repair_tool_name
 end)
 
 script.on_event(ev.on_surface_deleted, function(event)
@@ -360,6 +381,7 @@ script.on_event(ev.on_surface_deleted, function(event)
     global.ammo_count[surface_index] = nil
     global.desired_robot_count[surface_index] = nil
     global.desired_robot_name[surface_index] = nil
+    global.repair_tool_name[surface_index] = nil
 end)
 
 script.on_nth_tick(10, function()
