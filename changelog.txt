@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.21
+Date: 2024-08-02
+  Bugfixes:
+    - resolved an issue with the previous version migration to fix the repair tool name in some circumstances.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.20
 Date: 2024-08-01
   Changes:
