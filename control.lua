@@ -337,7 +337,6 @@ script.on_event(ev.on_surface_created, function(event)
     end
     local init_repair_tool_name
     if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
-        global.repair_tool_name = {}
         if game.item_prototypes["repair-pack"] then
             init_repair_tool_name = "repair-pack"
         else
