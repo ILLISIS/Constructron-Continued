@@ -17,4 +17,4 @@ end
 
 -------------------------------------------------------------------------------
 
-game.print('Constructron-Continued: v1.1.21 migration complete!')
+game.print('Constructron-Continued: v1.1.22 migration complete!')
