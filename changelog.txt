@@ -1,8 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.22
+Date: 2024-08-08
+  Bugfixes:
+    - Fixed a crash when new surfaces are created and a repair job is started on another surface.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.21
 Date: 2024-08-02
   Bugfixes:
-    - resolved an issue with the previous version migration to fix the repair tool name in some circumstances.
+    - Resolved an issue with the previous version migration to fix the repair tool name in some circumstances.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.20
 Date: 2024-08-01
