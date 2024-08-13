@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.23
+Date: 2024-08-13
+  Bugfixes:
+    - Fixed a minor issue with the robot activity check.
+    - Fixed a crash when new surfaces are created and a repair job is started on another surface. Properly this time.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.22
 Date: 2024-08-08
   Bugfixes:

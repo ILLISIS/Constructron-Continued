@@ -253,7 +253,7 @@ function job:check_robot_activity(construction_robots)
                 break
             else
                 for _, bot in pairs(construction_robots) do
-                    self.last_robot_positions[bot.unit_number] = current_position
+                    self.last_robot_positions[bot.unit_number] = bot.position
                 end
                 break
             end

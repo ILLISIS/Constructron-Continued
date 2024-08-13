@@ -336,14 +336,12 @@ script.on_event(ev.on_surface_created, function(event)
         init_robot_name = valid_robot_name
     end
     local init_repair_tool_name
-    if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
-        if game.item_prototypes["repair-pack"] then
-            init_repair_tool_name = "repair-pack"
-        else
-            local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
-            local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
-            init_repair_tool_name = valid_repair_tool_name
-        end
+    if game.item_prototypes["repair-pack"] then
+        init_repair_tool_name = "repair-pack"
+    else
+        local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
+        local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
+        init_repair_tool_name = valid_repair_tool_name
     end
     global.construction_job_toggle[surface_index] = true
     global.rebuild_job_toggle[surface_index] = true
