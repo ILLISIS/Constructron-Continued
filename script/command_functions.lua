@@ -1,5 +1,5 @@
-local ctron = require("script/constructron")
-local job_proc = require("script/job_processor")
+local job = require("script/job")
+local util_func = require("script/utility_functions")
 
 local me = {}
 
@@ -77,7 +77,7 @@ me.clear_queues = function()
 
     global.construction_index = 0
     global.deconstruction_index = 0
-    global.updgrade_index = 0
+    global.upgrade_index = 0
     global.repair_index = 0
     global.destroy_index = 0
 
@@ -197,7 +197,7 @@ me.reacquire_stations = function()
         }
 
         for _, station in pairs(stations) do
-            local unit_number = station.unit_number
+            local unit_number = station.unit_number ---@cast unit_number -nil
             if not global.service_stations[unit_number] then
                 global.service_stations[unit_number] = station
             end
@@ -224,7 +224,7 @@ me.reacquire_ctrons = function()
         }
 
         for _, constructron in pairs(constructrons) do
-            local unit_number = constructron.unit_number
+            local unit_number = constructron.unit_number ---@cast unit_number -nil
             if not global.constructrons[unit_number] then
                 global.constructrons[unit_number] = constructron
             end
@@ -262,13 +262,13 @@ end
 
 me.reload_ctron_status = function()
     for _, constructron in pairs(global.constructrons) do
-        ctron.set_constructron_status(constructron, 'busy', false)
+        util_func.set_constructron_status(constructron, 'busy', false)
     end
 end
 
 me.reload_ctron_color = function()
     for _, constructron in pairs(global.constructrons) do
-        ctron.paint_constructron(constructron, 'idle')
+        util_func.paint_constructron(constructron, 'idle')
     end
 end
 
@@ -282,10 +282,10 @@ me.recall_ctrons = function()
             }
             for _, constructron in pairs(constructrons) do
                 constructron.autopilot_destination = nil
-                local closest_station = ctron.get_closest_service_station(constructron)
+                local closest_station = util_func.get_closest_service_station(constructron)
                 if closest_station then
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = job_proc.new(global.job_index, constructron.surface.index, "utility", constructron)
+                    global.jobs[global.job_index] = utility_job.new(global.job_index, constructron.surface.index, "utility", constructron) -- TODO: check if this is correct
                     global.jobs[global.job_index].state = "finishing"
                     global.job_proc_trigger = true -- start job operations
                 end
@@ -300,7 +300,7 @@ me.reset_combinator_signals = function()
     -- reset combinator item_request cache
     for _, constructron in pairs(global.constructrons) do
         global.constructron_requests[constructron.unit_number] = {
-            station = ctron.get_closest_service_station(constructron),
+            station = util_func.get_closest_service_station(constructron),
             requests = {}
         }
     end
@@ -328,7 +328,7 @@ me.clear_ctron_inventory = function()
     local slot = 1
 
     for _, constructron in pairs(global.constructrons) do
-        local inventory = constructron.get_inventory(defines.inventory.spider_trunk)
+        local inventory = constructron.get_inventory(defines.inventory.spider_trunk) ---@cast inventory -nil
         local filtered_items = {}
 
         for i = 1, #inventory do

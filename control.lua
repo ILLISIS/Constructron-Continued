@@ -1,9 +1,11 @@
-local custom_lib = require("script/custom_lib")
+local util_func = require("script/utility_functions")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
 local job_proc = require("script/job_processor")
 
 local gui_handlers = require("script/ui")
+
+local util = require("util")
 
 --===========================================================================--
 -- Main workers
@@ -53,7 +55,7 @@ local ensure_globals = function()
     global.registered_entities = global.registered_entities or {}
     global.constructron_statuses = global.constructron_statuses or {}
     --
-    global.entity_proc_trigger = global.entity_proc_triggerr or true
+    global.entity_proc_trigger = global.entity_proc_trigger or true
     global.queue_proc_trigger = global.queue_proc_trigger or true
     global.job_proc_trigger = global.job_proc_trigger or true
     --
@@ -288,7 +290,7 @@ script.on_event(ev.on_lua_shortcut, function (event)
 end)
 
 script.on_event("ctron-get-selection-tool", function (event)
-    local name = event.input_name or event.prototype_name
+    local name = event.input_name
     if name ~= "ctron-get-selection-tool" then return end
     local player = game.get_player(event.player_index)
     if not player then return end
@@ -384,6 +386,31 @@ end)
 script.on_nth_tick(10, function()
     for _, pathfinder in pairs(global.custom_pathfinder_requests) do
         pathfinder:findpath()
+    end
+end)
+
+script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
+    local entity = event.entity
+    local entity_name = entity.name
+    if not (entity_name ~= "constructron" or entity_name ~= "constructron-rocket-powered") then
+        return
+    end
+
+    local slot = event.slot_index
+    local logistic_request = entity.get_vehicle_logistic_slot(slot)
+    local unit_number = entity.unit_number
+
+    if logistic_request.name then
+        global.constructron_requests[unit_number]["requests"][slot] = {
+            item_name = logistic_request.name,
+            item_count = logistic_request.min
+        }
+        util_func.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.min)
+    else
+        local item_request = global.constructron_requests[unit_number]["requests"][slot]
+        if not item_request then return end
+        util_func.update_combinator(global.constructron_requests[unit_number].station, item_request.item_name, (item_request.item_count * -1))
+        global.constructron_requests[unit_number]["requests"][slot] = nil
     end
 end)
 
@@ -563,7 +590,7 @@ commands.add_command(
             if param.player_index ~= nil then
                 player = game.players[param.player_index] --[[@as LuaPlayer]]
             end
-            local params = custom_lib.string_split(param.parameter, " ")
+            local params = util_func.string_split(param.parameter, " ")
             local command = table.remove(params, 1) --[[@as string]]
             if command and ctron_commands[command] then
                 ctron_commands[command](player, params)

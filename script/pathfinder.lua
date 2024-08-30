@@ -1,5 +1,5 @@
-local cust_lib = require("script/custom_lib")
 local debug_lib = require("script/debug_lib")
+local util_func = require("script/utility_functions")
 
 -------------------------------------------------------------------------------
 --  Init
@@ -383,14 +383,14 @@ function pathfinder.clean_path_steps(path, min_distance)
     local prev = path[1]
     table.insert(new_path, prev)
     for i, p in pairs(path) do
-        local d = cust_lib.distance_between(prev.position, p.position)
+        local d = util_func.distance_between(prev.position, p.position)
         if (d > min_distance) then
             prev = p
             table.insert(new_path, p)
         end
     end
     --fix last point
-    local d = cust_lib.distance_between(prev.position, path[#path].position)
+    local d = util_func.distance_between(prev.position, path[#path].position)
     if (d > min_distance) or (#new_path == 1) then
         table.insert(new_path, path[#path])
     else
