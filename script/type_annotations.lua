@@ -71,7 +71,7 @@
 ---@field registered_entities table<uint, RegisteredEntity>
 ---@field constructron_statuses table<uint, table<ConstructronStatus, uint | boolean>>
 ---@field allowed_items table<string,boolean>
----@field items_to_place_cache table<string, table<string, uint>>
+---@field items_to_place_cache table<string, {item: string, count: uint}>
 ---@field trash_items_cache table<table<string, uint>>
 ---@field stack_cache table<string,uint>
 ---@field water_tile_cache table<string, boolean>

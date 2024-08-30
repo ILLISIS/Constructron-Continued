@@ -317,4 +317,15 @@ me.string_split = function(to_split, sep)
     return values
 end
 
+-- this function is used to get the first value of a LuaCustomTable
+-- https://discord.com/channels/139677590393716737/306402592265732098/1279094347052220447
+---@generic K,V
+---@param lct LuaCustomTable<K,V>
+---@return V
+me.firstoflct = function(lct)
+    for key, value in pairs(lct) do
+        return value
+    end
+end
+
 return me

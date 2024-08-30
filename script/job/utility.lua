@@ -2,8 +2,8 @@ local job = require("script/job")
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
 
--- sub class for utility jobs
-local utility_job = setmetatable({}, job_metatable) ---@class utility_job : job
+-- sub class for utility jobs (set as _ENV as it is used in multiple files)
+utility_job = setmetatable({}, job_metatable) ---@class utility_job : job
 local utility_job_metatable = { __index = utility_job } ---@type metatable
 script.register_metatable("utility_job_table", utility_job_metatable)
 

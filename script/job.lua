@@ -86,8 +86,7 @@ end
 function job:get_chunk()
     local chunk_key, chunk = next(global[self.job_type .. "_queue"][self.surface_index])
     -- calculate empty slots
-    local inventory = self.worker.get_inventory(defines.inventory.spider_trunk)
-    self.empty_slot_count = inventory.count_empty_stacks()
+    self.empty_slot_count = self.worker_inventory.count_empty_stacks()
     chunk.midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
     -- check for chunk overload
     local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables{self.required_items, chunk.required_items, chunk.trash_items})
@@ -523,8 +522,7 @@ end
 
 -- this function checks that the trash inventory is empty
 function job:check_trash()
-    local trash_inventory = self.worker.get_inventory(defines.inventory.spider_trash) ---@cast trash_inventory -nil
-    local trash_items = trash_inventory.get_contents()
+    local trash_items = self.worker_trash_inventory.get_contents()
     if next(trash_items) then
         return false
     end
@@ -646,10 +644,8 @@ function job:starting()
         return
     end
     -- request items / check inventory
-    local inventory = worker.get_inventory(defines.inventory.spider_trunk) ---@cast inventory -nil -- spider inventory
-    local inventory_items = inventory.get_contents() -- spider inventory contents
-    local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo) ---@cast ammo_slots -nil -- ammo inventory
-    local ammunition = ammo_slots.get_contents() -- ammo inventory contents
+    local inventory_items = self.worker_inventory.get_contents() -- spider inventory contents
+    local ammunition = self.worker_ammo_slots.get_contents() -- ammo inventory contents
     local current_items = util_func.combine_tables({inventory_items, ammunition})
     if not (self.sub_state == "items_requested") then
         local item_request_list = table.deepcopy(self.required_items)
@@ -689,7 +685,7 @@ function job:starting()
         end
     end
     -- divide ammo evenly between slots
-    self:balance_ammunition(ammo_slots, ammunition)
+    self:balance_ammunition(self.worker_ammo_slots, ammunition)
     -- update job state
     self.sub_state = nil
     self.request_tick = nil

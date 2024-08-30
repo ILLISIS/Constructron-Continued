@@ -1,4 +1,3 @@
-local job = require("script/job")
 local util_func = require("script/utility_functions")
 
 local me = {}
@@ -31,7 +30,7 @@ me.reset_settings = function()
         init_robot_name = "construction-robot"
     else
         local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
-        local valid_robot_name = pairs(valid_robots)(nil,nil)
+        local valid_robot_name = util_func.firstoflct(valid_robots)
         init_robot_name = valid_robot_name
     end
     local init_repair_tool_name
@@ -41,7 +40,7 @@ me.reset_settings = function()
             init_repair_tool_name = "repair-pack"
         else
             local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
-            local valid_repair_tool_name = pairs(valid_repair_tools)(nil,nil)
+            local valid_repair_tool_name = util_func.firstoflct(valid_repair_tools)
             init_repair_tool_name = valid_repair_tool_name
         end
     end
