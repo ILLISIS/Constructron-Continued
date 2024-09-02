@@ -50,9 +50,11 @@ end
 --     local distance_from_pos = util_func.distance_between(worker.position, position)
 --     if distance_from_pos > distance then
 --         debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
---         if not worker.autopilot_destination and self.path_request_id == nil then
---             self:move_to_position(position)
---         else
+--         if not worker.autopilot_destination then
+        --     if not self.path_request_id then
+        --         self:move_to_position(position)
+        --     end
+        -- else
 --             entities = worker.surface.find_entities_filtered {
 --                 position = worker.position,
 --                 radius = 32,
@@ -125,8 +127,8 @@ function destroy_job:in_progress()
     --     end
     -- end
 
-    local logistic_cell = worker.logistic_cell
-    local logistic_network = logistic_cell.logistic_network ---@cast logistic_network -nil
+    local logistic_cell = self.worker_logistic_cell or self:set_logistic_cell()
+    local logistic_network = self.worker_logistic_network or self:set_logistic_network()
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then

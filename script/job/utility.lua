@@ -17,7 +17,7 @@ end
 
 function utility_job:robot_collection()
     local worker = self.worker ---@cast worker -nil
-    local logistic_network = worker.logistic_cell.logistic_network ---@cast logistic_network -nil
+    local logistic_network = self.worker_logistic_network or self:set_logistic_network()
     if next(logistic_network) and logistic_network.construction_robots[1] then
         local distance = util_func.distance_between(worker.position, logistic_network.construction_robots[1].position)
         if not worker.autopilot_destination and self.path_request_id == nil then

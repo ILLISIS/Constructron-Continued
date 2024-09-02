@@ -392,7 +392,7 @@ end)
 script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
     local entity = event.entity
     local entity_name = entity.name
-    if not (entity_name ~= "constructron" or entity_name ~= "constructron-rocket-powered") then
+    if not (entity_name == "constructron" or entity_name == "constructron-rocket-powered") then
         return
     end
 

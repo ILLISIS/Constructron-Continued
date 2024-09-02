@@ -1,5 +1,6 @@
 local job = require("script/job")
-
+local debug_lib = require("script/debug_lib")
+local util_func = require("script/utility_functions")
 
 -- sub class for construction jobs
 local construction_job = setmetatable({}, job_metatable) ---@class construction_job : job
@@ -10,6 +11,35 @@ function construction_job.new(job_index, surface_index, job_type, worker)
     local self = job.new(job_index, surface_index, job_type, worker)
     setmetatable(self, construction_job_metatable)
     return self
+end
+
+-- this function checks if the worker is in the correct position
+function construction_job:position_check(position, distance)
+    local worker = self.worker ---@cast worker -nil
+    local distance_from_pos = util_func.distance_between(worker.position, position)
+    if distance_from_pos > distance then
+        debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
+        if not worker.autopilot_destination then
+            if not self.path_request_id then
+                self:move_to_position(position)
+            end
+        else
+            if self.landfill_job and self.status == "in_progress" and not self.worker_logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
+                debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
+                worker.autopilot_destination = nil
+                self:check_chunks()
+                self.state = "finishing"
+                return false
+            end
+            if not self:mobility_check() then
+                debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
+                worker.autopilot_destination = nil
+                self.last_distance = nil
+            end
+        end
+        return false
+    end
+    return true
 end
 
 function construction_job:specific_action()

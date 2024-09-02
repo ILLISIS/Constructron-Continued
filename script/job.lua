@@ -19,8 +19,6 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.required_items = {} -- these are the items required to complete the job
     instance.trash_items = {} -- these are the items that is expected after the job completes
     instance.worker = worker -- this is the constructron that will work the job
-    instance.worker_logistic_cell = worker.logistic_cell -- this is the constructrons logistic cell.
-    instance.worker_logistic_network = worker.logistic_cell.logistic_network -- this is the constructrons logistic network.
     instance.worker_inventory = worker.get_inventory(defines.inventory.spider_trunk)
     instance.worker_ammo_slots = worker.get_inventory(defines.inventory.spider_ammo)
     instance.worker_trash_inventory = worker.get_inventory(defines.inventory.spider_trash)
@@ -313,13 +311,17 @@ function job:validate_worker()
     if self.worker and self.worker.valid then
         return true
     else
-        self.worker = job.get_worker(self.surface_index)
+        local surface_index = self.surface_index
+        self.worker = job.get_worker(surface_index)
         if self.worker and self.worker.valid then
             -- lock constructron
             util_func.set_constructron_status(self.worker, 'busy', true)
             -- change selected constructron colour
             util_func.paint_constructron(self.worker, self.job_type)
-            self.state = "new"
+            -- update available constructron count
+            global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] - 1
+            -- reset job
+            self.state = "setup"
             self.worker_logistic_cell = self.worker.logistic_cell
             self.worker_logistic_network = self.worker.logistic_cell.logistic_network
             self.worker_inventory = self.worker.get_inventory(defines.inventory.spider_trunk)
@@ -439,7 +441,7 @@ end
 -- this method validates that the worker has roboport euipment
 function job:validate_logisitics()
     local worker = self.worker ---@cast worker -nil
-    if not worker.logistic_cell or not worker.logistic_cell.logistic_network then
+    if not (worker.logistic_cell and worker.logistic_cell.logistic_network) then
         debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
         return false
     end
@@ -452,16 +454,11 @@ function job:position_check(position, distance)
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
         debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
-        if not worker.autopilot_destination and self.path_request_id == nil then
-            self:move_to_position(position)
-        else
-            if self.landfill_job and self.status == "in_progress" and not worker.logistic_cell.logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
-                debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
-                worker.autopilot_destination = nil
-                self:check_chunks()
-                self.state = "finishing"
-                return false
+        if not worker.autopilot_destination then
+            if not self.path_request_id then
+                self:move_to_position(position)
             end
+        else
             if not self:mobility_check() then
                 debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
                 worker.autopilot_destination = nil
@@ -472,7 +469,6 @@ function job:position_check(position, distance)
     end
     return true
 end
-
 
 -- this function checks if the workers health is low
 function job:check_health()
@@ -575,6 +571,15 @@ function job:roam_stations(current_requests)
     end
 end
 
+function job:set_logistic_cell()
+    self.worker_logistic_cell = self.worker.logistic_cell
+    return self.worker_logistic_cell
+end
+
+function job:set_logistic_network()
+    self.worker_logistic_network = self.worker.logistic_cell.logistic_network
+    return self.worker_logistic_network
+end
 
 
 
@@ -585,20 +590,21 @@ end
 --===========================================================================--
 
 function job:execute(job_index)
+    -- validate worker and station
     if not self:validate_worker() or not self:validate_station() then
         if not game.surfaces[self.surface_index] then
             global.jobs[job_index] = nil
         end
         return
     end
+    -- validate logistics
     if not self:validate_logisitics() then
         -- IDEA: Factorio v2 request equipment
         return
     end
+    -- execute job according to state
     self[self.state](self)
 end
-
-
 
 --===========================================================================--
 --  State Logic
@@ -700,8 +706,8 @@ function job:in_progress()
         return
     end
 
-    local logistic_cell = self.worker_logistic_cell
-    local logistic_network = self.worker_logistic_network ---@cast logistic_network -nil
+    local logistic_cell = self.worker_logistic_cell or self:set_logistic_cell()
+    local logistic_network = self.worker_logistic_network or self:set_logistic_network()
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then

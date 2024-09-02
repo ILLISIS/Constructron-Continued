@@ -138,6 +138,28 @@ me.calculate_required_inventory_slot_count = function(required_items)
     return slots
 end
 
+-- Function to calculate the average speed of a Spidertron with equipment bonuses
+me.calculate_spidertron_speed = function(spidertron)
+    -- Base speed of the Spidertron
+    local base_speed = 0.18
+    -- Initialize total speed multiplier
+    local speed_multiplier = 1.0
+    -- Check if the Spidertron has an equipment grid
+    if spidertron.grid then
+        -- Iterate through the equipment grid
+        for _, equipment in pairs(spidertron.grid.equipment) do
+            -- Check if the equipment is an exoskeleton
+            if equipment.type == "movement-bonus-equipment" then
+                -- Multiply the speed multiplier by the exoskeleton's movement bonus
+                speed_multiplier = speed_multiplier * (1 + equipment.prototype.movement_bonus)
+            end
+        end
+    end
+    -- Calculate the total speed with bonuses
+    local total_speed = base_speed * speed_multiplier
+    return total_speed
+end
+
 ---@param position MapPosition
 ---@return ChunkPosition
 me.chunk_from_position = function(position)

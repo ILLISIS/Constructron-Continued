@@ -1,8 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.24
-Date: 2024-08-??
+Date: 2024-09-02
   Changes:
-    - TBA
+    - Major code restructure.
+    - Settings button "apply to all" now reads as "apply to all surfaces" for clarity reasons.
+  Bugfixes:
+    - Fixed an issue which caused the available Constructron count to be incorrect when jobs were reassigned.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.23
 Date: 2024-08-13
