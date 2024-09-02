@@ -1,5 +1,4 @@
-local ctron = require("script/constructron")
-local chunk_util = require("script/chunk_util")
+local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
 local job_proc = require("script/job_processor")
 
@@ -26,8 +25,8 @@ entity_proc.on_built_entity = function(event)
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
-        ctron.set_constructron_status(entity, 'busy', false)
-        ctron.paint_constructron(entity, 'idle')
+        util_func.set_constructron_status(entity, 'busy', false)
+        util_func.paint_constructron(entity, 'idle')
         entity.enable_logistics_while_moving = false
         global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
@@ -40,7 +39,7 @@ entity_proc.on_built_entity = function(event)
         global.constructron_requests[entity.unit_number] = {}
         global.constructron_requests[entity.unit_number].requests = {}
         for _, station in pairs(global.service_stations) do
-            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+            util_func.update_combinator(station, "constructron_pathing_proxy_1", 0)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
@@ -70,7 +69,7 @@ entity_proc.on_built_entity = function(event)
             direction = defines.direction.west,
             force = entity.force,
             raise_built = true
-        }
+        } ---@cast combinator -nil
         local circuit1 = { wire = defines.wire_type.red, target_entity = entity }
         local circuit2 = { wire = defines.wire_type.green, target_entity = entity }
         combinator.connect_neighbour(circuit1)
@@ -177,7 +176,7 @@ script.on_event(ev.on_entity_cloned, function(event)
     local surface_index = entity.surface.index
     if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
         local registration_number = script.register_on_entity_destroyed(entity)
-        ctron.paint_constructron(entity, 'idle')
+        util_func.paint_constructron(entity, 'idle')
         global.constructrons[entity.unit_number] = entity
         global.registered_entities[registration_number] = {
             name = "constructron",
@@ -189,7 +188,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         global.constructron_requests[entity.unit_number] = {}
         global.constructron_requests[entity.unit_number].requests = {}
         for _, station in pairs(global.service_stations) do
-            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+            util_func.update_combinator(station, "constructron_pathing_proxy_1", 0)
         end
         -- utility
         if (global.stations_count[surface_index] > 0) then
@@ -220,7 +219,7 @@ script.on_event(ev.on_entity_cloned, function(event)
             direction = defines.direction.west,
             force = entity.force,
             raise_built = true
-        }
+        } ---@cast combinator -nil
         local circuit1 = { wire = defines.wire_type.red, target_entity = entity }
         local circuit2 = { wire = defines.wire_type.green, target_entity = entity }
         combinator.connect_neighbour(circuit1)
@@ -244,11 +243,11 @@ script.on_event(ev.script_raised_teleported, function(event)
     local surface_index = entity.surface_index
     if not (surface_index == event.old_surface_index) then return end
     if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
-        ctron.paint_constructron(entity, 'idle')
-        ctron.set_constructron_status(entity, 'busy', false)
+        util_func.paint_constructron(entity, 'idle')
+        util_func.set_constructron_status(entity, 'busy', false)
         global.constructrons_count[event.old_surface_index] = global.constructrons_count[event.old_surface_index] - 1
         global.constructrons_count[entity.surface_index] = global.constructrons_count[entity.surface_index] + 1
-        if global.constructron_statuses[event.unit_number] and not global.constructron_statuses[entity.unit_number]["busy"] then
+        if global.constructron_statuses[entity.unit_number] and not global.constructron_statuses[entity.unit_number]["busy"] then
             global.available_ctron_count[event.old_surface_index] = global.available_ctron_count[event.old_surface_index] - 1
         end
         global.available_ctron_count[entity.surface_index] = global.available_ctron_count[entity.surface_index] + 1
@@ -300,7 +299,7 @@ entity_proc.on_entity_destroyed = function(event)
         -- combinator management
         global.constructron_requests[event.unit_number] = nil
         for _, station in pairs(global.service_stations) do
-            job_proc.update_combinator(station, "constructron_pathing_proxy_1", 0)
+            util_func.update_combinator(station, "constructron_pathing_proxy_1", 0)
         end
     elseif removed_entity.name == "service_station" then
         if game.surfaces[surface_index] then
@@ -402,7 +401,7 @@ end)
 --  Entity processing
 -------------------------------------------------------------------------------
 
----@param build_type BuildType
+---@param build_type string
 ---@param entities table
 ---@param queue EntityQueue
 ---@param event_tick integer
@@ -445,7 +444,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                             if (global.entity_inventory_cache[entity_name] == nil) then -- if entity is not in cache
                                 -- build entity inventory cache
                                 global.entity_inventory_cache[entity_name] = {}
-                                local max_index = 0
+                                local max_index = 0 -- TODO: https://lua-api.factorio.com/latest/classes/LuaControl.html#get_max_inventory_index
                                 for _, index in pairs(defines.inventory) do -- get maximum index value of defines.inventory
                                     if index > max_index then
                                         max_index = index
@@ -522,7 +521,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         queue_surface_key = {
                             key = key,
                             surface = entity_surface,
-                            area = chunk_util.get_area_from_chunk(chunk),
+                            area = util_func.get_area_from_chunk(chunk),
                             minimum = {
                                 x = entity_pos_x,
                                 y = entity_pos_y
