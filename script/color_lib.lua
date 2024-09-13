@@ -36,16 +36,22 @@ me.colors.pink = {
     b = 0.65
 }
 me.colors.white = {
-    r = 0.65,
-    g = 0.65,
-    b = 0.65,
+    r = 1,
+    g = 1,
+    b = 1,
     a = 0.25
+}
+me.colors.gray = {
+    r = 0.55,
+    g = 0.55,
+    b = 0.55,
+    a = 0.75
 }
 me.colors.black = {
     r = 0,
     g = 0,
     b = 0,
-    a = 0.4
+    a = 0.6
 }
 me.colors.purple = {
     r = 90,

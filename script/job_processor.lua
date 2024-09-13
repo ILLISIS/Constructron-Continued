@@ -9,6 +9,7 @@ local upgrade_job = require("script/job/upgrade")
 local repair_job = require("script/job/repair")
 local destroy_job = require("script/job/destroy")
 local utility_job = require("script/job/utility")
+local cargo_job = require("script/job/cargo")
 
 local job_proc = {}
 
