@@ -284,7 +284,7 @@ me.recall_ctrons = function()
                 local closest_station = util_func.get_closest_service_station(constructron)
                 if closest_station then
                     global.job_index = global.job_index + 1
-                    global.jobs[global.job_index] = utility_job.new(global.job_index, constructron.surface.index, "utility", constructron) -- TODO: check if this is correct
+                    global.jobs[global.job_index] = utility_job.new(global.job_index, constructron.surface.index, "utility", constructron)
                     global.jobs[global.job_index].state = "finishing"
                     global.job_proc_trigger = true -- start job operations
                 end

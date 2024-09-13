@@ -673,14 +673,17 @@ function job:starting()
         self.request_tick = game.tick
         return
     else
-        --populate current requests
+        -- populate current requests
         local current_requests = self:list_item_requests()
         -- check if requested items have been delivered
         if not self:check_item_requests(current_requests, current_items) then
+            debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
             -- station roaming
             local ticks = (game.tick - self.request_tick)
             if not (ticks > 900) then return end
             if self:check_requests(current_requests) then return end
+            local requester_point = worker.get_logistic_point(0) ---@cast requester_point -nil
+            if next(requester_point.targeted_items_deliver) then return end
             self:roam_stations(current_requests)
             return
         end
@@ -762,6 +765,9 @@ function job:finishing()
         for item, _ in pairs(inventory_items) do
             item_request[item] = 0
         end
+        if global.queue_proc_trigger then
+            item_request[global.desired_robot_name[self.surface_index]] = nil
+        end
         self:request_items(item_request)
         self.sub_state = "items_requested"
         self.request_tick = game.tick
@@ -814,7 +820,7 @@ function job:finishing()
         global.constructron_requests[worker.unit_number].requests = {}
     end
     -- randomize idle position around station
-    if (global.constructrons_count[self.surface_index] > 10) then
+    if not global.queue_proc_trigger and (global.constructrons_count[self.surface_index] > 10) then
         local stepdistance = 5 + math.random(5)
         local alpha = math.random(360)
         local offset = {x = (math.cos(alpha) * stepdistance), y = (math.sin(alpha) * stepdistance)}

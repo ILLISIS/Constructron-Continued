@@ -77,6 +77,7 @@ local ensure_globals = function()
     global.upgrade_index = global.upgrade_index or 0
     global.repair_index = global.repair_index or 0
     global.destroy_index = global.destroy_index or 0
+    global.cargo_index = global.cargo_index or 0
     --
     global.construction_entities = global.construction_entities or {}
     global.deconstruction_entities = global.deconstruction_entities or {}
@@ -89,6 +90,7 @@ local ensure_globals = function()
     global.upgrade_queue = global.upgrade_queue or {}
     global.repair_queue = global.repair_queue or {}
     global.destroy_queue = global.destroy_queue or {}
+    global.cargo_queue = global.cargo_queue or {}
     --
     global.constructrons = global.constructrons or {} -- all constructron entities.
     global.service_stations = global.service_stations or {} -- all service stations entities.
@@ -118,7 +120,13 @@ local ensure_globals = function()
             },
             job_ui = {
                 elements = {}
-            }
+            },
+            cargo_ui = {
+                elements = {}
+            },
+            logistics_ui = {
+                elements = {}
+            },
         }
     end
     -- ammo name
@@ -192,6 +200,7 @@ local ensure_globals = function()
         global.upgrade_queue[surface_index] = global.upgrade_queue[surface_index] or {}
         global.repair_queue[surface_index] = global.repair_queue[surface_index] or {}
         global.destroy_queue[surface_index] = global.destroy_queue[surface_index] or {}
+        global.cargo_queue[surface_index] = global.cargo_queue[surface_index] or {}
     end
     -- build allowed items cache (this is used to filter out entities that do not have recipes)
     global.allowed_items = {}
@@ -214,6 +223,9 @@ local ensure_globals = function()
             global.allowed_items[entity_name] = true
         end
     end
+    -- allowed_items overrides as item/entities do not match what is mined (this is particularly for cargo jobs)
+    global.allowed_items["raw-fish"] = true
+    global.allowed_items["wood"] = true
     -- build required_items cache (used in add_entities_to_chunks)
     global.items_to_place_cache = {}
     for name, v in pairs(game.entity_prototypes) do
@@ -312,6 +324,7 @@ script.on_event(ev.on_surface_created, function(event)
     global.upgrade_queue[surface_index] = {}
     global.repair_queue[surface_index] = {}
     global.destroy_queue[surface_index] = {}
+    global.cargo_queue[surface_index] = {}
     global.constructrons_count[surface_index] = 0
     global.available_ctron_count[surface_index] = 0
     global.stations_count[surface_index] = 0
@@ -365,6 +378,7 @@ script.on_event(ev.on_surface_deleted, function(event)
     global.upgrade_queue[surface_index] = nil
     global.repair_queue[surface_index] = nil
     global.destroy_queue[surface_index] = nil
+    global.cargo_queue[surface_index] = nil
     global.constructrons_count[surface_index] = nil
     global.available_ctron_count[surface_index] = nil
     global.stations_count[surface_index] = nil

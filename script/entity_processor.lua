@@ -80,6 +80,7 @@ entity_proc.on_built_entity = function(event)
         }
         global.station_combinators[entity.unit_number] = {entity = combinator, signals = {}}
         combinator.get_control_behavior().parameters = signals
+        global.station_requests[entity.unit_number] = {}
     end
 end
 
@@ -230,6 +231,7 @@ script.on_event(ev.on_entity_cloned, function(event)
         }
         global.station_combinators[entity.unit_number] = {entity = combinator, signals = {}}
         combinator.get_control_behavior().parameters = signals
+        global.station_requests[entity.unit_number] = {}
     end
 end,
 {
@@ -313,6 +315,7 @@ entity_proc.on_entity_destroyed = function(event)
         -- combinator management
         global.station_combinators[event.unit_number].entity.destroy{raise_destroy = true}
         global.station_combinators[event.unit_number] = nil
+        global.station_requests[event.unit_number] = nil
     end
     global.registered_entities[event.registration_number] = nil
 end
