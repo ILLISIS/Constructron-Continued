@@ -554,7 +554,7 @@ function gui_handlers.ctron_cancel_job(player, element)
             job.worker.autopilot_destination = nil
         end
         if job.job_type == "cargo" then
-            station_unit_number = job.destination_station.unit_number
+            local station_unit_number = job.destination_station.unit_number
             for _, request in pairs(global.station_requests[station_unit_number]) do
                 local requested_item = request.item
                 for item, item_count in pairs(job.required_items) do

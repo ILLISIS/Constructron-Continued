@@ -14,13 +14,13 @@ function cargo_job.new(job_index, surface_index, job_type, worker)
 end
 
 script.on_nth_tick(600, (function()
-    prospect_cargo_jobs()
-    process_cargo_job_queue()
+    cargo_job.prospect_cargo_jobs()
+    cargo_job.process_cargo_job_queue()
 end))
 
 
 -- This function checks all stations for items that need to be restocked
-function prospect_cargo_jobs()
+function cargo_job.prospect_cargo_jobs()
     for _, station in pairs(global.service_stations) do
         if not station.logistic_network then goto continue end
         local requests = global.station_requests[station.unit_number]
@@ -56,18 +56,18 @@ function prospect_cargo_jobs()
 end
 
 -- This function processes the cargo job queue
-function process_cargo_job_queue()
+function cargo_job.process_cargo_job_queue()
     for surface_index, _ in pairs(global.managed_surfaces) do
         if not next(global.cargo_queue[surface_index]) then return end
         for index, queued_job in pairs(global.cargo_queue[surface_index]) do
-            if not make_cargo_job(queued_job.station, queued_job.items) then return end
+            if not cargo_job.make_cargo_job(queued_job.station, queued_job.items) then return end
             global.cargo_queue[surface_index][index] = nil
         end
     end
 end
 
 -- This function creates a new cargo job
-function make_cargo_job(station, items_to_fullfill)
+function cargo_job.make_cargo_job(station, items_to_fullfill)
     local station_surface_index = station.surface.index
     local worker = job.get_worker(station_surface_index)
     if not (worker and worker.valid) then
@@ -131,7 +131,7 @@ function cargo_job:setup()
                     items = self.required_items
                 }
             end
-            process_cargo_job_queue()
+            cargo_job.process_cargo_job_queue()
         end
     end
     -- set default ammo request

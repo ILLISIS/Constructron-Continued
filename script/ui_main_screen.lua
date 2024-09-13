@@ -618,7 +618,7 @@ function gui_main.BuildLogisticsDisplay(player, surface_index)
             on_gui_click = "close_logistics_window"
         }
     }
-    content_flow = logistics_window.add{
+    local content_flow = logistics_window.add{
         type = "flow",
         direction = "vertical"
     }
@@ -665,7 +665,7 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         direction = "vertical"
     }
 
-    logistic_table = logistic_inner_frame.add{
+    local logistic_table = logistic_inner_frame.add{
         type = "table",
         style = "ctron_logistic_table_style",
         column_count = 10,
