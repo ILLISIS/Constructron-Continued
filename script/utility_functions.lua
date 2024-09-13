@@ -115,8 +115,8 @@ me.paint_constructron = function(constructron, color_state)
             constructron.color = color_lib.colors.purple
         elseif color_state == 'utility' then
             constructron.color = color_lib.colors.yellow
-        elseif color_state == 'logistic' then
-            constructron.color = color_lib.colors.yellow -- TODO: change color
+        elseif color_state == 'cargo' then
+            constructron.color = color_lib.colors.gray
         end
     end
 end
@@ -348,6 +348,57 @@ me.firstoflct = function(lct)
     for key, value in pairs(lct) do
         return value
     end
+end
+
+-- ## Courtesy of flib
+local suffix_list = {
+    { "Y", 1e24 }, -- yotta
+    { "Z", 1e21 }, -- zetta
+    { "E", 1e18 }, -- exa
+    { "P", 1e15 }, -- peta
+    { "T", 1e12 }, -- tera
+    { "G", 1e9 }, -- giga
+    { "M", 1e6 }, -- mega
+    { "k", 1e3 }, -- kilo
+}
+
+-- ## Courtesy of flib
+--- Format a number for display, adding commas and an optional SI suffix.
+--- Specify `fixed_precision` to display the number with the given width,
+--- adjusting precision as necessary.
+--- @param amount number
+--- @param append_suffix boolean?
+--- @param fixed_precision number?
+--- @return string
+function me.number(amount, append_suffix, fixed_precision)
+    local suffix = ""
+    if append_suffix then
+        for _, data in ipairs(suffix_list) do
+            if math.abs(amount) >= data[2] then
+                amount = amount / data[2]
+                suffix = "" .. data[1]
+                break
+            end
+        end
+        if not fixed_precision then
+            amount = math.floor(amount * 10) / 10
+        end
+    end
+    local formatted, k = tostring(amount), nil
+    if fixed_precision then
+        -- Show the number with fixed width precision
+        local len_before = #tostring(math.floor(amount))
+        local len_after = math.max(0, fixed_precision - len_before - 1)
+        formatted = string.format("%." .. len_after .. "f", amount)
+    end
+    -- Add commas to result
+    while true do
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then
+            break
+        end
+    end
+    return formatted .. suffix
 end
 
 return me

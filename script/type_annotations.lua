@@ -77,6 +77,7 @@
 ---@field water_tile_cache table<string, boolean>
 ---@field entity_inventory_cache table<table<string, uint>>
 ---@field managed_surfaces table<uint, string>
+---@field station_requests table<uint, table<uint, table<string, uint>>>
 --- ENTITIES
 ---@field construction_entities table<string, LuaEntity>
 ---@field deconstruction_entities table<string, LuaEntity>
@@ -95,12 +96,14 @@
 ---@field upgrade_queue EntityQueue
 ---@field repair_queue EntityQueue
 ---@field destroy_queue EntityQueue
+---@field cargo_queue table<uint, table<uint, table<uint, table<uint, LuaEntity, table<string, uint>>>>>
 --- QUEUE INDEXES
 ---@field construction_index uint
 ---@field deconstruction_index uint
 ---@field upgrade_index uint
 ---@field repair_index uint
 ---@field destroy_index uint
+---@field cargo_index uint
 --- QUEUE TRIGGERS
 ---@field entity_proc_trigger boolean
 ---@field queue_proc_trigger boolean

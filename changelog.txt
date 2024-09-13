@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.25
+Date: 2024-09-14
+  Changes:
+    - [MAJOR] Added Cargo job functionality. Constructrons can now transport items between stations.
+    - Added an all logistics screen to manage logistic request of all Constructrons on the surface.
+    - Constructrons will now only roam if there is no incoming items from robots.
+    - Constructrons will now keep robots in their inventory if there is a queued job.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.24
 Date: 2024-09-02
   Changes:

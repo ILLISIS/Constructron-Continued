@@ -315,3 +315,74 @@ styles.ctron_logistic_table_style = {
     horizontal_spacing = 0,
     vertical_spacing = 0
 }
+
+--===========================================================================--
+-- Cargo GUI - Styles
+--===========================================================================--
+
+styles.ctron_cargo_scroll_style = {
+    type = "scroll_pane_style",
+    parent = "inner_frame_scroll_pane",
+}
+
+styles.ctron_station_label_style = {
+    type = "label_style",
+    parent = "frame_title",
+}
+
+styles.ctron_slot_button = {
+    type = "button_style",
+    parent = "slot_button",
+    horizontal_spacing = 0,
+    vertical_spacing = 0
+}
+
+styles.ctron_slot_button_selected = {
+    type = "button_style",
+    parent = "slot_button",
+    horizontal_spacing = 0,
+    vertical_spacing = 0,
+    default_graphical_set = {
+        base = { position = { 369, 17 }, corner_size = 8 },
+        shadow = { position = { 440, 24 }, corner_size = 8, draw_type = "outer" },
+    },
+}
+
+styles.ctron_cargo_textfield_style = {
+    type = "textbox_style",
+    parent = "textbox",
+    width = 100,
+}
+
+styles.ctron_cargo_flow_style = {
+    type = "horizontal_flow_style",
+    width = 30,
+    height = 30,
+}
+
+styles.ctron_cargo_widget_style = {
+    type = "empty_widget_style",
+    maximal_width = 25,
+    horizontally_stretchable = "on"
+}
+
+styles.ctron_cargo_item_label_style = {
+    type = "label_style",
+    font = "item-count",
+    top_padding = 15
+}
+
+styles.ctron_cargo_label_frame_style = {
+    type = "frame_style",
+    parent = "inside_deep_frame_for_tabs",
+    padding = 0,
+    horizontal_align = "center",
+}
+
+styles.ctron_cargo_label_style = {
+    type = "label_style",
+    parent = "frame_title",
+    width = 180,
+    horizontal_align = "center",
+    vertical_align = "center"
+}
