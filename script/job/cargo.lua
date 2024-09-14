@@ -71,7 +71,6 @@ function cargo_job.make_cargo_job(station, items_to_fullfill)
     local station_surface_index = station.surface.index
     local worker = job.get_worker(station_surface_index)
     if not (worker and worker.valid) then
-        trigger_skip = true
         return false
     end
     global.job_index = global.job_index + 1
