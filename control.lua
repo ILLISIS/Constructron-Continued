@@ -72,6 +72,8 @@ local ensure_globals = function()
     global.job_index = global.job_index or 0
     global.jobs = global.jobs or {}
     --
+    global.station_requests = global.station_requests or {}
+    --
     global.construction_index = global.construction_index or 0
     global.deconstruction_index = global.deconstruction_index or 0
     global.upgrade_index = global.upgrade_index or 0
