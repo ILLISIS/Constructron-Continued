@@ -782,7 +782,7 @@ end
 function gui_handlers.confirm_rename(player, element)
     local station = global.service_stations[element.tags.station_unit_number]
     if not station then return end
-    station.backer_name = element.parent.children[1].text
+    station.backer_name = element.parent.children[1].text or ""
     local parent = element.parent
     -- create the rename button
     parent.add{
@@ -835,6 +835,13 @@ function gui_handlers.on_gui_elem_changed(player, element)
         local slot_number = element.tags.slot_number
         local item = element.elem_value
         local station_unit_number = element.tags.station_unit_number
+        if not global.station_requests[station_unit_number] then
+            player.print("This station no longer exists.")
+            gui_handlers.close_cargo_window(player)
+            gui_handlers.open_cargo_window(player)
+            return
+        end
+        local request = global.station_requests[station_unit_number][slot_number]
         -- check if item is already requested
         for k, v in pairs(element.parent.children) do
             if v.elem_value and v.elem_value == item and v.name ~= element.name then
@@ -849,7 +856,6 @@ function gui_handlers.on_gui_elem_changed(player, element)
         local cargo_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
         cargo_ui_elements.min_field.enabled = true
         cargo_ui_elements.max_field.enabled = true
-        local request = global.station_requests[station_unit_number][slot_number]
         if request and (request.item == item) then
             cargo_ui_elements.min_field.text = tostring(global.station_requests[station_unit_number][slot_number].min)
             cargo_ui_elements.max_field.text = tostring(global.station_requests[station_unit_number][slot_number].max)
@@ -879,8 +885,8 @@ function gui_handlers.confirm_cargo(player, element)
     local item = element.tags.item_request
     local cargo_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
     if item then
-        local min = tonumber(cargo_ui_elements.min_field.text)
-        local max = tonumber(cargo_ui_elements.max_field.text) ---@cast max -nil
+        local min = tonumber(cargo_ui_elements.min_field.text) or 0
+        local max = tonumber(cargo_ui_elements.max_field.text) or 0
         -- validate input
         if min >= max then
             player.print("Minimum value must be less than maximum value.")
