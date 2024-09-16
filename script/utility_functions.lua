@@ -97,28 +97,24 @@ me.get_closest_service_station = function(constructron) -- used to get the close
     return service_stations[service_station_index]
 end
 
+local color_table = {
+    ["idle"] = color_lib.colors.white,
+    ["construction"] = color_lib.colors.blue,
+    ["deconstruction"] = color_lib.colors.red,
+    ["destroy"] = color_lib.colors.black,
+    ["upgrade"] = color_lib.colors.green,
+    ["repair"] = color_lib.colors.purple,
+    ["utility"] = color_lib.colors.yellow,
+    ["cargo"] = color_lib.colors.gray
+}
+
 ---@param constructron LuaEntity
----@param color_state "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair" | "utility" | "logistic"
-me.paint_constructron = function(constructron, color_state)
-    if constructron and constructron.valid then
-        if color_state == 'idle' then
-            constructron.color = color_lib.colors.white
-        elseif color_state == 'construction' then
-            constructron.color = color_lib.colors.blue
-        elseif color_state == 'deconstruction' then
-            constructron.color = color_lib.colors.red
-        elseif color_state == 'destroy' then
-            constructron.color = color_lib.colors.black
-        elseif color_state == 'upgrade' then
-            constructron.color = color_lib.colors.green
-        elseif color_state == 'repair' then
-            constructron.color = color_lib.colors.purple
-        elseif color_state == 'utility' then
-            constructron.color = color_lib.colors.yellow
-        elseif color_state == 'cargo' then
-            constructron.color = color_lib.colors.gray
-        end
-    end
+---@param job_type "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair" | "utility" | "cargo"
+me.paint_constructron = function(constructron, job_type)
+    if not (constructron and constructron.valid) then return end
+    local color = color_table[job_type]
+    if not color then return end
+    constructron.color = color
 end
 
 ---@param required_items ItemCounts

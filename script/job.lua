@@ -504,16 +504,18 @@ function job:list_item_requests()
 end
 
 -- this function checks current requests against the items in the workers inventory
-function job:check_item_requests(current_requests, current_items)
+function job:check_item_request_fulfillment(current_requests, current_items)
+    local is_fulfilled = true
     for request_name, value in pairs(current_requests) do
         local supply_check = (((current_items[request_name] or 0) >= value.count) and ((current_items[request_name] or 0) <= value.count))
-        if not supply_check then
-            return false
-        else
+        if supply_check then
+            current_items[request_name] = nil
             self.worker.clear_vehicle_logistic_slot(value.slot)
+        else
+            is_fulfilled = false
         end
     end
-    return true
+    return is_fulfilled
 end
 
 -- this function checks that the trash inventory is empty
@@ -541,7 +543,7 @@ function job:balance_ammunition(ammo_slots, ammunition)
 end
 
 -- this function checks if the requested items are available in the stations logistic network
-function job:check_requests(current_requests)
+function job:check_items_are_available(current_requests)
     if global.stations_count[(self.surface_index)] <= 1 then return end
     -- check if current station network can provide
     local logistic_network = self.station.logistic_network
@@ -555,18 +557,27 @@ end
 
 -- this function checks if another station can provide the items being requested
 function job:roam_stations(current_requests)
-    local worker = self.worker ---@cast worker -nil
     local surface_stations = util_func.get_service_stations(self.surface_index)
     for _, station in pairs(surface_stations) do
-        local station_logistic_network = station.logistic_network
-        for request_name, value in pairs(current_requests) do
-            if station_logistic_network.can_satisfy_request(request_name, value.count, true) then
-                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                self:remove_combinator_requests(current_requests) -- remove all requests from circuit
-                global.constructron_requests[worker.unit_number].station = station -- update request station
-                self.sub_state = nil
-                self.station = station
-            end
+        if self:check_roaming_candidate(station, current_requests) then
+            return
+        end
+    end
+end
+
+function job:check_roaming_candidate(station, current_requests)
+    local worker = self.worker ---@cast worker -nil
+    if not station and station.valid then return end
+    local station_logistic_network = station.logistic_network
+    if not station_logistic_network then return end
+    for request_name, value in pairs(current_requests) do
+        if station_logistic_network.can_satisfy_request(request_name, value.count, true) then
+            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
+            self:remove_combinator_requests(current_requests) -- remove all requests from circuit
+            global.constructron_requests[worker.unit_number].station = station -- update request station
+            self.sub_state = nil
+            self.station = station
+            return true
         end
     end
 end
@@ -675,15 +686,18 @@ function job:starting()
     else
         -- populate current requests
         local current_requests = self:list_item_requests()
+        -- check if there are any items incoming
+        local requester_point = worker.get_logistic_point(0) ---@cast requester_point -nil
+        if next(requester_point.targeted_items_deliver) then return end
         -- check if requested items have been delivered
-        if not self:check_item_requests(current_requests, current_items) then
+        if not self:check_item_request_fulfillment(current_requests, current_items) then
             debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
             -- station roaming
             local ticks = (game.tick - self.request_tick)
             if not (ticks > 900) then return end
-            if self:check_requests(current_requests) then return end
-            local requester_point = worker.get_logistic_point(0) ---@cast requester_point -nil
-            if next(requester_point.targeted_items_deliver) then return end
+            -- check items are available in the network
+            if self:check_items_are_available(current_requests) then return end
+            -- attempt to roam to another station
             self:roam_stations(current_requests)
             return
         end

@@ -87,7 +87,6 @@ function gui_cargo.buildCargoGui(player, surface)
         tags = {
             mod = "constructron",
             on_gui_click = "confirm_cargo",
-            -- station_unit_number = 0
         },
         enabled = false
     }

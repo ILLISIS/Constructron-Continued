@@ -85,24 +85,14 @@ end
 
 -- this function checks if another station can provide the items being requested
 function cargo_job:roam_stations(current_requests)
-    local worker = self.worker ---@cast worker -nil
     local surface_stations = util_func.get_service_stations(self.surface_index)
     for _, station in pairs(surface_stations) do
         -- check that the candidate station is not the destination station
-        if (station.unit_number == self.destination_station.unit_number) then
-            goto continue
-        end
-        local station_logistic_network = station.logistic_network
-        for request_name, value in pairs(current_requests) do
-            if station_logistic_network.can_satisfy_request(request_name, value.count, true) then
-                debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                self:remove_combinator_requests(current_requests) -- remove all requests from circuit
-                global.constructron_requests[worker.unit_number].station = station -- update request station
-                self.sub_state = nil
-                self.station = station
+        if self.destination_station and self.destination_station.valid and not (station.unit_number == self.destination_station.unit_number) then
+            if self:check_roaming_candidate(station, current_requests) then
+                return
             end
         end
-        ::continue::
     end
 end
 
