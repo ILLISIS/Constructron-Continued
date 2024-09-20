@@ -13,6 +13,15 @@ if mods["space-exploration"] then
   table.insert(pathing_collision_mask, empty_space_collision_layer)
 end
 
+if mods["pypostprocessing"] then
+  pathing_collision_mask = {
+    "water-tile",
+    "player-layer",
+    "consider-tile-transitions",
+    "not-colliding-with-itself",
+  }
+end
+
 local template_entity = {
   type = "simple-entity",
   icon = "__core__/graphics/empty.png",

@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.28
+Date: 2024-09-21
+  Bugfixes:
+    - [pY] Tweaked the pathfinder to work better with extremely large buildings.
+  Changes:
+    - The specific station is only displayed on the cargo job screen if opened from a station. An all stations button will appear to display all stations.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.27
 Date: 2024-09-17
   Bugfixes:

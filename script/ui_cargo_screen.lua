@@ -172,7 +172,11 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
     local card = frame.add{
         type = "frame",
         name = "ctron_station_card_" .. station_unit_number,
-        direction = "vertical"
+        direction = "vertical",
+        tags = {
+            mod = "constructron",
+            station_unit_number = station_unit_number
+        }
     }
     card.style.width = 428
 
