@@ -192,6 +192,13 @@ function job:move_to_position(position)
         table.insert(path_request_params.collision_mask, empty_space_collision_layer)
     end
 
+    if game.active_mods["pypostprocessing"] then
+        path_request_params.collision_mask = {"player-layer", "consider-tile-transitions", "not-colliding-with-itself"}
+        path_request_params.path_resolution_modifier = 0
+        path_request_params.bounding_box = {{-0.1, -0.1}, {0.1, 0.1}}
+        path_request_params.radius = 5
+    end
+
     self.path_request_params = path_request_params
 
     if distance > 12 then

@@ -176,6 +176,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
             tags = {
                 mod = "constructron",
                 on_gui_click = "open_cargo_window",
+                station_unit_number = entity.unit_number
             }
         }
     end
@@ -804,6 +805,8 @@ end
 function gui_handlers.open_cargo_window(player, element)
     if not player.gui.screen.ctron_cargo_window then
         gui_cargo.buildCargoGui(player, player.surface)
+        if not element.tags.station_unit_number then return end
+        gui_handlers.cargo_hide_stations(player, element)
     else
         player.gui.screen.ctron_cargo_window.bring_to_front()
     end
@@ -813,6 +816,47 @@ function gui_handlers.close_cargo_window(player)
     if player.gui.screen.ctron_cargo_window then
         player.gui.screen.ctron_cargo_window.destroy()
     end
+end
+
+function gui_handlers.cargo_hide_stations(player, element)
+    local frame = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content.parent.parent
+    if element.visible then
+        -- element.visible = false
+        local cargo_content = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
+        -- hide station cards
+        for _, child in pairs(cargo_content.children) do
+            if not (child.tags.station_unit_number == element.tags.station_unit_number) then
+                child.visible = false
+            end
+        end
+        local flow = cargo_content.add{
+            type = "flow",
+            direction = "horizontal"
+        }
+        flow.style.horizontally_stretchable = true
+        flow.style.height = 50
+        flow.style.horizontal_align = "center"
+        flow.style.vertical_align = "center"
+        local button = flow.add{
+            type = "button",
+            caption = {"ctron_gui_locale.show_all_stations_button"},
+            style = "ctron_frame_button_style",
+            tags = {
+                mod = "constructron",
+                on_gui_click = "cargo_show_all_stations",
+            }
+        }
+    else
+        element.visible = true
+    end
+end
+
+function gui_handlers.cargo_show_all_stations(player, element)
+    local cargo_content = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
+    for _, child in pairs(cargo_content.children) do
+        child.visible = true
+    end
+    element.parent.destroy()
 end
 
 function gui_handlers.open_logistics_window(player, element)
