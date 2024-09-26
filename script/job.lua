@@ -182,25 +182,11 @@ function job:move_to_position(position)
         bounding_box = {{-5, -5}, {5, 5}},
         path_resolution_modifier = -2,
         radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        collision_mask = {"player-layer", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"},
+        collision_mask = game.entity_prototypes["constructron_pathing_proxy_1"].collision_mask,
         pathfinding_flags = {cache = false, low_priority = false},
         try_again_later = 0,
         path_attempt = 1
     }
-
-    if game.active_mods["space-exploration"] then
-        local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-        local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-        table.insert(path_request_params.collision_mask, spaceship_collision_layer)
-        table.insert(path_request_params.collision_mask, empty_space_collision_layer)
-    end
-
-    if game.active_mods["pypostprocessing"] then
-        path_request_params.collision_mask = {"player-layer", "consider-tile-transitions", "not-colliding-with-itself"}
-        path_request_params.path_resolution_modifier = 0
-        path_request_params.bounding_box = {{-0.1, -0.1}, {0.1, 0.1}}
-        path_request_params.radius = 5
-    end
 
     self.path_request_params = path_request_params
 
