@@ -2,6 +2,12 @@
 -- decommission
 global.queue_proc_trigger = nil
 global.job_proc_trigger = nil
+global.construction_tick = nil
+global.deconstruction_tick = nil
+global.upgrade_tick = nil
+global.repair_tick = nil
+global.destroy_tick = nil
+
 
 -- add last_update_tick to all chunks
 
