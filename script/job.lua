@@ -116,19 +116,22 @@ end
 
 
 function job:include_more_chunks(chunk_params, origin_chunk)
+    local job_start_delay = global.job_start_delay
     for _, chunk in pairs(chunk_params.chunks) do
-        local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-        if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
-            chunk.midpoint = chunk_midpoint
-            local merged_items = util_func.combine_tables{chunk_params.required_items, chunk.required_items}
-            local merged_trash = util_func.combine_tables{chunk_params.trash_items, chunk.trash_items}
-            local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables{merged_items, merged_trash})
-            if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
-                table.insert(chunk_params.used_chunks, chunk)
-                chunk_params.required_items = merged_items
-                chunk_params.trash_items = merged_trash
-                global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
-                return self:include_more_chunks(chunk_params, chunk)
+        if ((game.tick - chunk.last_update_tick) > job_start_delay) then
+            local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+            if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
+                chunk.midpoint = chunk_midpoint
+                local merged_items = util_func.combine_tables{chunk_params.required_items, chunk.required_items}
+                local merged_trash = util_func.combine_tables{chunk_params.trash_items, chunk.trash_items}
+                local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables{merged_items, merged_trash})
+                if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
+                    table.insert(chunk_params.used_chunks, chunk)
+                    chunk_params.required_items = merged_items
+                    chunk_params.trash_items = merged_trash
+                    global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+                    return self:include_more_chunks(chunk_params, chunk)
+                end
             end
         end
     end
@@ -227,7 +230,6 @@ function job:request_path()
     self.path_request_id = request_id
     global.pathfinder_requests[request_id] = self
 end
-
 
 function job:replace_roboports(old_eq, new_eq)
     local grid = self.worker.grid
@@ -638,7 +640,7 @@ function job:setup()
     -- calculate chunk build positions
     for _, chunk in pairs(self.chunks) do
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
-        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
+        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance for roboport range
         for _, position in ipairs(positions) do
             debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
             table.insert(self.task_positions, position)

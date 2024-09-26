@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.29
+Date: 2024-09-26
+  Bugfixes:
+    - Fixed an issue where the logistics cleared from the global logistics ui did not clear the button when clicked.
+    - Fixed an issue that prevented Cargo jobs from being assigned on other surfaces.
+  Changes:
+    - Chunks are now individually assessed against the job delay value rather than the whole surface.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.28
 Date: 2024-09-21
   Bugfixes:

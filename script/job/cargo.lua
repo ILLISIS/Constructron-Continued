@@ -15,16 +15,18 @@ end
 
 script.on_nth_tick(600, (function()
     cargo_job.prospect_cargo_jobs()
-    cargo_job.process_cargo_job_queue()
+    for surface_index, _ in pairs(global.managed_surfaces) do
+        cargo_job.process_cargo_job_queue(surface_index)
+    end
 end))
 
 
 -- This function checks all stations for items that need to be restocked
 function cargo_job.prospect_cargo_jobs()
     for _, station in pairs(global.service_stations) do
-        if not station.logistic_network then goto continue end
         local requests = global.station_requests[station.unit_number]
         if not next(requests) then goto continue end
+        if not station.logistic_network then goto continue end
         local items_to_fullfill = {}
         for id, request in pairs(requests) do
             local current_count = station.logistic_network.get_item_count(request.item)
@@ -56,11 +58,14 @@ function cargo_job.prospect_cargo_jobs()
 end
 
 -- This function processes the cargo job queue
-function cargo_job.process_cargo_job_queue()
-    for surface_index, _ in pairs(global.managed_surfaces) do
-        if not next(global.cargo_queue[surface_index]) then return end
-        for index, queued_job in pairs(global.cargo_queue[surface_index]) do
-            if not cargo_job.make_cargo_job(queued_job.station, queued_job.items) then return end
+function cargo_job.process_cargo_job_queue(surface_index)
+    if not next(global.cargo_queue[surface_index]) then return end
+    for index, queued_job in pairs(global.cargo_queue[surface_index]) do
+        local station = queued_job.station
+        if not (station and station.valid) then
+            global.cargo_queue[surface_index][index] = nil
+        else
+            if not cargo_job.make_cargo_job(station, queued_job.items) then return end
             global.cargo_queue[surface_index][index] = nil
         end
     end
@@ -120,7 +125,7 @@ function cargo_job:setup()
                     items = self.required_items
                 }
             end
-            cargo_job.process_cargo_job_queue()
+            cargo_job.process_cargo_job_queue(self.surface_index)
         end
     end
     -- set default ammo request
