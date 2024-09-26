@@ -18,10 +18,9 @@ entity_proc.on_built_entity = function(event)
     local entity = event.created_entity or event.entity
     local entity_type = entity.type
     local surface_index = entity.surface.index
-    if global.construction_job_toggle[surface_index] and entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy' then
+    if global.construction_job_toggle[surface_index] and (entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy') then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
-        global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
         local registration_number = script.register_on_entity_destroyed(entity)
@@ -118,7 +117,6 @@ script.on_event(ev.on_post_entity_died, function(event)
     if entity and entity.valid and global.rebuild_job_toggle[entity.surface.index] and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
         global.construction_index = global.construction_index + 1
         global.construction_entities[global.construction_index] = entity
-        global.construction_tick = event.tick
         global.entity_proc_trigger = true -- there is something to do start processing
     end
 end)
@@ -131,7 +129,6 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
     global.entity_proc_trigger = true -- there is something to do start processing
     local force_name = entity.force.name
     if force_name == "player" or force_name == "neutral" then
-        global.deconstruction_tick = event.tick
         global.deconstruction_entities[global.deconstruction_index] = entity
     end
 end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
@@ -141,7 +138,6 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
     if not global.upgrade_job_toggle[entity.surface.index] or not entity or not entity.force.name == "player" then return end
     global.upgrade_index = global.upgrade_index + 1
-    global.upgrade_tick = event.tick
     global.upgrade_entities[global.upgrade_index] = entity
     global.entity_proc_trigger = true -- there is something to do start processing
 end)
@@ -155,7 +151,6 @@ script.on_event(ev.on_entity_damaged, function(event)
     local key = entity.surface.index .. ',' .. entity_pos.x .. ',' .. entity_pos.y
     if (force == "player") then
         if not global.repair_entities[key] then
-            global.repair_tick = event.tick
             global.repair_entities[key] = entity
             global.entity_proc_trigger = true -- there is something to do start processing
         end
@@ -348,7 +343,6 @@ script.on_event(ev.on_sector_scanned, function(event)
     for _, entity in pairs(enemies_list) do
         global.destroy_index = global.destroy_index + 1
         global.destroy_entities[global.destroy_index] = entity
-        global.destroy_tick = event.tick
         global.entity_proc_trigger = true
     end
 end)
@@ -361,7 +355,6 @@ script.on_event(ev.on_player_selected_area, function(event)
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
                 global.construction_index = global.construction_index + 1
                 global.construction_entities[global.construction_index] = entity
-                global.construction_tick = event.tick
                 global.entity_proc_trigger = true -- there is something to do start processing
             end
         end
@@ -376,7 +369,6 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
             local force_name = entity.force.name
             if force_name == "player" or force_name == "neutral" then
                 entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index])
-                global.deconstruction_tick = event.tick
                 global.deconstruction_entities[global.deconstruction_index] = entity
                 global.deconstruction_index = global.deconstruction_index + 1
                 global.entity_proc_trigger = true -- there is something to do start processing
@@ -393,7 +385,6 @@ script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
             if entity.force.name == "enemy" then
                 global.destroy_index = global.destroy_index + 1
                 global.destroy_entities[global.destroy_index] = entity
-                global.destroy_tick = event.tick
                 global.entity_proc_trigger = true  -- there is something to do start processing
             end
         end
@@ -407,9 +398,8 @@ end)
 ---@param build_type string
 ---@param entities table
 ---@param queue EntityQueue
----@param event_tick integer
-entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event_tick) -- build_type: deconstruction, construction, upgrade, repair, destroy
-    if next(entities) and (game.tick - event_tick) > global.job_start_delay then -- if the entity isn't processed in 5 seconds or 300 ticks(default setting).
+entity_proc.add_entities_to_chunks = function(build_type, entities, queue) -- build_type: deconstruction, construction, upgrade, repair, destroy
+    if next(entities) then
         local entity_counter = global.entities_per_second
         for entity_key, entity in pairs(entities) do
             if entity.valid then
@@ -523,6 +513,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                     if not queue_surface_key then -- initialize a new chunk
                         queue_surface_key = {
                             key = key,
+                            last_update_tick = game.tick,
                             surface = entity_surface,
                             area = util_func.get_area_from_chunk(chunk),
                             minimum = {
@@ -553,6 +544,7 @@ entity_proc.add_entities_to_chunks = function(build_type, entities, queue, event
                         for item, count in pairs(trash_items) do
                             queue_surface_key['trash_items'][item] = (queue_surface_key['trash_items'][item] or 0) + count
                         end
+                        queue_surface_key.last_update_tick = game.tick
                     end
                     queue[entity_surface][key] = queue_surface_key -- update global chunk queue
                 end

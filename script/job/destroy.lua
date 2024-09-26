@@ -14,36 +14,34 @@ function destroy_job.new(job_index, surface_index, job_type, worker)
 end
 
 
--- function destroy_job:setup()
---     local worker = self.worker ---@cast worker -nil
---     -- calculate chunk build positions
---     for _, chunk in pairs(self.chunks) do
---         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
---         local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
---         for _, position in ipairs(positions) do
---             debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
---             table.insert(self.task_positions, position)
---         end
---         if chunk.required_items["landfill"] then
---             self.landfill_job = true
---         end
---     end
---     -- set default ammo request
---     if global.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
---         self.required_items[global.ammo_name[self.surface_index]] = global.ammo_count[self.surface_index]
---     end
---     -- enable_logistics_while_moving for destroy jobs
---     if self.job_type == "destroy" then
---         self.required_items[global.repair_tool_name[self.surface_index]] = global.desired_robot_count[self.surface_index] * 4
---         -- vassals
---         self.vassal_jobs = {}
---         global.vassal_count = 4 -- TODO: move to global and init
---         self.state = "deferred"
---         return
---     end
---     -- state change
---     self.state = "starting"
--- end
+function destroy_job:setup()
+    local worker = self.worker ---@cast worker -nil
+    -- calculate chunk build positions
+    for _, chunk in pairs(self.chunks) do
+        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
+        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, 36 * 0.95) -- 5% tolerance for rocket range
+        for _, position in ipairs(positions) do
+            debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
+            table.insert(self.task_positions, position)
+        end
+        if chunk.required_items["landfill"] then
+            self.landfill_job = true
+        end
+    end
+    -- set default ammo request
+    if global.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
+        self.required_items[global.ammo_name[self.surface_index]] = global.ammo_count[self.surface_index]
+    end
+    -- enable_logistics_while_moving for destroy jobs
+    self.required_items[global.repair_tool_name[self.surface_index]] = global.desired_robot_count[self.surface_index] * 4
+    --     -- vassals
+    --     self.vassal_jobs = {}
+    --     global.vassal_count = 4 -- TODO: move to global and init
+    --     self.state = "deferred"
+    --     return
+    -- state change
+    self.state = "starting"
+end
 
 -- function destroy_job:position_check(position, distance)
 --     local worker = self.worker ---@cast worker -nil

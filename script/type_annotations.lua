@@ -34,7 +34,7 @@
 ---@field area Area
 ---@field key string
 ---@field surface uint
--- -@field force LuaForce
+---@field last_update_tick uint
 ---@field minimum MapPosition
 ---@field maximum MapPosition
 -- -@field position MapPosition

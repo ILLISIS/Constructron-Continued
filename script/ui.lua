@@ -739,6 +739,8 @@ end
 function gui_handlers.clear_all_requests(player, element)
     local surface = game.surfaces[element.tags.surface_index]
     local item_name = element.tags.item_name
+    element.sprite = nil
+    element.number = nil
     for _, job in pairs(global.jobs) do
         if (job.surface_index == surface.index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker

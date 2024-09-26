@@ -116,19 +116,22 @@ end
 
 
 function job:include_more_chunks(chunk_params, origin_chunk)
+    local job_start_delay = global.job_start_delay
     for _, chunk in pairs(chunk_params.chunks) do
-        local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-        if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
-            chunk.midpoint = chunk_midpoint
-            local merged_items = util_func.combine_tables{chunk_params.required_items, chunk.required_items}
-            local merged_trash = util_func.combine_tables{chunk_params.trash_items, chunk.trash_items}
-            local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables{merged_items, merged_trash})
-            if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
-                table.insert(chunk_params.used_chunks, chunk)
-                chunk_params.required_items = merged_items
-                chunk_params.trash_items = merged_trash
-                global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
-                return self:include_more_chunks(chunk_params, chunk)
+        if ((game.tick - chunk.last_update_tick) > job_start_delay) then
+            local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+            if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
+                chunk.midpoint = chunk_midpoint
+                local merged_items = util_func.combine_tables{chunk_params.required_items, chunk.required_items}
+                local merged_trash = util_func.combine_tables{chunk_params.trash_items, chunk.trash_items}
+                local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables{merged_items, merged_trash})
+                if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
+                    table.insert(chunk_params.used_chunks, chunk)
+                    chunk_params.required_items = merged_items
+                    chunk_params.trash_items = merged_trash
+                    global[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+                    return self:include_more_chunks(chunk_params, chunk)
+                end
             end
         end
     end
@@ -179,25 +182,11 @@ function job:move_to_position(position)
         bounding_box = {{-5, -5}, {5, 5}},
         path_resolution_modifier = -2,
         radius = 1, -- the radius parameter only works in situations where it is useless. It does not help when a position is not reachable. Instead, we use find_non_colliding_position.
-        collision_mask = {"player-layer", "consider-tile-transitions", "colliding-with-tiles-only", "not-colliding-with-itself"},
+        collision_mask = game.entity_prototypes["constructron_pathing_proxy_1"].collision_mask,
         pathfinding_flags = {cache = false, low_priority = false},
         try_again_later = 0,
         path_attempt = 1
     }
-
-    if game.active_mods["space-exploration"] then
-        local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-        local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-        table.insert(path_request_params.collision_mask, spaceship_collision_layer)
-        table.insert(path_request_params.collision_mask, empty_space_collision_layer)
-    end
-
-    if game.active_mods["pypostprocessing"] then
-        path_request_params.collision_mask = {"player-layer", "consider-tile-transitions", "not-colliding-with-itself"}
-        path_request_params.path_resolution_modifier = 0
-        path_request_params.bounding_box = {{-0.1, -0.1}, {0.1, 0.1}}
-        path_request_params.radius = 5
-    end
 
     self.path_request_params = path_request_params
 
@@ -227,7 +216,6 @@ function job:request_path()
     self.path_request_id = request_id
     global.pathfinder_requests[request_id] = self
 end
-
 
 function job:replace_roboports(old_eq, new_eq)
     local grid = self.worker.grid
@@ -638,7 +626,7 @@ function job:setup()
     -- calculate chunk build positions
     for _, chunk in pairs(self.chunks) do
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
-        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance
+        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance for roboport range
         for _, position in ipairs(positions) do
             debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
             table.insert(self.task_positions, position)

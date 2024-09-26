@@ -19,18 +19,17 @@ end)
 script.on_nth_tick(15, function()
     if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
     if next(global.deconstruction_entities) then -- deconstruction has priority over construction.
-        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruction_queue, global.deconstruction_tick)
+        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruction_queue)
     elseif next(global.construction_entities) then
-        entity_proc.add_entities_to_chunks("construction", global.construction_entities, global.construction_queue, global.construction_tick)
+        entity_proc.add_entities_to_chunks("construction", global.construction_entities, global.construction_queue)
     elseif next(global.upgrade_entities) then
-        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue, global.upgrade_tick)
+        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue)
     elseif next(global.repair_entities) then
-        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue, global.repair_tick)
+        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue)
     elseif next(global.destroy_entities) then
-        entity_proc.add_entities_to_chunks("destroy", global.destroy_entities, global.destroy_queue, global.destroy_tick)
+        entity_proc.add_entities_to_chunks("destroy", global.destroy_entities, global.destroy_queue)
     else
         global.entity_proc_trigger = false -- stop entity processing
-        global.queue_proc_trigger = true -- start queue processing
     end
 end)
 
@@ -56,8 +55,6 @@ local ensure_globals = function()
     global.constructron_statuses = global.constructron_statuses or {}
     --
     global.entity_proc_trigger = global.entity_proc_trigger or true
-    global.queue_proc_trigger = global.queue_proc_trigger or true
-    global.job_proc_trigger = global.job_proc_trigger or true
     --
     global.managed_surfaces = global.managed_surfaces or {}
     --
