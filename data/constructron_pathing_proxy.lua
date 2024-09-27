@@ -1,7 +1,7 @@
 local collision_mask_util_extended = require("data/collision-mask-util-extended")
 
 
-local selected_mask = collision_mask_util_extended.get_first_unused_layer()
+local selected_mask = collision_mask_util_extended.get_make_named_collision_mask("ctron_path_layer")
 
 local types = {
   "arrow",
@@ -126,9 +126,6 @@ end
 local masks = swap_keyval(data.raw["spider-leg"]["constructron-leg-1"].collision_mask)
 masks["not-colliding-with-itself"] = nil
 
--- log (serpent.block(data.raw["boiler"]["lrf-panel-mk01"]))
--- error("stop")
-
 for _, type in pairs(types) do
   for name, prototype in pairs(data.raw[type]) do
     if prototype.collision_box and prototype.collision_mask then
@@ -136,7 +133,7 @@ for _, type in pairs(types) do
       local width = collision_box[2][1] - collision_box[1][1]
       local height = collision_box[2][2] - collision_box[1][2]
       -- Check if entity is larger than 7x7 tiles
-      if (width > 7 or height > 7) then
+      if (width>7 and height>4) or (height>7 and width>4) then
         -- log("Entity '" .. name .. "' is larger than 7x7 tiles. Size: " .. width .. "x" .. height)
         local add = false
         for _, mask in pairs(prototype.collision_mask) do
