@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.31
+Date: 2024-09-28
+  Bugfixes:
+    - Fixed an issue where the collision masks were being set on incorrect entities due to them using referenced tables.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.30
 Date: 2024-09-27
   Bugfixes:
