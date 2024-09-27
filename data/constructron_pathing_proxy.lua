@@ -142,7 +142,9 @@ for _, type in pairs(types) do
           end
         end
         if add then
-          table.insert(prototype.collision_mask, selected_mask)
+          local layers = table.deepcopy(prototype.collision_mask)
+          table.insert(layers, selected_mask)
+          prototype.collision_mask = layers
         end
       end
     -- else
