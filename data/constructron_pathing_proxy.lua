@@ -153,6 +153,9 @@ for _, type in pairs(types) do
   end
 end
 
+local tile_selected_mask = collision_mask_util_extended.get_make_named_collision_mask("ctron_tile_layer")
+table.insert(pathing_collision_mask, tile_selected_mask)
+
 for name, prototype in pairs(data.raw["tile"]) do
   if prototype.collision_mask then
     local add = false
@@ -162,7 +165,9 @@ for name, prototype in pairs(data.raw["tile"]) do
       end
     end
     if add then
-      table.insert(prototype.collision_mask, selected_mask)
+      local layers = table.deepcopy(prototype.collision_mask)
+      table.insert(layers, tile_selected_mask)
+      prototype.collision_mask = layers
     end
   end
 end
