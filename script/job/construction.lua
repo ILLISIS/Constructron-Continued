@@ -55,14 +55,11 @@ function construction_job:specific_action()
         local item
         if entity.name == "entity-ghost" or entity.name == "tile-ghost" then -- is the entity a ghost?
             item = entity.ghost_prototype.items_to_place_this[1]
+            item.quality = storage.quality_levels[entity.quality.level]
         else -- entity is an item_request_proxy
-            item = {}
-            for name, count in pairs(entity.item_requests) do
-                item.name = name
-                item.count = count
-            end
+            _, item = next(entity.item_requests)
         end
-        if self.worker_logistic_network.can_satisfy_request(item.name, (item.count or 1)) then -- does inventory have the required item?
+        if self.worker_logistic_network.can_satisfy_request({name = item.name, quality = item.quality}, item.count, true) then -- does inventory have the required item?
             can_build_entity = true
         end
     end

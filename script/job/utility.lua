@@ -56,10 +56,10 @@ end
 
 -- function utility_job:vassal_new()
 --     -- set default ammo request
---     if global.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
---         self.required_items[global.ammo_name[self.surface_index]] = global.ammo_count[self.surface_index]
+--     if storage.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
+--         self.required_items[storage.ammo_name[self.surface_index]] = storage.ammo_count[self.surface_index]
 --     end
---     self.required_items[global.repair_tool_name[self.surface_index]] = global.desired_robot_count[self.surface_index] * 4
+--     self.required_items[storage.repair_tool_name[self.surface_index]] = storage.desired_robot_count[self.surface_index] * 4
 --     -- state change
 --     self.state = "starting"
 -- end
@@ -67,8 +67,6 @@ end
 -- function utility_job:vassal_starting()
 --     -- Am I in the correct position?
 --     if not self:position_check(self.station.position, 10) then return end
---     -- set combinator station
---     global.constructron_requests[worker.unit_number].station = self.station
 --     -- Is the logistic network ready?
 --     local logistic_network = self.station.logistic_network
 --     if logistic_network.all_logistic_robots == 0 then
@@ -91,7 +89,7 @@ end
 --         end
 --         -- check ammo slots for unwanted items
 --         for item, _ in pairs(ammunition) do
---             if item ~= global.ammo_name[self.surface_index] then
+--             if item ~= storage.ammo_name[self.surface_index] then
 --                 item_request_list[item] = 0
 --             end
 --         end

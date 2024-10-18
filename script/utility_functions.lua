@@ -3,66 +3,27 @@ local color_lib = require("script/color_lib")
 
 local me = {}
 
--- function to update a combinator of a station
----@param station LuaEntity
----@param item_name string
----@param item_count integer
-me.update_combinator = function(station, item_name, item_count)
-    if not station or not station.valid or not item_name or not item_count then return end
-
-    -- update master list
-    local signals = global.station_combinators[station.unit_number]["signals"]
-
-    signals[item_name] = ((signals[item_name] or 0) + item_count)
-
-    if signals[item_name] < 0 then
-        signals[item_name] = 0
-    end
-
-    -- update combinator signals
-    local index = 2 -- there are garanteed to be at least 2 signals used for A and C
-    local parameters = {}
-    local surface_index = station.surface.index
-    parameters[1] = {index = 1, signal = {type = "virtual", name = "signal-C"}, count = global.constructrons_count[surface_index]}
-    parameters[2] = {index = 2, signal = {type = "virtual", name = "signal-A"}, count = global.available_ctron_count[surface_index]}
-    for item, count in pairs(signals) do
-        if index >= 100 then break end -- the combinator only has 100 slots
-        index = index + 1
-        parameters[index] = {
-            index = index,
-            signal = {
-                type = "item",
-                name = item
-            },
-            count = count
-        }
-    end
-
-    global.station_combinators[station.unit_number]["signals"] = signals
-    global.station_combinators[station.unit_number].entity.get_control_behavior().parameters = parameters
-end
-
-
 ---@param constructron LuaEntity
 ---@param state ConstructronStatus
 ---@param value uint | boolean
 me.set_constructron_status = function(constructron, state, value)
-    if constructron and constructron.valid then
-    if global.constructron_statuses[constructron.unit_number] then
-        global.constructron_statuses[constructron.unit_number][state] = value
-    else
-        global.constructron_statuses[constructron.unit_number] = {}
-        global.constructron_statuses[constructron.unit_number][state] = value
-        end
+    if not (constructron and constructron.valid) then return end
+    storage.constructron_statuses[constructron.unit_number][state] = value
+    local surface_index = constructron.surface.index
+    if value == true then
+        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] - 1
+    elseif value == false then
+        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] + 1
     end
+    me.update_ctron_combinator_signals(surface_index)
 end
 
 ---@param constructron LuaEntity
 ---@param state ConstructronStatus
 ---@return uint | boolean?
 me.get_constructron_status = function(constructron, state)
-    if global.constructron_statuses[constructron.unit_number] then
-        return global.constructron_statuses[constructron.unit_number][state]
+    if storage.constructron_statuses[constructron.unit_number] then
+        return storage.constructron_statuses[constructron.unit_number][state]
     end
     return nil
 end
@@ -72,13 +33,13 @@ end
 me.get_service_stations = function(surface_index) -- used to get all stations on a surface
     ---@type table<uint, LuaEntity>
     local stations_on_surface = {}
-    for s, station in pairs(global.service_stations) do
+    for s, station in pairs(storage.service_stations) do
         if station and station.valid then
             if (surface_index == station.surface.index) then
                 stations_on_surface[station.unit_number] = station
             end
         else
-            global.service_stations[s] = nil
+            storage.service_stations[s] = nil
         end
     end
     return stations_on_surface or {}
@@ -90,10 +51,10 @@ me.get_closest_service_station = function(constructron) -- used to get the close
     local service_stations = me.get_service_stations(constructron.surface.index)
     for unit_number, station in pairs(service_stations) do
         if not station.valid then
-            global.service_stations[unit_number] = nil -- could be redundant as entities are now registered
+            storage.service_stations[unit_number] = nil -- could be redundant as entities are now registered
         end
     end
-    local service_station_index = me.get_closest_object(service_stations, constructron.position) -- TODO this is duplicate from custom_lib
+    local service_station_index = me.get_closest_object(service_stations, constructron.position)
     return service_stations[service_station_index]
 end
 
@@ -122,14 +83,16 @@ end
 me.calculate_required_inventory_slot_count = function(required_items)
     local slots = 0
     local stack_size
-    for name, count in pairs(required_items) do
-        if not global.stack_cache[name] then
-            stack_size = game.item_prototypes[name].stack_size
-            global.stack_cache[name] = stack_size
-        else
-            stack_size = global.stack_cache[name]
+    for item_name, value in pairs(required_items) do
+        for quality, count in pairs(value) do
+            if not storage.stack_cache[item_name] then
+                stack_size = prototypes.item[item_name].stack_size
+                storage.stack_cache[item_name] = stack_size
+            else
+                stack_size = storage.stack_cache[item_name]
+            end
+            slots = slots + math.ceil(count / stack_size)
         end
-        slots = slots + math.ceil(count / stack_size)
     end
     return slots
 end
@@ -280,12 +243,31 @@ end
 
 me.combine_tables = function(tables)
     local combined = {}
-    for _, t in pairs(tables) do
-        for k, v in pairs(t) do
-            combined[k] = (combined[k] or 0) + v
+
+    for _, outer_table in pairs(tables) do
+        for item_name, t_val in pairs(outer_table) do
+            for quality, count in pairs(t_val) do
+                combined[item_name] = combined[item_name] or {}
+                combined[item_name][quality] = (combined[item_name][quality] or 0) + count
+            end
         end
     end
+
     return combined
+end
+
+me.convert_to_item_list = function(list)
+    local items = {}
+    for _, item in pairs(list) do
+        if item.name or item.value then
+            local item_name = item.name or item.value.name
+            local item_quality = item.quality or item.value.quality
+            local item_count = item.count or item.max or item.min
+            items[item_name] = items[item_name] or {}
+            items[item_name][item_quality] = (items[item_name][item_quality] or 0) + item_count
+        end
+    end
+    return items
 end
 
 me.table_has_value = function(tab, val)
@@ -324,6 +306,76 @@ me.distance_between = function(position1, position2)
     return math.sqrt((position1.x - position2.x) ^ 2 + (position1.y - position2.y) ^ 2)
 end
 
+---@param entity LuaEntity
+me.setup_station_combinator = function(entity)
+    local surface_index = entity.surface.index
+    -- create the combinator entity
+    local combinator = entity.surface.create_entity{
+        name = "ctron-combinator",
+        position = {(entity.position.x + 1), (entity.position.y + 1)},
+        direction = defines.direction.west,
+        force = entity.force,
+        raise_built = true
+    } ---@cast combinator -nil
+    storage.ctron_combinators[entity.surface.index] = combinator
+    -- register the combinator entity
+    local combinator_reg_number = script.register_on_object_destroyed(storage.ctron_combinators[surface_index])
+    storage.registered_entities[combinator_reg_number] = {
+        name = "ctron-combinator",
+        surface = surface_index
+    }
+    -- set signals
+    me.update_ctron_combinator_signals(surface_index)
+    -- connect stations to combinator
+    local combinator_red_connector = combinator.get_wire_connector(defines.wire_connector_id.circuit_red, false)
+    local combinator_green_connector = combinator.get_wire_connector(defines.wire_connector_id.circuit_green, false)
+    local stations = me.get_service_stations(surface_index)
+    for _, station in pairs(stations) do
+        local station_red_connector = station.get_wire_connector(defines.wire_connector_id.circuit_red, false)
+        local station_green_connector = station.get_wire_connector(defines.wire_connector_id.circuit_green, false)
+        combinator_red_connector.connect_to(station_red_connector, false)
+        combinator_green_connector.connect_to(station_green_connector, false)
+    end
+    return combinator
+end
+
+---@param combinator LuaEntity
+---@param station LuaEntity
+me.connect_station_to_combinator = function(combinator, station)
+    local combinator_red_connector = combinator.get_wire_connector(defines.wire_connector_id.circuit_red, false)
+    local combinator_green_connector = combinator.get_wire_connector(defines.wire_connector_id.circuit_green, false)
+    local station_red_connector = station.get_wire_connector(defines.wire_connector_id.circuit_red, false)
+    local station_green_connector = station.get_wire_connector(defines.wire_connector_id.circuit_green, false)
+    combinator_red_connector.connect_to(station_red_connector, false)
+    combinator_green_connector.connect_to(station_green_connector, false)
+end
+
+---@param surface_index uint
+me.update_ctron_combinator_signals = function(surface_index)
+    local combinator = storage.ctron_combinators[surface_index]
+    if not combinator or not combinator.valid then return end
+    local control_behavior = combinator.get_or_create_control_behavior()  --[[@as LuaConstantCombinatorControlBehavior]] ---@cast control_behavior -nil
+    local filters = {
+        [1] = {
+            value = {
+                type = "virtual",
+                name = "signal-C",
+                quality = "normal"
+            },
+            min = storage.constructrons_count[combinator.surface.index]
+        },
+        [2] = {
+            value = {
+                type = "virtual",
+                name = "signal-A",
+                quality = "normal"
+            },
+            min = storage.available_ctron_count[combinator.surface.index]
+        }
+    }
+    control_behavior.sections[1].filters = filters
+end
+
 ---@param to_split string
 ---@param sep string
 ---@return string[]
@@ -342,7 +394,7 @@ end
 ---@return V
 me.firstoflct = function(lct)
     for key, value in pairs(lct) do
-        return value
+        return key
     end
 end
 

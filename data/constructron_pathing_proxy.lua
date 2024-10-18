@@ -1,7 +1,14 @@
-local collision_mask_util_extended = require("data/collision-mask-util-extended")
+-- local collision_mask_util_extended = require("data/collision-mask-util-extended")
 
-
-local selected_mask = collision_mask_util_extended.get_make_named_collision_mask("ctron_path_layer")
+data:extend(
+  {
+    {
+      type = "collision-layer",
+      name = "constructron_pathing_layer",
+    }
+  }
+)
+local selected_mask = "constructron_pathing_layer"
 
 local types = {
   "arrow",
@@ -13,8 +20,8 @@ local types = {
   "corpse",
   "rail-remnants",
   "deconstructible-tile-proxy",
-  "particle",
-  "leaf-particle",
+  -- "particle",
+  -- "leaf-particle",
   "accumulator",
   "artillery-turret",
   "beacon",
@@ -51,12 +58,12 @@ local types = {
   "pipe",
   "infinity-pipe",
   "pipe-to-ground",
-  "player-port",
+  -- "player-port",
   "power-switch",
   "programmable-speaker",
   "pump",
   "radar",
-  "curved-rail",
+  -- "curved-rail",
   "straight-rail",
   "rail-chain-signal",
   "rail-signal",
@@ -90,10 +97,10 @@ local types = {
   "spider-leg",
   "tree",
   "explosion",
-  "flame-thrower-explosion",
+  -- "flame-thrower-explosion",
   "fire",
   "stream",
-  "flying-text",
+  -- "flying-text",
   "highlight-box",
   "item-entity",
   "item-request-proxy",
@@ -102,29 +109,23 @@ local types = {
   "resource",
   "rocket-silo-rocket",
   "rocket-silo-rocket-shadow",
-  "smoke",
+  -- "smoke",
   "smoke-with-trigger",
   "speech-bubble",
   "sticker",
 }
 
 local pathing_collision_mask = {
-  -- "water-tile",
-  -- "colliding-with-tiles-only",
-  "not-colliding-with-itself",
-  selected_mask
+  layers = {
+    [selected_mask] = true
+  },
+  not_colliding_with_itself = true
 }
 
-local function swap_keyval(t)
-  local new_t = {}
-  for k, v in pairs(t) do
-    new_t[v] = k
-  end
-  return new_t
-end
-
-local masks = swap_keyval(data.raw["spider-leg"]["constructron-leg-1"].collision_mask)
-masks["not-colliding-with-itself"] = nil
+local masks = {
+  ["player"] = true,
+  ["rail"] = true,
+}
 
 for _, type in pairs(types) do
   for name, prototype in pairs(data.raw[type]) do
@@ -136,15 +137,13 @@ for _, type in pairs(types) do
       if (width>7 and height>4) or (height>7 and width>4) then
         -- log("Entity '" .. name .. "' is larger than 7x7 tiles. Size: " .. width .. "x" .. height)
         local add = false
-        for _, mask in pairs(prototype.collision_mask) do
+        for _, mask in pairs(prototype.collision_mask.layers) do
           if masks[mask] ~= nil then
             add = true
           end
         end
         if add then
-          local layers = table.deepcopy(prototype.collision_mask)
-          table.insert(layers, selected_mask)
-          prototype.collision_mask = layers
+          prototype.collision_mask.layers[selected_mask] = true
         end
       end
     -- else
@@ -153,32 +152,18 @@ for _, type in pairs(types) do
   end
 end
 
-local tile_selected_mask = collision_mask_util_extended.get_make_named_collision_mask("ctron_tile_layer")
-table.insert(pathing_collision_mask, tile_selected_mask)
-
 for name, prototype in pairs(data.raw["tile"]) do
   if prototype.collision_mask then
     local add = false
-    for _, mask in pairs(prototype.collision_mask) do
+    for mask, _ in pairs(prototype.collision_mask.layers) do
       if masks[mask] ~= nil then
         add = true
       end
     end
     if add then
-      local layers = table.deepcopy(prototype.collision_mask)
-      table.insert(layers, tile_selected_mask)
-      prototype.collision_mask = layers
+      prototype.collision_mask.layers[selected_mask] = true
     end
   end
-end
-
-
-if mods["space-exploration"] then
-  local spaceship_collision_layer = collision_mask_util_extended.get_named_collision_mask("moving-tile")
-  table.insert(pathing_collision_mask, spaceship_collision_layer)
-
-  local empty_space_collision_layer = collision_mask_util_extended.get_named_collision_mask("empty-space-tile")
-  table.insert(pathing_collision_mask, empty_space_collision_layer)
 end
 
 local template_entity = {
@@ -200,17 +185,6 @@ local template_entity = {
   }
 }
 
-local template_item = {
-  type = "item",
-  flags = {
-    "hidden"
-  },
-  name = "constructron_pathing_dummy",
-  icon = "__core__/graphics/empty.png",
-  icon_size = 1,
-  order = "z",
-  stack_size = 1
-}
 
 for _, size in pairs({96, 64, 32, 16, 12, 10, 8, 6, 5, 4, 2, 1}) do
   local proxy_entity = table.deepcopy(template_entity)
@@ -218,9 +192,5 @@ for _, size in pairs({96, 64, 32, 16, 12, 10, 8, 6, 5, 4, 2, 1}) do
   proxy_entity.selection_box = {{-size / 2, -size / 2}, {size / 2, size / 2}}
   proxy_entity.name = "constructron_pathing_proxy_" .. size
 
-  local proxy_item = table.deepcopy(template_item)
-  proxy_item.name = "constructron_pathing_proxy_" .. size
-  proxy_item.place_result = "constructron_pathing_proxy_" .. size
-
-  data:extend({proxy_entity, proxy_item})
+  data:extend({proxy_entity})
 end

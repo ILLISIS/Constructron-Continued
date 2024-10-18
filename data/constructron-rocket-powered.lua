@@ -97,11 +97,12 @@ local constructron_recipe = {
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {"constructron", 1},
-        {"jetpack-1", 4}
+        {type = "item", name = "constructron", amount = 1},
+        {type = "item", name = "jetpack-1", amount = 4}
     },
-    result = "constructron-rocket-powered",
-    result_count = 1,
+    results = {
+        {type = "item", name = "constructron-rocket-powered", amount = 1}
+    },
     energy = 1
 }
 

@@ -1,31 +1,48 @@
 data:extend(
     {
         {
-        type = "selection-tool",
-        name = "ctron-selection-tool",
-        icons = {
-            -- { icon = data_util.black_image, icon_size = 1, scale = 64 },
-            { icon = "__Constructron-Continued__/graphics/icon_texture.png", icon_size = 128, mipmap_count = 2 }
-        },
+            type = "selection-tool",
+            name = "ctron-selection-tool",
+            icons = {{ icon = "__Constructron-Continued__/graphics/icon_texture.png", icon_size = 128, mipmap_count = 2 }},
+            always_include_tiles = true,
+            skip_fog_of_war = false,
+            stack_size = 1,
+            flags = { "only-in-cursor", "not-stackable", "spawnable" },
 
-        selection_color = { r = 1, g = 0, b = 1 },
-        selection_cursor_box_type = "entity",
-        selection_mode = { "entity-ghost", "tile-ghost" },
+            -- left click
+            select = {
+                border_color = { r = 0, g = 0, b = 0.5 }, -- blue
+                cursor_box_type = "entity",
+                mode = { "entity-ghost", "tile-ghost" }
+            },
 
-        reverse_selection_color = { r = 1, g = 1 },
-        reverse_selection_cursor_box_type = "entity",
-        reverse_selection_mode = { "deconstruct", "items", "trees" },
+            -- shift left click
+            alt_select = {
+                border_color = { r = 1, g = 1, b = 1 },
+                cursor_box_type = "entity",
+                mode = { "nothing" }
+            },
 
-        alt_selection_color = { r = 1 },
-        alt_selection_cursor_box_type = "entity",
-        alt_selection_mode = { "nothing" },
+            -- control shift left click
+            super_forced_select = {
+                border_color = { r = 1, g = 1, b = 1 },
+                cursor_box_type = "entity",
+                mode = { "nothing" }
+            },
 
-        alt_reverse_selection_color = { r = 1 },
-        alt_reverse_selection_cursor_box_type = "entity",
-        alt_reverse_selection_mode = { "is-military-target" },
+            -- right click
+            reverse_select = {
+                border_color = { r = 1 }, -- red
+                cursor_box_type = "entity",
+                mode = { "deconstruct", "items", "trees" }
+            },
 
-        stack_size = 1,
-        flags = { "hidden", "only-in-cursor", "not-stackable", "spawnable" }
+            -- shift right click
+            alt_reverse_select = {
+                border_color = { r = 0, g = 0, b = 0 }, -- black
+                cursor_box_type = "entity",
+                mode = { "is-military-target" }
+            },
         }
     }
 )

@@ -20,7 +20,7 @@ function gui_settings.buildSettingsGui(player, surface)
         style = "ctron_settings_inner_frame_style",
         direction = "vertical"
     }
-    settings_inner_frame.style.horizontally_stretchable = "on"
+    settings_inner_frame.style.horizontally_stretchable = true
 
     local settings_scroll = settings_inner_frame.add{
         type = "scroll-pane",
@@ -87,7 +87,7 @@ function gui_settings.buildSettingsTitleBar(player, surface, frame)
     for _, iterated_surface in pairs(game.surfaces) do
         surfaces[#surfaces+1] = iterated_surface.name
     end
-    global.user_interface[player.index].settings_ui.elements["surface_selector"] = bar.add{
+    storage.user_interface[player.index].settings_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
@@ -113,9 +113,7 @@ function gui_settings.buildSettingsTitleBar(player, surface, frame)
         type = "sprite-button",
         name = "close_settings_window",
         style = "frame_action_button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
+        sprite = "utility/close",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -129,7 +127,7 @@ end
 --===========================================================================--
 
 function gui_settings.buildSettingsContent(player, surface, frame)
-    local surface_index = game.surfaces[global.user_interface[player.index].settings_ui.elements["surface_selector"].selected_index].index
+    local surface_index = game.surfaces[storage.user_interface[player.index].settings_ui.elements["surface_selector"].selected_index].index
 
     -- global settings
 
@@ -166,7 +164,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
     global_settings_table.add{
         type = "textfield",
-        text = (global.job_start_delay / 60),
+        text = (storage.job_start_delay / 60),
         style = "ctron_settings_textfield_style",
         tooltip = {"ctron_gui_locale.settings_job_start_delay_tooltip"},
         numeric = true,
@@ -186,7 +184,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
     global_settings_table.add{
         type = "textfield",
-        text = global.entities_per_second,
+        text = storage.entities_per_second,
         style = "ctron_settings_textfield_style",
         tooltip = {"ctron_gui_locale.settings_entities_per_second_tooltip"},
         numeric = true,
@@ -207,7 +205,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     global_settings_table.add{
         type = "checkbox",
         name = "ctron_horde_toggle",
-        state = global.horde_mode,
+        state = storage.horde_mode,
         tooltip = {"ctron_gui_locale.settings_horde_mode_tooltip"},
         tags = {
             mod = "constructron",
@@ -228,7 +226,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         name = "ctron_settings_surface_flow",
         direction = "horizontal"
     }
-    hflow.style.horizontally_stretchable = "on"
+    hflow.style.horizontally_stretchable = true
 
     local surface_label = hflow.add{
         type = "label",
@@ -242,7 +240,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         name = "ctron_spacer_1",
         ignored_by_interaction = true
     }
-    spacer_1.style.horizontally_stretchable = "on"
+    spacer_1.style.horizontally_stretchable = true
 
     -- button
     local apply_button = hflow.add{
@@ -280,7 +278,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
     table.add{
         type = "textfield",
-        text = global.desired_robot_count[surface_index],
+        text = storage.desired_robot_count[surface_index],
         style = "ctron_settings_textfield_style",
         tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
         numeric = true,
@@ -294,29 +292,20 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- robot selection
-    local robots = {}
-    local selected_robot_index = 1
-    for _, robot in pairs(game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}) do
-        robots[#robots+1] = robot.name
-        if robot.name == global.desired_robot_name[surface_index] then
-            selected_robot_index = #robots
-        end
-    end
     table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_robot_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_robot_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     table.add{
-        type = "drop-down",
-        name = "ctron_robot_select",
-        style = "ctron_settings_dropdown_style",
-        tooltip = {"ctron_gui_locale.settings_robot_selection_tooltip"},
-        selected_index = selected_robot_index,
-        items = robots,
+        type = "choose-elem-button",
+        elem_type = "item-with-quality",
+        ["item-with-quality"] = storage.desired_robot_name[surface_index],
+        elem_filters = {{filter = "name", name = "construction-robot"}},
         tags = {
             mod = "constructron",
-            on_gui_selection_state_changed = "select_new_robot",
+            on_gui_elem_changed = "select_new_robot",
             setting_surface = surface_index
         }
     }
@@ -331,7 +320,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         table.add{
             type = "checkbox",
             name = "ctron_" .. setting_name .. "_toggle",
-            state = global[setting_name .. "_job_toggle"][surface_index],
+            state = storage[setting_name .. "_job_toggle"][surface_index],
             tooltip = setting_params.tooltip,
             tags = {
                 mod = "constructron",
@@ -343,33 +332,20 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     end
 
     -- ammo selection
-    local ammo_list = {}
-    local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
-    local selected_ammo_index = 1
-    for _, ammo in pairs(ammo_prototypes) do
-        local ammo_type = ammo.get_ammo_type() or {}
-        if ammo_type.category == "rocket" then
-            ammo_list[#ammo_list+1] = ammo.name
-            if ammo.name == global.ammo_name[surface_index] then
-                selected_ammo_index = #ammo_list
-            end
-        end
-    end
     table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_selection_label"},
         style = "ctron_settings_label_style"
     }
     table.add{
-        type = "drop-down",
+        type = "choose-elem-button",
         name = "ctron_ammo_select",
-        style = "ctron_settings_dropdown_style",
-        tooltip = {"ctron_gui_locale.settings_ammo_selection_tooltip"},
-        selected_index = selected_ammo_index,
-        items = ammo_list,
+        elem_type = "item-with-quality",
+        ["item-with-quality"] = storage.ammo_name[surface_index],
+        elem_filters = {{filter = "type", type = "ammo"}},
         tags = {
             mod = "constructron",
-            on_gui_selection_state_changed = "selected_new_ammo",
+            on_gui_elem_changed = "selected_new_ammo",
             setting_surface = surface_index
         }
     }
@@ -382,7 +358,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
     table.add{
         type = "textfield",
-        text = global.ammo_count[surface_index],
+        text = storage.ammo_count[surface_index],
         style = "ctron_settings_textfield_style",
         tooltip = {"ctron_gui_locale.settings_ammo_count_tooltip"},
         numeric = true,
@@ -404,7 +380,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     table.add{
         type = "checkbox",
         name = "ctron_repair_toggle",
-        state = global.repair_job_toggle[surface_index],
+        state = storage.repair_job_toggle[surface_index],
         tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
         tags = {
             mod = "constructron",
@@ -415,30 +391,20 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- repair tool selection
-    local repair_items = {}
-    local repair_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
-    local selected_repair_index = 1
-    for _, repair_item in pairs(repair_prototypes) do
-        repair_items[#repair_items+1] = repair_item.name
-        if repair_item.name == global.repair_tool_name[surface_index] then
-            selected_repair_index = #repair_items
-        end
-    end
     table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
         style = "ctron_settings_label_style"
     }
     table.add{
-        type = "drop-down",
-        name = "ctron_repair_selector",
-        style = "ctron_settings_dropdown_style",
-        tooltip = {"ctron_gui_locale.settings_repair_tool_selection_tooltip"},
-        selected_index = selected_repair_index,
-        items = repair_items,
+        type = "choose-elem-button",
+        -- style = "",
+        elem_type = "item-with-quality",
+        ["item-with-quality"] = storage.repair_tool_name[surface_index],
+        elem_filters = {{filter = "name", name = "repair-pack"}},
         tags = {
             mod = "constructron",
-            on_gui_selection_state_changed = "selected_new_repair_tool",
+            on_gui_elem_changed = "selected_new_repair_tool",
             setting_surface = surface_index
         }
     }

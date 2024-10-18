@@ -29,7 +29,7 @@ end
 script.on_event(defines.events.on_player_created, function(event)
     local player = game.get_player(event.player_index)
     if not player then return end
-    global.user_interface[player.index] = {
+    storage.user_interface[player.index] = {
         surface = player.surface,
         main_ui = {
             elements = {}
@@ -70,7 +70,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
 
         -- find job
         local job
-        for _, iterated_job in pairs(global.jobs) do
+        for _, iterated_job in pairs(storage.jobs) do
             if iterated_job.worker and iterated_job.worker.valid and iterated_job.worker.unit_number == event.entity.unit_number then
                 job = iterated_job
                 break
@@ -245,11 +245,11 @@ local inprogress_job_states = {
 function gui_handlers.update_main_gui(player)
     local main_window = player.gui.screen.ctron_main_window
     if main_window then
-        local main_ui_elements = global.user_interface[player.index].main_ui.elements
+        local main_ui_elements = storage.user_interface[player.index].main_ui.elements
         local surface_index = game.surfaces[main_ui_elements["surface_selector"].selected_index].index
         -- update stats values
-        main_ui_elements.total.caption = global.constructrons_count[surface_index]
-        main_ui_elements.available.caption = global.available_ctron_count[surface_index]
+        main_ui_elements.total.caption = storage.constructrons_count[surface_index]
+        main_ui_elements.available.caption = storage.available_ctron_count[surface_index]
         -- update job cards
         local in_progress_section = main_ui_elements.in_progress_section
         local in_progress_section_cards = {}
@@ -267,7 +267,7 @@ function gui_handlers.update_main_gui(player)
                 finishing_section_cards[card.tags.job_index] = card
             end
         end
-        for job_index, job in pairs(global.jobs) do
+        for job_index, job in pairs(storage.jobs) do
             if job.surface_index == surface_index then
                 if inprogress_job_states[job.state] then
                     if not in_progress_section_cards[job_index] then -- if the card doesn't exist, the job exists so create a new card to display
@@ -309,7 +309,7 @@ function gui_handlers.update_main_gui(player)
             end
         end
         for job_type, _ in pairs(pending_section_cards) do
-            local queue = global[job_type .. "_queue"][surface_index]
+            local queue = storage[job_type .. "_queue"][surface_index]
             for chunk_key, chunk in pairs(queue) do
                 if not pending_section_cards[job_type][chunk_key] then
                     gui_main.create_chunk_card(chunk, surface_index, pending_section, job_type)
@@ -328,11 +328,11 @@ end
 function gui_handlers.update_job_gui(player)
     local job_window = player.gui.screen.ctron_job_window
     if not job_window then return end
-    local job = global.jobs[job_window.tags.job_index]
+    local job = storage.jobs[job_window.tags.job_index]
     if not job then return end
     local job_worker = job.worker
     if not job_worker then return end -- TODO: refactor this behavior
-    local job_ui_elements = global.user_interface[player.index].job_ui.elements
+    local job_ui_elements = storage.user_interface[player.index].job_ui.elements
 
     -- update worker_minimap
     local worker_minimap = job_ui_elements["worker_minimap"]
@@ -368,7 +368,7 @@ end
 
 function gui_handlers.toggle_section(player, element)
     local section_name = element.tags.section_name
-    if global.user_interface[player.index].main_ui.elements[section_name].visible then
+    if storage.user_interface[player.index].main_ui.elements[section_name].visible then
         element.sprite = "utility/expand"
         element.hovered_sprite = "utility/expand_dark"
         element.clicked_sprite = "utility/expand_dark"
@@ -377,7 +377,7 @@ function gui_handlers.toggle_section(player, element)
         element.hovered_sprite = "utility/collapse_dark"
         element.clicked_sprite = "utility/collapse_dark"
     end
-    global.user_interface[player.index].main_ui.elements[section_name].visible = not global.user_interface[player.index].main_ui.elements[section_name].visible
+    storage.user_interface[player.index].main_ui.elements[section_name].visible = not storage.user_interface[player.index].main_ui.elements[section_name].visible
 end
 
 function gui_handlers.open_main_window(player)
@@ -453,26 +453,8 @@ function gui_handlers.resize_gui(player)
     ctron_frame.style.width = 5000 -- push the base game spider UI all the way to the left
 end
 
-function gui_handlers.se_remote_view(player, surface, position)
-    -- Thanks Xorimuth
-    local remote_view_used = false
-    local surface_name = surface.name
-    if remote.interfaces["space-exploration"] and remote.interfaces["space-exploration"]["remote_view_is_unlocked"] and
-        remote.call("space-exploration", "remote_view_is_unlocked", { player = player }) then
-        surface_name = surface_name:gsub("^%l", string.upper)
-        remote.call("space-exploration", "remote_view_start", {player = player, zone_name = surface_name, position = position})
-        if remote.call("space-exploration", "remote_view_is_active", { player = player }) then
-            -- remote_view_start worked
-            remote_view_used = true
-            player.close_map()
-            player.zoom = 0.5
-        end
-    end
-    return remote_view_used
-end
-
 function gui_handlers.ctron_locate_job(player, element)
-    local job = global.jobs[element.tags.job_index]
+    local job = storage.jobs[element.tags.job_index]
     if not job then
         player.print("This job no longer exists.") -- TODO: refactor this functionality
         return
@@ -480,10 +462,7 @@ function gui_handlers.ctron_locate_job(player, element)
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
     local position = (chunk.midpoint or job.station.position or job.worker.position)
-    local remote_view_used = gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position)
-    if not remote_view_used then
-        player.zoom_to_world(position, 0.5)
-    end
+    player.set_controller{ type = defines.controllers.remote, position = position, surface = job.worker.surface }
     -- move UI for visibility
     gui_handlers.resize_gui(player)
     -- draw chunks
@@ -495,14 +474,10 @@ end
 function gui_handlers.ctron_locate_chunk(player, element)
     local job_type = element.tags.job_type
     local surface_index = element.tags.surface_index
-    local chunk = global[job_type .. '_queue'][surface_index][element.tags.chunk_key]
+    local chunk = storage[job_type .. '_queue'][surface_index][element.tags.chunk_key]
     if not chunk then return end
     local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
-    if player.surface.index == surface_index then
-        player.zoom_to_world(chunk_midpoint, 0.5)
-    else
-        gui_handlers.se_remote_view(player, game.surfaces[surface_index], chunk_midpoint)
-    end
+    player.set_controller{ type = defines.controllers.remote, position = chunk_midpoint, surface = surface_index }
     -- move UI for visibility
     gui_handlers.resize_gui(player)
     -- draw chunk
@@ -510,29 +485,18 @@ function gui_handlers.ctron_locate_chunk(player, element)
 end
 
 function gui_handlers.ctron_map_view(player, element)
-    local job = global.jobs[element.tags.job_index]
+    local job = storage.jobs[element.tags.job_index]
     if not job then return end
     if element.tags.follow_entity then
-        if player.surface.index == job.surface_index then
-            player.zoom_to_world(job.worker.position, 0.5, job.worker)
-        else
-            if gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], job.worker.position) then
-                player.zoom_to_world(job.worker.position, 0.5, job.worker)
-            end
-        end
+        player.set_controller{ type = defines.controllers.remote, surface = job.worker.surface}
+        player.centered_on = job.worker
     else
         local current_task = 1
         if #job.task_positions > 1 then
             current_task = math.random(1, #job.task_positions)
         end
         local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
-        if player.surface.index == job.surface_index then
-            player.zoom_to_world(position, 0.5)
-        else
-            if gui_handlers.se_remote_view(player, game.surfaces[job.surface_index], position) then
-                player.zoom_to_world(position, 0.5)
-            end
-        end
+        player.set_controller{ type = defines.controllers.remote, position = position, surface = job.worker.surface }
         -- draw chunks
         for _, chunk_to_draw in pairs(job.chunks) do
             debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 120)
@@ -543,7 +507,7 @@ function gui_handlers.ctron_map_view(player, element)
 end
 
 function gui_handlers.ctron_cancel_job(player, element)
-    local job = global.jobs[element.tags.job_index]
+    local job = storage.jobs[element.tags.job_index]
     if not job then
         player.print("This job no longer exists.") -- TODO: refactor this functionality
         return
@@ -556,12 +520,14 @@ function gui_handlers.ctron_cancel_job(player, element)
         end
         if job.job_type == "cargo" then
             local station_unit_number = job.destination_station.unit_number
-            for _, request in pairs(global.station_requests[station_unit_number]) do
-                local requested_item = request.item
-                for item, item_count in pairs(job.required_items) do
-                    if requested_item == item then
-                        request.in_transit_count = request.in_transit_count - item_count
-                        break
+            for _, request in pairs(storage.station_requests[station_unit_number]) do
+                local requested_item = request.name
+                for item, value in pairs(job.required_items) do
+                    for quality, item_count in pairs(value) do
+                        if requested_item == item and request.quality == quality then
+                            request.in_transit_count = request.in_transit_count - item_count
+                            break
+                        end
                     end
                 end
             end
@@ -572,17 +538,17 @@ function gui_handlers.ctron_cancel_job(player, element)
         end
         -- update gui
         if not player.gui.screen.ctron_main_window then return end
-        gui_main.create_job_card(job, global.user_interface[player.index].main_ui.elements["finishing_section"])
+        gui_main.create_job_card(job, storage.user_interface[player.index].main_ui.elements["finishing_section"])
         if element.tags.job_screen then return end
         element.parent.destroy()
-        gui_main.empty_section_check(global.user_interface[player.index].main_ui.elements["in_progress_section"])
+        gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["in_progress_section"])
     else
         player.print("Job is already finishing.") -- TODO: refactor this functionality
     end
 end
 
 function gui_handlers.open_job_window(player, element)
-    local job = global.jobs[element.tags.job_index]
+    local job = storage.jobs[element.tags.job_index]
     if not job then
         player.print("This job no longer exists.") -- TODO: refactor this functionality
         return
@@ -604,7 +570,7 @@ end
 function gui_handlers.ctron_cancel_chunk(player, element)
     local job_type = element.tags.job_type
     local surface_index = element.tags.surface_index
-    global[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
+    storage[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
     element.parent.destroy()
 end
 
@@ -612,18 +578,18 @@ function gui_handlers.selected_new_surface(player, element)
     local new_surface = game.surfaces[element.selected_index]
     if not new_surface then return end
     if element.tags["surface_selector"] == "ctron_main" then
-        global.user_interface[player.index]["surface"] = game.surfaces[element.selected_index]
+        storage.user_interface[player.index]["surface"] = game.surfaces[element.selected_index]
         gui_handlers.update_main_gui(player)
     elseif element.tags["surface_selector"] == "ctron_settings" then
         gui_handlers.update_settings_gui(player, new_surface)
     elseif element.tags["surface_selector"] == "cargo_selector" then
-        local cargo_content = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
+        local cargo_content = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
         for _, child in pairs(cargo_content.children) do
             child.destroy()
         end
         gui_cargo.buildCargoContent(player, new_surface, cargo_content)
     elseif element.tags["surface_selector"] == "logistics_selector" then
-        local logistics_content = global.user_interface[player.index]["logistics_ui"]["elements"].logistics_content
+        local logistics_content = storage.user_interface[player.index]["logistics_ui"]["elements"].logistics_content
         for _, child in pairs(logistics_content.children) do
             child.destroy()
         end
@@ -641,37 +607,47 @@ end
 function gui_handlers.toggle_job_setting(player, element)
     local setting = element.tags.setting
     local setting_surface = element.tags.setting_surface
-    global[setting .. "_job_toggle"][setting_surface] = not global[setting .. "_job_toggle"][setting_surface]
+    storage[setting .. "_job_toggle"][setting_surface] = not storage[setting .. "_job_toggle"][setting_surface]
 end
 
 function gui_handlers.change_robot_count(player, element)
     local setting_surface = element.tags.setting_surface
-    global.desired_robot_count[setting_surface] = (tonumber(element.text) or 50)
+    storage.desired_robot_count[setting_surface] = (tonumber(element.text) or 50)
 end
 
 function gui_handlers.select_new_robot(player, element)
     local setting_surface = element.tags.setting_surface
-    global.desired_robot_name[setting_surface] = element.items[element.selected_index]
+    storage.desired_robot_name[setting_surface] = element.elem_value
 end
 
 function gui_handlers.selected_new_ammo(player, element)
     local setting_surface = element.tags.setting_surface
-    global.ammo_name[setting_surface] = element.items[element.selected_index]
+    -- validate selection -- TODO: check if choose-elem-button can be filtered further in future API versions.
+    if not element.elem_value then
+        element.elem_value = storage.ammo_name[setting_surface]
+    end
+    if not (prototypes.item[element.elem_value.name].ammo_category.name == "rocket") then
+        element.elem_value = storage.ammo_name[setting_surface]
+        player.print("Invalid ammo selection.")
+        return
+    end
+    -- change setting
+    storage.ammo_name[setting_surface] = element.elem_value
 end
 
 function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
-    global.ammo_count[setting_surface] = (tonumber(element.text) or 0)
+    storage.ammo_count[setting_surface] = (tonumber(element.text) or 0)
 end
 
 function gui_handlers.selected_new_repair_tool(player, element)
     local setting_surface = element.tags.setting_surface
-    global.repair_tool_name[setting_surface] = element.items[element.selected_index]
+    storage.repair_tool_name[setting_surface] = element.elem_value
 end
 
 function gui_handlers.toggle_debug_mode(player, element)
-    global.debug_toggle = not global.debug_toggle
-    if global.debug_toggle then
+    storage.debug_toggle = not storage.debug_toggle
+    if storage.debug_toggle then
         element.caption = {"ctron_gui_locale.debug_button_on"}
     else
         element.caption = {"ctron_gui_locale.debug_button_off"}
@@ -679,20 +655,20 @@ function gui_handlers.toggle_debug_mode(player, element)
 end
 
 function gui_handlers.toggle_horde_mode(player, element)
-    global.horde_mode = not global.horde_mode
+    storage.horde_mode = not storage.horde_mode
 end
 
 function gui_handlers.change_job_start_delay(player, element)
-    global.job_start_delay = ((tonumber(element.text) or 0) * 60)
+    storage.job_start_delay = ((tonumber(element.text) or 0) * 60)
 end
 
 function gui_handlers.change_entities_per_second(player, element)
-    global.entities_per_second = (tonumber(element.text) or 1000)
+    storage.entities_per_second = (tonumber(element.text) or 1000)
 end
 
 function gui_handlers.clear_logistic_request(player, element)
     local logistic_slot = element.tags.logistic_slot
-    local worker = global.constructrons[element.tags.unit_number]
+    local worker = storage.constructrons[element.tags.unit_number]
     worker.clear_vehicle_logistic_slot(logistic_slot)
     element.sprite = nil
     element.tooltip = nil
@@ -703,36 +679,30 @@ function gui_handlers.clear_logistic_request(player, element)
 end
 
 function gui_handlers.ctron_remote_control(player, element)
+    player.spidertron_remote_selection = {storage.constructrons[element.tags.worker]}
     local cursor_stack = player.cursor_stack
     if not cursor_stack then return end
     if not player.clear_cursor() then return end
     local remote = {name = "spidertron-remote", count = 1}
     if not cursor_stack.can_set_stack(remote) then return end
-    local worker = global.constructrons[element.tags.worker]
-    if not worker then return end
-    if player.surface.index ~= worker.surface.index then
-        player.print("Remote control is not possible whilst player is on a different surface.")
-        return
-    end
     cursor_stack.set_stack(remote)
-    cursor_stack.connected_entity = worker
 end
 
 function gui_handlers.apply_settings_template(player, element)
     local current_surface = element.tags.setting_surface
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
-        global.construction_job_toggle[surface_index] = global.construction_job_toggle[current_surface]
-        global.rebuild_job_toggle[surface_index] = global.rebuild_job_toggle[current_surface]
-        global.deconstruction_job_toggle[surface_index] = global.deconstruction_job_toggle[current_surface]
-        global.upgrade_job_toggle[surface_index] = global.upgrade_job_toggle[current_surface]
-        global.repair_job_toggle[surface_index] = global.repair_job_toggle[current_surface]
-        global.destroy_job_toggle[surface_index] = global.destroy_job_toggle[current_surface]
-        global.ammo_name[surface_index] = global.ammo_name[current_surface]
-        global.ammo_count[surface_index] = global.ammo_count[current_surface]
-        global.desired_robot_count[surface_index] = global.desired_robot_count[current_surface]
-        global.desired_robot_name[surface_index] = global.desired_robot_name[current_surface]
-        global.repair_tool_name[surface_index] = global.repair_tool_name[current_surface]
+        storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[current_surface]
+        storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[current_surface]
+        storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[current_surface]
+        storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[current_surface]
+        storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[current_surface]
+        storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[current_surface]
+        storage.ammo_name[surface_index] = storage.ammo_name[current_surface]
+        storage.ammo_count[surface_index] = storage.ammo_count[current_surface]
+        storage.desired_robot_count[surface_index] = storage.desired_robot_count[current_surface]
+        storage.desired_robot_name[surface_index] = storage.desired_robot_name[current_surface]
+        storage.repair_tool_name[surface_index] = storage.repair_tool_name[current_surface]
     end
 end
 
@@ -741,7 +711,7 @@ function gui_handlers.clear_all_requests(player, element)
     local item_name = element.tags.item_name
     element.sprite = nil
     element.number = nil
-    for _, job in pairs(global.jobs) do
+    for _, job in pairs(storage.jobs) do
         if (job.surface_index == surface.index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker
             for i = 1, worker.request_slot_count do
@@ -757,7 +727,7 @@ function gui_handlers.clear_all_requests(player, element)
 end
 
 function gui_handlers.rename_station(player, element)
-    local station = global.service_stations[element.tags.station_unit_number]
+    local station = storage.service_stations[element.tags.station_unit_number]
     if not station then return end
     -- create text field
     element.parent.add{
@@ -783,7 +753,7 @@ function gui_handlers.rename_station(player, element)
 end
 
 function gui_handlers.confirm_rename(player, element)
-    local station = global.service_stations[element.tags.station_unit_number]
+    local station = storage.service_stations[element.tags.station_unit_number]
     if not station then return end
     station.backer_name = element.parent.children[1].text or ""
     local parent = element.parent
@@ -821,10 +791,10 @@ function gui_handlers.close_cargo_window(player)
 end
 
 function gui_handlers.cargo_hide_stations(player, element)
-    local frame = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content.parent.parent
+    local frame = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content.parent.parent
     if element.visible then
         -- element.visible = false
-        local cargo_content = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
+        local cargo_content = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
         -- hide station cards
         for _, child in pairs(cargo_content.children) do
             if not (child.tags.station_unit_number == element.tags.station_unit_number) then
@@ -854,7 +824,7 @@ function gui_handlers.cargo_hide_stations(player, element)
 end
 
 function gui_handlers.cargo_show_all_stations(player, element)
-    local cargo_content = global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
+    local cargo_content = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
     for _, child in pairs(cargo_content.children) do
         child.visible = true
     end
@@ -863,10 +833,10 @@ end
 
 function gui_handlers.open_logistics_window(player, element)
     if not player.gui.screen.ctron_logistics_window then
-        gui_main.BuildLogisticsDisplay(player, global.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
+        gui_main.BuildLogisticsDisplay(player, storage.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
     else
         player.gui.screen.ctron_logistics_window.destroy()
-        gui_main.BuildLogisticsDisplay(player, global.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
+        gui_main.BuildLogisticsDisplay(player, storage.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
     end
 end
 
@@ -879,15 +849,16 @@ end
 function gui_handlers.on_gui_elem_changed(player, element)
     if element.elem_value ~= nil then
         local slot_number = element.tags.slot_number
-        local item = element.elem_value
+        local item = element.elem_value.name
+        local quality = element.elem_value.quality
         local station_unit_number = element.tags.station_unit_number
-        if not global.station_requests[station_unit_number] then
+        if not storage.station_requests[station_unit_number] then
             player.print("This station no longer exists.")
             gui_handlers.close_cargo_window(player)
             gui_handlers.open_cargo_window(player)
             return
         end
-        local request = global.station_requests[station_unit_number][slot_number]
+        local request = storage.station_requests[station_unit_number][slot_number]
         -- check if item is already requested
         for k, v in pairs(element.parent.children) do
             if v.elem_value and v.elem_value == item and v.name ~= element.name then
@@ -899,22 +870,23 @@ function gui_handlers.on_gui_elem_changed(player, element)
         end
         -- activate ui
         element.style = "ctron_slot_button_selected"
-        local cargo_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
+        local cargo_ui_elements = storage.user_interface[player.index]["cargo_ui"]["elements"]
         cargo_ui_elements.min_field.enabled = true
         cargo_ui_elements.max_field.enabled = true
-        if request and (request.item == item) then
-            cargo_ui_elements.min_field.text = tostring(global.station_requests[station_unit_number][slot_number].min)
-            cargo_ui_elements.max_field.text = tostring(global.station_requests[station_unit_number][slot_number].max)
+        if request and (request.name == item) then
+            cargo_ui_elements.min_field.text = tostring(storage.station_requests[station_unit_number][slot_number].min)
+            cargo_ui_elements.max_field.text = tostring(storage.station_requests[station_unit_number][slot_number].max)
         end
-        local confirm_button = global.user_interface[player.index].cargo_ui.elements.confirm_button
+        local confirm_button = storage.user_interface[player.index].cargo_ui.elements.confirm_button
         local tags = confirm_button.tags
         tags.station_unit_number = station_unit_number
         tags.item_request = item
+        tags.item_quality = quality
         tags.slot_number = slot_number
         confirm_button.tags = tags
         confirm_button.enabled = true
     else
-        global.station_requests[element.tags.station_unit_number][element.tags.slot_number] = nil
+        storage.station_requests[element.tags.station_unit_number][element.tags.slot_number] = nil
         if next(element.children) then
             element.children[1].destroy()
         end
@@ -925,11 +897,12 @@ end
 
 function gui_handlers.confirm_cargo(player, element)
     local station_unit_number = element.tags.station_unit_number
-    local station = global.service_stations[station_unit_number]
+    local station = storage.service_stations[station_unit_number]
     if not station then return end
     local slot_number = element.tags.slot_number
     local item = element.tags.item_request
-    local cargo_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
+    local quality = element.tags.item_quality
+    local cargo_ui_elements = storage.user_interface[player.index]["cargo_ui"]["elements"]
     if item then
         local min = tonumber(cargo_ui_elements.min_field.text) or 0
         local max = tonumber(cargo_ui_elements.max_field.text) or 0
@@ -942,8 +915,9 @@ function gui_handlers.confirm_cargo(player, element)
             player.print("Maximum value must be greater than minimum value.")
             return
         end
-        global.station_requests[station_unit_number][slot_number] = {
-            item = item,
+        storage.station_requests[station_unit_number][slot_number] = {
+            name = item,
+            quality = quality,
             min = min or 0,
             max = max or 0,
             in_transit_count = 0
@@ -980,7 +954,7 @@ end
 
 -- function to reset min/max and button
 function gui_handlers.reset_controls(player)
-    local cargo_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
+    local cargo_ui_elements = storage.user_interface[player.index]["cargo_ui"]["elements"]
     cargo_ui_elements.min_field.text = "0"
     cargo_ui_elements.max_field.text = "0"
     cargo_ui_elements.min_field.enabled = false

@@ -8,6 +8,12 @@ local gui_handlers = require("script/ui")
 local util = require("util")
 
 --===========================================================================--
+-- todo's!
+--===========================================================================--
+
+-- Fix visual debug text alignments and implement vertical alignment properly
+
+--===========================================================================--
 -- Main workers
 --===========================================================================--
 
@@ -17,19 +23,19 @@ script.on_nth_tick(90, function ()
 end)
 
 script.on_nth_tick(15, function()
-    if not global.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
-    if next(global.deconstruction_entities) then -- deconstruction has priority over construction.
-        entity_proc.add_entities_to_chunks("deconstruction", global.deconstruction_entities, global.deconstruction_queue)
-    elseif next(global.construction_entities) then
-        entity_proc.add_entities_to_chunks("construction", global.construction_entities, global.construction_queue)
-    elseif next(global.upgrade_entities) then
-        entity_proc.add_entities_to_chunks("upgrade", global.upgrade_entities, global.upgrade_queue)
-    elseif next(global.repair_entities) then
-        entity_proc.add_entities_to_chunks("repair", global.repair_entities, global.repair_queue)
-    elseif next(global.destroy_entities) then
-        entity_proc.add_entities_to_chunks("destroy", global.destroy_entities, global.destroy_queue)
+    if not storage.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
+    if next(storage.deconstruction_entities) then -- deconstruction has priority over construction.
+        entity_proc.add_entities_to_chunks("deconstruction", storage.deconstruction_entities, storage.deconstruction_queue)
+    elseif next(storage.construction_entities) then
+        entity_proc.add_entities_to_chunks("construction", storage.construction_entities, storage.construction_queue)
+    elseif next(storage.upgrade_entities) then
+        entity_proc.add_entities_to_chunks("upgrade", storage.upgrade_entities, storage.upgrade_queue)
+    elseif next(storage.repair_entities) then
+        entity_proc.add_entities_to_chunks("repair", storage.repair_entities, storage.repair_queue)
+    elseif next(storage.destroy_entities) then
+        entity_proc.add_entities_to_chunks("destroy", storage.destroy_entities, storage.destroy_queue)
     else
-        global.entity_proc_trigger = false -- stop entity processing
+        storage.entity_proc_trigger = false -- stop entity processing
     end
 end)
 
@@ -37,11 +43,11 @@ end)
 script.on_nth_tick(54000, (function()
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
-        if (global.constructrons_count[surface_index] <= 0) or (global.stations_count[surface_index] <= 0) then
-            global.construction_queue[surface_index] = {}
-            global.deconstruction_queue[surface_index] = {}
-            global.upgrade_queue[surface_index] = {}
-            global.repair_queue[surface_index] = {}
+        if (storage.constructrons_count[surface_index] <= 0) or (storage.stations_count[surface_index] <= 0) then
+            storage.construction_queue[surface_index] = {}
+            storage.deconstruction_queue[surface_index] = {}
+            storage.upgrade_queue[surface_index] = {}
+            storage.repair_queue[surface_index] = {}
         end
     end
 end))
@@ -50,66 +56,74 @@ end))
 -- init
 --===========================================================================--
 
-local ensure_globals = function()
-    global.registered_entities = global.registered_entities or {}
-    global.constructron_statuses = global.constructron_statuses or {}
+local ensure_storages = function()
+    storage.registered_entities = storage.registered_entities or {}
+    storage.constructron_statuses = storage.constructron_statuses or {}
     --
-    global.entity_proc_trigger = global.entity_proc_trigger or true
+    storage.entity_proc_trigger = storage.entity_proc_trigger or true
     --
-    global.managed_surfaces = global.managed_surfaces or {}
+    storage.managed_surfaces = storage.managed_surfaces or {}
     --
-    global.stack_cache = {} -- rebuild
-    global.entity_inventory_cache = {}
+    storage.stack_cache = {} -- rebuild
+    storage.entity_inventory_cache = {}
     --
-    global.pathfinder_requests = global.pathfinder_requests or {}
-    global.custom_pathfinder_index = global.custom_pathfinder_index or 0
-    global.custom_pathfinder_requests = global.custom_pathfinder_requests or {}
-    global.mainland_chunks = global.mainland_chunks or {}
+    storage.pathfinder_requests = storage.pathfinder_requests or {}
+    storage.custom_pathfinder_index = storage.custom_pathfinder_index or 0
+    storage.custom_pathfinder_requests = storage.custom_pathfinder_requests or {}
+    storage.mainland_chunks = storage.mainland_chunks or {}
     --
-    global.job_index = global.job_index or 0
-    global.jobs = global.jobs or {}
+    storage.job_index = storage.job_index or 0
+    storage.jobs = storage.jobs or {}
     --
-    global.station_requests = global.station_requests or {}
+    storage.station_requests = storage.station_requests or {}
     --
-    global.construction_index = global.construction_index or 0
-    global.deconstruction_index = global.deconstruction_index or 0
-    global.upgrade_index = global.upgrade_index or 0
-    global.repair_index = global.repair_index or 0
-    global.destroy_index = global.destroy_index or 0
-    global.cargo_index = global.cargo_index or 0
+    storage.construction_index = storage.construction_index or 0
+    storage.deconstruction_index = storage.deconstruction_index or 0
+    storage.upgrade_index = storage.upgrade_index or 0
+    storage.repair_index = storage.repair_index or 0
+    storage.destroy_index = storage.destroy_index or 0
+    storage.cargo_index = storage.cargo_index or 0
     --
-    global.construction_entities = global.construction_entities or {}
-    global.deconstruction_entities = global.deconstruction_entities or {}
-    global.upgrade_entities = global.upgrade_entities or {}
-    global.repair_entities = global.repair_entities or {}
-    global.destroy_entities = global.destroy_entities or {}
+    storage.construction_entities = storage.construction_entities or {}
+    storage.deconstruction_entities = storage.deconstruction_entities or {}
+    storage.upgrade_entities = storage.upgrade_entities or {}
+    storage.repair_entities = storage.repair_entities or {}
+    storage.destroy_entities = storage.destroy_entities or {}
     --
-    global.construction_queue = global.construction_queue or {}
-    global.deconstruction_queue = global.deconstruction_queue or {}
-    global.upgrade_queue = global.upgrade_queue or {}
-    global.repair_queue = global.repair_queue or {}
-    global.destroy_queue = global.destroy_queue or {}
-    global.cargo_queue = global.cargo_queue or {}
+    storage.construction_queue = storage.construction_queue or {}
+    storage.deconstruction_queue = storage.deconstruction_queue or {}
+    storage.upgrade_queue = storage.upgrade_queue or {}
+    storage.repair_queue = storage.repair_queue or {}
+    storage.destroy_queue = storage.destroy_queue or {}
+    storage.cargo_queue = storage.cargo_queue or {}
     --
-    global.constructrons = global.constructrons or {} -- all constructron entities.
-    global.service_stations = global.service_stations or {} -- all service stations entities.
-    global.station_combinators = global.station_combinators or {} -- all combinator entities.
-    global.constructron_requests = global.constructron_requests or {} -- caches logistic requests as they are nil after slot is cleared. This was needed for combinators.
+    storage.constructrons = storage.constructrons or {} -- all constructron entities.
+    storage.service_stations = storage.service_stations or {} -- all service stations entities.
+    storage.ctron_combinators = storage.ctron_combinators or {} -- all combinator entities.
+    storage.constructron_requests = storage.constructron_requests or {} -- caches logistic requests as they are nil after slot is cleared. This was needed for combinators.
     --
-    global.constructrons_count = global.constructrons_count or {}
-    global.available_ctron_count = global.available_ctron_count or {}
-    global.stations_count = global.stations_count or {}
+    storage.constructrons_count = storage.constructrons_count or {}
+    storage.available_ctron_count = storage.available_ctron_count or {}
+    storage.stations_count = storage.stations_count or {}
     -- settings
-    global.construction_job_toggle = global.construction_job_toggle or {}
-    global.rebuild_job_toggle = global.rebuild_job_toggle or {}
-    global.deconstruction_job_toggle = global.deconstruction_job_toggle or {}
-    global.upgrade_job_toggle = global.upgrade_job_toggle or {}
-    global.repair_job_toggle = global.repair_job_toggle or {}
-    global.destroy_job_toggle = global.destroy_job_toggle or {}
+    storage.construction_job_toggle = storage.construction_job_toggle or {}
+    storage.rebuild_job_toggle = storage.rebuild_job_toggle or {}
+    storage.deconstruction_job_toggle = storage.deconstruction_job_toggle or {}
+    storage.upgrade_job_toggle = storage.upgrade_job_toggle or {}
+    storage.repair_job_toggle = storage.repair_job_toggle or {}
+    storage.destroy_job_toggle = storage.destroy_job_toggle or {}
+    -- quality
+    storage.quality_levels = {
+        [0] = "normal",
+        [1] = "uncommon",
+        [2] = "rare",
+        [3] = "epic",
+        [5] = "legendary"
+    }
     -- ui
-    global.user_interface = global.user_interface or {}
+    storage.user_interface = storage.user_interface or {}
     for _, player in pairs(game.players) do
-        global.user_interface[player.index] = global.user_interface[player.index] or {
+        storage.user_interface[player.index] = storage.user_interface[player.index] or {
             surface = player.surface,
             main_ui = {
                 elements = {}
@@ -128,139 +142,141 @@ local ensure_globals = function()
             },
         }
     end
-    -- ammo name
+    -- ammunition setup
     local init_ammo_name
-    if global.desired_robot_name == nil or not game.item_prototypes[global.desired_robot_name[1]] then
-        global.ammo_name = {}
-        if game.item_prototypes["rocket"] then
-            init_ammo_name = "rocket"
+    if storage.ammo_name == nil or not prototypes.item[storage.ammo_name[1]] then
+        storage.ammo_name = {}
+        if prototypes.item["rocket1"] then
+            init_ammo_name = { name = "rocket", quality = "normal" }
         else
-            local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
+            -- get ammo prototypes
+            local ammo_prototypes = prototypes.get_item_filtered{{filter = "type", type = "ammo"}} -- TODO: check if can be filtered further in future API versions.
+            -- iterate through ammo prototypes to find rocket ammo
             for _, ammo in pairs(ammo_prototypes) do
-                local ammo_type = ammo.get_ammo_type() or {}
-                if ammo_type.category == "rocket" then
-                    init_ammo_name = ammo.name
+                if ammo.ammo_category.name == "rocket" then -- check if this is rocket type ammo
+                    init_ammo_name = { name = ammo.name, quality = "normal" } -- set the variable to be used in the surface loop
+                    break
                 end
             end
         end
     end
-    global.ammo_count = global.ammo_count or {}
-    global.desired_robot_count = global.desired_robot_count or {}
+    storage.ammo_count = storage.ammo_count or {}
+    storage.desired_robot_count = storage.desired_robot_count or {}
     -- robot name
     local init_robot_name
-    if global.desired_robot_name == nil or not game.item_prototypes[global.desired_robot_name[1]] then
-        global.desired_robot_name = {}
-        if game.item_prototypes["construction-robot"] then
-            init_robot_name = "construction-robot"
+    if storage.desired_robot_name == nil or not prototypes.item[storage.desired_robot_name[1]] then
+        storage.desired_robot_name = {}
+        if prototypes.item["construction-robot1"] then
+            init_robot_name = { name = "construction-robot", quality = "normal" }
         else
-            local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
+            local valid_robots = prototypes.get_entity_filtered{{filter = "type", type = "construction-robot"}}
             local valid_robot_name = util_func.firstoflct(valid_robots)
-            init_robot_name = valid_robot_name
+            init_robot_name = { name = valid_robot_name, quality = "normal" }
         end
     end
     -- repair tool
     local init_repair_tool_name
-    if global.repair_tool_name == nil or not game.item_prototypes[global.repair_tool_name[1]] then
-        global.repair_tool_name = {}
-        if game.item_prototypes["repair-pack"] then
-            init_repair_tool_name = "repair-pack"
+    if storage.repair_tool_name == nil or not prototypes.item[storage.repair_tool_name[1]] then
+        storage.repair_tool_name = {}
+        if prototypes.item["repair-pack1"] then
+            init_repair_tool_name = { name = "repair-pack", quality = "normal" }
         else
-            local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
+            local valid_repair_tools = prototypes.get_item_filtered{{filter = "name", name = "repair-pack"}} -- TODO: check if can be filtered further in future API versions.
             local valid_repair_tool_name = util_func.firstoflct(valid_repair_tools)
-            init_repair_tool_name = valid_repair_tool_name
+            init_repair_tool_name = { name = valid_repair_tool_name, quality = "normal" }
         end
     end
     -- non surface specific settings
-    global.job_start_delay = global.job_start_delay or 300 -- five seconds
-    global.entities_per_second = global.entities_per_second or 1000
-    global.debug_toggle = global.debug_toggle or false
-    global.horde_mode = global.horde_mode or false
+    storage.job_start_delay = storage.job_start_delay or 300 -- five seconds
+    storage.entities_per_second = storage.entities_per_second or 1000
+    storage.debug_toggle = storage.debug_toggle or false
+    storage.horde_mode = storage.horde_mode or false
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
         -- per surface settings
         local surface_index = surface.index
-        global.construction_job_toggle[surface_index] = global.construction_job_toggle[surface_index] or true
-        global.rebuild_job_toggle[surface_index] = global.rebuild_job_toggle[surface_index] or true
-        global.deconstruction_job_toggle[surface_index] = global.deconstruction_job_toggle[surface_index] or true
-        global.upgrade_job_toggle[surface_index] = global.upgrade_job_toggle[surface_index] or true
-        global.repair_job_toggle[surface_index] = global.repair_job_toggle[surface_index] or true
-        global.destroy_job_toggle[surface_index] = global.destroy_job_toggle[surface_index] or false
-        global.ammo_name[surface_index] = global.ammo_name[surface_index] or init_ammo_name
-        global.ammo_count[surface_index] = global.ammo_count[surface_index] or 0
-        global.desired_robot_count[surface_index] = global.desired_robot_count[surface_index] or 50
-        global.desired_robot_name[surface_index] = global.desired_robot_name[surface_index] or init_robot_name
-        global.repair_tool_name[surface_index] = global.repair_tool_name[surface_index] or init_repair_tool_name
+        storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[surface_index] or true
+        storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[surface_index] or true
+        storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[surface_index] or true
+        storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[surface_index] or true
+        storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[surface_index] or true
+        storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[surface_index] or false
+        storage.ammo_name[surface_index] = storage.ammo_name[surface_index] or init_ammo_name
+        storage.ammo_count[surface_index] = storage.ammo_count[surface_index] or 0
+        storage.desired_robot_count[surface_index] = storage.desired_robot_count[surface_index] or 50
+        storage.desired_robot_name[surface_index] = storage.desired_robot_name[surface_index] or init_robot_name
+        storage.repair_tool_name[surface_index] = storage.repair_tool_name[surface_index] or init_repair_tool_name
         -- per surface variables
-        global.constructrons_count[surface_index] = global.constructrons_count[surface_index] or 0
-        global.available_ctron_count[surface_index] = global.available_ctron_count[surface_index] or global.constructrons_count[surface_index]
-        global.stations_count[surface_index] = global.stations_count[surface_index] or 0
-        global.construction_queue[surface_index] = global.construction_queue[surface_index] or {}
-        global.deconstruction_queue[surface_index] = global.deconstruction_queue[surface_index] or {}
-        global.upgrade_queue[surface_index] = global.upgrade_queue[surface_index] or {}
-        global.repair_queue[surface_index] = global.repair_queue[surface_index] or {}
-        global.destroy_queue[surface_index] = global.destroy_queue[surface_index] or {}
-        global.cargo_queue[surface_index] = global.cargo_queue[surface_index] or {}
+        storage.constructrons_count[surface_index] = storage.constructrons_count[surface_index] or 0
+        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] or storage.constructrons_count[surface_index]
+        storage.stations_count[surface_index] = storage.stations_count[surface_index] or 0
+        storage.construction_queue[surface_index] = storage.construction_queue[surface_index] or {}
+        storage.deconstruction_queue[surface_index] = storage.deconstruction_queue[surface_index] or {}
+        storage.upgrade_queue[surface_index] = storage.upgrade_queue[surface_index] or {}
+        storage.repair_queue[surface_index] = storage.repair_queue[surface_index] or {}
+        storage.destroy_queue[surface_index] = storage.destroy_queue[surface_index] or {}
+        storage.cargo_queue[surface_index] = storage.cargo_queue[surface_index] or {}
     end
     -- build allowed items cache (this is used to filter out entities that do not have recipes)
-    global.allowed_items = {}
-    for item_name, _ in pairs(game.item_prototypes) do
-        local recipes = game.get_filtered_recipe_prototypes({
+    storage.allowed_items = {}
+    for item_name, _ in pairs(prototypes.item) do
+        local recipes = prototypes.get_recipe_filtered({
                 {filter = "has-product-item", elem_filters = {{filter = "name", name = item_name}}},
             })
         for _ , recipe in pairs(recipes) do
             if not game.forces["player"].recipes[recipe.name].hidden then -- if the recipe is hidden disallow it
-                global.allowed_items[item_name] = true
+                storage.allowed_items[item_name] = true
             end
         end
-        if global.allowed_items[item_name] == nil then -- some items do not have recipes so set the item to disallowed
-            global.allowed_items[item_name] = false
+        if storage.allowed_items[item_name] == nil then -- some items do not have recipes so set the item to disallowed
+            storage.allowed_items[item_name] = false
         end
     end
-    local autoplace_entities = game.get_filtered_entity_prototypes{{filter="autoplace"}}
+    local autoplace_entities = prototypes.get_entity_filtered{{filter="autoplace"}}
     for entity_name, entity in pairs(autoplace_entities) do
         if entity.mineable_properties and entity.mineable_properties.products then
-            global.allowed_items[entity_name] = true
+            storage.allowed_items[entity_name] = true
         end
     end
     -- allowed_items overrides as item/entities do not match what is mined (this is particularly for cargo jobs)
-    global.allowed_items["raw-fish"] = true
-    global.allowed_items["wood"] = true
+    storage.allowed_items["raw-fish"] = true
+    storage.allowed_items["wood"] = true
     -- build required_items cache (used in add_entities_to_chunks)
-    global.items_to_place_cache = {}
-    for name, v in pairs(game.entity_prototypes) do
+    storage.items_to_place_cache = {}
+    for name, v in pairs(prototypes.entity) do
         if v.items_to_place_this ~= nil and v.items_to_place_this[1] and v.items_to_place_this[1].name then -- bots will only ever use the first item from this list
-            global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
+            storage.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
         end
     end
-    for name, v in pairs(game.tile_prototypes) do
+    for name, v in pairs(prototypes.tile) do
         if v.items_to_place_this ~= nil and v.items_to_place_this[1] and v.items_to_place_this[1].name then -- bots will only ever use the first item from this list
-            global.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
+            storage.items_to_place_cache[name] = {item = v.items_to_place_this[1].name, count = v.items_to_place_this[1].count}
         end
     end
     -- build trash_items_cache
-    global.trash_items_cache = {}
-    for entity_name, prototype in pairs(game.entity_prototypes) do
+    storage.trash_items_cache = {}
+    for entity_name, prototype in pairs(prototypes.entity) do
         if prototype.mineable_properties and prototype.mineable_properties.products then
             for _, product in pairs(prototype.mineable_properties.products) do
                 if product.type == "item" then
-                    global.trash_items_cache[entity_name] = global.trash_items_cache[entity_name] or {}
-                    global.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
+                    storage.trash_items_cache[entity_name] = storage.trash_items_cache[entity_name] or {}
+                    storage.trash_items_cache[entity_name][product.name] = product.amount_max or product.amount
                 end
             end
         else
-            global.trash_items_cache[entity_name] = {}
+            storage.trash_items_cache[entity_name] = {}
         end
     end
     -- build water tile cache
-    global.water_tile_cache = {}
-    local water_tile_prototypes = game.get_filtered_tile_prototypes{{filter="collision-mask",mask={["water-tile"]=true},mask_mode="contains-any"}}
+    storage.water_tile_cache = {}
+    local water_tile_prototypes = prototypes.get_tile_filtered{{filter="collision-mask",mask={layers ={["water_tile"]=true}},mask_mode="contains-any"}}
     for tile_name, _ in pairs(water_tile_prototypes) do
-        global.water_tile_cache[tile_name] = true
+        storage.water_tile_cache[tile_name] = true
     end
 end
 
 local init = function()
-    ensure_globals()
+    ensure_storages()
     game.map_settings.path_finder.use_path_cache = false
     -- use_path_cache Klonan's explanation:
     -- So, when path cache is enabled, negative path cache is also enabled.
@@ -318,112 +334,60 @@ end)
 
 script.on_event(ev.on_surface_created, function(event)
     local surface_index = event.surface_index
-    global.construction_queue[surface_index] = {}
-    global.deconstruction_queue[surface_index] = {}
-    global.upgrade_queue[surface_index] = {}
-    global.repair_queue[surface_index] = {}
-    global.destroy_queue[surface_index] = {}
-    global.cargo_queue[surface_index] = {}
-    global.constructrons_count[surface_index] = 0
-    global.available_ctron_count[surface_index] = 0
-    global.stations_count[surface_index] = 0
+    storage.construction_queue[surface_index] = {}
+    storage.deconstruction_queue[surface_index] = {}
+    storage.upgrade_queue[surface_index] = {}
+    storage.repair_queue[surface_index] = {}
+    storage.destroy_queue[surface_index] = {}
+    storage.cargo_queue[surface_index] = {}
+    storage.constructrons_count[surface_index] = 0
+    storage.available_ctron_count[surface_index] = 0
+    storage.stations_count[surface_index] = 0
 
     -- per surface settings
-    local init_ammo_name
-    if game.item_prototypes["rocket"] then
-        init_ammo_name = "rocket"
-    else
-        local ammo_prototypes = game.get_filtered_item_prototypes{{filter = "type", type = "ammo"}}
-        for _, ammo in pairs(ammo_prototypes) do
-            local ammo_type = ammo.get_ammo_type() or {}
-            if ammo_type.category == "rocket" then
-                init_ammo_name = ammo.name
-            end
-        end
-    end
-    local init_robot_name
-    if game.item_prototypes["construction-robot"] then
-        init_robot_name = "construction-robot"
-    else
-        local valid_robots = game.get_filtered_entity_prototypes{{filter = "type", type = "construction-robot"}}
-        local valid_robot_name = util_func.firstoflct(valid_robots)
-        init_robot_name = valid_robot_name
-    end
-    local init_repair_tool_name
-    if game.item_prototypes["repair-pack"] then
-        init_repair_tool_name = "repair-pack"
-    else
-        local valid_repair_tools = game.get_filtered_item_prototypes{{filter = "type", type = "repair-tool"}}
-        local valid_repair_tool_name = util_func.firstoflct(valid_repair_tools)
-        init_repair_tool_name = valid_repair_tool_name
-    end
-    global.construction_job_toggle[surface_index] = true
-    global.rebuild_job_toggle[surface_index] = true
-    global.deconstruction_job_toggle[surface_index] = true
-    global.upgrade_job_toggle[surface_index] = true
-    global.repair_job_toggle[surface_index] = true
-    global.destroy_job_toggle[surface_index] = false
-    global.ammo_name[surface_index] = init_ammo_name
-    global.ammo_count[surface_index] = 0
-    global.desired_robot_count[surface_index] = 50
-    global.desired_robot_name[surface_index] = init_robot_name
-    global.repair_tool_name[surface_index] = init_repair_tool_name
+    storage.construction_job_toggle[surface_index] = true
+    storage.rebuild_job_toggle[surface_index] = true
+    storage.deconstruction_job_toggle[surface_index] = true
+    storage.upgrade_job_toggle[surface_index] = true
+    storage.repair_job_toggle[surface_index] = true
+    storage.destroy_job_toggle[surface_index] = false
+    storage.ammo_name[surface_index] = storage.ammo_name[1]
+    storage.ammo_count[surface_index] = 0
+    storage.desired_robot_count[surface_index] = 50
+    storage.desired_robot_name[surface_index] = storage.desired_robot_name[1]
+    storage.repair_tool_name[surface_index] = storage.repair_tool_name[1]
 end)
 
 script.on_event(ev.on_surface_deleted, function(event)
     local surface_index = event.surface_index
-    global.construction_queue[surface_index] = nil
-    global.deconstruction_queue[surface_index] = nil
-    global.upgrade_queue[surface_index] = nil
-    global.repair_queue[surface_index] = nil
-    global.destroy_queue[surface_index] = nil
-    global.cargo_queue[surface_index] = nil
-    global.constructrons_count[surface_index] = nil
-    global.available_ctron_count[surface_index] = nil
-    global.stations_count[surface_index] = nil
+    storage.construction_queue[surface_index] = nil
+    storage.deconstruction_queue[surface_index] = nil
+    storage.upgrade_queue[surface_index] = nil
+    storage.repair_queue[surface_index] = nil
+    storage.destroy_queue[surface_index] = nil
+    storage.cargo_queue[surface_index] = nil
+    storage.constructrons_count[surface_index] = nil
+    storage.available_ctron_count[surface_index] = nil
+    storage.stations_count[surface_index] = nil
 
     -- per surface settings
-    global.construction_job_toggle[surface_index] = nil
-    global.rebuild_job_toggle[surface_index] = nil
-    global.deconstruction_job_toggle[surface_index] = nil
-    global.upgrade_job_toggle[surface_index] = nil
-    global.repair_job_toggle[surface_index] = nil
-    global.destroy_job_toggle[surface_index] = nil
-    global.ammo_name[surface_index] = nil
-    global.ammo_count[surface_index] = nil
-    global.desired_robot_count[surface_index] = nil
-    global.desired_robot_name[surface_index] = nil
-    global.repair_tool_name[surface_index] = nil
+    storage.construction_job_toggle[surface_index] = nil
+    storage.rebuild_job_toggle[surface_index] = nil
+    storage.deconstruction_job_toggle[surface_index] = nil
+    storage.upgrade_job_toggle[surface_index] = nil
+    storage.repair_job_toggle[surface_index] = nil
+    storage.destroy_job_toggle[surface_index] = nil
+    storage.ammo_name[surface_index] = nil
+    storage.ammo_count[surface_index] = nil
+    storage.desired_robot_count[surface_index] = nil
+    storage.desired_robot_name[surface_index] = nil
+    storage.repair_tool_name[surface_index] = nil
+    storage.ctron_combinators[surface_index] = nil
 end)
 
 script.on_nth_tick(10, function()
-    for _, pathfinder in pairs(global.custom_pathfinder_requests) do
+    for _, pathfinder in pairs(storage.custom_pathfinder_requests) do
         pathfinder:findpath()
-    end
-end)
-
-script.on_event(defines.events.on_entity_logistic_slot_changed, function(event)
-    local entity = event.entity
-    local entity_name = entity.name
-    if not (entity_name == "constructron" or entity_name == "constructron-rocket-powered") then
-        return
-    end
-
-    local slot = event.slot_index
-    local logistic_request = entity.get_vehicle_logistic_slot(slot)
-    local unit_number = entity.unit_number
-
-    if logistic_request.name then
-        global.constructron_requests[unit_number]["requests"][slot] = {
-            item_name = logistic_request.name,
-            item_count = logistic_request.min
-        }
-        util_func.update_combinator(global.constructron_requests[unit_number].station, logistic_request.name, logistic_request.min)
-    else
-        local item_request = global.constructron_requests[unit_number]["requests"][slot]
-        if not item_request then return end
-        util_func.update_combinator(global.constructron_requests[unit_number].station, item_request.item_name, (item_request.item_count * -1))
-        global.constructron_requests[unit_number]["requests"][slot] = nil
     end
 end)
 
@@ -446,17 +410,17 @@ local function reset(player, parameters)
         game.print('Recalling Constructrons to station(s).')
         cmd.recall_ctrons()
     elseif parameters[1] == "all" then
-        global.custom_pathfinder_index =  0
-        global.custom_pathfinder_requests = {}
-        global.pathfinder_requests = {}
+        storage.custom_pathfinder_index =  0
+        storage.custom_pathfinder_requests = {}
+        storage.pathfinder_requests = {}
         game.print('Reset all parameters and queues complete.')
         -- Clear jobs/queues/entities
-        global.jobs = {}
-        global.job_index = 0
+        storage.jobs = {}
+        storage.job_index = 0
         cmd.clear_queues()
-        -- Clear supporting globals
-        global.stack_cache = {}
-        global.entity_inventory_cache = {}
+        -- Clear supporting storages
+        storage.stack_cache = {}
+        storage.entity_inventory_cache = {}
         cmd.rebuild_caches()
         -- Clear and reacquire Constructrons & Stations
         cmd.reload_entities()
@@ -488,13 +452,13 @@ local function clear(player, parameters)
     log("by player:" .. player.name)
     log("parameters: " .. serpent.block(parameters))
     if parameters[1] == "all" then
-        global.pathfinder_requests = {}
+        storage.pathfinder_requests = {}
         game.print('All jobs, queued jobs and unprocessed entities cleared.')
         cmd.clear_queues()
         cmd.reload_ctron_status()
         cmd.reload_ctron_color()
-        global.jobs = {}
-        global.job_index = 0
+        storage.jobs = {}
+        storage.job_index = 0
         cmd.recall_ctrons()
         cmd.reload_entities() -- needed to reset roboport construction radius
     elseif parameters[1] == "queues" then
@@ -547,16 +511,16 @@ end
 local function stats(player, _)
     log("control:help")
     log("by player:" .. player.name)
-    local global_stats = cmd.stats()
-    log(serpent.block(global_stats))
-    if global_stats and player then
-        for k, v in pairs(global_stats) do
+    local storage_stats = cmd.stats()
+    log(serpent.block(storage_stats))
+    if storage_stats and player then
+        for k, v in pairs(storage_stats) do
             player.print(k .. ": " .. tostring(v))
         end
     end
     local available_count = 0
     local used_count = 0
-    for _, constructron in pairs(global.constructron_statuses) do
+    for _, constructron in pairs(storage.constructron_statuses) do
         if (constructron.busy == true) then
             used_count = used_count + 1
         else
@@ -565,10 +529,10 @@ local function stats(player, _)
     end
     game.print('Constructrons on a job: ' .. used_count ..'')
     game.print('Idle Constructrons: ' .. available_count .. '')
-    game.print('entity_proc_trigger is ' .. tostring(global.entity_proc_trigger) .. '')
-    game.print('queue_proc_trigger is ' .. tostring(global.queue_proc_trigger) .. '')
-    game.print('job_proc_trigger is ' .. tostring(global.job_proc_trigger) .. '')
-    return global_stats
+    game.print('entity_proc_trigger is ' .. tostring(storage.entity_proc_trigger) .. '')
+    game.print('queue_proc_trigger is ' .. tostring(storage.queue_proc_trigger) .. '')
+    game.print('job_proc_trigger is ' .. tostring(storage.job_proc_trigger) .. '')
+    return storage_stats
 end
 
 ---@param player LuaPlayer

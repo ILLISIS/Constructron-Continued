@@ -20,7 +20,7 @@ function pathfinder.new(start, goal, job)
     start = { x = math.floor(start.x), y = math.floor(start.y) }
     goal = { x = math.floor(goal.x), y = math.floor(goal.y) }
     local instance = setmetatable({}, pathfinder)
-    instance.path_index = global.custom_pathfinder_index
+    instance.path_index = storage.custom_pathfinder_index
     instance.start = start
     instance.goal = goal
     instance.job = job
@@ -52,7 +52,7 @@ end
 -------------------------------------------------------------------------------
 
 script.on_event(defines.events.on_script_path_request_finished, (function(event)
-    local job = global.pathfinder_requests[event.id]
+    local job = storage.pathfinder_requests[event.id]
     if not job or not job.worker or not job.worker.valid then return end
     local path = event.path
     if event.try_again_later then
@@ -102,7 +102,7 @@ script.on_event(defines.events.on_script_path_request_finished, (function(event)
     if job.path_request_id == event.id then
         job.path_request_id = nil
     end
-    global.pathfinder_requests[event.id] = nil
+    storage.pathfinder_requests[event.id] = nil
 end))
 
 -------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ function pathfinder:findpath()
     local closedSet = self.closedSet -- nodes already evaluated
     local TilesProcessed = 0 -- tiles processed per iteration
     local lowesth_value = self.lowesth_value -- lowest heuristic value found
-    local neighbour_maxdistance = self.neighbour_maxdistance or global.custom_pathfinder_neighbour_maxdistance or 1 -- max neighbour distance of each node
+    local neighbour_maxdistance = self.neighbour_maxdistance or storage.custom_pathfinder_neighbour_maxdistance or 1 -- max neighbour distance of each node
     self.path_iterations = self.path_iterations + 1 -- iteration count
 
     while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
@@ -191,16 +191,13 @@ function pathfinder:findpath()
                     end
                 end
                 self.job.pathfinding = nil
-                global.custom_pathfinder_requests[self.path_index] = nil
+                storage.custom_pathfinder_requests[self.path_index] = nil
                 return
             end
         end
 
         -- get neighboring nodes
         local maxDistance = neighbour_maxdistance
-        -- IDEA: pathfinding backwards seems to make it easier to island hop
-        -- IDEA: make maxDistance configurable
-        -- IDEA: make maxDistance dynamic - try +15 tiles first, then lower to 1
         for dx = -maxDistance, maxDistance do
             for dy = -maxDistance, maxDistance do
                 local neighbor = {
@@ -271,7 +268,7 @@ function pathfinder:findpath()
             table.remove(self.job.task_positions, 1)
         end
         self.job.pathfinding = nil
-        global.custom_pathfinder_requests[self.path_index] = nil
+        storage.custom_pathfinder_requests[self.path_index] = nil
         debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
         debug_lib.VisualDebugLine(start, goal, self.surface, "red", 1200)
     end
@@ -288,7 +285,7 @@ function pathfinder:isWalkable(position)
 
     local tile_ghost = tile.has_tile_ghost()
 
-    if global.water_tile_cache[tile.name] then
+    if storage.water_tile_cache[tile.name] then
         if not tile_ghost then
             return false
         end
@@ -305,21 +302,21 @@ function pathfinder:mainland_finder(position)
         x = math.floor((position.x) / 96)
     }
     local chunk_key = chunk.y .. ',' .. chunk.x
-    if (global.mainland_chunks[chunk_key] == nil) then
+    if (storage.mainland_chunks[chunk_key] == nil) then
         chunk.minimum = {y = chunk.y * 96, x = chunk.x * 96}
         chunk.maximum = {y = (chunk.y + 1) * 96, x = (chunk.x + 1) * 96}
         local collides = self.surface.find_non_colliding_position_in_box("constructron_pathing_proxy_" .. "96", {chunk.minimum, chunk.maximum}, 128, true)
         if (collides ~= nil) then
             debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "green", true, 300)
-            global.mainland_chunks[chunk_key] = true
+            storage.mainland_chunks[chunk_key] = true
             return true
         else
             debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface, "red", true, 300)
-            global.mainland_chunks[chunk_key] = false
+            storage.mainland_chunks[chunk_key] = false
             return false
         end
     else
-        return global.mainland_chunks[chunk_key]
+        return storage.mainland_chunks[chunk_key]
     end
 end
 
