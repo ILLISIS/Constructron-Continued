@@ -3,25 +3,34 @@ local me = {}
 
 ---@param message LocalisedString
 me.DebugLog = function(message)
-    if global.debug_toggle then
+    if storage.debug_toggle then
         game.print(message)
         -- log(message)
     end
 end
+
+-- "temporarily permanent"
+-- watch this survive the next refactor
+local vertical_alignment = {
+    [-1] = "top",
+    [0] = "middle",
+    [0.5] = "baseline",
+    [1] = "bottom"
+}
 
 ---@param message LocalisedString
 ---@param entity LuaEntity
 ---@param offset float
 ---@param ttl uint
 me.VisualDebugText = function(message, entity, offset, ttl, color)
-    if global.debug_toggle then
+    if storage.debug_toggle then
         rendering.draw_text {
             text = message or "",
             target = entity,
             filled = true,
             surface = entity.surface,
             time_to_live = (ttl * 60) or 60,
-            target_offset = {0, (offset or 0)},
+            vertical_alignment = vertical_alignment[offset] or "middle",
             alignment = "center",
             color = color_lib.colors[color] or {
                 r = 255,
@@ -33,14 +42,13 @@ me.VisualDebugText = function(message, entity, offset, ttl, color)
     end
 end
 
-
 ---@param position MapPosition
 ---@param surface LuaSurface
 ---@param color string
 ---@param radius integer
 ---@param ttl uint
 me.VisualDebugCircle = function(position, surface, color, radius, ttl)
-    if global.debug_toggle then
+    if storage.debug_toggle then
         rendering.draw_circle {
             target = position,
             radius = radius,
@@ -59,7 +67,7 @@ end
 ---@param filled boolean
 ---@param ttl uint
 me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
-    if global.debug_toggle then
+    if storage.debug_toggle then
         rendering.draw_rectangle {
             left_top = minimum,
             right_bottom = maximum,
@@ -74,7 +82,7 @@ me.draw_rectangle = function(minimum, maximum, surface, color, filled, ttl)
 end
 
 me.VisualDebugLine = function (from, to, surface, color, ttl)
-    if global.debug_toggle then
+    if storage.debug_toggle then
         rendering.draw_line {
             width = 4,
             color = color_lib.colors[color],

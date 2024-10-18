@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.0
+Date: 2024-10-21
+  Features:
+    - Support for Factorio 2.0 and Space Age DLC.
+    - Support for item quality.
+  Bugfixes:
+    - Fixed an issue that caused Constructrons on a cargo job not to move to another station if they were at the destination station at the start of the job.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.32
 Date: 2024-09-28
   Bugfixes:

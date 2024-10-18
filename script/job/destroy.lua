@@ -15,28 +15,16 @@ end
 
 
 function destroy_job:setup()
-    local worker = self.worker ---@cast worker -nil
-    -- calculate chunk build positions
-    for _, chunk in pairs(self.chunks) do
-        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
-        local positions = util_func.calculate_construct_positions({chunk.minimum, chunk.maximum}, 36 * 0.95) -- 5% tolerance for rocket range
-        for _, position in ipairs(positions) do
-            debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
-            table.insert(self.task_positions, position)
-        end
-        if chunk.required_items["landfill"] then
-            self.landfill_job = true
-        end
-    end
-    -- set default ammo request
-    if global.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
-        self.required_items[global.ammo_name[self.surface_index]] = global.ammo_count[self.surface_index]
-    end
+    -- calculate task positions
+    self:calculate_task_positions()
+    -- request ammo
+    self:request_ammo()
     -- enable_logistics_while_moving for destroy jobs
-    self.required_items[global.repair_tool_name[self.surface_index]] = global.desired_robot_count[self.surface_index] * 4
-    --     -- vassals
+    local repair_tool = storage.repair_tool_name[self.surface_index]
+    self.required_items[repair_tool.name] = { [repair_tool.quality] = storage.desired_robot_count[self.surface_index] * 4}
+    -- vassals
     --     self.vassal_jobs = {}
-    --     global.vassal_count = 4 -- TODO: move to global and init
+    --     storage.vassal_count = 4 -- TODO: move to global and init
     --     self.state = "deferred"
     --     return
     -- state change
@@ -137,7 +125,8 @@ function destroy_job:in_progress()
 
     -- check health
     if not self:check_health() then return end
-    -- TODO: move ammo check here
+    -- check ammo
+    if not self:check_ammo_count() then return end
 
     -- Am I in the correct position?
     local _, task_position = next(self.task_positions)
@@ -172,80 +161,16 @@ function destroy_job:finishing()
     local worker = self.worker ---@cast worker -nil
     worker.enable_logistics_while_moving = false
     if not self:position_check(self.station.position, 10) then return end
-    if not self.roboports_enabled then -- enable full roboport range (due to landfil jobs disabling them)
-        self:enable_roboports()
-    end
     -- clear items
-    local inventory_items = self.worker_inventory.get_contents()
-    if not (self.sub_state == "items_requested") then
-        local item_request = {}
-        for item, _ in pairs(inventory_items) do
-            item_request[item] = 0
-        end
-        self:request_items(item_request)
-        self.sub_state = "items_requested"
-        self.request_tick = game.tick
-        return
-    else
-        -- check trash has been taken
-        local trash_items = self.worker_trash_inventory.get_contents()
-        if next(trash_items) then
-            local logistic_network = self.station.logistic_network
-            if (logistic_network.all_logistic_robots <= 0) then
-                debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
-            end
-            if not next(logistic_network.storages) then
-                debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
-            else
-                for item_name, item_count in pairs(trash_items) do
-                    local can_drop = logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                    if can_drop then
-                        debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
-                        return
-                    end
-                end
-            end
-            -- check if other station networks can store items
-            local surface_stations = util_func.get_service_stations(self.surface_index)
-            for _, station in pairs(surface_stations) do
-                if station.logistic_network then
-                    for item_name, item_count in pairs(trash_items) do
-                        local can_drop = station.logistic_network.select_drop_point({stack = {name = item_name, count = item_count}})
-                        if can_drop then
-                            debug_lib.VisualDebugText("Trying a different station", worker, 0, 5)
-                            self.station = station
-                            return
-                        end
-                    end
-                end
-            end
-            return
-        else
-            self.sub_state = nil
-            self.request_tick = nil
-            for i = 1, worker.request_slot_count do ---@cast i uint
-                local request = worker.get_vehicle_logistic_slot(i)
-                if request then
-                    worker.clear_vehicle_logistic_slot(i)
-                end
-            end
-        end
-        -- clear combinator request cache
-        global.constructron_requests[worker.unit_number].requests = {}
-    end
+    if not self:clear_items() then return end
+    -- clear logistic requests
+    local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local section = logistic_point.get_section(1)
+    section.filters = {}
     -- randomize idle position around station
-    if (global.constructrons_count[self.surface_index] > 10) then
-        local stepdistance = 5 + math.random(5)
-        local alpha = math.random(360)
-        local offset = {x = (math.cos(alpha) * stepdistance), y = (math.sin(alpha) * stepdistance)}
-        local new_position = {x = (worker.position.x + offset.x), y = (worker.position.y + offset.y)}
-        worker.autopilot_destination = new_position
-    end
+    self:randomize_idle_position()
     -- unlock constructron
     util_func.set_constructron_status(worker, 'busy', false)
-    global.available_ctron_count[self.surface_index] = global.available_ctron_count[self.surface_index] + 1
-    -- update combinator with dummy entity to reconcile available_ctron_count
-    -- job_proc.update_combinator(self.station, "constructron_pathing_proxy_1", 0) -- TODO: fix this
     -- change selected constructron colour
     util_func.paint_constructron(worker, 'idle')
     -- release vassals -- TODO:
@@ -253,20 +178,12 @@ function destroy_job:finishing()
     --     vassal_job.state = "finishing"
     -- end
     -- remove job from list
-    global.jobs[self.job_index] = nil
+    storage.jobs[self.job_index] = nil
     debug_lib.VisualDebugText("Job complete!", worker, -1, 1)
 end
 
 function destroy_job:specific_action()
     local worker = self.worker
-    -- check ammo
-    local ammunition = self.worker_ammo_slots.get_contents()
-    -- retreat when at 25% of ammo
-    local ammo_name = global.ammo_name[self.surface_index]
-    if ammunition and ammunition[ammo_name] and ammunition[ammo_name] < (math.ceil(global.ammo_count[self.surface_index] * 25 / 100)) then
-        self.state = "finishing" -- TODO: should this be "starting"?
-        return
-    end
     local entities = worker.surface.find_entities_filtered {
         position = worker.position,
         radius = 32,

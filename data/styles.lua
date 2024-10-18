@@ -62,7 +62,7 @@ styles.ctron_title_bar_flow_style = {
 
 styles.ctron_stat_card_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     horizontal_align = "center",
 }
@@ -77,7 +77,7 @@ styles.ctron_stat_card_label_style = {
 
 styles.ctron_main_content_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     height = 710,
     width = 1180
@@ -85,7 +85,7 @@ styles.ctron_main_content_style = {
 
 -- styles.ctron_main_scroll_section_style = {
 --     type = "scroll_pane_style",
---     parent = "inner_frame_scroll_pane",
+--     -- parent = "inner_frame_scroll_pane", -- TODO
 --     height = 710,
 --     width = 1180,
 --     padding = 0,
@@ -100,7 +100,7 @@ styles.ctron_main_content_style = {
 
 styles.ctron_main_scroll_section_style = {
     type = "scroll_pane_style",
-    parent = "scroll_pane_with_dark_background_under_subheader",
+    parent = "deep_scroll_pane",
     height = 710,
     width = 1180,
     padding = 0,
@@ -115,7 +115,7 @@ styles.ctron_main_scroll_section_style = {
 
 styles.ctron_job_status_section_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     horizontal_align = "center",
 }
@@ -152,14 +152,14 @@ styles.ctron_job_section_label_style = {
 
 styles.ctron_collapse_expand_button_style = {
     type = "button_style",
-    parent = "logistic_slot_button",
+    parent = "slot_button",
     height = 24,
     width = 24,
 }
 
 styles.ctron_job_label_frame_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     horizontal_align = "center",
 }
@@ -181,7 +181,7 @@ styles.ctron_chunk_card_style = {
 
 styles.ctron_chunk_label_frame_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     horizontal_align = "center",
 }
@@ -262,7 +262,7 @@ styles.ctron_settings_dropdown_style = {
 
 styles.ctron_job_inner_frame_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     height = 770,
     width = 700,
     top_padding = 0,
@@ -291,6 +291,7 @@ styles.ctron_job_right_pane_style = {
 styles.ctron_ammo_table_style = {
     type = "table_style",
     parent = "table",
+    width = 130,
     horizontal_spacing = 0,
     vertical_spacing = 0
 }
@@ -322,7 +323,7 @@ styles.ctron_logistic_table_style = {
 
 styles.ctron_cargo_scroll_style = {
     type = "scroll_pane_style",
-    parent = "inner_frame_scroll_pane",
+    -- parent = "inner_frame_scroll_pane",
 }
 
 styles.ctron_station_label_style = {
@@ -374,7 +375,7 @@ styles.ctron_cargo_item_label_style = {
 
 styles.ctron_cargo_label_frame_style = {
     type = "frame_style",
-    parent = "inside_deep_frame_for_tabs",
+    parent = "inside_deep_frame",
     padding = 0,
     horizontal_align = "center",
 }

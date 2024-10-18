@@ -21,7 +21,7 @@ function deconstruction_job:specific_action()
     } -- only detects entities in range
     local can_remove_entity = false
     for _, entity in pairs(entities) do
-        if not (entity.type == "cliff") or self.worker_logistic_network.can_satisfy_request("cliff-explosives", 1) then
+        if not (entity.type == "cliff") or self.worker_logistic_network.can_satisfy_request({name = "cliff-explosives", quality = "normal"}, 1, true) then
             can_remove_entity = true
             return
         end

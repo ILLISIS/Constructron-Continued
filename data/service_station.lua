@@ -21,10 +21,7 @@ service_station.construction_radius = 0
 for _, layer in pairs(service_station.base.layers) do
   if layer.filename == "__base__/graphics/entity/roboport/roboport-base.png" then
     layer.filename = "__Constructron-Continued__/graphics/entity/constructron-service-station.png"
-    layer.width = 114
-    layer.height = 139
-    layer.shift = layer.hr_version.shift
-    layer.hr_version.filename = "__Constructron-Continued__/graphics/entity/hr-constructron-service-station.png"
+    layer.scale = 0.5
   end
 end
 -- Beacon Antenna
@@ -34,21 +31,23 @@ service_station.base_animation = {
     layers = { -- Base
     {
         filename = "__Constructron-Continued__/graphics/entity/antenna.png",
-        width = 54,
-        height = 50,
+        width = 108,
+        height = 100,
+        scale = 0.5,
         line_length = 8,
         frame_count = 32,
         animation_speed = 0.5,
-        shift = {shft_1[1] - 0.5, shft_1[2] - 0.5}
+        shift = util.by_pixel(-17, -77)
     }, -- Shadow
     {
         filename = "__Constructron-Continued__/graphics/entity/antenna-shadow.png",
-        width = 63,
-        height = 49,
+        width = 126,
+        height = 98,
+        scale = 0.5,
         line_length = 8,
         frame_count = 32,
         animation_speed = 0.5,
-        shift = {shft_2[1] - 0.5, shft_2[2] - 0.5},
+        shift = util.by_pixel(91, 0),
         draw_as_shadow = true
     }}
 }
@@ -62,13 +61,13 @@ local service_station_item = {
     {
       icon = "__Constructron-Continued__/graphics/icon_texture.png",
       icon_size = 256,
-      -- scale = 0.25
+      scale = 0.25
     },
     {
       icon = "__base__/graphics/icons/roboport.png",
       icon_size = 64,
       icon_mipmaps = 4,
-      scale = 0.4
+      scale = 0.7
     }
   },
   name = "service_station",
@@ -83,12 +82,12 @@ local service_station_recipe = {
     type = "recipe",
     name = "service_station",
     enabled = false,
-    ingredients =
-    {
-      {"roboport", 1},
+    ingredients = {
+      {type = "item", name = "roboport", amount = 1}
     },
-    result = "service_station",
-    result_count = 1,
+    results = {
+      {type = "item", name = "service_station", amount = 1}
+    },
     energy = 1
   }
 

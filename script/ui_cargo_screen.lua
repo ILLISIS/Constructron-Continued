@@ -18,7 +18,7 @@ function gui_cargo.buildCargoGui(player, surface)
     local cargo_inner_frame = cargo_window.add{
         type = "frame",
         name = "cargo_inner_frame",
-        style = "b_inner_frame",
+        style = "entity_frame",
         direction = "vertical"
     }
     cargo_inner_frame.style.width = 430
@@ -32,25 +32,25 @@ function gui_cargo.buildCargoGui(player, surface)
     }
     cargo_scroll.style.height = 500
     -- cargo_scroll.style.width = 430
-    cargo_scroll.style.vertically_stretchable = "stretch_and_expand"
+    cargo_scroll.style.vertically_stretchable = true
     cargo_scroll.style.padding = 0
     -- cargo_scroll.style.top_padding = 6
     cargo_scroll.style.extra_padding_when_activated = 0
 
     gui_cargo.buildCargoContent(player, surface, cargo_scroll)
-    global.user_interface[player.index]["cargo_ui"]["elements"].cargo_content = cargo_scroll
+    storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content = cargo_scroll
 
     local flow = cargo_window.add{
         type = "flow",
         name = "ctron_cargo_flow",
         direction = "horizontal",
     }
-    flow.style.horizontally_stretchable = "stretch_and_expand"
+    flow.style.horizontally_stretchable = true
     flow.style.horizontal_align = "center"
     flow.style.vertical_align = "center"
 
     -- min field
-    global.user_interface[player.index]["cargo_ui"]["elements"].min_field = flow.add{
+    storage.user_interface[player.index]["cargo_ui"]["elements"].min_field = flow.add{
         type = "textfield",
         text = "0",
         style = "ctron_cargo_textfield_style",
@@ -65,7 +65,7 @@ function gui_cargo.buildCargoGui(player, surface)
     }
 
     -- max field
-    global.user_interface[player.index]["cargo_ui"]["elements"].max_field = flow.add{
+    storage.user_interface[player.index]["cargo_ui"]["elements"].max_field = flow.add{
         type = "textfield",
         text = "0",
         style = "ctron_cargo_textfield_style",
@@ -80,7 +80,7 @@ function gui_cargo.buildCargoGui(player, surface)
     }
 
     -- confirm button
-    global.user_interface[player.index]["cargo_ui"]["elements"].confirm_button = flow.add{
+    storage.user_interface[player.index]["cargo_ui"]["elements"].confirm_button = flow.add{
         type = "button",
         caption = "confirm",
         style = "ctron_frame_button_style",
@@ -125,7 +125,7 @@ function gui_cargo.buildCargoTitleBar(player, surface, frame)
     for _, iterated_surface in pairs(game.surfaces) do
         surfaces[#surfaces+1] = iterated_surface.name
     end
-    global.user_interface[player.index].cargo_ui.elements["surface_selector"] = bar.add{
+    storage.user_interface[player.index].cargo_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
@@ -151,9 +151,7 @@ function gui_cargo.buildCargoTitleBar(player, surface, frame)
         type = "sprite-button",
         name = "close_cargo_window",
         style = "frame_action_button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
+        sprite = "utility/close",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -232,20 +230,20 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
     }
     logistic_table.style.width = 400
 
-    local request_count = #global.station_requests[station_unit_number] or 1
+    local request_count = #storage.station_requests[station_unit_number] or 1
     -- Round up to the nearest 10
     local logistic_slot_count = math.ceil(request_count / 10) * 10
     if request_count == logistic_slot_count then
         logistic_slot_count = logistic_slot_count + 10
     end
     for i = 1, logistic_slot_count do
-        if global.station_requests[station_unit_number][i] then
-        local request = global.station_requests[station_unit_number][i]
-        local button = logistic_table.add{
+        if storage.station_requests[station_unit_number][i] then
+            local request = storage.station_requests[station_unit_number][i]
+            local button = logistic_table.add{
                 type = "choose-elem-button",
                 name = "ctron_request_slot_" .. i,
-                elem_type = "item",
-                item = request.item,
+                elem_type = "item-with-quality",
+                ["item-with-quality"] = {name = request.name, quality = request.quality},
                 tags = {
                     mod = "constructron",
                     on_gui_elem_changed = "on_gui_elem_changed",
@@ -273,14 +271,14 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
                 style = "ctron_cargo_item_label_style",
                 caption = util_func.number(request.max, true)
             }
-            local logistic_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
+            local logistic_ui_elements = storage.user_interface[player.index]["cargo_ui"]["elements"]
             logistic_ui_elements[station_unit_number] = logistic_ui_elements[station_unit_number] or {}
             logistic_ui_elements[station_unit_number][button.name] = button
         else
             local button = logistic_table.add{
                 type = "choose-elem-button",
                 name = "ctron_request_slot_" .. i,
-                elem_type = "item",
+                elem_type = "item-with-quality",
                 tags = {
                     mod = "constructron",
                     on_gui_elem_changed = "on_gui_elem_changed",
@@ -288,7 +286,7 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
                     slot_number = i
                 }
             }
-            local logistic_ui_elements = global.user_interface[player.index]["cargo_ui"]["elements"]
+            local logistic_ui_elements = storage.user_interface[player.index]["cargo_ui"]["elements"]
             logistic_ui_elements[station_unit_number] = logistic_ui_elements[station_unit_number] or {}
             logistic_ui_elements[station_unit_number][button.name] = button
         end
@@ -296,8 +294,8 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
 end
 
 function gui_cargo.buildCargoContent(player, surface, frame)
-    local surface_index = game.surfaces[global.user_interface[player.index].cargo_ui.elements["surface_selector"].selected_index].index
-    for _, station in pairs(global.service_stations) do
+    local surface_index = game.surfaces[storage.user_interface[player.index].cargo_ui.elements["surface_selector"].selected_index].index
+    for _, station in pairs(storage.service_stations) do
         if station.surface.index == surface_index then
             gui_cargo.buildStationCard(player, surface, frame, station)
         end

@@ -53,9 +53,7 @@ function gui_job.buildJobTitleBar(player, frame)
         type = "sprite-button",
         name = "close_job_window",
         style = "frame_action_button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
+        sprite = "utility/close",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -144,7 +142,7 @@ function gui_job.buildJobContent(player, frame, job)
         direction = "vertical"
     }
 
-    global.user_interface[player.index].job_ui.elements["worker_minimap"] = worker_minimap_frame.add{
+    storage.user_interface[player.index].job_ui.elements["worker_minimap"] = worker_minimap_frame.add{
         type = "minimap",
         name = "ctron_worker_minimap",
         style = "ctron_minimap_style",
@@ -158,7 +156,7 @@ function gui_job.buildJobContent(player, frame, job)
             follow_entity = true
         }
     }
-    global.user_interface[player.index].job_ui.elements["worker_minimap"].entity = job.worker
+    storage.user_interface[player.index].job_ui.elements["worker_minimap"].entity = job.worker
 
     left_pane.add{
         type = "line",
@@ -181,7 +179,7 @@ function gui_job.buildJobContent(player, frame, job)
         direction = "vertical"
     }
 
-    global.user_interface[player.index].job_ui.elements["job_minimap"] = job_minimap_frame.add{
+    storage.user_interface[player.index].job_ui.elements["job_minimap"] = job_minimap_frame.add{
         type = "minimap",
         name = "ctron_job_minimap",
         style = "ctron_minimap_style",
@@ -198,7 +196,7 @@ function gui_job.buildJobContent(player, frame, job)
     }
 
     -- job stats
-    global.user_interface[player.index].job_ui.elements["job_tasks_stat_label"] = left_pane.add{
+    storage.user_interface[player.index].job_ui.elements["job_tasks_stat_label"] = left_pane.add{
         type = "label",
         name = "ctron_job_stats_label_1",
         caption = {"ctron_gui_locale.job_job_stat_tasks_label", (#job.task_positions or "0")}
@@ -218,13 +216,13 @@ function gui_job.buildJobContent(player, frame, job)
         name = "ctron_ammo_label",
         caption = {"ctron_gui_locale.job_worker_ammo_label"},
     }
-    global.user_interface[player.index].job_ui.elements["ammo_table"] = right_pane.add{
+    storage.user_interface[player.index].job_ui.elements["ammo_table"] = right_pane.add{
         type = "table",
         name = "ctron_ammo_table",
         style = "ctron_ammo_table_style",
         column_count = 10,
     }
-    gui_job.build_ammo_display(worker, global.user_interface[player.index].job_ui.elements["ammo_table"])
+    gui_job.build_ammo_display(worker, storage.user_interface[player.index].job_ui.elements["ammo_table"])
 
     -- inventory display
     local inventory_scroll_pane = right_pane.add{
@@ -240,14 +238,14 @@ function gui_job.buildJobContent(player, frame, job)
         caption = {"ctron_gui_locale.job_worker_inventory_label"},
     }
 
-    global.user_interface[player.index].job_ui.elements["inventory_table"] = inventory_scroll_pane.add{
+    storage.user_interface[player.index].job_ui.elements["inventory_table"] = inventory_scroll_pane.add{
         type = "table",
         name = "ctron_inventory_table",
         style = "ctron_inventory_table_style",
         column_count = 10,
     }
 
-    gui_job.build_inventory_display(worker, global.user_interface[player.index].job_ui.elements["inventory_table"])
+    gui_job.build_inventory_display(worker, storage.user_interface[player.index].job_ui.elements["inventory_table"])
 
     -- empty widget
     table.add{
@@ -270,14 +268,14 @@ function gui_job.buildJobContent(player, frame, job)
         caption = {"ctron_gui_locale.job_worker_logistic_trash_label"},
     }
 
-    global.user_interface[player.index].job_ui.elements["trash_table"] = trash_scroll_pane.add{
+    storage.user_interface[player.index].job_ui.elements["trash_table"] = trash_scroll_pane.add{
         type = "table",
         name = "ctron_trash_table",
         style = "ctron_trash_table_style",
         column_count = 10,
     }
 
-    gui_job.build_trash_display(worker, global.user_interface[player.index].job_ui.elements["trash_table"])
+    gui_job.build_trash_display(worker, storage.user_interface[player.index].job_ui.elements["trash_table"])
 
     -- empty widget
     table.add{
@@ -307,14 +305,14 @@ function gui_job.buildJobContent(player, frame, job)
         direction = "vertical"
     }
 
-    global.user_interface[player.index].job_ui.elements["logistic_table"] = logistic_inner_frame.add{
+    storage.user_interface[player.index].job_ui.elements["logistic_table"] = logistic_inner_frame.add{
         type = "table",
         name = "ctron_logistic_table",
         style = "ctron_logistic_table_style",
         column_count = 10,
     }
 
-    gui_job.build_logistic_display(worker, global.user_interface[player.index].job_ui.elements["logistic_table"])
+    gui_job.build_logistic_display(worker, storage.user_interface[player.index].job_ui.elements["logistic_table"])
 end
 
 function gui_job.build_ammo_display(worker, ammo_table)
@@ -322,26 +320,13 @@ function gui_job.build_ammo_display(worker, ammo_table)
     for i = 1, #ammo_inventory do
         local ammo = ammo_inventory[i]
         if ammo and ammo.valid_for_read then
-            ammo_table.add{
-                type = "sprite-button",
-                name = "ctron_ammo_button_" .. i,
-                style = "inventory_slot",
-                elem_tooltip = {
-                    type = "item",
-                    name = ammo.name
-                },
-                sprite = "item/" .. ammo.name,
-                number = ammo.count,
-                tags = {
-                    mod = "constructron",
-                }
-            }
+            gui_job.build_button(ammo_table, "ctron_ammo_button_" .. i, ammo.name, storage.quality_levels[ammo.quality.level], ammo.count, "inventory_slot")
         else
             local button = ammo_table.add{
                 type = "sprite-button",
                 name = "ctron_ammo_button_" .. i,
                 style = "inventory_slot",
-                sprite = "utility/slot_icon_ammo",
+                sprite = "utility/empty_ammo_slot",
                 tags = {
                     mod = "constructron",
                 }
@@ -358,20 +343,7 @@ function gui_job.build_inventory_display(worker, inventory_table)
         local item = inventory[i]
         if item and item.valid_for_read then
             -- add inventory item button
-            inventory_table.add{
-                type = "sprite-button",
-                name = "ctron_inventory_button_" .. i,
-                style = "inventory_slot",
-                elem_tooltip = {
-                    type = "item",
-                    name = item.name
-                },
-                sprite = "item/" .. item.name,
-                number = item.count,
-                tags = {
-                    mod = "constructron",
-                }
-            }
+            gui_job.build_button(inventory_table, "ctron_inventory_button_" .. i, item.name, storage.quality_levels[item.quality.level], item.count, "inventory_slot")
         else
             inventory_table.add{
                 type = "sprite-button",
@@ -391,24 +363,11 @@ function gui_job.build_trash_display(worker, trash_table)
     for i = 1, #trash_inventory do
         local item = trash_inventory[i]
         if item and item.valid_for_read then
-            trash_table.add{
-                type = "sprite-button",
-                name = "ctron_inventory_button_" .. i,
-                style = "inventory_slot",
-                elem_tooltip = {
-                    type = "item",
-                    name = item.name
-                },
-                sprite = "item/" .. item.name,
-                number = item.count,
-                tags = {
-                    mod = "constructron",
-                }
-            }
+            gui_job.build_button(trash_table, "ctron_trash_button_" .. i, item.name, storage.quality_levels[item.quality.level], item.count, "inventory_slot")
         else
             local button = trash_table.add{
                 type = "sprite-button",
-                name = "ctron_inventory_button_" .. i,
+                name = "ctron_trash_button_" .. i,
                 style = "inventory_slot",
                 sprite = "utility/trash_white",
                 tags = {
@@ -422,43 +381,73 @@ end
 
 function gui_job.build_logistic_display(worker, logistic_table)
     -- get worker logistic requests
-    local slot_count = worker.request_slot_count
+    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local section = logistic_point.get_section(1)
+    local slot_count = #(section.filters or {})
     -- Ensure the value is at least 10
     local min_slot_count = math.max(slot_count, 10)
     -- Round up to the nearest 20
     local logistic_request_count = math.ceil(min_slot_count / 20) * 20
     for i = 1, logistic_request_count do
-        local slot = worker.get_vehicle_logistic_slot(i)
-        if slot.name ~= nil then
-            logistic_table.add{
-                type = "sprite-button",
-                name = "ctron_logistic_button_" .. i,
-                style = "logistic_slot_button",
-                elem_tooltip = {
-                    type = "item",
-                    name = slot.name
-                },
-                sprite = "item/" .. slot.name,
-                number = slot.max,
-                tags = {
-                    mod = "constructron",
-                    on_gui_click = "clear_logistic_request",
-                    logistic_slot = i,
-                    unit_number = worker.unit_number,
-                    -- job_index = job.job_index
-                }
-            }
+        if section.filters[i] and section.filters[i].value then
+            local slot = section.filters[i]
+            local slot_item = slot.value
+            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, slot.max, nil)
         else
             logistic_table.add{
                 type = "sprite-button",
                 name = "ctron_logistic_button_" .. i,
-                style = "logistic_slot_button",
+                style = "slot_button",
                 tags = {
                     mod = "constructron",
                 }
             }
         end
     end
+end
+
+---@param parent LuaGuiElement
+---@param name string
+---@param item string
+---@param quality string
+---@param count number
+---@param style string?
+function gui_job.build_button(parent, name, item, quality, count, style)
+    local button = parent.add{
+        type = "choose-elem-button",
+        name = name,
+        elem_type = "item-with-quality",
+        ["item-with-quality"] = {name = item, quality = quality},
+        style = style,
+        elem_tooltip = {
+            type = "item",
+            name = item
+        },
+        tags = {
+            mod = "constructron",
+        }
+    }
+    button.locked = true
+    -- add flow to button
+    local flow = button.add{
+        type = "flow",
+        style = "ctron_cargo_flow_style",
+        direction = "horizontal",
+        ignored_by_interaction = true
+    }
+    flow.style.height = 33
+    flow.style.width = 33
+    -- add label to flow
+    local ew = flow.add{
+        type = "empty-widget",
+    }
+    ew.style.horizontally_stretchable = true
+    -- add item count label
+    flow.add{
+        type = "label",
+        style = "ctron_cargo_item_label_style",
+        caption = count
+    }
 end
 
 return gui_job

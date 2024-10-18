@@ -23,7 +23,7 @@ function gui_main.buildMainGui(player)
         type = "flow",
         direction = "horizontal"
     }
-    outer_main_flow.style.horizontally_stretchable = "on"
+    outer_main_flow.style.horizontally_stretchable = true
 
     gui_main.buildStatsSection(player, surface, main_flow)
     local outer_control_flow = outer_main_flow.add{
@@ -34,8 +34,8 @@ function gui_main.buildMainGui(player)
         type = "flow",
         direction = "horizontal"
     }
-    outer_control_flow.style.horizontally_stretchable = "on"
-    outer_control_flow.style.vertically_stretchable = "on"
+    outer_control_flow.style.horizontally_stretchable = true
+    outer_control_flow.style.vertically_stretchable = true
     outer_control_flow.style.horizontal_align = "right"
     outer_control_flow.style.vertical_align = "bottom"
 
@@ -96,7 +96,7 @@ function gui_main.buildMainTitleBar(player, surface, frame)
     for _, iterated_surface in pairs(game.surfaces) do
         surfaces[#surfaces+1] = iterated_surface.name
     end
-    global.user_interface[player.index].main_ui.elements["surface_selector"] = bar.add{
+    storage.user_interface[player.index].main_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
@@ -121,7 +121,7 @@ function gui_main.buildMainTitleBar(player, surface, frame)
             on_gui_click = "toggle_debug_mode"
         }
     }
-    if global.debug_toggle then
+    if storage.debug_toggle then
         debug_button.caption = {"ctron_gui_locale.debug_button_on"}
     else
         debug_button.caption = {"ctron_gui_locale.debug_button_off"}
@@ -154,9 +154,7 @@ function gui_main.buildMainTitleBar(player, surface, frame)
         type = "sprite-button",
         name = "ctron_close_main_gui",
         style = "frame_action_button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
+        sprite = "utility/close",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -175,8 +173,8 @@ function gui_main.buildStatsSection(player, surface, frame)
         name = "ctron_stats_section",
         direction = "horizontal"
     }
-    gui_main.create_stat_card(player, surface, stats_section, {"ctron_gui_locale.stat_total_constructrons"}, "total", global.constructrons_count[surface.index])
-    gui_main.create_stat_card(player, surface, stats_section, {"ctron_gui_locale.stat_available_constructrons"}, "available", global.available_ctron_count[surface.index])
+    gui_main.create_stat_card(player, surface, stats_section, {"ctron_gui_locale.stat_total_constructrons"}, "total", storage.constructrons_count[surface.index])
+    gui_main.create_stat_card(player, surface, stats_section, {"ctron_gui_locale.stat_available_constructrons"}, "available", storage.available_ctron_count[surface.index])
 end
 
 function gui_main.create_stat_card(player, surface, frame, caption, stat, value)
@@ -197,7 +195,7 @@ function gui_main.create_stat_card(player, surface, frame, caption, stat, value)
     }
 
     -- Available Constructrons stat card
-    global.user_interface[player.index].main_ui.elements[stat] = card.add{
+    storage.user_interface[player.index].main_ui.elements[stat] = card.add{
         type = "label",
         name = "ctron_job_value_label",
         caption = value,
@@ -274,7 +272,7 @@ function gui_main.empty_section_check(section)
         name = "ctron_spacer_1",
         ignored_by_interaction = true
     }
-    spacer_1.style.horizontally_stretchable = "on"
+    spacer_1.style.horizontally_stretchable = true
 
     card.add{
         type = "label",
@@ -288,7 +286,7 @@ function gui_main.empty_section_check(section)
         name = "ctron_spacer_2",
         ignored_by_interaction = true
     }
-    spacer_2.style.horizontally_stretchable = "on"
+    spacer_2.style.horizontally_stretchable = true
 end
 
 function gui_main.create_job_sections(player, surface, frame)
@@ -299,7 +297,7 @@ function gui_main.create_job_sections(player, surface, frame)
     pending_section.style.vertically_stretchable = true
 
     -- populate job sections with job cards
-    for _, job in pairs(global.jobs) do
+    for _, job in pairs(storage.jobs) do
         if job.surface_index == surface.index then
             if inprogress_job_states[job.state] then
                 gui_main.create_job_card(job, in_progress_section)
@@ -313,7 +311,7 @@ function gui_main.create_job_sections(player, surface, frame)
 
     -- populate pending section with chunk cards
     for _, job_type in pairs(job_types) do
-        for _, chunk in pairs(global[job_type .. '_queue'][surface.index]) do
+        for _, chunk in pairs(storage[job_type .. '_queue'][surface.index]) do
             gui_main.create_chunk_card(chunk, surface.index, pending_section, job_type)
         end
     end
@@ -358,8 +356,6 @@ function gui_main.create_job_section(player, surface, frame, section_name, capti
         name = "ctron_collapse_expand_button_" .. section_name,
         style = "ctron_collapse_expand_button_style",
         sprite = "utility/collapse",
-        hovered_sprite = "utility/collapse_dark",
-        clicked_sprite = "utility/collapse_dark",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -376,14 +372,14 @@ function gui_main.create_job_section(player, surface, frame, section_name, capti
     }
 
     -- job card section
-    global.user_interface[player.index].main_ui.elements[section_name] = section.add{
+    storage.user_interface[player.index].main_ui.elements[section_name] = section.add{
         type = "flow",
         name = "ctron_" .. section_name .. "_inner",
         direction = "vertical"
     }
-    global.user_interface[player.index].main_ui.elements[section_name].style.vertical_spacing = 0
+    storage.user_interface[player.index].main_ui.elements[section_name].style.vertical_spacing = 0
 
-    return global.user_interface[player.index].main_ui.elements[section_name]
+    return storage.user_interface[player.index].main_ui.elements[section_name]
 end
 
 
@@ -591,7 +587,7 @@ function gui_main.BuildLogisticsDisplay(player, surface_index)
     for _, iterated_surface in pairs(game.surfaces) do
         surfaces[#surfaces+1] = iterated_surface.name
     end
-    global.user_interface[player.index].logistics_ui.elements["surface_selector"] = bar.add{
+    storage.user_interface[player.index].logistics_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
@@ -609,9 +605,7 @@ function gui_main.BuildLogisticsDisplay(player, surface_index)
         type = "sprite-button",
         name = "ctron_close_main_gui",
         style = "frame_action_button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
+        sprite = "utility/close",
         mouse_button_filter = {"left"},
         tags = {
             mod = "constructron",
@@ -622,7 +616,7 @@ function gui_main.BuildLogisticsDisplay(player, surface_index)
         type = "flow",
         direction = "vertical"
     }
-    global.user_interface[player.index].logistics_ui.elements["logistics_content"] = content_flow
+    storage.user_interface[player.index].logistics_ui.elements["logistics_content"] = content_flow
     gui_main.BuildLogisticsContent(player, surface_index, content_flow)
 end
 
@@ -636,17 +630,23 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
 
     local logistics_requests = {}
     local ctron_count = 0
-    for _, job in pairs(global.jobs) do
+    for _, job in pairs(storage.jobs) do
         if (job.surface_index == surface_index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker
-            for i = 1, worker.request_slot_count do
-                local slot = worker.get_request_slot(i)
-                if slot then
+            local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+            local section = logistic_point.get_section(1)
+            for i = 1, #section.filters do
+                local slot = section.filters[i]
+                if slot.value then
+                    local item_name = slot.value.name
+                    local quality = slot.value.quality
                     ctron_count = ctron_count + 1
-                    if logistics_requests[slot.name] then
-                        logistics_requests[slot.name] = logistics_requests[slot.name] + slot.count
+                    if logistics_requests[item_name] and logistics_requests[item_name][quality] then
+                        logistics_requests[item_name][quality] = logistics_requests[item_name][quality] + slot.max
                     else
-                        logistics_requests[slot.name] = slot.count
+                        logistics_requests[item_name] = {
+                            [quality] = (slot.max or slot.min)
+                        }
                     end
                 end
             end
@@ -671,25 +671,45 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         column_count = 10,
     }
 
-
-
-    for item, count in pairs(logistics_requests) do
-        logistic_table.add{
-            type = "sprite-button",
-            style = "logistic_slot_button",
-            elem_tooltip = {
-                type = "item",
-                name = item
-            },
-            sprite = "item/" .. item,
-            number = count,
-            tags = {
-                mod = "constructron",
-                on_gui_click = "clear_all_requests",
-                item_name = item,
-                surface_index = surface_index
+    for item, value in pairs(logistics_requests) do
+        for quality, count in pairs(value) do
+            local button = logistic_table.add{
+                type = "choose-elem-button",
+                elem_type = "item-with-quality",
+                ["item-with-quality"] = {name = item, quality = quality},
+                elem_tooltip = {
+                    type = "item",
+                    name = item
+                },
+                tags = {
+                    mod = "constructron",
+                    on_gui_click = "clear_all_requests",
+                    item_name = item,
+                    surface_index = surface_index
+                }
             }
-        }
+            button.locked = true
+            -- add flow to button
+            local flow = button.add{
+                type = "flow",
+                style = "ctron_cargo_flow_style",
+                direction = "horizontal",
+                ignored_by_interaction = true
+            }
+            flow.style.height = 33
+            flow.style.width = 33
+            -- add label to flow
+            local ew = flow.add{
+                type = "empty-widget",
+            }
+            ew.style.horizontally_stretchable = true
+            -- add item count label
+            flow.add{
+                type = "label",
+                style = "ctron_cargo_item_label_style",
+                caption = count
+            }
+        end
     end
 
     local request_count = #logistics_requests or 1
@@ -701,7 +721,7 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
     for i = 1, logistic_slot_count - request_count do
         logistic_table.add{
             type = "sprite-button",
-            style = "logistic_slot_button",
+            style = "slot_button",
             tags = {
                 mod = "constructron",
             }
