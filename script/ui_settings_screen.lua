@@ -1,6 +1,8 @@
 local gui_settings = {}
 
-
+---comment
+---@param player LuaPlayer
+---@param surface LuaSurface
 function gui_settings.buildSettingsGui(player, surface)
     local settings_window = player.gui.screen.add{
         type="frame",
@@ -84,14 +86,23 @@ function gui_settings.buildSettingsTitleBar(player, surface, frame)
 
     -- surface selection
     local surfaces = {}
-    for _, iterated_surface in pairs(game.surfaces) do
-        surfaces[#surfaces+1] = iterated_surface.name
+    local selected_index
+    for _, surface_name in pairs(storage.managed_surfaces) do
+        surfaces[#surfaces+1] = surface_name
+        if surface_name == surface.name then
+            selected_index = #surfaces
+        end
+    end
+    if not storage.managed_surfaces[surface.index] then
+        surfaces[#surfaces+1] = surface.name
+        selected_index = #surfaces
     end
     storage.user_interface[player.index].settings_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
-        selected_index = surface.index,
+        selected_index = selected_index,
+        tooltip = {"ctron_gui_locale.surface_selector_tooltip"},
         items = surfaces,
         tags = {
             mod = "constructron",

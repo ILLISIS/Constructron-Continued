@@ -18,6 +18,8 @@ local gui_event_types = {
     [defines.events.on_gui_checked_state_changed] = "on_gui_checked_state_changed",
     [defines.events.on_gui_text_changed] = "on_gui_text_changed",
     [defines.events.on_gui_elem_changed] = "on_gui_elem_changed",
+    [defines.events.on_gui_hover] = "on_gui_hover",
+    [defines.events.on_gui_leave] = "on_gui_leave",
 }
 
 function gui_handlers.register()
@@ -244,85 +246,89 @@ local inprogress_job_states = {
 
 function gui_handlers.update_main_gui(player)
     local main_window = player.gui.screen.ctron_main_window
-    if main_window then
-        local main_ui_elements = storage.user_interface[player.index].main_ui.elements
-        local surface_index = game.surfaces[main_ui_elements["surface_selector"].selected_index].index
-        -- update stats values
-        main_ui_elements.total.caption = storage.constructrons_count[surface_index]
-        main_ui_elements.available.caption = storage.available_ctron_count[surface_index]
-        -- update job cards
-        local in_progress_section = main_ui_elements.in_progress_section
-        local in_progress_section_cards = {}
-        local finishing_section = main_ui_elements.finishing_section
-        local finishing_section_cards = {}
-        -- cache in progress section cards
-        for _, card in pairs(in_progress_section.children) do
-            if not card.tags["no_jobs"] then
-                in_progress_section_cards[card.tags.job_index] = card
-            end
+    if not main_window then return end
+    local main_ui_elements = storage.user_interface[player.index].main_ui.elements
+    local selector = storage.user_interface[player.index].main_ui.elements["surface_selector"]
+    local surface_name = selector.items[selector.selected_index]
+    local surface = game.surfaces[surface_name]
+    local surface_index = surface.index
+    -- update stats values
+    main_ui_elements.total.caption = storage.constructrons_count[surface_index]
+    main_ui_elements.available.caption = storage.available_ctron_count[surface_index]
+    -- update job cards
+    local in_progress_section = main_ui_elements.in_progress_section
+    local in_progress_section_cards = {}
+    local finishing_section = main_ui_elements.finishing_section
+    local finishing_section_cards = {}
+    -- cache in progress section cards
+    for _, card in pairs(in_progress_section.children) do
+        if not card.tags["no_jobs"] then
+            in_progress_section_cards[card.tags.job_index] = card
         end
-        -- cache finishing section cards
-        for _, card in pairs(finishing_section.children) do
-            if not card.tags["no_jobs"] then
-                finishing_section_cards[card.tags.job_index] = card
-            end
-        end
-        for job_index, job in pairs(storage.jobs) do
-            if job.surface_index == surface_index then
-                if inprogress_job_states[job.state] then
-                    if not in_progress_section_cards[job_index] then -- if the card doesn't exist, the job exists so create a new card to display
-                        gui_main.create_job_card(job, in_progress_section)
-                    else
-                        in_progress_section_cards[job_index] = nil -- the job exists and the card exists, so remove it from the cache
-                    end
-                elseif job.state == "finishing" then
-                    if not finishing_section_cards[job_index] then -- if the card doesn't exist, the job exists so create a new card to display
-                        gui_main.create_job_card(job, finishing_section)
-                    else
-                        finishing_section_cards[job_index] = nil -- the job exists and the card exists, so remove it from the cache
-                    end
-                end
-            end
-        end
-        -- destroy left over cards
-        for _, card in pairs(in_progress_section_cards) do -- if the card is still in the cache, it doesn't exist in the job list so destroy it
-            card.destroy()
-        end
-        for _, card in pairs(finishing_section_cards) do -- if the card is still in the cache, it doesn't exist in the job list so destroy it
-            card.destroy()
-        end
-        gui_main.empty_section_check(in_progress_section)
-        gui_main.empty_section_check(finishing_section)
-        -- pending section
-        local pending_section = main_ui_elements.pending_section
-        local pending_section_cards = {
-            ["construction"] = {},
-            ["deconstruction"] = {},
-            ["repair"] = {},
-            ["upgrade"] = {},
-            ["destroy"] = {},
-            ["cargo"] = {}
-        }
-        for _, card in pairs(pending_section.children) do
-            if not card.tags["no_jobs"] then
-                pending_section_cards[card.tags.job_type][card.tags.chunk_key] = card
-            end
-        end
-        for job_type, _ in pairs(pending_section_cards) do
-            local queue = storage[job_type .. "_queue"][surface_index]
-            for chunk_key, chunk in pairs(queue) do
-                if not pending_section_cards[job_type][chunk_key] then
-                    gui_main.create_chunk_card(chunk, surface_index, pending_section, job_type)
-                else
-                    pending_section_cards[job_type][chunk_key] = nil
-                end
-            end
-            for _, card in pairs(pending_section_cards[job_type]) do
-                card.destroy()
-            end
-        end
-        gui_main.empty_section_check(pending_section)
     end
+    -- cache finishing section cards
+    for _, card in pairs(finishing_section.children) do
+        if not card.tags["no_jobs"] then
+            finishing_section_cards[card.tags.job_index] = card
+        end
+    end
+    for job_index, job in pairs(storage.jobs) do
+        if job.surface_index == surface_index then
+            if inprogress_job_states[job.state] then
+                if not in_progress_section_cards[job_index] then -- if the card doesn't exist, the job exists so create a new card to display
+                    gui_main.create_job_card(job, in_progress_section)
+                else
+                    in_progress_section_cards[job_index].children[1].children[2].caption = job.job_status or "" -- update job status
+                    in_progress_section_cards[job_index] = nil -- the job exists and the card exists, so remove it from the cache
+                end
+            elseif job.state == "finishing" then
+                if not finishing_section_cards[job_index] then -- if the card doesn't exist, the job exists so create a new card to display
+                    gui_main.create_job_card(job, finishing_section)
+                else
+                    finishing_section_cards[job_index].children[1].children[2].caption = job.job_status or "" -- update job status
+                    finishing_section_cards[job_index] = nil -- the job exists and the card exists, so remove it from the cache
+                end
+            end
+        end
+    end
+    -- destroy left over cards
+    for _, card in pairs(in_progress_section_cards) do -- if the card is still in the cache, it doesn't exist in the job list so destroy it
+        card.destroy()
+    end
+    for _, card in pairs(finishing_section_cards) do -- if the card is still in the cache, it doesn't exist in the job list so destroy it
+        card.destroy()
+    end
+    gui_main.empty_section_check(in_progress_section)
+    gui_main.empty_section_check(finishing_section)
+    -- pending section
+    local pending_section = main_ui_elements.pending_section
+    local pending_section_cards = {
+        ["construction"] = {},
+        ["deconstruction"] = {},
+        ["repair"] = {},
+        ["upgrade"] = {},
+        ["destroy"] = {},
+        ["cargo"] = {}
+    }
+    for _, card in pairs(pending_section.children) do
+        if not card.tags["no_jobs"] then
+            pending_section_cards[card.tags.job_type][card.tags.chunk_key] = card
+        end
+    end
+    for job_type, _ in pairs(pending_section_cards) do
+        local queue = storage[job_type .. "_queue"][surface_index]
+        for chunk_key, chunk in pairs(queue) do
+            if not pending_section_cards[job_type][chunk_key] then
+                gui_main.create_chunk_card(chunk, surface_index, pending_section, job_type)
+            else
+                pending_section_cards[job_type][chunk_key] = nil
+            end
+        end
+        for _, card in pairs(pending_section_cards[job_type]) do
+            card.destroy()
+        end
+    end
+    gui_main.empty_section_check(pending_section)
 end
 
 function gui_handlers.update_job_gui(player)
@@ -397,8 +403,11 @@ function gui_handlers.close_main_window(player)
 end
 
 function gui_handlers.open_settings_window(player)
+    local selector = storage.user_interface[player.index].main_ui.elements["surface_selector"]
+    local surface_name = selector.items[selector.selected_index]
+    local surface = game.surfaces[surface_name]
     if not player.gui.screen.ctron_settings_window then
-        gui_settings.buildSettingsGui(player, player.surface)
+        gui_settings.buildSettingsGui(player, surface)
     else
         player.gui.screen.ctron_settings_window.bring_to_front()
     end
@@ -575,10 +584,10 @@ function gui_handlers.ctron_cancel_chunk(player, element)
 end
 
 function gui_handlers.selected_new_surface(player, element)
-    local new_surface = game.surfaces[element.selected_index]
+    local new_surface = game.surfaces[element.items[element.selected_index]]
     if not new_surface then return end
     if element.tags["surface_selector"] == "ctron_main" then
-        storage.user_interface[player.index]["surface"] = game.surfaces[element.selected_index]
+        storage.user_interface[player.index]["surface"] = new_surface
         gui_handlers.update_main_gui(player)
     elseif element.tags["surface_selector"] == "ctron_settings" then
         gui_handlers.update_settings_gui(player, new_surface)
@@ -667,12 +676,19 @@ function gui_handlers.change_entities_per_second(player, element)
 end
 
 function gui_handlers.clear_logistic_request(player, element)
-    local logistic_slot = element.tags.logistic_slot
     local worker = storage.constructrons[element.tags.unit_number]
-    worker.clear_vehicle_logistic_slot(logistic_slot)
-    element.sprite = nil
-    element.tooltip = nil
-    element.number = nil
+    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local section = logistic_point.get_section(1)
+    local item_name = element.elem_value.name
+    local quality = element.elem_value.quality
+    for slot, request in pairs(section.filters) do
+        if request and request.value and (request.value.name == item_name) and (request.value.quality == quality) then
+            section.clear_slot(slot)
+        end
+    end
+    element.elem_value = nil
+    element.elem_tooltip = nil
+    element.children[1].destroy()
     element.tags = {
         mod = "constructron",
     }
@@ -708,22 +724,23 @@ end
 
 function gui_handlers.clear_all_requests(player, element)
     local surface = game.surfaces[element.tags.surface_index]
-    local item_name = element.tags.item_name
-    element.sprite = nil
-    element.number = nil
+    local item_name = element.elem_value.name
+    local quality = element.elem_value.quality
+
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == surface.index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker
-            for i = 1, worker.request_slot_count do
-                local slot = worker.get_request_slot(i)
-                if slot then
-                    if slot.name == item_name then
-                        worker.clear_request_slot(i)
-                    end
+            local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+            local section = logistic_point.get_section(1)
+            for slot, request in pairs(section.filters) do
+                if request and request.value and (request.value.name == item_name) and (request.value.quality == quality) then
+                    section.clear_slot(slot)
                 end
             end
         end
     end
+    element.elem_value = nil
+    element.children[1].destroy()
 end
 
 function gui_handlers.rename_station(player, element)
@@ -776,8 +793,15 @@ end
 
 function gui_handlers.open_cargo_window(player, element)
     if not player.gui.screen.ctron_cargo_window then
-        gui_cargo.buildCargoGui(player, player.surface)
-        if not element.tags.station_unit_number then return end
+        if not element.tags.station_unit_number then 
+            local selector = storage.user_interface[player.index].main_ui.elements["surface_selector"]
+            local surface_name = selector.items[selector.selected_index]
+            local surface = game.surfaces[surface_name]
+            gui_cargo.buildCargoGui(player, surface)
+            return
+        end
+        local station = storage.service_stations[element.tags.station_unit_number]
+        gui_cargo.buildCargoGui(player, game.surfaces[station.surface.name])
         gui_handlers.cargo_hide_stations(player, element)
     else
         player.gui.screen.ctron_cargo_window.bring_to_front()
@@ -791,9 +815,7 @@ function gui_handlers.close_cargo_window(player)
 end
 
 function gui_handlers.cargo_hide_stations(player, element)
-    local frame = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content.parent.parent
-    if element.visible then
-        -- element.visible = false
+    if (storage.stations_count[player.surface.index] > 1) then
         local cargo_content = storage.user_interface[player.index]["cargo_ui"]["elements"].cargo_content
         -- hide station cards
         for _, child in pairs(cargo_content.children) do
@@ -818,8 +840,6 @@ function gui_handlers.cargo_hide_stations(player, element)
                 on_gui_click = "cargo_show_all_stations",
             }
         }
-    else
-        element.visible = true
     end
 end
 
@@ -832,11 +852,14 @@ function gui_handlers.cargo_show_all_stations(player, element)
 end
 
 function gui_handlers.open_logistics_window(player, element)
+    local selector = storage.user_interface[player.index].main_ui.elements["surface_selector"]
+    local surface_name = selector.items[selector.selected_index]
+    local surface = game.surfaces[surface_name]
     if not player.gui.screen.ctron_logistics_window then
-        gui_main.BuildLogisticsDisplay(player, storage.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
+        gui_main.BuildLogisticsDisplay(player, surface)
     else
         player.gui.screen.ctron_logistics_window.destroy()
-        gui_main.BuildLogisticsDisplay(player, storage.user_interface[player.index].main_ui.elements["surface_selector"].selected_index)
+        gui_main.BuildLogisticsDisplay(player, surface)
     end
 end
 
@@ -962,5 +985,85 @@ function gui_handlers.reset_controls(player)
     cargo_ui_elements.confirm_button.enabled = false
 end
 
+function gui_handlers.copy_station_requests(player, element)
+    storage.user_interface[player.index]["settings_export"] = table.deepcopy(storage.station_requests[element.tags.station_unit_number])
+end
+
+function gui_handlers.paste_station_requests(player, element)
+    storage.station_requests[element.tags.station_unit_number] = table.deepcopy(storage.user_interface[player.index]["settings_export"])
+    player.gui.screen.ctron_cargo_window.destroy()
+    gui_cargo.buildCargoGui(player, player.surface)
+end
+
+function gui_handlers.on_gui_hover_job(player, element)
+    local job = storage.jobs[element.tags.job_index]
+    if not job then return end
+    local _, chunk = next(job.chunks)
+    chunk = chunk or {}
+    local position = (chunk.midpoint or job.destination_station.position or job.task_positions[1] or job.worker.position)
+    if not position then return end
+    if player.gui.screen.ctron_hover_frame then
+        player.gui.screen.ctron_hover_frame.destroy()
+    end
+    local frame = player.gui.screen.add{
+        type = "frame",
+        name = "ctron_hover_frame",
+        tags = {
+            mod = "constructron",
+        }
+    }
+    frame.auto_center = true
+    local inner_frame = frame.add{
+        type = "frame",
+        direction = "vertical",
+        style = "inside_deep_frame"
+    }
+    local cam = inner_frame.add{
+        type = "camera",
+        position = position,
+        zoom = 0.30
+    }
+    cam.style.height = 500
+    cam.style.width = 500
+end
+
+function gui_handlers.on_gui_hover_chunk(player, element)
+    local job_type = element.tags.job_type
+    local surface_index = element.tags.surface_index
+    local chunk = storage[job_type .. '_queue'][surface_index][element.tags.chunk_key]
+    if not chunk then return end
+    local chunk_midpoint = {x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2)}
+    if player.gui.screen.ctron_hover_frame then
+        player.gui.screen.ctron_hover_frame.destroy()
+    end
+    local frame = player.gui.screen.add{
+        type = "frame",
+        name = "ctron_hover_frame",
+        tags = {
+            mod = "constructron",
+        }
+    }
+    frame.auto_center = true
+    local inner_frame = frame.add{
+        type = "frame",
+        direction = "vertical",
+        style = "inside_deep_frame"
+    }
+    local cam = inner_frame.add{
+        type = "camera",
+        position = chunk_midpoint,
+        zoom = 0.30
+    }
+    cam.style.height = 500
+    cam.style.width = 500
+end
+
+
+
+function gui_handlers.on_gui_leave(player, element)
+    if player.gui.screen.ctron_hover_frame then
+        player.gui.screen.ctron_hover_frame.destroy()
+    end
+end
 
 return gui_handlers

@@ -113,8 +113,10 @@ function destroy_job:in_progress()
     --     end
     -- end
 
-    local logistic_cell = self.worker_logistic_cell or self:set_logistic_cell()
-    local logistic_network = self.worker_logistic_network or self:set_logistic_network()
+    local logistic_cell = self.worker_logistic_cell
+    assert(logistic_cell, "Missing logistic cell!")
+    local logistic_network = self.worker_logistic_network
+    assert(logistic_network, "Missing logistic network!")
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then
@@ -138,6 +140,7 @@ function destroy_job:in_progress()
     local construction_robots = logistic_network.construction_robots
 
     debug_lib.VisualDebugText("".. self.job_type .."", worker, -1, 1)
+    self.job_status = "Attacking"
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
         self:enable_roboports()

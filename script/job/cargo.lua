@@ -118,11 +118,22 @@ function cargo_job:move_stations()
     end
 end
 
+function cargo_job:validate_destination_station()
+    if not (self.destination_station and self.destination_station.valid) then
+        debug_lib.VisualDebugText("Destination station is invalid", self.worker, -1, 1)
+        self.worker.autopilot_destination = nil
+        self.state = "finishing"
+        return false
+    end
+    return true
+end
+
 --===========================================================================--
 --  State Logic
 --===========================================================================--
 
 function cargo_job:setup()
+    if not self:validate_destination_station() then return end
     -- check if cargo can fit in the inventory
     self.empty_slot_count = self.worker_inventory.count_empty_stacks()
     local total_required_slots = util_func.calculate_required_inventory_slot_count(self.required_items)
@@ -156,6 +167,7 @@ function cargo_job:setup()
 end
 
 function cargo_job:in_progress()
+    if not self:validate_destination_station() then return end
     local worker = self.worker ---@cast worker -nil
     -- check health
     if not self:check_health() then return end
@@ -165,6 +177,7 @@ function cargo_job:in_progress()
     if not (self.sub_state == "unloading_items") then
         self:deliver_items()
         self.sub_state = "unloading_items"
+        self.job_status = "Delivering cargo"
         return
     else
         if not self:check_trash() then
