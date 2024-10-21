@@ -123,8 +123,8 @@ styles.ctron_job_status_section_style = {
 styles.ctron_job_card_style = {
     type = "frame_style",
     parent = "frame",
-    top_padding = 6,
-    bottom_padding = 6,
+    top_padding = 2,
+    bottom_padding = 2,
 }
 
 styles.ctron_job_status_section_flow_style = {
@@ -175,8 +175,8 @@ styles.ctron_job_type_label_style = {
 styles.ctron_chunk_card_style = {
     type = "frame_style",
     parent = "frame",
-    top_padding = 6,
-    bottom_padding = 6,
+    top_padding = 2,
+    bottom_padding = 2,
 }
 
 styles.ctron_chunk_label_frame_style = {

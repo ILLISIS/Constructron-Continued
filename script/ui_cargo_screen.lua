@@ -2,6 +2,9 @@ local util_func = require("script/utility_functions")
 
 local gui_cargo = {}
 
+---comment
+---@param player LuaPlayer
+---@param surface LuaSurface
 function gui_cargo.buildCargoGui(player, surface)
     local cargo_window = player.gui.screen.add{
         type="frame",
@@ -122,14 +125,23 @@ function gui_cargo.buildCargoTitleBar(player, surface, frame)
 
     -- surface selection
     local surfaces = {}
-    for _, iterated_surface in pairs(game.surfaces) do
-        surfaces[#surfaces+1] = iterated_surface.name
+    local selected_index
+    for _, surface_name in pairs(storage.managed_surfaces) do
+        surfaces[#surfaces+1] = surface_name
+        if surface_name == surface.name then
+            selected_index = #surfaces
+        end
+    end
+    if not storage.managed_surfaces[surface.index] then
+        surfaces[#surfaces+1] = surface.name
+        selected_index = #surfaces
     end
     storage.user_interface[player.index].cargo_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
-        selected_index = surface.index,
+        selected_index = selected_index,
+        tooltip = {"ctron_gui_locale.surface_selector_tooltip"},
         items = surfaces,
         tags = {
             mod = "constructron",
@@ -189,6 +201,7 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
         style = "ctron_station_label_style",
         caption = "Service Station: "
     }
+    station_flow.style.vertical_align = "center"
 
     local label_frame = station_flow.add{
         type = "frame",
@@ -201,6 +214,38 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
         type = "label",
         caption = station.backer_name,
         style = "ctron_cargo_label_style"
+    }
+    local button_flow = station_flow.add{
+        type = "flow",
+        direction = "horizontal"
+    }
+    button_flow.style.horizontal_align = "right"
+    button_flow.style.horizontally_stretchable = true
+    button_flow.style.right_padding = 5
+    -- copy / paste
+    button_flow.add{
+        type = "sprite-button",
+        style = "frame_action_button",
+        sprite = "ctron_export",
+        mouse_button_filter = {"left"},
+        tooltip = {"ctron_gui_locale.copy_station_requests_tooltip"},
+        tags = {
+            mod = "constructron",
+            on_gui_click = "copy_station_requests",
+            station_unit_number = station_unit_number,
+        }
+    }
+    button_flow.add{
+        type = "sprite-button",
+        style = "frame_action_button",
+        sprite = "ctron_import",
+        mouse_button_filter = {"left"},
+        tooltip = {"ctron_gui_locale.paste_station_requests_tooltip"},
+        tags = {
+            mod = "constructron",
+            on_gui_click = "paste_station_requests",
+            station_unit_number = station_unit_number,
+        }
     }
 
     -- cargo display
@@ -293,8 +338,11 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
     end
 end
 
+---@param player LuaPlayer
+---@param surface LuaSurface
+---@param frame LuaGuiElement
 function gui_cargo.buildCargoContent(player, surface, frame)
-    local surface_index = game.surfaces[storage.user_interface[player.index].cargo_ui.elements["surface_selector"].selected_index].index
+    local surface_index = surface.index
     for _, station in pairs(storage.service_stations) do
         if station.surface.index == surface_index then
             gui_cargo.buildStationCard(player, surface, frame, station)

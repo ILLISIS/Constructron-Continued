@@ -1,3 +1,5 @@
+color_lib = require("script/color_lib")
+
 local gui_main = {}
 
 function gui_main.buildMainGui(player)
@@ -60,7 +62,6 @@ function gui_main.buildMainGui(player)
             on_gui_click = "open_logistics_window"
         }
     }
-
     gui_main.buildMainContent(player, surface, main_window)
 end
 
@@ -93,14 +94,23 @@ function gui_main.buildMainTitleBar(player, surface, frame)
 
     -- surface selection
     local surfaces = {}
-    for _, iterated_surface in pairs(game.surfaces) do
-        surfaces[#surfaces+1] = iterated_surface.name
+    local selected_index
+    for _, surface_name in pairs(storage.managed_surfaces) do
+        surfaces[#surfaces+1] = surface_name
+        if surface_name == surface.name then
+            selected_index = #surfaces
+        end
+    end
+    if not storage.managed_surfaces[surface.index] then
+        surfaces[#surfaces+1] = surface.name
+        selected_index = #surfaces
     end
     storage.user_interface[player.index].main_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
-        selected_index = surface.index,
+        selected_index = selected_index,
+        tooltip = {"ctron_gui_locale.surface_selector_tooltip"},
         items = surfaces,
         tags = {
             mod = "constructron",
@@ -241,6 +251,15 @@ local job_types = {
     "repair",
     "destroy",
     "cargo"
+}
+
+local job_colors = {
+    ["deconstruction"] = color_lib.colors.red,
+    ["construction"] = color_lib.colors.blue,
+    ["upgrade"] = color_lib.colors.green,
+    ["repair"] = color_lib.colors.purple,
+    ["destroy"] = color_lib.colors.black,
+    ["cargo"] = color_lib.colors.gray
 }
 
 function gui_main.empty_section_check(section)
@@ -388,7 +407,7 @@ function gui_main.create_job_card(job, section)
     local job_index = job.job_index
 
     -- job card
-    local card = section.add{
+    local job_card = section.add{
         type = "frame",
         name = "ctron_" .. job_type .. "_card_" .. job_index,
         style = "ctron_job_card_style",
@@ -398,23 +417,34 @@ function gui_main.create_job_card(job, section)
         },
     }
 
-    -- add job_type frame
-    local label_frame = card.add{
-        type = "frame",
-        name = "label_frame",
-        style = "ctron_job_label_frame_style",
-        direction = "vertical"
+    local card_flow = job_card.add{
+        type = "flow",
+        direction = "horizontal"
     }
-
+    card_flow.style.vertical_align = "center"
     -- add job_type label
-    label_frame.add{
+    local label_bg = card_flow.add{
+        type = "progressbar",
+        value = 1,
+    }
+    label_bg.style.color = job_colors[job_type]
+    label_bg.style.width = 180
+    label_bg.style.bar_width = 30 -- bar thickness
+    label_bg.add{
         type = "label",
         name = "ctron_job_type_label",
         caption = {"ctron_gui_locale.job_card_" .. job_type .. "_name"},
         style = "ctron_job_type_label_style"
     }
 
-    card.add{
+    -- status label
+    local status_label = card_flow.add{
+        type = "label",
+        caption = job.job_status
+    }
+    status_label.style.left_padding = 10
+
+    card_flow.add{
         type = "empty-widget",
         name = "ctron_spacer",
         style = "ctron_job_section_title_bar_style", -- TODO: this is a shared style, should this be a new one?
@@ -422,21 +452,24 @@ function gui_main.create_job_card(job, section)
     }
 
     -- add locate button
-    card.add{
+    card_flow.add{
         type = "button",
         name = "ctron_locate_button",
         caption = {"ctron_gui_locale.job_locate_button"},
-        tooltip = {"ctron_gui_locale.job_locate_button_tooltip"},
+        -- tooltip = {"ctron_gui_locale.job_locate_button_tooltip"},
         style = "ctron_frame_button_style",
+        raise_hover_events = true,
         tags = {
             mod = "constructron",
             on_gui_click = "ctron_locate_job",
+            on_gui_hover = "on_gui_hover_job",
+            on_gui_leave = "on_gui_leave",
             job_index = job_index
         }
     }
 
     -- add cancel button
-    card.add{
+    card_flow.add{
         type = "button",
         name = "ctron_cancel_button",
         caption = {"ctron_gui_locale.job_cancel_button"},
@@ -450,7 +483,7 @@ function gui_main.create_job_card(job, section)
     }
 
     -- add details button
-    card.add{
+    card_flow.add{
         type = "button",
         name = "ctron_details_button",
         caption = {"ctron_gui_locale.job_details_button"},
@@ -471,7 +504,7 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
     local chunk_key = chunk.key or chunk.index
 
     -- chunk card
-    local card = section.add{
+    local chunk_card = section.add{
         type = "frame",
         style = "ctron_chunk_card_style",
         tags = {
@@ -480,34 +513,50 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
             job_type = job_type
         }
     }
-
-    -- add chunk_type frame
-    local label_frame = card.add{
-        type = "frame",
-        style = "ctron_chunk_label_frame_style",
+    local card_flow = chunk_card.add{
+        type = "flow",
+        direction = "horizontal"
     }
-
+    card_flow.style.vertical_align = "center"
     -- add chunk_type label
-    label_frame.add{
+    local label_bg = card_flow.add{
+        type = "progressbar",
+        value = 1,
+    }
+    label_bg.style.color = job_colors[job_type]
+    label_bg.style.width = 180
+    label_bg.style.bar_width = 30 -- bar thickness
+    label_bg.add{
         type = "label",
+        name = "ctron_job_type_label",
         caption = {"ctron_gui_locale.job_card_" .. job_type .. "_name"},
-        style = "ctron_chunk_label_style"
+        style = "ctron_job_type_label_style"
     }
 
-    card.add{
+    -- status label
+    local status_label = card_flow.add{
+        type = "label",
+        caption = "Waiting for an available worker"
+    }
+    status_label.style.left_padding = 10
+
+    card_flow.add{
         type = "empty-widget",
         style = "ctron_job_section_title_bar_style",
         ignored_by_interaction = true
     }
     if not (job_type == "cargo") then
         -- add locate button
-        card.add{
+        card_flow.add{
             type = "button",
             caption = {"ctron_gui_locale.job_locate_button"},
             style = "ctron_frame_button_style",
+            raise_hover_events = true,
             tags = {
                 mod = "constructron",
                 on_gui_click = "ctron_locate_chunk",
+                on_gui_hover = "on_gui_hover_chunk",
+                on_gui_leave = "on_gui_leave",
                 chunk_key = chunk_key,
                 surface_index = surface_index,
                 job_type = job_type
@@ -515,7 +564,7 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
         }
 
         -- add cancel button
-        card.add{
+        card_flow.add{
             type = "button",
             caption = {"ctron_gui_locale.job_cancel_button"},
             style = "ctron_frame_button_style",
@@ -548,7 +597,8 @@ end
 -- Logistics window
 --===========================================================================--
 --iterate over all jobs on the selected surface and display logistics of the workers
-function gui_main.BuildLogisticsDisplay(player, surface_index)
+function gui_main.BuildLogisticsDisplay(player, surface)
+    local surface_index = surface.index
     local logistics_window = player.gui.screen.add{
         type="frame",
         name="ctron_logistics_window",
@@ -584,14 +634,23 @@ function gui_main.BuildLogisticsDisplay(player, surface_index)
 
     -- surface selection
     local surfaces = {}
-    for _, iterated_surface in pairs(game.surfaces) do
-        surfaces[#surfaces+1] = iterated_surface.name
+    local selected_index
+    for _, surface_name in pairs(storage.managed_surfaces) do
+        surfaces[#surfaces+1] = surface_name
+        if surface_name == surface.name then
+            selected_index = #surfaces
+        end
+    end
+    if not storage.managed_surfaces[surface_index] then
+        surfaces[#surfaces+1] = surface.name
+        selected_index = #surfaces
     end
     storage.user_interface[player.index].logistics_ui.elements["surface_selector"] = bar.add{
         type = "drop-down",
         name = "surface_select",
         style = "ctron_surface_dropdown_style",
-        selected_index = surface_index,
+        selected_index = selected_index,
+        tooltip = {"ctron_gui_locale.surface_selector_tooltip"},
         items = surfaces,
         tags = {
             mod = "constructron",

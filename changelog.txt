@@ -1,4 +1,23 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.1
+Date: 2024-10-21
+  Features:
+    - Added the ability to copy and paste station requests.
+    - Added a camera window to the locate button for a quick view of the job location.
+  Changes:
+    - Added job colors to the UI for better distinction.
+    - Added a job status indicator label to the each job in the UI of what the worker is doing.
+    - Removed logistic section rename to stop it from showing in the logistic list. Do not remove the last logistic section from a Constructron.
+    - The surface selection dropdowns within the UI now only show surfaces with at least one Constructron and one Service Station.
+    - Auxilary UI's such as settings and cargo are now contextual to the surface that is selected within the main UI instead of the player's current surface.
+  Bugfixes:
+    - Fixed a crash when a cargo job was in progress and the destination station was invalidated.
+    - Fixed a crash caused by non-sequential surface indexes, commonly because a surface was deleted.
+    - Fixed a crash when roboports were removed and readded to a Constructron during a job.
+    - Fixed a crash when processing items-on-ground for deconstruction.
+    - Fixed a crash when attempting to clear a logistic request from the job details UI.
+    - Fixed a crash when managing logistics requests from the all logistics UI.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.0
 Date: 2024-10-21
   Features:

@@ -392,7 +392,7 @@ function gui_job.build_logistic_display(worker, logistic_table)
         if section.filters[i] and section.filters[i].value then
             local slot = section.filters[i]
             local slot_item = slot.value
-            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, slot.max, nil)
+            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, slot.max, nil, worker)
         else
             logistic_table.add{
                 type = "sprite-button",
@@ -412,7 +412,8 @@ end
 ---@param quality string
 ---@param count number
 ---@param style string?
-function gui_job.build_button(parent, name, item, quality, count, style)
+---@param worker LuaEntity?
+function gui_job.build_button(parent, name, item, quality, count, style, worker)
     local button = parent.add{
         type = "choose-elem-button",
         name = name,
@@ -425,8 +426,14 @@ function gui_job.build_button(parent, name, item, quality, count, style)
         },
         tags = {
             mod = "constructron",
+            on_gui_click = "clear_logistic_request",
         }
     }
+    if worker then
+        local tags = button.tags
+        tags["unit_number"] = worker.unit_number
+        button.tags = tags
+    end
     button.locked = true
     -- add flow to button
     local flow = button.add{

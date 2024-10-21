@@ -1,6 +1,5 @@
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
-local collision_mask_util_extended = require("script/collision-mask-util-control")
 local pathfinder = require("script/pathfinder")
 
 -- class for jobs
@@ -29,6 +28,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.last_distance = 0         -- used to check if the worker is moving
     instance.mobility_tick = nil       -- used to delay mobility checks
     instance.last_robot_positions = {} -- used to check that robots are active and not stuck
+    instance.job_status = "New"        -- used to display the current job status in the UI
     -- job flags
     instance.landfill_job = false      -- used to determine if the job should expect landfill
     instance.roboports_enabled = true  -- used to flag if roboports are enabled or not
@@ -277,6 +277,7 @@ function job:check_items_are_allowed(item_list)
 end
 
 function job:request_items(item_list)
+    self.job_status = "Requesting items"
     local slot = 1
     local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
@@ -449,9 +450,19 @@ end
 -- this method validates that the worker has roboport euipment
 function job:validate_logisitics()
     local worker = self.worker ---@cast worker -nil
-    if not (worker.logistic_cell and worker.logistic_cell.logistic_network) then
-        debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
-        return false
+    if not (self.worker_logistic_cell and self.worker_logistic_cell.valid) then
+        if not worker.logistic_cell then
+            debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
+            return false
+        end
+        self.worker_logistic_cell = self.worker.logistic_cell
+    end
+    if not (self.worker_logistic_network and self.worker_logistic_network.valid) then
+        if not self.worker_logistic_cell.logistic_network then
+            debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
+            return false
+        end
+        self.worker_logistic_network = self.worker_logistic_cell.logistic_network
     end
     return true
 end
@@ -462,6 +473,7 @@ function job:position_check(position, distance)
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
         debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
+        self.job_status = "Moving to position"
         if not worker.autopilot_destination then
             if not self.path_request_id then
                 self:move_to_position(position)
@@ -614,16 +626,6 @@ function job:check_roaming_candidate(station, current_items, current_requests)
     return false
 end
 
-function job:set_logistic_cell()
-    self.worker_logistic_cell = self.worker.logistic_cell
-    return self.worker_logistic_cell
-end
-
-function job:set_logistic_network()
-    self.worker_logistic_network = self.worker.logistic_cell.logistic_network
-    return self.worker_logistic_network
-end
-
 function job:randomize_idle_position()
     local worker = self.worker ---@cast worker -nil
     if not storage.queue_proc_trigger and (storage.constructrons_count[self.surface_index] > 10) then
@@ -652,6 +654,7 @@ function job:clear_items()
             item_request[robot.name][robot.quality] = nil
         end
         self:request_items(item_request)
+        self.job_status = "Clearing inventory"
         self.sub_state = "items_requested"
         self.request_tick = game.tick
         return false
@@ -870,8 +873,10 @@ function job:in_progress()
         return
     end
 
-    local logistic_cell = self.worker_logistic_cell or self:set_logistic_cell()
-    local logistic_network = self.worker_logistic_network or self:set_logistic_network()
+    local logistic_cell = self.worker_logistic_cell
+    assert(logistic_cell, "Missing logistic cell!")
+    local logistic_network = self.worker_logistic_network
+    assert(logistic_network, "Missing logistic network!")
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then
@@ -895,6 +900,7 @@ function job:in_progress()
     local construction_robots = logistic_network.construction_robots
 
     debug_lib.VisualDebugText("" .. self.job_type .. "", worker, -1, 1)
+    self.job_status = "Working"
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
         self:enable_roboports()

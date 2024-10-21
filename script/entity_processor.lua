@@ -43,9 +43,6 @@ entity_proc.on_built_entity = function(event)
             auto_target_without_gunner = true,
             auto_target_with_gunner = true
         }
-        local logistic_point = entity.get_logistic_point(0) ---@cast logistic_point -nil
-        local section = logistic_point.get_section(1)
-        section.group = math.random(1,100000) .. "---- DO NOT REMOVE!"
     elseif entity.name == "service_station" then -- register service station
         local registration_number = script.register_on_object_destroyed(entity)
         storage.service_stations[entity.unit_number] = entity
@@ -511,12 +508,16 @@ entity_proc.deconstruction = function(entity)
                 trash_items[product_name][quality_level] = (trash_items[product_name][quality_level] or 0) + count
             end
         else
+            -- deconstructible-tile-proxy
             trash_items["concrete"] = trash_items["concrete"] or {}
             trash_items["concrete"]["normal"] = (trash_items["concrete"]["normal"] or 0) + 1 -- assuming tile name because there doesn't seem to be a way to get what will be picked up
         end
     else
+        -- item-on-ground
         local entity_stack = entity.stack
-        trash_items[entity_stack.name] = (trash_items[entity_stack.name] or 0) + entity_stack.count
+        local quality_level = storage.quality_levels[entity_stack.quality.level]
+        trash_items[entity_stack.name] = trash_items[entity_stack.name] or {}
+        trash_items[entity_stack.name][quality_level] = (trash_items[entity_stack.name][quality_level] or 0) + entity_stack.count
     end
     return required_items, trash_items
 end
