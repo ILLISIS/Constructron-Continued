@@ -395,6 +395,7 @@ end
 ---@param entity LuaEntity
 entity_proc.process_entity = function(build_type, queue, entity)
     required_items, trash_items = entity_proc[build_type](entity)
+    if not (required_items and trash_items) then return end
     entity_proc.process_chunk(queue, entity, required_items, trash_items)
 end
 
@@ -451,11 +452,11 @@ end
 
 ---@param entity LuaEntity
 entity_proc.deconstruction = function(entity)
+    if not entity.is_registered_for_deconstruction(game.forces.player) then return end
     local required_items = {}
     local trash_items = {}
     local entity_type = entity.type
     local quality_level = storage.quality_levels[entity.quality.level]
-    if not entity.is_registered_for_deconstruction(game.forces.player) then return end
     if (entity_type == "cliff") then -- cliff demolition
         required_items['cliff-explosives'] = {}
         required_items['cliff-explosives']["normal"] = (required_items['cliff-explosives']["normal"] or 0) + 1
@@ -565,14 +566,15 @@ local construction_entity_types = {
 
 ---@param entity LuaEntity
 entity_proc.construction = function(entity)
-    local entity_type = entity.type
     if not entity.is_registered_for_construction() then return end
+    local entity_type = entity.type
     local required_items, trash_items = construction_entity_types[entity_type](entity)
     return required_items, trash_items
 end
 
 ---@param entity LuaEntity
 entity_proc.upgrade = function(entity)
+    if not entity.is_registered_for_upgrade() then return end
     local required_items = {}
     local trash_items = {}
     local target_entity, quality = entity.get_upgrade_target()
@@ -591,6 +593,7 @@ end
 
 ---@param entity LuaEntity
 entity_proc.repair = function(entity)
+    if not entity.is_registered_for_repair() then return end
     local required_items = {}
     local trash_items = {}
     local repair_tool = storage.repair_tool_name[entity.surface.index]
