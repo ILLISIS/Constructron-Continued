@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.3
+Date: 2024-10-23
+  Changes:
+    - Removed remanants of the old /ctron commands. All functionality is now available in the Constructron Control Center.
+  Bugfixes:
+    - Fixed a crash during a utility / robot collection job.
+    - Fixed a crash during deconstruction chunk splitting.
+    - Fixed an issue that caused Constructrons to dump their robots into the network when there are still jobs to do.
+    - Fixed an issue that caused Constructrons to move to an idle position when there are still jobs to do.
+
+---------------------------------------------------------------------------------------------------
 Version: 2.0.2
 Date: 2024-10-22
   Bugfixes:
