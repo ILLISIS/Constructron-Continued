@@ -45,6 +45,7 @@ local job_types = {
 }
 
 job_proc.process_queues = function(surface_index)
+    if not (storage.available_ctron_count[surface_index] > 0) then return end
     for job_type, job_class in pairs(job_types) do
         job_proc.process_queue(surface_index, job_type, job_class)
     end

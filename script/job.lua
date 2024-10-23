@@ -105,11 +105,19 @@ function job:get_chunk()
     local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables { self.required_items, chunk.required_items, chunk.trash_items })
     if total_required_slots > self.empty_slot_count then
         local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items and trash
-        for item, count in pairs(chunk.required_items) do
-            chunk.required_items[item] = math.ceil(count / divisor)
+        for item, value in pairs(chunk.required_items) do
+            for quality, count in pairs(value) do
+                chunk.required_items[item] = {
+                    [quality] = math.ceil(count / divisor)
+                }
+            end
         end
-        for item, count in pairs(chunk.trash_items) do
-            chunk.trash_items[item] = math.ceil(count / divisor)
+        for item, value in pairs(chunk.trash_items) do
+            for quality, count in pairs(value) do
+                chunk.trash_items[item] = {
+                    [quality] = math.ceil(count / divisor)
+                }
+            end
         end
         -- duplicate the chunk so another constructron will perform the same job
         if divisor > 1 and (self.job_type == "deconstruction") then
@@ -627,14 +635,25 @@ function job:check_roaming_candidate(station, current_items, current_requests)
 end
 
 function job:randomize_idle_position()
+    if self:check_for_queued_jobs() then return end
+    if not (storage.constructrons_count[self.surface_index] > 10) then return end
     local worker = self.worker ---@cast worker -nil
-    if not storage.queue_proc_trigger and (storage.constructrons_count[self.surface_index] > 10) then
-        local stepdistance = 5 + math.random(5)
-        local alpha = math.random(360)
-        local offset = { x = (math.cos(alpha) * stepdistance), y = (math.sin(alpha) * stepdistance) }
-        local new_position = { x = (worker.position.x + offset.x), y = (worker.position.y + offset.y) }
-        worker.autopilot_destination = new_position
+    local stepdistance = 5 + math.random(5)
+    local alpha = math.random(360)
+    local offset = { x = (math.cos(alpha) * stepdistance), y = (math.sin(alpha) * stepdistance) }
+    local new_position = { x = (worker.position.x + offset.x), y = (worker.position.y + offset.y) }
+    worker.autopilot_destination = new_position
+end
+
+---checks if there are any more jobs to do
+---@return boolean
+function job:check_for_queued_jobs()
+    for _, job_type in pairs(storage.job_types) do
+        if next(storage[job_type .. "_queue"][self.surface_index]) then
+            return true
+        end
     end
+    return false
 end
 
 function job:clear_items()
@@ -649,7 +668,7 @@ function job:clear_items()
                 }
             end
         end
-        if storage.queue_proc_trigger then
+        if self:check_for_queued_jobs() then
             local robot = storage.desired_robot_name[self.surface_index]
             item_request[robot.name][robot.quality] = nil
         end
