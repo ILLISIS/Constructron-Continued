@@ -45,18 +45,7 @@ end
 job.get_worker = function(surface_index)
     for _, constructron in pairs(storage.constructrons) do
         if constructron and constructron.valid and (constructron.surface.index == surface_index) and not util_func.get_constructron_status(constructron, 'busy') then
-            if not constructron.logistic_cell then -- TODO: add  (constructron.grid.generator_energy & max_solar_energy)
-                rendering.draw_text {
-                    text = "Needs Equipment",
-                    target = constructron,
-                    filled = true,
-                    surface = constructron.surface,
-                    time_to_live = 180,
-                    target_offset = { 0, -1 },
-                    alignment = "center",
-                    color = { r = 255, g = 255, b = 255, a = 255 }
-                }
-            else
+            if job.check_equipment(constructron) then -- TODO: add  (constructron.grid.generator_energy & max_solar_energy)
                 local logistic_cell = constructron.logistic_cell
                 local logistic_network = logistic_cell.logistic_network ---@cast logistic_network -nil
                 -- check there are no active robots that the unit owns
@@ -72,17 +61,47 @@ job.get_worker = function(surface_index)
                     storage.job_index = storage.job_index + 1
                     storage.jobs[storage.job_index] = utility_job.new(storage.job_index, surface_index, "utility", constructron)
                     storage.jobs[storage.job_index].state = "robot_collection"
-                    storage.job_proc_trigger = true
                 end
             end
         end
     end
 end
 
+---@param constructron LuaEntity
+---@return boolean
+job.check_equipment = function(constructron)
+    if not constructron.logistic_cell then
+        rendering.draw_text {
+            text = "Needs roboport equipment",
+            target = constructron,
+            filled = true,
+            surface = constructron.surface,
+            time_to_live = 180,
+            target_offset = { 0, -1 },
+            alignment = "center",
+            color = { r = 255, g = 255, b = 255, a = 255 }
+        }
+        return false
+    end
+    if not ((constructron.grid.get_generator_energy() > 0) or (constructron.grid.max_solar_energy > 0)) then
+        rendering.draw_text {
+            text = "Needs power equipment",
+            target = constructron,
+            filled = true,
+            surface = constructron.surface,
+            time_to_live = 180,
+            target_offset = { 0, -1 },
+            alignment = "center",
+            color = { r = 255, g = 255, b = 255, a = 255 }
+        }
+        return false
+    end
+    return true
+end
+
 -- idea for mass entity handling
 -- local function get_upgrade_quality(target, chunk)
---     local inventory = game.create_inventory(1)
---     inventory.insert({name = "blueprint"})
+--     local inventory = game.create_inventory.insert({name = "blueprint"})
 --     inventory[1].create_blueprint{
 --         surface = 1,
 --         force = "player",
@@ -670,7 +689,9 @@ function job:clear_items()
         end
         if self:check_for_queued_jobs() then
             local robot = storage.desired_robot_name[self.surface_index]
-            item_request[robot.name][robot.quality] = nil
+            if item_request[robot.name] and item_request[robot.name][robot.quality] then
+                item_request[robot.name][robot.quality] = nil
+            end
         end
         self:request_items(item_request)
         self.job_status = "Clearing inventory"

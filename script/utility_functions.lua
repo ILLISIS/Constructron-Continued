@@ -110,7 +110,7 @@ me.calculate_spidertron_speed = function(spidertron)
             -- Check if the equipment is an exoskeleton
             if equipment.type == "movement-bonus-equipment" then
                 -- Multiply the speed multiplier by the exoskeleton's movement bonus
-                speed_multiplier = speed_multiplier * (1 + equipment.prototype.movement_bonus)
+                speed_multiplier = speed_multiplier * (1 + equipment.movement_bonus)
             end
         end
     end
