@@ -238,13 +238,6 @@ me.recall_ctrons = function()
     end
 end
 
-me.reset_available_ctron_count = function()
-    storage.available_ctron_count = {}
-    for _, surface in pairs(game.surfaces) do
-        storage.available_ctron_count[surface.index] = storage.constructrons_count[surface.index]
-    end
-end
-
 me.rebuild_caches = function()
     -- build allowed items cache (used in add_entities_to_chunks)
     storage.allowed_items = {}

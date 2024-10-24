@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.5
+Date: 2024-10-25
+  Bugfixes:
+    - Fixed an logic loop that caused jobs to move back to the starting state when the ammo was changed during an active job.
+    - Fixed an issue that caused the available Constructron count to be out when a worker was invalidated during a job.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.4
 Date: 2024-10-24
   Changes:
