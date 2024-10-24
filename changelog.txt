@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.4
+Date: 2024-10-24
+  Changes:
+    - Reimplemented equipment checks for roboports and power generation.
+  Bugfixes:
+    - Fixed another crash during a utility / robot collection job when the Constructron had exoskeleton equipment.
+    - Fixed a crash when a Constructron attempted to keep robots in the inventory for the next job but had none.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.3
 Date: 2024-10-23
   Changes:
