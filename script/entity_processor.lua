@@ -206,10 +206,10 @@ script.on_event(ev.script_raised_teleported, function(event)
     if not (surface_index == event.old_surface_index) then return end
     if entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then
         util_func.paint_constructron(entity, 'idle')
-        storage.constructrons_count[event.old_surface_index] = storage.constructrons_count[event.old_surface_index] - 1 -- update constructron count on old surface
+        storage.constructrons_count[event.old_surface_index] = math.max((storage.constructrons_count[event.old_surface_index] - 1), 0) -- update constructron count on old surface
         storage.constructrons_count[entity.surface_index] = storage.constructrons_count[entity.surface_index] + 1 -- update constructron count on new surface
         if not storage.constructron_statuses[entity.unit_number]["busy"] then -- if constructron is not busy
-            storage.available_ctron_count[event.old_surface_index] = storage.available_ctron_count[event.old_surface_index] - 1 -- update available constructron count on old surface
+            storage.available_ctron_count[event.old_surface_index] = math.max((storage.available_ctron_count[event.old_surface_index] - 1), 0) -- update available constructron count on old surface
         end
         storage.constructron_statuses[entity.unit_number] = { busy = false } -- set constructron status
         storage.available_ctron_count[entity.surface_index] = storage.available_ctron_count[entity.surface_index] + 1 -- update available constructron count on new surface
@@ -251,9 +251,9 @@ entity_proc.on_object_destroyed = function(event)
     local surface_index = removed_entity.surface
     if removed_entity.name == "constructron" or removed_entity.name == "constructron-rocket-powered" then
         if game.surfaces[surface_index] then
-            storage.constructrons_count[surface_index] = storage.constructrons_count[surface_index] - 1 -- update constructron count
+            storage.constructrons_count[surface_index] = math.max((storage.constructrons_count[surface_index] - 1), 0) -- update constructron count
             if not storage.constructron_statuses[event.useful_id]["busy"] then -- if constructron is not busy
-                storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] - 1 -- update available constructron count
+                storage.available_ctron_count[surface_index] = math.max((storage.available_ctron_count[surface_index] - 1), 0) -- update available constructron count
             end
         end
         util_func.update_ctron_combinator_signals(surface_index)

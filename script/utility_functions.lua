@@ -11,7 +11,7 @@ me.set_constructron_status = function(constructron, state, value)
     storage.constructron_statuses[constructron.unit_number][state] = value
     local surface_index = constructron.surface.index
     if value == true then
-        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] - 1
+        storage.available_ctron_count[surface_index] = math.max((storage.available_ctron_count[surface_index] - 1), 0)
     elseif value == false then
         storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] + 1
     end

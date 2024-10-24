@@ -361,9 +361,6 @@ function job:validate_worker()
             util_func.set_constructron_status(self.worker, 'busy', true)
             -- change selected constructron colour
             util_func.paint_constructron(self.worker, self.job_type)
-            -- update available constructron count
-            storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] - 1
-            util_func.update_ctron_combinator_signals(surface_index)
             -- reset job
             self.state = "setup"
             self.worker_logistic_cell = self.worker.logistic_cell
@@ -872,6 +869,7 @@ function job:starting()
         item_request_list = self:inventory_check(item_request_list)
         item_request_list = self:check_items_are_allowed(item_request_list)
         self:request_items(item_request_list)
+        debug_lib.VisualDebugText("Requesting items", worker, -1, 1)
         self.sub_state = "items_requested"
         self.request_tick = game.tick
         return

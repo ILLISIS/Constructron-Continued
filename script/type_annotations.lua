@@ -114,8 +114,8 @@
 --- CONSTRUCTRONS & SERVICESTATIONS
 ---@field constructrons table<uint, LuaEntity>
 ---@field service_stations table<uint, LuaEntity?>
----@field constructrons_count table<uint, uint>
----@field available_ctron_count uint
+---@field constructrons_count table<int, int>
+---@field available_ctron_count table<int, int>
 ---@field stations_count table<uint, uint>
 --- SETTINGS
 ---@field construction_job_toggle boolean
