@@ -117,10 +117,10 @@ function pathfinder:findpath()
     local closedSet = self.closedSet -- nodes already evaluated
     local TilesProcessed = 0 -- tiles processed per iteration
     local lowesth_value = self.lowesth_value -- lowest heuristic value found
-    local neighbour_maxdistance = self.neighbour_maxdistance or storage.custom_pathfinder_neighbour_maxdistance or 1 -- max neighbour distance of each node
     self.path_iterations = self.path_iterations + 1 -- iteration count
+    local max_pathfinder_iterations = storage.max_pathfinder_iterations
 
-    while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < 200) do
+    while next(openSet) and (TilesProcessed < 10) and (self.path_iterations < max_pathfinder_iterations) do
         TilesProcessed = TilesProcessed + 1
 
         local lowh_bundle = self.lowh_bundles[lowesth_value]
@@ -197,7 +197,7 @@ function pathfinder:findpath()
         end
 
         -- get neighboring nodes
-        local maxDistance = neighbour_maxdistance
+        local maxDistance = 1
         for dx = -maxDistance, maxDistance do
             for dy = -maxDistance, maxDistance do
                 local neighbor = {
@@ -257,7 +257,7 @@ function pathfinder:findpath()
             end
         end
     end
-    if (self.path_iterations > 200) or not next(openSet) then
+    if (self.path_iterations > max_pathfinder_iterations) or not next(openSet) then
         -- if this is the first attempt to reach this position that failed, move it to the end of the task position queue
         if next(self.job.task_positions) and not self.job.task_positions[1].reattempt then
             self.job.task_positions[1].reattempt = true

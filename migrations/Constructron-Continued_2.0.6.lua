@@ -1,5 +1,7 @@
 local utility_func = require("script/utility_functions")
 
+storage.max_pathfinder_iterations = 200
+
 -- To fix any possible available count issues
 
 -- for each surface
