@@ -376,12 +376,8 @@ function gui_handlers.toggle_section(player, element)
     local section_name = element.tags.section_name
     if storage.user_interface[player.index].main_ui.elements[section_name].visible then
         element.sprite = "utility/expand"
-        element.hovered_sprite = "utility/expand_dark"
-        element.clicked_sprite = "utility/expand_dark"
     else
         element.sprite = "utility/collapse"
-        element.hovered_sprite = "utility/collapse_dark"
-        element.clicked_sprite = "utility/collapse_dark"
     end
     storage.user_interface[player.index].main_ui.elements[section_name].visible = not storage.user_interface[player.index].main_ui.elements[section_name].visible
 end

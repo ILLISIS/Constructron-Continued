@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.6
+Date: 2024-10-27
+  Bugfixes:
+    - Fixed a crash in the main UI when collapsing a job section.
+  Changes:
+    - Added a hidden ability for the user to control the custom pathfinders iteration count for longer custom paths.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.5
 Date: 2024-10-25
   Bugfixes:

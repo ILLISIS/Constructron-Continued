@@ -71,6 +71,7 @@ local ensure_storages = function()
     storage.custom_pathfinder_index = storage.custom_pathfinder_index or 0
     storage.custom_pathfinder_requests = storage.custom_pathfinder_requests or {}
     storage.mainland_chunks = storage.mainland_chunks or {}
+    storage.max_pathfinder_iterations = storage.max_pathfinder_iterations or 200
     --
     storage.job_index = storage.job_index or 0
     storage.jobs = storage.jobs or {}
