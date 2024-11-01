@@ -467,7 +467,7 @@ function gui_handlers.ctron_locate_job(player, element)
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
     local position = (chunk.midpoint or job.station.position or job.worker.position)
-    player.set_controller{ type = defines.controllers.remote, position = position, surface = job.worker.surface }
+    player.set_controller{ type = defines.controllers.remote, position = position, surface = job.surface_index }
     -- move UI for visibility
     gui_handlers.resize_gui(player)
     -- draw chunks
