@@ -60,8 +60,10 @@ function construction_job:specific_action()
         else -- entity is an item_request_proxy
             _, item = next(entity.item_requests)
         end
-        if self.worker_logistic_network.can_satisfy_request({name = item.name, quality = item.quality}, item.count, true) then -- does inventory have the required item?
-            can_build_entity = true
+        if item then
+            if self.worker_logistic_network.can_satisfy_request({name = item.name, quality = item.quality}, item.count, true) then -- does inventory have the required item?
+                can_build_entity = true
+            end
         end
     end
     if not can_build_entity then
