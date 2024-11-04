@@ -686,6 +686,7 @@ end
 
 function gui_handlers.clear_logistic_request(player, element)
     local worker = storage.constructrons[element.tags.unit_number]
+    if not worker then return end
     local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     local item_name = element.elem_value.name
@@ -1009,7 +1010,8 @@ function gui_handlers.on_gui_hover_job(player, element)
     if not job then return end
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
-    local position = (chunk.midpoint or job.destination_station.position or job.task_positions[1] or job.worker.position)
+    local destination_station = job.destination_station or {}
+    local position = (chunk.midpoint or destination_station.position or job.task_positions[1] or job.worker.position)
     if not position then return end
     if player.gui.screen.ctron_hover_frame then
         player.gui.screen.ctron_hover_frame.destroy()

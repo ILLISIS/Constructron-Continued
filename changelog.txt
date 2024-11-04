@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.8
+Date: 2024-11-04
+  Changes:
+    - Quality levels are generated dynamically now to add support for mods like infinite quality tiers.
+  Bugfixes:
+    - Fixed a crash when an item removal plan was in range of a construction job.
+    - Fixed a crash when clicking a item in the job details screen.
+    - Fixed a crash when there was an pre-existing duplicate request in the logistic section filter.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.7
 Date: 2024-11-01
   Bugfixes:

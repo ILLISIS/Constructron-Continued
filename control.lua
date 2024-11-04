@@ -114,13 +114,10 @@ local ensure_storages = function()
     storage.repair_job_toggle = storage.repair_job_toggle or {}
     storage.destroy_job_toggle = storage.destroy_job_toggle or {}
     -- quality
-    storage.quality_levels = {
-        [0] = "normal",
-        [1] = "uncommon",
-        [2] = "rare",
-        [3] = "epic",
-        [5] = "legendary"
-    }
+    storage.quality_levels = {}
+    for quality_name, quality in pairs(prototypes.quality) do
+        storage.quality_levels[quality.level] = quality_name
+    end
     -- job_types
     storage.job_types = {
         "deconstruction",
