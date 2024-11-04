@@ -456,7 +456,7 @@ entity_proc.deconstruction = function(entity)
     local required_items = {}
     local trash_items = {}
     local entity_type = entity.type
-    local quality_level = storage.quality_levels[entity.quality.level]
+    local quality_level = entity.quality.name
     if (entity_type == "cliff") then -- cliff demolition
         required_items['cliff-explosives'] = {}
         required_items['cliff-explosives']["normal"] = (required_items['cliff-explosives']["normal"] or 0) + 1
@@ -516,7 +516,7 @@ entity_proc.deconstruction = function(entity)
     else
         -- item-on-ground
         local entity_stack = entity.stack
-        local quality_level = storage.quality_levels[entity_stack.quality.level]
+        local quality_level = entity.quality.name
         trash_items[entity_stack.name] = trash_items[entity_stack.name] or {}
         trash_items[entity_stack.name][quality_level] = (trash_items[entity_stack.name][quality_level] or 0) + entity_stack.count
     end
@@ -528,7 +528,7 @@ local construction_entity_types = {
         local required_items = {}
         local trash_items = {}
         local items_to_place_cache = storage.items_to_place_cache[entity.ghost_name]
-        local quality_level = storage.quality_levels[entity.quality.level]
+        local quality_level = entity.quality.name
         local item = items_to_place_cache.item
         required_items[item] = required_items[item] or {}
         required_items[item][quality_level] = (required_items[item][quality_level] or 0) + items_to_place_cache.count
@@ -545,7 +545,7 @@ local construction_entity_types = {
         local required_items = {}
         local trash_items = {}
         local items_to_place_cache = storage.items_to_place_cache[entity.ghost_name]
-        local quality_level = storage.quality_levels[entity.quality.level]
+        local quality_level = entity.quality.name
         local item = items_to_place_cache.item
         required_items[item] = required_items[item] or {}
         required_items[item][quality_level] = (required_items[item][quality_level] or 0) + items_to_place_cache.count
@@ -580,7 +580,7 @@ entity_proc.upgrade = function(entity)
     local target_entity, quality = entity.get_upgrade_target()
     ---@cast target_entity -nil
     ---@cast quality -nil
-    local quality_level = storage.quality_levels[quality.level]
+    local quality_level = entity.quality.name
     local old_entity_name = entity.name
     local items_to_place_cache = storage.items_to_place_cache[target_entity.name]
     local item_name = items_to_place_cache.item

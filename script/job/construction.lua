@@ -56,7 +56,7 @@ function construction_job:specific_action()
         local item
         if entity.name == "entity-ghost" or entity.name == "tile-ghost" then -- is the entity a ghost?
             item = entity.ghost_prototype.items_to_place_this[1]
-            item.quality = storage.quality_levels[entity.quality.level]
+            item.quality = entity.quality.name
         else -- entity is an item_request_proxy
             _, item = next(entity.item_requests)
         end

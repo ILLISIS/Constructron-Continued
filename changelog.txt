@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.9
+Date: 2024-11-04
+  Bugfixes:
+    - Fixed an issue that caused Constructrons to request items with an unknown quality level and therefore the logistic network will never fulfill the request.
+    - Fixed an issue that caused the ammunition name not to be updated on jobs in progress.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.8
 Date: 2024-11-04
   Changes:
