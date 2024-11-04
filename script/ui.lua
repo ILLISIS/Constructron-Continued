@@ -639,9 +639,9 @@ function gui_handlers.selected_new_ammo(player, element)
     -- update existing jobs with new ammo selection
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == setting_surface) then
-            if job.required_items[storage.ammo_name[setting_surface]] then
+            if job.required_items[storage.ammo_name[setting_surface].name] then
                 -- remove old ammo from job
-                job.required_items[storage.ammo_name[setting_surface]] = nil
+                job.required_items[storage.ammo_name[setting_surface].name] = nil
                 -- add new ammo to job
                 job.required_items[element.elem_value.name] = {
                     [element.elem_value.quality] = storage.ammo_count[setting_surface]

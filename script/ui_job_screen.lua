@@ -320,7 +320,7 @@ function gui_job.build_ammo_display(worker, ammo_table)
     for i = 1, #ammo_inventory do
         local ammo = ammo_inventory[i]
         if ammo and ammo.valid_for_read then
-            gui_job.build_button(ammo_table, "ctron_ammo_button_" .. i, ammo.name, storage.quality_levels[ammo.quality.level], ammo.count, "inventory_slot")
+            gui_job.build_button(ammo_table, "ctron_ammo_button_" .. i, ammo.name, ammo.quality.name, ammo.count, "inventory_slot")
         else
             local button = ammo_table.add{
                 type = "sprite-button",
@@ -343,7 +343,7 @@ function gui_job.build_inventory_display(worker, inventory_table)
         local item = inventory[i]
         if item and item.valid_for_read then
             -- add inventory item button
-            gui_job.build_button(inventory_table, "ctron_inventory_button_" .. i, item.name, storage.quality_levels[item.quality.level], item.count, "inventory_slot")
+            gui_job.build_button(inventory_table, "ctron_inventory_button_" .. i, item.name, item.quality.name, item.count, "inventory_slot")
         else
             inventory_table.add{
                 type = "sprite-button",
@@ -363,7 +363,7 @@ function gui_job.build_trash_display(worker, trash_table)
     for i = 1, #trash_inventory do
         local item = trash_inventory[i]
         if item and item.valid_for_read then
-            gui_job.build_button(trash_table, "ctron_trash_button_" .. i, item.name, storage.quality_levels[item.quality.level], item.count, "inventory_slot")
+            gui_job.build_button(trash_table, "ctron_trash_button_" .. i, item.name, item.quality.name, item.count, "inventory_slot")
         else
             local button = trash_table.add{
                 type = "sprite-button",
