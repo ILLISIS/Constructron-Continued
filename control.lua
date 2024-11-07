@@ -168,7 +168,7 @@ local ensure_storages = function()
     local init_robot_name
     if storage.desired_robot_name == nil or not prototypes.item[storage.desired_robot_name[1]] then
         storage.desired_robot_name = {}
-        if prototypes.item["construction-robot1"] then
+        if prototypes.item["construction-robot"] then
             init_robot_name = { name = "construction-robot", quality = "normal" }
         else
             local valid_robots = prototypes.get_entity_filtered{{filter = "type", type = "construction-robot"}}
