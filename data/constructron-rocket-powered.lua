@@ -75,13 +75,13 @@ local constructron_item = {
         {
             icon = "__Constructron-Continued__/graphics/icon_texture_gray.png",
             icon_size = 256,
-            scale = 0.25
+            scale = 0.12
         },
         {
             icon = "__base__/graphics/icons/spidertron.png",
             icon_size = 64,
             icon_mipmaps = 4,
-            scale = 1
+            scale = 0.45
         }
     },
     name = "constructron-rocket-powered",

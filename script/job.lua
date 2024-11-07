@@ -308,18 +308,25 @@ function job:request_items(item_list)
     local slot = 1
     local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
+    -- disable trash unrequested
+    if logistic_point.trash_not_requested then
+        logistic_point.trash_not_requested = false
+    end
+    -- set item request filters
     section.filters = {}
     for item_name, value in pairs(item_list) do
-        for quality, count in pairs(value) do
-            section.set_slot(slot, {
-                value = {
-                    name = item_name,
-                    quality = quality,
-                },
-                min = count,
-                max = count
-            })
-            slot = slot + 1
+        if prototypes.item[item_name] then
+            for quality, count in pairs(value) do
+                section.set_slot(slot, {
+                    value = {
+                        name = item_name,
+                        quality = quality,
+                    },
+                    min = count,
+                    max = count
+                })
+                slot = slot + 1
+            end
         end
     end
 end
