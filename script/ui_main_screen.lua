@@ -694,12 +694,13 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
             local worker = job.worker
             local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
             local section = logistic_point.get_section(1)
+            local flag = false
             for i = 1, #section.filters do
                 local slot = section.filters[i]
                 if slot.value then
                     local item_name = slot.value.name
                     local quality = slot.value.quality
-                    ctron_count = ctron_count + 1
+                    flag = true
                     if logistics_requests[item_name] and logistics_requests[item_name][quality] then
                         logistics_requests[item_name][quality] = logistics_requests[item_name][quality] + slot.max
                     else
@@ -708,6 +709,9 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
                         }
                     end
                 end
+            end
+            if flag then
+                ctron_count = ctron_count + 1
             end
         end
     end

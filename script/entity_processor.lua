@@ -93,7 +93,9 @@ script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
 })
 
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
-    {filter = "name", name = "service_station", mode = "or"}
+    {filter = "name", name = "service_station", mode = "or"},
+    {filter = "name", name = "constructron", mode = "or"},
+    {filter = "name", name = "constructron-rocket-powered", mode = "or"}
 })
 
 -- for entities that die and need rebuilding

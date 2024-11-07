@@ -61,13 +61,13 @@ local service_station_item = {
     {
       icon = "__Constructron-Continued__/graphics/icon_texture.png",
       icon_size = 256,
-      scale = 0.25
+      scale = 0.12
     },
     {
       icon = "__base__/graphics/icons/roboport.png",
       icon_size = 64,
       icon_mipmaps = 4,
-      scale = 0.7
+      scale = 0.35
     }
   },
   name = "service_station",

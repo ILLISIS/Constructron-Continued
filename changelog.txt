@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.10
+Date: 2024-11-07
+  Bugfixes:
+    - Fixed an issue that caused Constructrons that were placed by robots to not register.
+    - Fixed a crash that could occur when jobs are in progress with item requests from mods that are removed.
+    - Fixed a crash when a cargo job did not fit into a single Constructron's inventory.
+    - The standard construction-robot is now selected correctly after some niche cases occur.
+    - Trash unrequested will now be disabled if enabled.
+    - The count on the logistics screen now shows the correct amount of Constructrons requesting items.
+    - Correctly sized the item icons in chests etc.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.9
 Date: 2024-11-04
   Bugfixes:
