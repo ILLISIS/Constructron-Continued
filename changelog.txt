@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.11
+Date: 2024-11-10
+  Changes:
+    - Added the ability to select construction robots added by other mods.
+  Bugfixes:
+    - Fixed entity processsing for upgrade jobs selecting the original item quality rather than the upgrade target quality.
+    - Fixed that upgrade jobs would check for the wrong item quality when determining if the job is complete.
+
+---------------------------------------------------------------------------------------------------
 Version: 2.0.10
 Date: 2024-11-07
   Bugfixes:

@@ -274,7 +274,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         ignored_by_interaction = true
     }
 
-    local table = frame.add{
+    local settings_table = frame.add{
         type = "table",
         name = "ctron_surface_settings_table",
         style = "ctron_settings_table_style",
@@ -282,12 +282,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- robot count
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_robot_count_label"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+    settings_table.add{
         type = "textfield",
         text = storage.desired_robot_count[surface_index],
         style = "ctron_settings_textfield_style",
@@ -301,19 +301,26 @@ function gui_settings.buildSettingsContent(player, surface, frame)
             setting_surface = surface_index
         }
     }
-
     -- robot selection
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_robot_selection_label"},
         tooltip = {"ctron_gui_locale.settings_robot_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+
+    local robot_items = {}
+    for _, robot in pairs(prototypes.get_entity_filtered{{filter = "type", type = "construction-robot"}}) do
+        if robot.items_to_place_this ~= nil and robot.items_to_place_this[1] and robot.items_to_place_this[1].name then
+            local item = robot.items_to_place_this[1]
+            table.insert(robot_items, item.name)
+        end
+    end
+    settings_table.add{
         type = "choose-elem-button",
         elem_type = "item-with-quality",
         ["item-with-quality"] = storage.desired_robot_name[surface_index],
-        elem_filters = {{filter = "name", name = "construction-robot"}},
+        elem_filters = {{filter = "name", name = robot_items}},
         tags = {
             mod = "constructron",
             on_gui_elem_changed = "select_new_robot",
@@ -323,12 +330,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
 
     -- job toggles
     for setting_name, setting_params in pairs(toggle_settings) do
-        table.add{
+        settings_table.add{
             type = "label",
             caption = setting_params.label,
             style = "ctron_settings_label_style"
         }
-        table.add{
+        settings_table.add{
             type = "checkbox",
             name = "ctron_" .. setting_name .. "_toggle",
             state = storage[setting_name .. "_job_toggle"][surface_index],
@@ -343,12 +350,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     end
 
     -- ammo selection
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_selection_label"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+    settings_table.add{
         type = "choose-elem-button",
         name = "ctron_ammo_select",
         elem_type = "item-with-quality",
@@ -362,12 +369,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- ammo count
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_count_label"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+    settings_table.add{
         type = "textfield",
         text = storage.ammo_count[surface_index],
         style = "ctron_settings_textfield_style",
@@ -383,12 +390,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- repair job toggle
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_jobs_label"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+    settings_table.add{
         type = "checkbox",
         name = "ctron_repair_toggle",
         state = storage.repair_job_toggle[surface_index],
@@ -402,12 +409,12 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     }
 
     -- repair tool selection
-    table.add{
+    settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
         style = "ctron_settings_label_style"
     }
-    table.add{
+    settings_table.add{
         type = "choose-elem-button",
         -- style = "",
         elem_type = "item-with-quality",
