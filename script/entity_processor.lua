@@ -582,14 +582,15 @@ entity_proc.upgrade = function(entity)
     local target_entity, quality = entity.get_upgrade_target()
     ---@cast target_entity -nil
     ---@cast quality -nil
-    local quality_level = entity.quality.name
+    local target_quality_level = quality.name
+    local current_quality_level = entity.quality.name
     local old_entity_name = entity.name
     local items_to_place_cache = storage.items_to_place_cache[target_entity.name]
     local item_name = items_to_place_cache.item
     required_items[item_name] = required_items[item_name] or {}
-    required_items[item_name][quality_level] = (required_items[item_name][quality_level] or 0) + items_to_place_cache.count
+    required_items[item_name][target_quality_level] = (required_items[item_name][target_quality_level] or 0) + items_to_place_cache.count
     trash_items[old_entity_name] = trash_items[old_entity_name] or {}
-    trash_items[old_entity_name][quality_level] = (trash_items[old_entity_name][quality_level] or 0) + 1
+    trash_items[old_entity_name][current_quality_level] = (trash_items[old_entity_name][current_quality_level] or 0) + 1
     return required_items, trash_items
 end
 
