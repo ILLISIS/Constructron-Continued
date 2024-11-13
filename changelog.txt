@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.12
+Date: ????
+  Bugfixes:
+    - Fixed a crash when performing a quality upgrade on an entity with a mismatching item name.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.11
 Date: 2024-11-10
   Changes:
