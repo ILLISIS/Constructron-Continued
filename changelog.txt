@@ -6,7 +6,7 @@ Date: 2024-11-22
     - Fixed a UI issue to smooth out cancelling multiple jobs.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.12
-Date: ????
+Date: 2024-11-14
   Bugfixes:
     - Fixed a crash when performing a quality upgrade on an entity with a mismatching item name.
 ---------------------------------------------------------------------------------------------------
