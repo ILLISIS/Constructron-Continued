@@ -545,7 +545,8 @@ function gui_handlers.ctron_cancel_job(player, element)
         if not player.gui.screen.ctron_main_window then return end
         gui_main.create_job_card(job, storage.user_interface[player.index].main_ui.elements["finishing_section"])
         if element.tags.job_screen then return end
-        element.parent.destroy()
+        local card_name = element.parent.parent.name
+        storage.user_interface[player.index].main_ui.elements["in_progress_section"][card_name].destroy()
         gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["in_progress_section"])
     else
         player.print("Job is already finishing.") -- TODO: refactor this functionality
@@ -576,7 +577,8 @@ function gui_handlers.ctron_cancel_chunk(player, element)
     local job_type = element.tags.job_type
     local surface_index = element.tags.surface_index
     storage[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
-    element.parent.destroy()
+    element.parent.parent.destroy()
+    gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["pending_section"])
 end
 
 function gui_handlers.selected_new_surface(player, element)
