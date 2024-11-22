@@ -148,7 +148,7 @@ local ensure_storages = function()
     local init_ammo_name
     if storage.ammo_name == nil or not prototypes.item[storage.ammo_name[1]] then
         storage.ammo_name = {}
-        if prototypes.item["rocket1"] then
+        if prototypes.item["rocket"] then
             init_ammo_name = { name = "rocket", quality = "normal" }
         else
             -- get ammo prototypes
@@ -180,7 +180,7 @@ local ensure_storages = function()
     local init_repair_tool_name
     if storage.repair_tool_name == nil or not prototypes.item[storage.repair_tool_name[1]] then
         storage.repair_tool_name = {}
-        if prototypes.item["repair-pack1"] then
+        if prototypes.item["repair-pack"] then
             init_repair_tool_name = { name = "repair-pack", quality = "normal" }
         else
             local valid_repair_tools = prototypes.get_item_filtered{{filter = "name", name = "repair-pack"}} -- TODO: check if can be filtered further in future API versions.
