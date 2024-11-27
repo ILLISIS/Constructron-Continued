@@ -1,8 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.14
 Date: ????
+  Changes:
+    - Added behavioural support for different landfill types like foundations and ice platforms.
   Bugfixes:
     - Fixed another crash during cargo job prospecting.
+    - Fixed an issue that caused Constructrons not to restart a landfill job if there were no items to build available when moving into position.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.13
 Date: 2024-11-22
