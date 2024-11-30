@@ -25,7 +25,7 @@ function construction_job:position_check(position, distance)
                 self:move_to_position(position)
             end
         else
-            if self.landfill_job and self.status == "in_progress" and not self.worker_logistic_network.can_satisfy_request("landfill", 1) then -- is this a landfill job and do we have landfill?
+            if self.landfill_job and self.state == "in_progress" and not self.worker_logistic_network.can_satisfy_request(self.landfill_type, 1) then -- is this a landfill job and do we have landfill?
                 debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
                 worker.autopilot_destination = nil
                 self:check_chunks()

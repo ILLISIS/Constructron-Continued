@@ -757,6 +757,19 @@ function job:request_ammo()
     end
 end
 
+local landfill_types = {"ice-platform", "foundation", "landfill"}
+
+-- flag the job as a landfill job if certain items are present in the jobs required_items
+function job:check_if_landfilling()
+    for _, type in ipairs(landfill_types) do
+        if self.required_items[type] then
+            self.landfill_job = true
+            self.landfill_type = type
+            break
+        end
+    end
+end
+
 function job:calculate_task_positions()
     local worker = self.worker ---@cast worker -nil
     for _, chunk in pairs(self.chunks) do
@@ -765,9 +778,6 @@ function job:calculate_task_positions()
         for _, position in ipairs(positions) do
             debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
             table.insert(self.task_positions, position)
-        end
-        if chunk.required_items["landfill"] then
-            self.landfill_job = true
         end
     end
 end
@@ -847,16 +857,13 @@ end
 --  State Logic
 --===========================================================================--
 
-
-
-
-
-
 function job:setup()
     -- calculate task positions
     self:calculate_task_positions()
     -- request ammo
     self:request_ammo()
+    -- check if landfilling
+    self:check_if_landfilling()
     -- state change
     self.state = "starting"
 end

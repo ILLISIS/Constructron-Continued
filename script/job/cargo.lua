@@ -42,7 +42,8 @@ function cargo_job.prospect_cargo_jobs()
             if ((current_count + request.in_transit_count) < request.max) then
                 if not (items_to_fullfill[request.name] and items_to_fullfill[request.name][request.quality]) then -- ignore if already in the list
                     local total = request.max - current_count - request.in_transit_count
-                    items_to_fullfill[request.name] = total
+                    items_to_fullfill[request.name] = items_to_fullfill[request.name] or {}
+                    items_to_fullfill[request.name][request.quality] = total
                     storage.station_requests[station.unit_number][id].in_transit_count = total
                 end
             end
