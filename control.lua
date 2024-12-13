@@ -417,7 +417,17 @@ local function remote_entities_built(entities)
     end
 end
 
+local function remote_ctron_built(entity, surface_index)
+    entity_proc.new_ctron_built(entity, surface_index)
+end
+
+local function remote_station_built(entity, surface_index)
+    entity_proc.new_station_built(entity, surface_index)
+end
+
 remote.add_interface("ctron", {
     ["scan-entity"] = remote_entity_built,
-    ["scan-entities"] = remote_entities_built
+    ["scan-entities"] = remote_entities_built,
+    ["register-ctron"] = remote_ctron_built,
+    ["register-station"] = remote_station_built
 })

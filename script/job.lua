@@ -479,9 +479,9 @@ function job:check_chunks()
     end
 end
 
--- this method validates that the worker has roboport euipment
 function job:validate_logisitics()
     local worker = self.worker ---@cast worker -nil
+    -- validate logisitic cell (constructrion has roboports)
     if not (self.worker_logistic_cell and self.worker_logistic_cell.valid) then
         if not worker.logistic_cell then
             debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
@@ -489,12 +489,19 @@ function job:validate_logisitics()
         end
         self.worker_logistic_cell = self.worker.logistic_cell
     end
+    -- validate logisitic network (constructrion has roboports)
     if not (self.worker_logistic_network and self.worker_logistic_network.valid) then
         if not self.worker_logistic_cell.logistic_network then
             debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
             return false
         end
         self.worker_logistic_network = self.worker_logistic_cell.logistic_network
+    end
+    -- validate that there is a logisitic section available, if not create one
+    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local section = logistic_point.get_section(1)
+    if not section then
+        logistic_point.add_section()
     end
     return true
 end

@@ -9,13 +9,66 @@ local entity_proc = {}
 -------------------------------------------------------------------------------
 local ev = defines.events
 
+-- this method is used when a new constructron is built
+---@param entity LuaEntity
+---@param surface_index uint
+entity_proc.new_ctron_built = function(entity, surface_index)
+    local registration_number = script.register_on_object_destroyed(entity)
+    storage.registered_entities[registration_number] = {
+        name = "constructron",
+        surface = surface_index
+    }
+    util_func.paint_constructron(entity, 'idle')
+    entity.enable_logistics_while_moving = false
+    storage.constructrons[entity.unit_number] = entity
+    storage.constructron_statuses[entity.unit_number] = { busy = false }
+    storage.constructrons_count[surface_index] = storage.constructrons_count[surface_index] + 1
+    storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] + 1
+    util_func.update_ctron_combinator_signals(surface_index)
+    -- utility
+    if (storage.stations_count[surface_index] > 0) then
+        storage.managed_surfaces[surface_index] = entity.surface.name
+    end
+    entity.vehicle_automatic_targeting_parameters = {
+        auto_target_without_gunner = true,
+        auto_target_with_gunner = true
+    }
+end
+
+-- this method is used when a new service station is built
+---@param entity LuaEntity
+---@param surface_index uint
+entity_proc.new_station_built = function(entity, surface_index)
+    local registration_number = script.register_on_object_destroyed(entity)
+    storage.service_stations[entity.unit_number] = entity
+    storage.registered_entities[registration_number] = {
+        name = "service_station",
+        surface = surface_index
+    }
+    storage.stations_count[surface_index] = storage.stations_count[surface_index] + 1
+    if (storage.constructrons_count[surface_index] > 0) then
+        storage.managed_surfaces[surface_index] = entity.surface.name
+    end
+    -- combinator setup
+    local control_behavior = entity.get_or_create_control_behavior() --[[@as LuaRoboportControlBehavior]]
+    control_behavior.read_logistics = false
+    local combinator = storage.ctron_combinators[surface_index]
+    if not (combinator and combinator.valid) then
+        storage.ctron_combinators[surface_index] = util_func.setup_station_combinator(entity)
+    else
+        util_func.connect_station_to_combinator(combinator, entity)
+    end
+    -- cargo jobs
+    storage.station_requests[entity.unit_number] = {}
+end
+
 -- for entity creation
 ---@param event
 ---| EventData.on_built_entity
 ---| EventData.on_robot_built_entity
 ---| EventData.script_raised_built
 entity_proc.on_built_entity = function(event)
-    local entity = event.created_entity or event.entity
+    local entity = event.entity
     local entity_type = entity.type
     local surface_index = entity.surface.index
     if storage.construction_job_toggle[surface_index] and (entity_type == 'entity-ghost' or entity_type == 'tile-ghost' or entity_type == 'item-request-proxy') then
@@ -23,48 +76,9 @@ entity_proc.on_built_entity = function(event)
         storage.construction_entities[storage.construction_index] = entity
         storage.entity_proc_trigger = true -- there is something to do start processing
     elseif entity.name == 'constructron' or entity.name == "constructron-rocket-powered" then -- register constructron
-        local registration_number = script.register_on_object_destroyed(entity)
-        storage.registered_entities[registration_number] = {
-            name = "constructron",
-            surface = surface_index
-        }
-        util_func.paint_constructron(entity, 'idle')
-        entity.enable_logistics_while_moving = false
-        storage.constructrons[entity.unit_number] = entity
-        storage.constructron_statuses[entity.unit_number] = { busy = false }
-        storage.constructrons_count[surface_index] = storage.constructrons_count[surface_index] + 1
-        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] + 1
-        util_func.update_ctron_combinator_signals(surface_index)
-        -- utility
-        if (storage.stations_count[surface_index] > 0) then
-            storage.managed_surfaces[surface_index] = entity.surface.name
-        end
-        entity.vehicle_automatic_targeting_parameters = {
-            auto_target_without_gunner = true,
-            auto_target_with_gunner = true
-        }
+        entity_proc.new_ctron_built(entity, surface_index)
     elseif entity.name == "service_station" then -- register service station
-        local registration_number = script.register_on_object_destroyed(entity)
-        storage.service_stations[entity.unit_number] = entity
-        storage.registered_entities[registration_number] = {
-            name = "service_station",
-            surface = surface_index
-        }
-        storage.stations_count[surface_index] = storage.stations_count[surface_index] + 1
-        if (storage.constructrons_count[surface_index] > 0) then
-            storage.managed_surfaces[surface_index] = entity.surface.name
-        end
-        -- combinator setup
-        local control_behavior = entity.get_or_create_control_behavior() --[[@as LuaRoboportControlBehavior]]
-        control_behavior.read_logistics = false
-        local combinator = storage.ctron_combinators[surface_index]
-        if not (combinator and combinator.valid) then
-            storage.ctron_combinators[surface_index] = util_func.setup_station_combinator(entity)
-        else
-            util_func.connect_station_to_combinator(combinator, entity)
-        end
-        -- cargo jobs
-        storage.station_requests[entity.unit_number] = {}
+        entity_proc.new_station_built(entity, surface_index)
     end
 end
 

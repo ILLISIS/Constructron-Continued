@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.15
+Date: ????
+  Changes:
+    - [mods] Added remote interface to register custom Constructrons and Service Stations.
+  Bugfixes:
+    - Added validation to logitstic sections to prevent a crash when all sections were removed from a Constructron.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.14
 Date: 2024-11-30
   Changes:
