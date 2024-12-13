@@ -417,11 +417,19 @@ local function remote_entities_built(entities)
     end
 end
 
+-- register a new spider-vehicle as a constructron
+---@param entity LuaEntity
+---@param surface_index uint
 local function remote_ctron_built(entity, surface_index)
+    if not entity.type == "spider-vehicle" then return end
     entity_proc.new_ctron_built(entity, surface_index)
 end
 
+-- register a new roboport as a constructron service station
+---@param entity LuaEntity
+---@param surface_index uint
 local function remote_station_built(entity, surface_index)
+    if not entity.type == "roboport" then return end
     entity_proc.new_station_built(entity, surface_index)
 end
 
