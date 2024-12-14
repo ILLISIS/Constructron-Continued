@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.15
+Date: 2024-12-14
+  Bugfixes:
+    - Added validation to logitstic sections to prevent a crash when all sections were removed from a Constructron.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.14
 Date: 2024-11-30
   Changes:
