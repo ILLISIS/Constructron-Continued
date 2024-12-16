@@ -57,6 +57,9 @@ end))
 --===========================================================================--
 
 local ensure_storages = function()
+    storage.constructron_names = storage.constructron_names or { ["constructron"] = true, ["constructron-rocket-powered"] = true}
+    storage.station_names = storage.station_names or { ["service_station"] = true }
+    --
     storage.registered_entities = storage.registered_entities or {}
     storage.constructron_statuses = storage.constructron_statuses or {}
     --
@@ -418,24 +421,44 @@ local function remote_entities_built(entities)
 end
 
 -- register a new spider-vehicle as a constructron
+-- note: ensure that all on_built events are handled.
 ---@param entity LuaEntity
 ---@param surface_index uint
 local function remote_ctron_built(entity, surface_index)
     if not entity.type == "spider-vehicle" then return end
+    if not storage.constructron_names[entity.name] then 
+        storage.constructron_names[entity.name] = true
+    end
     entity_proc.new_ctron_built(entity, surface_index)
 end
 
 -- register a new roboport as a constructron service station
+-- note: ensure that all on_built events are handled.
 ---@param entity LuaEntity
 ---@param surface_index uint
 local function remote_station_built(entity, surface_index)
     if not entity.type == "roboport" then return end
+    if not storage.station_names[entity.name] then
+        storage.station_names[entity.name] = true
+    end
     entity_proc.new_station_built(entity, surface_index)
+end
+
+-- remote interface to get constructron names
+local function remote_get_ctron_names()
+    return storage.constructron_names
+end
+
+-- remote interface to get station names
+local function remote_get_station_names()
+    return storage.station_names
 end
 
 remote.add_interface("ctron", {
     ["scan-entity"] = remote_entity_built,
     ["scan-entities"] = remote_entities_built,
     ["register-ctron"] = remote_ctron_built,
-    ["register-station"] = remote_station_built
+    ["get-ctron-names"] = remote_get_ctron_names,
+    ["register-station"] = remote_station_built,
+    ["get-station-names"] = remote_get_station_names,
 })
