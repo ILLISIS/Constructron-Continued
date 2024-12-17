@@ -57,6 +57,9 @@ end))
 --===========================================================================--
 
 local ensure_storages = function()
+    storage.constructron_names = storage.constructron_names or { ["constructron"] = true, ["constructron-rocket-powered"] = true}
+    storage.station_names = storage.station_names or { ["service_station"] = true }
+    --
     storage.registered_entities = storage.registered_entities or {}
     storage.constructron_statuses = storage.constructron_statuses or {}
     --
@@ -399,6 +402,57 @@ gui_handlers.register()
 --- game interfaces
 --===========================================================================--
 
+--------------------------------------------------------------------------------
+--- before using the below functions please notify the maintainer of this mod
+---------------------------------------------------------------------------------
+--- used by:
+--- Planet Maraxis
+--- Spidertron Patrols
+--- Construction Planner
+
+-- register a new spider-vehicle as a constructron (for self made entities)
+---@param entity LuaEntity
+---@param surface_index uint
+local function remote_ctron_built(entity, surface_index)
+    if not entity.type == "spider-vehicle" then return end
+    if not storage.constructron_names[entity.name] then return end
+    if storage.constructrons[entity.unit_number] then return end
+    entity_proc.new_ctron_built(entity, surface_index)
+end
+
+-- register a new roboport as a constructron service station (for self made entities)
+---@param entity LuaEntity
+---@param surface_index uint
+local function remote_station_built(entity, surface_index)
+    if not entity.type == "roboport" then return end
+    if not storage.station_names[entity.name] then return end
+    if storage.service_stations[entity.unit_number] then return end
+    entity_proc.new_station_built(entity, surface_index)
+end
+
+-- remote interface to inform this mod of a new constructron type (this mod will handle the entity for you)
+---@param name string
+local function remote_add_ctron_name(name)
+    storage.constructron_names[name] = true
+end
+
+-- remote interface to inform this mod of a new station type (this mod will handle the entity for you)
+---@param name string
+local function remote_add_station_name(name)
+    storage.station_names[name] = true
+end
+
+-- remote interface to get constructron names
+local function remote_get_ctron_names()
+    return storage.constructron_names
+end
+
+-- remote interface to get station names
+local function remote_get_station_names()
+    return storage.station_names
+end
+
+-- notify this mod of alignments new entity to be built (if this not naturally handled by the on_event scripting)
 ---@param entity LuaEntity
 local function remote_entity_built(entity)
     ---@type EventData.script_raised_built
@@ -410,6 +464,7 @@ local function remote_entity_built(entity)
     entity_proc.on_built_entity(event)
 end
 
+-- notify this mod of new entities to be built (if this not naturally handled by the on_event scripting)
 ---@param entities LuaEntity[]
 local function remote_entities_built(entities)
     for _, entity in pairs(entities) do
@@ -419,5 +474,11 @@ end
 
 remote.add_interface("ctron", {
     ["scan-entity"] = remote_entity_built,
-    ["scan-entities"] = remote_entities_built
+    ["scan-entities"] = remote_entities_built,
+    ["register-ctron"] = remote_ctron_built,
+    ["register-station"] = remote_station_built,
+    ["add-ctron-names"] = remote_add_ctron_name,
+    ["get-ctron-names"] = remote_get_ctron_names,
+    ["add-station-names"] = remote_add_station_name,
+    ["get-station-names"] = remote_get_station_names,
 })

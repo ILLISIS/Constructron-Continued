@@ -53,7 +53,7 @@ end)
 
 script.on_event(defines.events.on_gui_opened, function(event)
     local entity = event.entity
-    if entity and (entity.name == "constructron" or entity.name == "constructron-rocket-powered") then
+    if entity and storage.constructron_names[entity.name] then
         local player = game.players[event.player_index]
         if player.gui.relative.ctron_worker_frame then return end
         local ctron_frame = player.gui.relative.add{
@@ -136,7 +136,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
-    elseif entity and (entity.name == "service_station") then
+    elseif entity and storage.station_names[entity.name] then
         local player = game.players[event.player_index]
         if player.gui.relative.ctron_station_frame then return end
         local ctron_station_frame = player.gui.relative.add{
@@ -188,7 +188,7 @@ script.on_event(defines.events.on_gui_closed, function(event)
     local player = game.players[event.player_index]
     if event.element and event.element.name == "ctron_main_window" then
         gui_handlers.close_main_window(player)
-    elseif event.entity and (event.entity.name == "constructron" or event.entity.name == "constructron-rocket-powered") then
+    elseif event.entity and storage.constructron_names[event.entity.name] then
         if player.gui.relative.ctron_worker_frame then
             player.gui.relative.ctron_worker_frame.destroy()
             if player.gui.screen.ctron_job_window then
@@ -198,7 +198,7 @@ script.on_event(defines.events.on_gui_closed, function(event)
         if player.gui.relative.ctron_invis_flow then
             player.gui.relative.ctron_invis_flow.destroy()
         end
-    elseif event.entity and (event.entity.name == "service_station") then
+    elseif event.entity and storage.station_names[event.entity.name] then
         if player.gui.relative.ctron_station_frame then
             player.gui.relative.ctron_station_frame.destroy()
             if player.gui.screen.ctron_cargo_window then
