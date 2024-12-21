@@ -2,8 +2,8 @@
 Version: 2.0.16
 Date: 2024-12-20
   Changes:
-    - [mods] Added remote interface to register custom Constructrons and Service Stations.
-    - [Maraxis] Added compatibility for both land and underwater Constructron types.
+    - [mods] Added remote interface to register custom Constructrons and Service Stations types.
+    - Added in game tips-and-tricks help articles to improve the novice user experience.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.15
 Date: 2024-12-14

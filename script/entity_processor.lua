@@ -89,9 +89,9 @@ entity_proc.on_built_entity = function(event)
 end
 
 script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
-    {filter = "name", name = "spider-vehicle", mode = "or"},
+    {filter = "type", type = "spider-vehicle", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
-    {filter = "name", name = "roboport", mode = "or"},
+    {filter = "type", type = "roboport", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
     {filter = "name", name = "entity-ghost", mode = "or"},
     {filter = "force",  force = "player", mode = "and"},
@@ -102,16 +102,16 @@ script.on_event(ev.on_built_entity, entity_proc.on_built_entity, {
 })
 
 script.on_event(ev.script_raised_built, entity_proc.on_built_entity, {
-    {filter = "name", name = "spider-vehicle", mode = "or"},
-    {filter = "name", name = "roboport", mode = "or"},
+    {filter = "type", type = "spider-vehicle", mode = "or"},
+    {filter = "type", type = "roboport", mode = "or"},
     {filter = "name", name = "entity-ghost", mode = "or"},
     {filter = "name", name = "tile-ghost", mode = "or"},
     {filter = "name", name = "item-request-proxy", mode = "or"}
 })
 
 script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
-    {filter = "name", name = "spider-vehicle", mode = "or"},
-    {filter = "name", name = "roboport", mode = "or"},
+    {filter = "type", type = "spider-vehicle", mode = "or"},
+    {filter = "type", type = "roboport", mode = "or"},
 })
 
 -- for entities that die and need rebuilding
