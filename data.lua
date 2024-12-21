@@ -6,6 +6,7 @@ require("data/shortcuts")
 require("data/custom_input")
 require("data/styles")
 require("data/cargo_buttons")
+require("data/tips-and-tricks")
 
 if mods["space-exploration"] then
     require("data/constructron-rocket-powered")

@@ -1,0 +1,66 @@
+data:extend{
+    -- tips-and-tricks-item-category
+    {
+        type = "tips-and-tricks-item-category",
+        name = "spidertron-automation",
+        order = "a",
+    },
+    -- tips-and-tricks-item
+    {
+        type = "tips-and-tricks-item",
+        name = "spidertron-automation",
+        tag = "[item=constructron][item=service_station]",
+        category = "spidertron-automation",
+        order = "a",
+        indent = 0,
+        is_title = true,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+    },
+    {
+        type = "tips-and-tricks-item",
+        name = "sa-settings",
+        category = "spidertron-automation",
+        order = "b",
+        indent = 1,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+    },
+    {
+        type = "tips-and-tricks-item",
+        name = "sa-general-jobs",
+        category = "spidertron-automation",
+        order = "c",
+        indent = 1,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+    },
+    {
+        type = "tips-and-tricks-item",
+        name = "sa-stations",
+        category = "spidertron-automation",
+        order = "d",
+        indent = 1,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+    },
+    {
+        type = "tips-and-tricks-item",
+        name = "sa-cargo-jobs",
+        category = "spidertron-automation",
+        order = "e",
+        indent = 1,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+        image = "__Constructron-Continued__/graphics/tips-and-tricks/cargo_ui.png"
+    },
+    {
+        type = "tips-and-tricks-item",
+        name = "sa-destroy-jobs",
+        category = "spidertron-automation",
+        order = "f",
+        indent = 1,
+        starting_status = "suggested",
+        trigger = {type = "unlock-recipe", recipe = "constructron"},
+    },
+}
