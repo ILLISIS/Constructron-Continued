@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.17
+Date: 2024-12-29
+  Changes:
+    - updated localization files for crowdin translations and configured automatic release workflow.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.16
 Date: 2024-12-20
   Changes:
@@ -36,7 +41,6 @@ Date: 2024-11-10
   Bugfixes:
     - Fixed entity processsing for upgrade jobs selecting the original item quality rather than the upgrade target quality.
     - Fixed that upgrade jobs would check for the wrong item quality when determining if the job is complete.
-
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.10
 Date: 2024-11-07
@@ -99,7 +103,6 @@ Date: 2024-10-23
     - Fixed a crash during deconstruction chunk splitting.
     - Fixed an issue that caused Constructrons to dump their robots into the network when there are still jobs to do.
     - Fixed an issue that caused Constructrons to move to an idle position when there are still jobs to do.
-
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.2
 Date: 2024-10-22
@@ -1020,7 +1023,6 @@ Date: 2022-02-09
     - After job time out, Constructrons will attempt to finish the build or deconstruction queue even if the inventory is full.
     - If something happens to the Constructron during an active job it continues as if nothing is wrong. There are checks in place to queue another job however.
     - The Landfill tile is not constructed as this requires changes to the pathing calculation.
-
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.6
 Date: 2022-01-30
