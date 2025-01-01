@@ -180,7 +180,7 @@ function cargo_job:in_progress()
     if not (self.sub_state == "unloading_items") then
         self:deliver_items()
         self.sub_state = "unloading_items"
-        self.job_status = "Delivering cargo"
+        self.job_status = {"ctron_status.delivering_cargo"}
         return
     else
         if not self:check_trash() then
