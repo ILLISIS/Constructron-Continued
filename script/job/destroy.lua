@@ -140,7 +140,7 @@ function destroy_job:in_progress()
     local construction_robots = logistic_network.construction_robots
 
     debug_lib.VisualDebugText({"ctron_status.job_type_" .. self.job_type}, worker, -1, 1)
-    self.job_status = "Attacking"
+    self.job_status = {"ctron_status.job_type_" .. self.job_type}
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
         self:enable_roboports()

@@ -621,7 +621,7 @@ function gui_main.BuildLogisticsDisplay(player, surface)
     bar.add{
         type = "label",
         style = "frame_title",
-        caption = "All logistics requests",
+        caption = {"ctron_gui_locale.all_logistics_req"},
         ignored_by_interaction = true
     }
 
