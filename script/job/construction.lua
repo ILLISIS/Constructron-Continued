@@ -18,7 +18,7 @@ function construction_job:position_check(position, distance)
     local worker = self.worker ---@cast worker -nil
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
-        debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
+        debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
         self.job_status = "Moving to position"
         if not worker.autopilot_destination then
             if not self.path_request_id then
@@ -26,14 +26,14 @@ function construction_job:position_check(position, distance)
             end
         else
             if self.landfill_job and self.state == "in_progress" and not self.worker_logistic_network.can_satisfy_request(self.landfill_type, 1) then -- is this a landfill job and do we have landfill?
-                debug_lib.VisualDebugText("Job wrapup: No landfill", worker, -0.5, 5)
+                debug_lib.VisualDebugText({"ctron_status.no_landfill"}, worker, -0.5, 5)
                 worker.autopilot_destination = nil
                 self:check_chunks()
                 self.state = "finishing"
                 return false
             end
             if not self:mobility_check() then
-                debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
+                debug_lib.VisualDebugText({"ctron_status.stuck"}, worker, -2, 1)
                 worker.autopilot_destination = nil
                 self.last_distance = nil
             end

@@ -77,7 +77,7 @@ script.on_event(defines.events.on_script_path_request_finished, (function(event)
             end
             job:request_path(job.path_request_params) -- try again
         else
-            debug_lib.VisualDebugText("No Path!", job.worker, -0.5, 1)
+            debug_lib.VisualDebugText({"ctron_status.no_path_found"}, job.worker, -0.5, 1)
             debug_lib.VisualDebugLine(job.path_request_params.start, job.path_request_params.goal, job.worker.surface, "red", 1200)
         end
     else
@@ -269,7 +269,7 @@ function pathfinder:findpath()
         end
         self.job.pathfinding = nil
         storage.custom_pathfinder_requests[self.path_index] = nil
-        debug_lib.VisualDebugText("No path found!", self.job.worker, -0.5, 10)
+        debug_lib.VisualDebugText({"ctron_status.no_path_found"}, self.job.worker, -0.5, 10)
         debug_lib.VisualDebugLine(start, goal, self.surface, "red", 1200)
     end
     return -- No path found
