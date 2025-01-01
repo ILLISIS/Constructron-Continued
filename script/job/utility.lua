@@ -72,7 +72,7 @@ end
 --     -- Is the logistic network ready?
 --     local logistic_network = self.station.logistic_network
 --     if logistic_network.all_logistic_robots == 0 then
---         debug_lib.VisualDebugText("No logistic robots in network", self.worker, -0.5, 3)
+--         debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, self.worker, -0.5, 3)
 --         return
 --     end
 --     -- request items / check inventory

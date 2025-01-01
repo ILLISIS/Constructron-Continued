@@ -53,11 +53,11 @@ job.get_worker = function(surface_index)
                     if logistic_cell.construction_radius > 0 then
                         return constructron
                     else
-                        debug_lib.VisualDebugText("Unsuitable roboports!", constructron, -1, 3)
+                        debug_lib.VisualDebugText({"ctron_status.bad_roboports"}, constructron, -1, 3)
                     end
                 else
                     -- create a utility job and move to robots
-                    debug_lib.VisualDebugText("Moving to robots", constructron, -1, 3)
+                    debug_lib.VisualDebugText({"ctron_status.moving_to_robots"}, constructron, -1, 3)
                     storage.job_index = storage.job_index + 1
                     storage.jobs[storage.job_index] = utility_job.new(storage.job_index, surface_index, "utility", constructron)
                     storage.jobs[storage.job_index].state = "robot_collection"
@@ -72,7 +72,7 @@ end
 job.check_equipment = function(constructron)
     if not constructron.logistic_cell then
         rendering.draw_text {
-            text = "Needs roboport equipment",
+            text = {"missing_roboports"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
@@ -85,7 +85,7 @@ job.check_equipment = function(constructron)
     end
     if not ((constructron.grid.get_generator_energy() > 0) or (constructron.grid.max_solar_energy > 0)) then
         rendering.draw_text {
-            text = "Needs power equipment",
+            text = {"missing_power"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
@@ -238,7 +238,7 @@ function job:move_to_position(position)
             storage.custom_pathfinder_index = storage.custom_pathfinder_index + 1
             storage.custom_pathfinder_requests[storage.custom_pathfinder_index] = pathfinder.new(position, worker.position, self)
             if not self.custom_path then
-                debug_lib.VisualDebugText("Waiting for pathfinder", worker, -0.5, 1)
+                debug_lib.VisualDebugText({"ctron_status.awaiting_pathfinder"}, worker, -0.5, 1)
                 return
             end
             self:request_path()
@@ -400,7 +400,7 @@ function job:validate_station()
             end
         end
     end
-    debug_lib.VisualDebugText("No stations found!", self.worker, -0.5, 5)
+    debug_lib.VisualDebugText({"ctron_status.no_stations_found"}, self.worker, -0.5, 5)
     return false
 end
 
@@ -484,7 +484,7 @@ function job:validate_logisitics()
     -- validate logisitic cell (constructrion has roboports)
     if not (self.worker_logistic_cell and self.worker_logistic_cell.valid) then
         if not worker.logistic_cell then
-            debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
+            debug_lib.VisualDebugText({"ctron_status.missing_roboports"}, worker, -0.5, 5)
             return false
         end
         self.worker_logistic_cell = self.worker.logistic_cell
@@ -492,7 +492,7 @@ function job:validate_logisitics()
     -- validate logisitic network (constructrion has roboports)
     if not (self.worker_logistic_network and self.worker_logistic_network.valid) then
         if not self.worker_logistic_cell.logistic_network then
-            debug_lib.VisualDebugText("Missing roboports in equipment grid!", worker, -0.5, 5)
+            debug_lib.VisualDebugText({"ctron_status.missing_roboports"}, worker, -0.5, 5)
             return false
         end
         self.worker_logistic_network = self.worker_logistic_cell.logistic_network
@@ -511,7 +511,7 @@ function job:position_check(position, distance)
     local worker = self.worker ---@cast worker -nil
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
-        debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
+        debug_lib.VisualDebugText({"ctron_status.ctron_status.moving_to_pos"}, worker, -1, 1)
         self.job_status = "Moving to position"
         if not worker.autopilot_destination then
             if not self.path_request_id then
@@ -519,7 +519,7 @@ function job:position_check(position, distance)
             end
         else
             if not self:mobility_check() then
-                debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
+                debug_lib.VisualDebugText({"ctron_status.stuck"}, worker, -2, 1)
                 worker.autopilot_destination = nil
                 self.last_distance = nil
             end
@@ -534,7 +534,7 @@ function job:check_health()
     local worker = self.worker ---@cast worker -nil
     local health = worker.get_health_ratio()
     if health < 0.6 then
-        debug_lib.VisualDebugText("Fleeing!", worker, -0.5, 1)
+        debug_lib.VisualDebugText({"ctron_status.fleeing"}, worker, -0.5, 1)
         -- set the station as an iterim retreat target but request a path to take over
         worker.autopilot_destination = self.station.position
         self:move_to_position(self.station.position)
@@ -655,7 +655,7 @@ function job:check_roaming_candidate(station, current_items, current_requests)
                 needed_count = count - current_items[request_name][quality]
             end
             if station_logistic_network.can_satisfy_request({name = request_name, quality = quality}, needed_count, true) then
-                debug_lib.VisualDebugText("Trying a different station", self.worker, 0, 5)
+                debug_lib.VisualDebugText({"ctron_status.trying_diff_station"}, self.worker, 0, 5)
                 self.sub_state = nil
                 self.station = station
                 return true
@@ -716,15 +716,15 @@ function job:clear_items()
         if next(trash_items) then
             local logistic_network = self.station.logistic_network
             if (logistic_network.all_logistic_robots <= 0) then
-                debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
+                debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, worker, -0.5, 3)
             end
             if not next(logistic_network.storages) then
-                debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
+                debug_lib.VisualDebugText({"ctron_status.no_logi_storage"}, worker, -0.5, 3)
             else
                 for item_name, value in pairs(trash_items) do
                     for quality, count in pairs(value) do
                         local can_drop = logistic_network.select_drop_point({ stack = { name = item_name, count = count, quality = quality }})
-                        debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+                        debug_lib.VisualDebugText({"ctron_status.awaiting_logistics"}, worker, -1, 1)
                         if can_drop then
                             return false
                         end
@@ -738,9 +738,9 @@ function job:clear_items()
                     for item_name, value in pairs(trash_items) do
                         for quality, count in pairs(value) do
                             local can_drop = station.logistic_network.select_drop_point({ stack = { name = item_name, count = count, quality = quality }})
-                            debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+                            debug_lib.VisualDebugText({"ctron_status.awaiting_logistics"}, worker, -1, 1)
                             if can_drop then
-                                debug_lib.VisualDebugText("Trying a different station", worker, 1, 5)
+                                debug_lib.VisualDebugText({"ctron_status.trying_diff_station"}, worker, 1, 5)
                                 self.station = station
                                 return false
                             end
@@ -882,7 +882,7 @@ function job:starting()
     -- Is the logistic network ready?
     local logistic_network = self.station.logistic_network
     if logistic_network.all_logistic_robots == 0 then
-        debug_lib.VisualDebugText("No logistic robots in network", self.worker, -0.5, 3)
+        debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, self.worker, -0.5, 3)
         return
     end
     -- request items / check inventory
@@ -891,7 +891,7 @@ function job:starting()
         item_request_list = self:inventory_check(item_request_list)
         item_request_list = self:check_items_are_allowed(item_request_list)
         self:request_items(item_request_list)
-        debug_lib.VisualDebugText("Requesting items", worker, -1, 1)
+        debug_lib.VisualDebugText({"ctron_status.requesting_items"}, worker, -1, 1)
         self.sub_state = "items_requested"
         self.request_tick = game.tick
         return
@@ -901,7 +901,7 @@ function job:starting()
         if next(requester_point.targeted_items_deliver) then return end
         -- check if requested items have been delivered
         if not self:check_item_request_fulfillment() then
-            debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+            debug_lib.VisualDebugText({"ctron_status.awaiting_logistics"}, worker, -1, 1)
             local ticks = (game.tick - self.request_tick)
             if not (ticks > 900) then return end
             if not (storage.stations_count[(self.surface_index)] > 1) then return end
@@ -940,7 +940,7 @@ function job:in_progress()
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then
-        debug_lib.VisualDebugText("Missing robots! returning to station.", worker, -0.5, 5)
+        debug_lib.VisualDebugText({"ctron_status.missing_robots"}, worker, -0.5, 5)
         self.state = "starting"
         return
     end
@@ -959,7 +959,7 @@ function job:in_progress()
     --===========================================================================--
     local construction_robots = logistic_network.construction_robots
 
-    debug_lib.VisualDebugText("" .. self.job_type .. "", worker, -1, 1)
+    debug_lib.VisualDebugText({"ctron_status.job_type_" .. self.job_type}, worker, -1, 1)
     self.job_status = "Working"
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
@@ -1005,7 +1005,7 @@ function job:finishing()
     end
     -- remove job from list
     storage.jobs[self.job_index] = nil
-    debug_lib.VisualDebugText("Job complete!", worker, -1, 1)
+    debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
 function job:deffered()
