@@ -72,7 +72,7 @@ end
 job.check_equipment = function(constructron)
     if not constructron.logistic_cell then
         rendering.draw_text {
-            text = {"missing_roboports"},
+            text = {"ctron_status.missing_roboports"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
@@ -85,7 +85,7 @@ job.check_equipment = function(constructron)
     end
     if not ((constructron.grid.get_generator_energy() > 0) or (constructron.grid.max_solar_energy > 0)) then
         rendering.draw_text {
-            text = {"missing_power"},
+            text = {"ctron_status.missing_power"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
