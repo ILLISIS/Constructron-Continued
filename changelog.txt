@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.18
+Date: 2025-01-04
+  Info:
+    - Fixed a typo in tips-and-tricks.
+  Gui:
+    - Optimized UI sizing and positioning for longer translations.
+  Locale:
+    - Added visual debug messages to locale file so they can be translated as well.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.17
 Date: 2024-12-29
   Changes:
