@@ -68,7 +68,8 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 mod = "constructron",
             }
         }
-        ctron_frame.style.width = 100
+        ctron_frame.style.minimal_width = 100
+        ctron_frame.style.maximal_width = 200
 
         -- find job
         local job
@@ -80,7 +81,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
         end
 
         -- add remote button
-        ctron_frame.add{
+        local remote_button = ctron_frame.add{
             type = "button",
             name = "ctron_remote_button",
             caption = {"ctron_gui_locale.job_remote_button"},
@@ -92,11 +93,12 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 worker = entity.unit_number
             }
         }
+        remote_button.style.horizontally_stretchable = true
 
         if not job then return end
 
         -- add locate button
-        ctron_frame.add{
+        local locate_button = ctron_frame.add{
             type = "button",
             name = "ctron_locate_button",
             caption = {"ctron_gui_locale.job_locate_button"},
@@ -108,9 +110,10 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        locate_button.style.horizontally_stretchable = true
 
         -- add details button
-        ctron_frame.add{
+        local details_button = ctron_frame.add{
             type = "button",
             name = "ctron_details_button",
             caption = {"ctron_gui_locale.job_details_button"},
@@ -122,9 +125,10 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        details_button.style.horizontally_stretchable = true
 
         -- add cancel button
-        ctron_frame.add{
+        local cancel_button = ctron_frame.add{
             type = "button",
             name = "ctron_cancel_button",
             caption = {"ctron_gui_locale.job_cancel_button"},
@@ -136,6 +140,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        cancel_button.style.horizontally_stretchable = true
     elseif entity and storage.station_names[entity.name] then
         local player = game.players[event.player_index]
         if player.gui.relative.ctron_station_frame then return end
@@ -430,8 +435,13 @@ function gui_handlers.resize_gui(player)
         main_window.location = {x = 25, y = main_window.location.y}
         main_window.ctron_main_content_frame.style.width = 623
         main_window.ctron_main_content_frame.job_scroll_pane.style.width = 623
+        -- remove cargo jobs buttons from main window
         if next(main_window.children[2].children[2].children) then
             main_window.children[2].children[2].children[1].destroy()
+        end
+        -- remove surface select from main window
+        if main_window.children[1].children[3].name == "surface_select" then
+            main_window.children[1].children[3].visible = false
         end
     end
     local job_window = player.gui.screen.ctron_job_window
