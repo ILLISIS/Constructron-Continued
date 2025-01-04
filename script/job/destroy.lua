@@ -35,7 +35,7 @@ end
 --     local worker = self.worker ---@cast worker -nil
 --     local distance_from_pos = util_func.distance_between(worker.position, position)
 --     if distance_from_pos > distance then
---         debug_lib.VisualDebugText("Moving to position", worker, -1, 1)
+--         debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
 --         if not worker.autopilot_destination then
         --     if not self.path_request_id then
         --         self:move_to_position(position)
@@ -57,7 +57,7 @@ end
 --                 end
 --             end
 --             if not self:mobility_check() then
---                 debug_lib.VisualDebugText("Stuck!", worker, -2, 1)
+--                 debug_lib.VisualDebugText({"ctron_status.stuck"}, worker, -2, 1)
 --                 worker.autopilot_destination = nil
 --                 self.last_distance = nil
 --             end
@@ -107,7 +107,7 @@ function destroy_job:in_progress()
     --     -- distance check
     --     local distance = util_func.distance_between(worker.position, vassal_worker.position)
     --     if distance > 32 then
-    --         debug_lib.VisualDebugText("Awaiting vassal proximity", worker, -1, 1)
+    --         debug_lib.VisualDebugText("Awaiting vassal proximity", worker, -1, 1) -- TODO localize!!
     --         worker.autopilot_destination = nil
     --         return
     --     end
@@ -120,7 +120,7 @@ function destroy_job:in_progress()
 
     -- check that the worker has contruction robots
     if (logistic_network.all_construction_robots < 1) then
-        debug_lib.VisualDebugText("Missing robots! returning to station.", worker, -0.5, 5)
+        debug_lib.VisualDebugText({"ctron_status.missing_robots"}, worker, -0.5, 5)
         self.state = "starting"
         return
     end
@@ -139,8 +139,8 @@ function destroy_job:in_progress()
     --===========================================================================--
     local construction_robots = logistic_network.construction_robots
 
-    debug_lib.VisualDebugText("".. self.job_type .."", worker, -1, 1)
-    self.job_status = "Attacking"
+    debug_lib.VisualDebugText({"ctron_status.job_type_" .. self.job_type}, worker, -1, 1)
+    self.job_status = {"ctron_status.job_type_" .. self.job_type}
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
         self:enable_roboports()
@@ -182,7 +182,7 @@ function destroy_job:finishing()
     -- end
     -- remove job from list
     storage.jobs[self.job_index] = nil
-    debug_lib.VisualDebugText("Job complete!", worker, -1, 1)
+    debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
 function destroy_job:specific_action()

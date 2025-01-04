@@ -536,7 +536,7 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
     -- status label
     local status_label = card_flow.add{
         type = "label",
-        caption = "Waiting for an available worker"
+        caption = {"ctron_gui_locale.job_status"}
     }
     status_label.style.left_padding = 10
 
@@ -621,7 +621,7 @@ function gui_main.BuildLogisticsDisplay(player, surface)
     bar.add{
         type = "label",
         style = "frame_title",
-        caption = "All logistics requests",
+        caption = {"ctron_gui_locale.all_logistics_req"},
         ignored_by_interaction = true
     }
 

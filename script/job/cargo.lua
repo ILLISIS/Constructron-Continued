@@ -121,7 +121,7 @@ end
 
 function cargo_job:validate_destination_station()
     if not (self.destination_station and self.destination_station.valid) then
-        debug_lib.VisualDebugText("Destination station is invalid", self.worker, -1, 1)
+        debug_lib.VisualDebugText({"ctron_status.dest_station_invalid"}, self.worker, -1, 1)
         self.worker.autopilot_destination = nil
         self.state = "finishing"
         return false
@@ -162,7 +162,7 @@ function cargo_job:setup()
     self:request_ammo()
     -- check if the home station is not the destination station
     if (self.station.unit_number == self.destination_station.unit_number) then
-        debug_lib.VisualDebugText("Moving to a new station", self.worker, -1, 1)
+        debug_lib.VisualDebugText({"ctron_status.trying_diff_station"}, self.worker, -1, 1)
         self:move_stations()
     end
     -- state change
@@ -180,24 +180,24 @@ function cargo_job:in_progress()
     if not (self.sub_state == "unloading_items") then
         self:deliver_items()
         self.sub_state = "unloading_items"
-        self.job_status = "Delivering cargo"
+        self.job_status = {"ctron_status.delivering_cargo"}
         return
     else
         if not self:check_trash() then
             local trash_items = util_func.convert_to_item_list(self.worker_trash_inventory.get_contents())
             local logistic_network = self.destination_station.logistic_network
             if (logistic_network.all_logistic_robots <= 0) then
-                debug_lib.VisualDebugText("No logistic robots in network", worker, -0.5, 3)
+                debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, worker, -0.5, 3)
                 return
             end
             if not next(logistic_network.storages) then
-                debug_lib.VisualDebugText("No storage in network", worker, -0.5, 3)
+                debug_lib.VisualDebugText({"ctron_status.no_logi_storage"}, worker, -0.5, 3)
                 return
             else
                 for item_name, value in pairs(trash_items) do
                     for quality, count in pairs(value) do
                         local can_drop = logistic_network.select_drop_point({ stack = { name = item_name, count = count, quality = quality }})
-                        debug_lib.VisualDebugText("Awaiting logistics", worker, -1, 1)
+                        debug_lib.VisualDebugText({"ctron_status.awaiting_logistics"}, worker, -1, 1)
                         if can_drop then
                             return
                         end
