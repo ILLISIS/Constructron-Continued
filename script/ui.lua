@@ -68,7 +68,8 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 mod = "constructron",
             }
         }
-        ctron_frame.style.width = 100
+        ctron_frame.style.minimal_width = 100
+        ctron_frame.style.maximal_width = 200
 
         -- find job
         local job
@@ -80,7 +81,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
         end
 
         -- add remote button
-        ctron_frame.add{
+        local remote_button = ctron_frame.add{
             type = "button",
             name = "ctron_remote_button",
             caption = {"ctron_gui_locale.job_remote_button"},
@@ -92,11 +93,12 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 worker = entity.unit_number
             }
         }
+        remote_button.style.horizontally_stretchable = true
 
         if not job then return end
 
         -- add locate button
-        ctron_frame.add{
+        local locate_button = ctron_frame.add{
             type = "button",
             name = "ctron_locate_button",
             caption = {"ctron_gui_locale.job_locate_button"},
@@ -108,9 +110,10 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        locate_button.style.horizontally_stretchable = true
 
         -- add details button
-        ctron_frame.add{
+        local details_button = ctron_frame.add{
             type = "button",
             name = "ctron_details_button",
             caption = {"ctron_gui_locale.job_details_button"},
@@ -122,9 +125,10 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        details_button.style.horizontally_stretchable = true
 
         -- add cancel button
-        ctron_frame.add{
+        local cancel_button = ctron_frame.add{
             type = "button",
             name = "ctron_cancel_button",
             caption = {"ctron_gui_locale.job_cancel_button"},
@@ -136,6 +140,7 @@ script.on_event(defines.events.on_gui_opened, function(event)
                 job_index = job.job_index
             }
         }
+        cancel_button.style.horizontally_stretchable = true
     elseif entity and storage.station_names[entity.name] then
         local player = game.players[event.player_index]
         if player.gui.relative.ctron_station_frame then return end
@@ -430,8 +435,13 @@ function gui_handlers.resize_gui(player)
         main_window.location = {x = 25, y = main_window.location.y}
         main_window.ctron_main_content_frame.style.width = 623
         main_window.ctron_main_content_frame.job_scroll_pane.style.width = 623
+        -- remove cargo jobs buttons from main window
         if next(main_window.children[2].children[2].children) then
             main_window.children[2].children[2].children[1].destroy()
+        end
+        -- remove surface select from main window
+        if main_window.children[1].children[3].name == "surface_select" then
+            main_window.children[1].children[3].visible = false
         end
     end
     local job_window = player.gui.screen.ctron_job_window
@@ -461,7 +471,7 @@ end
 function gui_handlers.ctron_locate_job(player, element)
     local job = storage.jobs[element.tags.job_index]
     if not job then
-        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        player.print({"ctron_warnings.job_no_exist"}) -- TODO: refactor this functionality
         return
     end
     local _, chunk = next(job.chunks)
@@ -514,7 +524,7 @@ end
 function gui_handlers.ctron_cancel_job(player, element)
     local job = storage.jobs[element.tags.job_index]
     if not job then
-        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        player.print({"ctron_warnings.job_no_exist"}) -- TODO: refactor this functionality
         return
     end
     if job.state ~= "finishing" then
@@ -549,14 +559,14 @@ function gui_handlers.ctron_cancel_job(player, element)
         storage.user_interface[player.index].main_ui.elements["in_progress_section"][card_name].destroy()
         gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["in_progress_section"])
     else
-        player.print("Job is already finishing.") -- TODO: refactor this functionality
+        player.print({"ctron_warnings.job_finished"}) -- TODO: refactor this functionality
     end
 end
 
 function gui_handlers.open_job_window(player, element)
     local job = storage.jobs[element.tags.job_index]
     if not job then
-        player.print("This job no longer exists.") -- TODO: refactor this functionality
+        player.print({"ctron_warnings.job_no_exist"}) -- TODO: refactor this functionality
         return
     end
     if not player.gui.screen.ctron_job_window then
@@ -635,7 +645,7 @@ function gui_handlers.selected_new_ammo(player, element)
     end
     if not (prototypes.item[element.elem_value.name].ammo_category.name == "rocket") then
         element.elem_value = storage.ammo_name[setting_surface]
-        player.print("Invalid ammo selection.")
+        player.print({"ctron_warnings.invalid_ammo"})
         return
     end
     -- update existing jobs with new ammo selection
@@ -888,7 +898,7 @@ function gui_handlers.on_gui_elem_changed(player, element)
         local quality = element.elem_value.quality
         local station_unit_number = element.tags.station_unit_number
         if not storage.station_requests[station_unit_number] then
-            player.print("This station no longer exists.")
+            player.print({"ctron_warnings.station_no_exist"})
             gui_handlers.close_cargo_window(player)
             gui_handlers.open_cargo_window(player)
             return
@@ -899,7 +909,7 @@ function gui_handlers.on_gui_elem_changed(player, element)
             if v.elem_value and v.elem_value == item and v.name ~= element.name then
                 element.elem_value = nil
                 element.style = "ctron_slot_button"
-                player.print("This item is already requested on this station.")
+                player.print({"ctron_warnings.item_already_requested"})
                 return
             end
         end
@@ -943,11 +953,11 @@ function gui_handlers.confirm_cargo(player, element)
         local max = tonumber(cargo_ui_elements.max_field.text) or 0
         -- validate input
         if min >= max then
-            player.print("Minimum value must be less than maximum value.")
+            player.print({"ctron_warnings.min_value"})
             return
         end
         if max <= min then
-            player.print("Maximum value must be greater than minimum value.")
+            player.print({"ctron_warnings.max_value"})
             return
         end
         storage.station_requests[station_unit_number][slot_number] = {

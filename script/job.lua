@@ -28,7 +28,7 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.last_distance = 0         -- used to check if the worker is moving
     instance.mobility_tick = nil       -- used to delay mobility checks
     instance.last_robot_positions = {} -- used to check that robots are active and not stuck
-    instance.job_status = "New"        -- used to display the current job status in the UI
+    instance.job_status = {"ctron_status.new"}        -- used to display the current job status in the UI
     -- job flags
     instance.landfill_job = false      -- used to determine if the job should expect landfill
     instance.roboports_enabled = true  -- used to flag if roboports are enabled or not
@@ -72,7 +72,7 @@ end
 job.check_equipment = function(constructron)
     if not constructron.logistic_cell then
         rendering.draw_text {
-            text = {"missing_roboports"},
+            text = {"ctron_status.missing_roboports"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
@@ -85,7 +85,7 @@ job.check_equipment = function(constructron)
     end
     if not ((constructron.grid.get_generator_energy() > 0) or (constructron.grid.max_solar_energy > 0)) then
         rendering.draw_text {
-            text = {"missing_power"},
+            text = {"ctron_status.missing_power"},
             target = constructron,
             filled = true,
             surface = constructron.surface,
@@ -304,7 +304,7 @@ function job:check_items_are_allowed(item_list)
 end
 
 function job:request_items(item_list)
-    self.job_status = "Requesting items"
+    self.job_status = {"ctron_status.requesting_items"}
     local slot = 1
     local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
@@ -511,8 +511,8 @@ function job:position_check(position, distance)
     local worker = self.worker ---@cast worker -nil
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
-        debug_lib.VisualDebugText({"ctron_status.ctron_status.moving_to_pos"}, worker, -1, 1)
-        self.job_status = "Moving to position"
+        debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
+        self.job_status = {"ctron_status.moving_to_pos"}
         if not worker.autopilot_destination then
             if not self.path_request_id then
                 self:move_to_position(position)
@@ -706,7 +706,7 @@ function job:clear_items()
             end
         end
         self:request_items(item_request)
-        self.job_status = "Clearing inventory"
+        self.job_status = {"ctron_status.clearing_inventory"}
         self.sub_state = "items_requested"
         self.request_tick = game.tick
         return false
@@ -960,7 +960,7 @@ function job:in_progress()
     local construction_robots = logistic_network.construction_robots
 
     debug_lib.VisualDebugText({"ctron_status.job_type_" .. self.job_type}, worker, -1, 1)
-    self.job_status = "Working"
+    self.job_status = {"ctron_status.job_type_" .. self.job_type}
 
     if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
         self:enable_roboports()

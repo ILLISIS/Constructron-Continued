@@ -11,3 +11,7 @@ The process to make a pull request is as follows:
 2. Create your new feature branch from the `dev` branch.
 3. Make your changes.
 4. Open a pull request to the `dev` branch.
+
+## Translation
+
+You are welcome to help with localization, please use [this Crowdin project](https://crowdin.com/project/factorio-mods-localization). You can find more details [here](https://github.com/dima74/factorio-mods-localization#how-to-translate-using-crowdin).
