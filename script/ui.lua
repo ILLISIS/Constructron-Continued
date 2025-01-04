@@ -645,7 +645,7 @@ function gui_handlers.selected_new_ammo(player, element)
     end
     if not (prototypes.item[element.elem_value.name].ammo_category.name == "rocket") then
         element.elem_value = storage.ammo_name[setting_surface]
-        player.print({"ctron_warnings.invalid_amo"})
+        player.print({"ctron_warnings.invalid_ammo"})
         return
     end
     -- update existing jobs with new ammo selection
@@ -909,7 +909,7 @@ function gui_handlers.on_gui_elem_changed(player, element)
             if v.elem_value and v.elem_value == item and v.name ~= element.name then
                 element.elem_value = nil
                 element.style = "ctron_slot_button"
-                player.print({"ctron_warnings.alredy_req"})
+                player.print({"ctron_warnings.item_already_requested"})
                 return
             end
         end

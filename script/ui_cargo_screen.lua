@@ -199,7 +199,7 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
     station_flow.add{
         type = "label",
         style = "ctron_station_label_style",
-        caption = {"ctron_gui_locale.service_station"}
+        caption = {"ctron_gui_locale.station_label_caption"}
     }
     station_flow.style.vertical_align = "center"
 
