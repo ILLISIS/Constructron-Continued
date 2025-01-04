@@ -85,7 +85,7 @@ function gui_cargo.buildCargoGui(player, surface)
     -- confirm button
     storage.user_interface[player.index]["cargo_ui"]["elements"].confirm_button = flow.add{
         type = "button",
-        caption = "confirm",
+        caption = {"ctron_gui_locale.confirm"},
         style = "ctron_frame_button_style",
         tags = {
             mod = "constructron",
@@ -199,7 +199,7 @@ function gui_cargo.buildStationCard(player, surface, frame, station)
     station_flow.add{
         type = "label",
         style = "ctron_station_label_style",
-        caption = "Service Station: "
+        caption = {"ctron_gui_locale.service_station"}
     }
     station_flow.style.vertical_align = "center"
 

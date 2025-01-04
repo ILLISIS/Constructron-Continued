@@ -19,7 +19,7 @@ function construction_job:position_check(position, distance)
     local distance_from_pos = util_func.distance_between(worker.position, position)
     if distance_from_pos > distance then
         debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
-        self.job_status = "Moving to position"
+        self.job_status = {"ctron_status.moving_to_pos"}
         if not worker.autopilot_destination then
             if not self.path_request_id then
                 self:move_to_position(position)
