@@ -346,6 +346,11 @@ script.on_event(ev.on_player_selected_area, function(event)
             end
         end
     end
+    for _, entity in pairs(event.surface.find_entities_filtered{area=event.area, type='item-request-proxy'}) do
+        storage.construction_index = storage.construction_index + 1
+        storage.construction_entities[storage.construction_index] = entity
+        storage.entity_proc_trigger = true -- there is something to do start processing
+    end
 end)
 
 -- right click
