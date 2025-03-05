@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.19
+Date: 2025-01-18
+  Changes:
+    - Added tips-and-tricks info sections for the Constructron Control Center and the manual selection tool.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.18
 Date: 2025-01-04
   Info:
