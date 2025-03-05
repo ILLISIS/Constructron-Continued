@@ -63,7 +63,9 @@ local ensure_storages = function()
     storage.registered_entities = storage.registered_entities or {}
     storage.constructron_statuses = storage.constructron_statuses or {}
     --
-    storage.entity_proc_trigger = storage.entity_proc_trigger or true
+    if storage.entity_proc_trigger == nil then
+        storage.entity_proc_trigger = true
+    end
     --
     storage.managed_surfaces = storage.managed_surfaces or {}
     --
@@ -194,18 +196,34 @@ local ensure_storages = function()
     -- non surface specific settings
     storage.job_start_delay = storage.job_start_delay or 300 -- five seconds
     storage.entities_per_second = storage.entities_per_second or 1000
-    storage.debug_toggle = storage.debug_toggle or false
-    storage.horde_mode = storage.horde_mode or false
+    if storage.debug_toggle == nil then
+        storage.debug_toggle = false
+    end
+    if storage.horde_mode == nil then
+        storage.horde_mode = true
+    end
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
         -- per surface settings
         local surface_index = surface.index
-        storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[surface_index] or true
-        storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[surface_index] or true
-        storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[surface_index] or true
-        storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[surface_index] or true
-        storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[surface_index] or true
-        storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[surface_index] or false
+        if storage.construction_job_toggle[surface_index] == nil then
+            storage.construction_job_toggle[surface_index] = true
+        end
+        if storage.rebuild_job_toggle[surface_index] == nil then
+            storage.rebuild_job_toggle[surface_index] = true
+        end
+        if storage.deconstruction_job_toggle[surface_index] == nil then
+            storage.deconstruction_job_toggle[surface_index] = true
+        end
+        if storage.upgrade_job_toggle[surface_index] == nil then
+            storage.upgrade_job_toggle[surface_index] = true
+        end
+        if storage.repair_job_toggle[surface_index] == nil then
+            storage.repair_job_toggle[surface_index] = true
+        end
+        if storage.destroy_job_toggle[surface_index] == nil then
+            storage.destroy_job_toggle[surface_index] = false
+        end
         storage.ammo_name[surface_index] = storage.ammo_name[surface_index] or init_ammo_name
         storage.ammo_count[surface_index] = storage.ammo_count[surface_index] or 0
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[surface_index] or 50
