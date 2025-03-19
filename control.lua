@@ -323,6 +323,10 @@ script.on_configuration_changed(init)
 --===========================================================================--
 
 local ev = defines.events
+
+-- script.on_event(ev.on_player_used_spidertron_remote, function(event)
+-- end)
+
 script.on_event(ev.on_research_finished, function(event)
     local research = event.research
     if research.name == "spidertron" then
