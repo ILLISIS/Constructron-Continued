@@ -309,7 +309,13 @@ local init = function()
     -- This applies to all paths as the pathfinder is generic
 end
 
-script.on_init(init)
+script.on_init(function()
+    if game.player and game.player.force.technologies["spidertron"].researched then
+        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+    end
+    init()
+end)
+
 script.on_configuration_changed(init)
 
 --===========================================================================--
@@ -317,6 +323,12 @@ script.on_configuration_changed(init)
 --===========================================================================--
 
 local ev = defines.events
+script.on_event(ev.on_research_finished, function(event)
+    local research = event.research
+    if research.name == "spidertron" then
+        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+    end
+end)
 
 script.on_event(ev.on_lua_shortcut, function (event)
     local name = event.prototype_name
