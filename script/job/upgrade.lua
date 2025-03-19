@@ -22,7 +22,8 @@ function upgrade_job:specific_action()
     local can_upgrade_entity = false
     for _, entity in pairs(entities) do
         local target, target_quality = entity.get_upgrade_target() ---@cast target -nil
-        if self.worker_logistic_network.can_satisfy_request({name = target.name, quality = target_quality}, 1, false) then -- does inventory have the required item?
+        local item_name = target.items_to_place_this[1].name
+        if self.worker_logistic_network.can_satisfy_request({name = item_name, quality = target_quality}, 1, false) then -- does inventory have the required item?
             can_upgrade_entity = true
         end
     end
