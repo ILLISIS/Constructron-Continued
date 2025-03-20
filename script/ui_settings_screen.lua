@@ -269,6 +269,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_robot_count_label"},
+        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -317,6 +318,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         settings_table.add{
             type = "label",
             caption = setting_params.label,
+            tooltip = setting_params.tooltip,
             style = "ctron_settings_label_style"
         }
         settings_table.add{
@@ -337,6 +339,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_ammo_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -356,6 +359,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_count_label"},
+        tooltip = {"ctron_gui_locale.settings_ammo_count_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -377,6 +381,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_jobs_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -396,6 +401,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_tool_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
