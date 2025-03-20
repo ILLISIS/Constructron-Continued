@@ -3,7 +3,12 @@ local debug_lib = require("script/debug_lib")
 
 local entity_proc = {}
 
-entity_proc.do_chunk = function(entity, queue, entity_surface_index)
+--- Processes entity positions into chunks
+---@param entity LuaEntity
+---@param queue table
+---@param entity_surface_index uint
+---@param from_tool boolean?
+entity_proc.do_chunk = function(entity, queue, entity_surface_index, from_tool)
     local entity_pos = entity.position
     local entity_pos_x = entity_pos.x
     local entity_pos_y = entity_pos.y
@@ -24,6 +29,7 @@ entity_proc.do_chunk = function(entity, queue, entity_surface_index)
                 x = entity_pos_x,
                 y = entity_pos_y
             },
+            from_tool = from_tool or false
         }
     else -- update existing queued chunk
         if entity_pos_x < chunk['minimum'].x then
@@ -37,6 +43,7 @@ entity_proc.do_chunk = function(entity, queue, entity_surface_index)
             chunk['maximum'].y = entity_pos_y -- expand maximum chunk area y axis
         end
         chunk.last_update_tick = game.tick
+        chunk.from_tool = from_tool or false -- deconstruction from tool raises the event which creates a chunk
     end
     queue[key] = chunk
 end
@@ -335,7 +342,8 @@ script.on_event(ev.on_sector_scanned, function(event)
     local surface = event.radar.surface
     if not storage.destroy_job_toggle[surface.index] then return end
     local entity_surface_index = surface.index
-    entity_proc.do_chunk(event.area["left_top"], storage.destroy_queue[entity_surface_index], entity_surface_index)
+    local fake_entity = {position = event.area["left_top"]}
+    entity_proc.do_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
 end)
 
 -- left click
@@ -345,7 +353,7 @@ script.on_event(ev.on_player_selected_area, function(event)
         if entity and entity.valid then
             local entity_surface_index = entity.surface.index
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                entity_proc.do_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index)
+                entity_proc.do_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -360,7 +368,7 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
             if force_name == "player" or force_name == "neutral" then
                 local entity_surface_index = entity.surface.index
                 entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index], entity_surface_index)
-                entity_proc.do_chunk(entity, storage.deconstruction_queue[entity_surface_index])
+                entity_proc.do_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -373,7 +381,7 @@ script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
         if entity and entity.valid then
             if entity.force.name == "enemy" then
                 local entity_surface_index = entity.surface_index
-                entity_proc.do_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+                entity_proc.do_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end

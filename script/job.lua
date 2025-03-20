@@ -200,7 +200,7 @@ function job.find_chunk_entities(chunk, job_type)
     local chunk_trash_items = {}
     if job_type ~= "destroy" then
         for _, entity in pairs(entities) do
-            if storage.zone_restriction_job_toggle and job:check_roboport_coverage(entity) then
+            if not chunk.from_tool and storage.zone_restriction_job_toggle and job:check_roboport_coverage(entity) then
                 return
             end
             local entity_required_items, entity_trash_items = entity_proc[job_type](entity)
