@@ -187,26 +187,6 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
-    -- entities per second
-    global_settings_table.add{
-        type = "label",
-        caption = {"ctron_gui_locale.settings_entities_per_second_label"},
-        style = "ctron_settings_label_style"
-    }
-    global_settings_table.add{
-        type = "textfield",
-        text = storage.entities_per_second,
-        style = "ctron_settings_textfield_style",
-        tooltip = {"ctron_gui_locale.settings_entities_per_second_tooltip"},
-        numeric = true,
-        allow_negative = false,
-        allow_decimal = true,
-        tags = {
-            mod = "constructron",
-            on_gui_text_changed = "change_entities_per_second"
-        }
-    }
-
     -- horde mode
     global_settings_table.add{
         type = "label",

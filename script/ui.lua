@@ -692,10 +692,6 @@ function gui_handlers.change_job_start_delay(player, element)
     storage.job_start_delay = ((tonumber(element.text) or 0) * 60)
 end
 
-function gui_handlers.change_entities_per_second(player, element)
-    storage.entities_per_second = (tonumber(element.text) or 1000)
-end
-
 function gui_handlers.clear_logistic_request(player, element)
     local worker = storage.constructrons[element.tags.unit_number]
     if not worker then return end

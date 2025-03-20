@@ -22,23 +22,6 @@ script.on_nth_tick(90, function ()
     gui_handlers.update_ui_windows()
 end)
 
-script.on_nth_tick(15, function()
-    if not storage.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
-    if next(storage.deconstruction_entities) then -- deconstruction has priority over construction.
-        entity_proc.add_entities_to_chunks("deconstruction", storage.deconstruction_entities, storage.deconstruction_queue)
-    elseif next(storage.construction_entities) then
-        entity_proc.add_entities_to_chunks("construction", storage.construction_entities, storage.construction_queue)
-    elseif next(storage.upgrade_entities) then
-        entity_proc.add_entities_to_chunks("upgrade", storage.upgrade_entities, storage.upgrade_queue)
-    elseif next(storage.repair_entities) then
-        entity_proc.add_entities_to_chunks("repair", storage.repair_entities, storage.repair_queue)
-    elseif next(storage.destroy_entities) then
-        entity_proc.add_entities_to_chunks("destroy", storage.destroy_entities, storage.destroy_queue)
-    else
-        storage.entity_proc_trigger = false -- stop entity processing
-    end
-end)
-
 -- cleanup
 script.on_nth_tick(54000, (function()
     for _, surface in pairs(game.surfaces) do
@@ -63,10 +46,6 @@ local ensure_storages = function()
     storage.registered_entities = storage.registered_entities or {}
     storage.constructron_statuses = storage.constructron_statuses or {}
     --
-    if storage.entity_proc_trigger == nil then
-        storage.entity_proc_trigger = true
-    end
-    --
     storage.managed_surfaces = storage.managed_surfaces or {}
     --
     storage.stack_cache = {} -- rebuild
@@ -89,12 +68,6 @@ local ensure_storages = function()
     storage.repair_index = storage.repair_index or 0
     storage.destroy_index = storage.destroy_index or 0
     storage.cargo_index = storage.cargo_index or 0
-    --
-    storage.construction_entities = storage.construction_entities or {}
-    storage.deconstruction_entities = storage.deconstruction_entities or {}
-    storage.upgrade_entities = storage.upgrade_entities or {}
-    storage.repair_entities = storage.repair_entities or {}
-    storage.destroy_entities = storage.destroy_entities or {}
     --
     storage.construction_queue = storage.construction_queue or {}
     storage.deconstruction_queue = storage.deconstruction_queue or {}
