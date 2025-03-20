@@ -732,6 +732,7 @@ function gui_handlers.apply_settings_template(player, element)
         storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[current_surface]
         storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[current_surface]
         storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[current_surface]
+        storage.zone_restriction_job_toggle[surface_index] = storage.zone_restriction_job_toggle[current_surface]
         storage.ammo_name[surface_index] = storage.ammo_name[current_surface]
         storage.ammo_count[surface_index] = storage.ammo_count[current_surface]
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[current_surface]

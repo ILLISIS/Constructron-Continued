@@ -91,6 +91,7 @@ local ensure_storages = function()
     storage.upgrade_job_toggle = storage.upgrade_job_toggle or {}
     storage.repair_job_toggle = storage.repair_job_toggle or {}
     storage.destroy_job_toggle = storage.destroy_job_toggle or {}
+    storage.zone_restriction_job_toggle = storage.zone_restriction_job_toggle or {}
     -- job_types
     storage.job_types = {
         "deconstruction",
@@ -196,6 +197,9 @@ local ensure_storages = function()
         end
         if storage.destroy_job_toggle[surface_index] == nil then
             storage.destroy_job_toggle[surface_index] = false
+        end
+        if storage.zone_restriction_job_toggle[surface_index] == nil then
+            storage.zone_restriction_job_toggle[surface_index] = false
         end
         storage.ammo_name[surface_index] = storage.ammo_name[surface_index] or init_ammo_name
         storage.ammo_count[surface_index] = storage.ammo_count[surface_index] or 0
@@ -363,6 +367,7 @@ script.on_event(ev.on_surface_created, function(event)
     storage.upgrade_job_toggle[surface_index] = true
     storage.repair_job_toggle[surface_index] = true
     storage.destroy_job_toggle[surface_index] = false
+    storage.zone_restriction_job_toggle[surface_index] = false
     storage.ammo_name[surface_index] = storage.ammo_name[1]
     storage.ammo_count[surface_index] = 0
     storage.desired_robot_count[surface_index] = 50
@@ -389,6 +394,7 @@ script.on_event(ev.on_surface_deleted, function(event)
     storage.upgrade_job_toggle[surface_index] = nil
     storage.repair_job_toggle[surface_index] = nil
     storage.destroy_job_toggle[surface_index] = nil
+    storage.zone_restriction_job_toggle[surface_index] = nil
     storage.ammo_name[surface_index] = nil
     storage.ammo_count[surface_index] = nil
     storage.desired_robot_count[surface_index] = nil

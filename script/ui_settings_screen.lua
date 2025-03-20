@@ -54,7 +54,11 @@ local toggle_settings = {
     ["destroy"] = {
         label = {"ctron_gui_locale.settings_destroy_jobs_label"},
         tooltip = {"ctron_gui_locale.settings_destroy_jobs_tooltip"}
-    }
+    },
+    ["zone_restriction"] = {
+        label = {"ctron_gui_locale.settings_zone_restriction_label"},
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"}
+    },
 }
 
 --===========================================================================--
