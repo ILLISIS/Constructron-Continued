@@ -212,7 +212,7 @@ function job.find_chunk_entities(chunk, job_type)
     return true
 end
 
-function job:get_chunk(chunk)
+function job:claim_chunk(chunk)
     local chunk_key = chunk.key
     -- calculate empty slots
     self.empty_slot_count = self.worker_inventory.count_empty_stacks()
@@ -280,7 +280,7 @@ function job:include_more_chunks(chunk_params, origin_chunk)
     return chunk_params.used_chunks, chunk_params.required_items
 end
 
-function job:find_chunks_in_proximity()
+function job:claim_chunks_in_proximity()
     -- merge chunks in proximity to each other into one job
     local _, origin_chunk = next(self.chunks)
     local chunk_params = {
@@ -570,7 +570,7 @@ function job:check_chunks()
             if next(entities) then
                 debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
                 for _, entity in ipairs(entities) do
-                    entity_proc.do_chunk(entity, storage[self.job_type .. '_queue'][self.surface_index], self.surface_index)
+                    entity_proc.create_chunk(entity, storage[self.job_type .. '_queue'][self.surface_index], self.surface_index)
                 end
             end
         end

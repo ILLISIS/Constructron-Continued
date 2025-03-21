@@ -8,7 +8,7 @@ local entity_proc = {}
 ---@param queue table
 ---@param entity_surface_index uint
 ---@param from_tool boolean?
-entity_proc.do_chunk = function(entity, queue, entity_surface_index, from_tool)
+entity_proc.create_chunk = function(entity, queue, entity_surface_index, from_tool)
     local entity_pos = entity.position
     local entity_pos_x = entity_pos.x
     local entity_pos_y = entity_pos.y
@@ -121,7 +121,7 @@ entity_proc.on_built_entity = function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
     if storage.construction_job_toggle[surface_index] and entity_types[entity.type] then
-        entity_proc.do_chunk(entity, storage.construction_queue[surface_index], surface_index)
+        entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index)
     elseif storage.constructron_names[entity.name] then -- register constructron
         entity_proc.new_ctron_built(entity, surface_index)
     elseif storage.station_names[entity.name] then -- register service station
@@ -162,7 +162,7 @@ script.on_event(ev.on_post_entity_died, function(event)
     if not ghost_entity.force.name == "player" then return end
     local surface_index = ghost_entity.surface.index
     if storage.rebuild_job_toggle[surface_index] and (ghost_entity.type == 'entity-ghost') then
-        entity_proc.do_chunk(ghost_entity, storage.construction_queue[surface_index], surface_index)
+        entity_proc.create_chunk(ghost_entity, storage.construction_queue[surface_index], surface_index)
     end
 end)
 
@@ -171,7 +171,7 @@ script.on_event(ev.on_marked_for_deconstruction, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
     if not storage.deconstruction_job_toggle[surface_index] or not entity then return end
-    entity_proc.do_chunk(entity, storage.deconstruction_queue[surface_index], surface_index)
+    entity_proc.create_chunk(entity, storage.deconstruction_queue[surface_index], surface_index)
 end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
@@ -179,7 +179,7 @@ script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
     if not storage.upgrade_job_toggle[surface_index] or not entity or not entity.force.name == "player" then return end
-    entity_proc.do_chunk(entity, storage.upgrade_queue[surface_index], surface_index)
+    entity_proc.create_chunk(entity, storage.upgrade_queue[surface_index], surface_index)
 end)
 
 -- for entity repair
@@ -187,7 +187,7 @@ script.on_event(ev.on_entity_damaged, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
     if not storage.repair_job_toggle[entity.surface.index] then return end
-    entity_proc.do_chunk(entity, storage.repair_queue[surface_index], surface_index)
+    entity_proc.create_chunk(entity, storage.repair_queue[surface_index], surface_index)
 end,
 {
     {filter = "final-health", comparison = ">", value = 0, mode = "and"},
@@ -343,7 +343,7 @@ script.on_event(ev.on_sector_scanned, function(event)
     if not storage.destroy_job_toggle[surface.index] then return end
     local entity_surface_index = surface.index
     local fake_entity = {position = event.area["left_top"]}
-    entity_proc.do_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+    entity_proc.create_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
 end)
 
 -- left click
@@ -353,7 +353,7 @@ script.on_event(ev.on_player_selected_area, function(event)
         if entity and entity.valid then
             local entity_surface_index = entity.surface.index
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                entity_proc.do_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
+                entity_proc.create_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -368,7 +368,7 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
             if force_name == "player" or force_name == "neutral" then
                 local entity_surface_index = entity.surface.index
                 entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index], entity_surface_index)
-                entity_proc.do_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
+                entity_proc.create_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -381,7 +381,7 @@ script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
         if entity and entity.valid then
             if entity.force.name == "enemy" then
                 local entity_surface_index = entity.surface_index
-                entity_proc.do_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index, true)
+                entity_proc.create_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
