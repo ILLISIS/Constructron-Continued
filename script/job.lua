@@ -257,7 +257,7 @@ function job:include_more_chunks(chunk_params, origin_chunk)
     local job_start_delay = storage.job_start_delay
     for _, chunk in pairs(chunk_params.chunks) do
         if ((game.tick - chunk.last_update_tick) > job_start_delay) then
-            if not job.find_chunk_entities(chunk, chunk_params.job_type) then
+            if job.find_chunk_entities(chunk, chunk_params.job_type) then
                 local chunk_midpoint = { x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2) }
                 chunk.midpoint = chunk_midpoint
                 if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
