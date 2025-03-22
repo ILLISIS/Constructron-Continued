@@ -692,10 +692,6 @@ function gui_handlers.change_job_start_delay(player, element)
     storage.job_start_delay = ((tonumber(element.text) or 0) * 60)
 end
 
-function gui_handlers.change_entities_per_second(player, element)
-    storage.entities_per_second = (tonumber(element.text) or 1000)
-end
-
 function gui_handlers.clear_logistic_request(player, element)
     local worker = storage.constructrons[element.tags.unit_number]
     if not worker then return end
@@ -736,6 +732,7 @@ function gui_handlers.apply_settings_template(player, element)
         storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[current_surface]
         storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[current_surface]
         storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[current_surface]
+        storage.zone_restriction_job_toggle[surface_index] = storage.zone_restriction_job_toggle[current_surface]
         storage.ammo_name[surface_index] = storage.ammo_name[current_surface]
         storage.ammo_count[surface_index] = storage.ammo_count[current_surface]
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[current_surface]

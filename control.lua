@@ -22,23 +22,6 @@ script.on_nth_tick(90, function ()
     gui_handlers.update_ui_windows()
 end)
 
-script.on_nth_tick(15, function()
-    if not storage.entity_proc_trigger then return end -- trip switch to return early when there is nothing to process
-    if next(storage.deconstruction_entities) then -- deconstruction has priority over construction.
-        entity_proc.add_entities_to_chunks("deconstruction", storage.deconstruction_entities, storage.deconstruction_queue)
-    elseif next(storage.construction_entities) then
-        entity_proc.add_entities_to_chunks("construction", storage.construction_entities, storage.construction_queue)
-    elseif next(storage.upgrade_entities) then
-        entity_proc.add_entities_to_chunks("upgrade", storage.upgrade_entities, storage.upgrade_queue)
-    elseif next(storage.repair_entities) then
-        entity_proc.add_entities_to_chunks("repair", storage.repair_entities, storage.repair_queue)
-    elseif next(storage.destroy_entities) then
-        entity_proc.add_entities_to_chunks("destroy", storage.destroy_entities, storage.destroy_queue)
-    else
-        storage.entity_proc_trigger = false -- stop entity processing
-    end
-end)
-
 -- cleanup
 script.on_nth_tick(54000, (function()
     for _, surface in pairs(game.surfaces) do
@@ -63,8 +46,6 @@ local ensure_storages = function()
     storage.registered_entities = storage.registered_entities or {}
     storage.constructron_statuses = storage.constructron_statuses or {}
     --
-    storage.entity_proc_trigger = storage.entity_proc_trigger or true
-    --
     storage.managed_surfaces = storage.managed_surfaces or {}
     --
     storage.stack_cache = {} -- rebuild
@@ -88,12 +69,6 @@ local ensure_storages = function()
     storage.destroy_index = storage.destroy_index or 0
     storage.cargo_index = storage.cargo_index or 0
     --
-    storage.construction_entities = storage.construction_entities or {}
-    storage.deconstruction_entities = storage.deconstruction_entities or {}
-    storage.upgrade_entities = storage.upgrade_entities or {}
-    storage.repair_entities = storage.repair_entities or {}
-    storage.destroy_entities = storage.destroy_entities or {}
-    --
     storage.construction_queue = storage.construction_queue or {}
     storage.deconstruction_queue = storage.deconstruction_queue or {}
     storage.upgrade_queue = storage.upgrade_queue or {}
@@ -116,6 +91,7 @@ local ensure_storages = function()
     storage.upgrade_job_toggle = storage.upgrade_job_toggle or {}
     storage.repair_job_toggle = storage.repair_job_toggle or {}
     storage.destroy_job_toggle = storage.destroy_job_toggle or {}
+    storage.zone_restriction_job_toggle = storage.zone_restriction_job_toggle or {}
     -- job_types
     storage.job_types = {
         "deconstruction",
@@ -194,18 +170,37 @@ local ensure_storages = function()
     -- non surface specific settings
     storage.job_start_delay = storage.job_start_delay or 300 -- five seconds
     storage.entities_per_second = storage.entities_per_second or 1000
-    storage.debug_toggle = storage.debug_toggle or false
-    storage.horde_mode = storage.horde_mode or false
+    if storage.debug_toggle == nil then
+        storage.debug_toggle = false
+    end
+    if storage.horde_mode == nil then
+        storage.horde_mode = true
+    end
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
         -- per surface settings
         local surface_index = surface.index
-        storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[surface_index] or true
-        storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[surface_index] or true
-        storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[surface_index] or true
-        storage.upgrade_job_toggle[surface_index] = storage.upgrade_job_toggle[surface_index] or true
-        storage.repair_job_toggle[surface_index] = storage.repair_job_toggle[surface_index] or true
-        storage.destroy_job_toggle[surface_index] = storage.destroy_job_toggle[surface_index] or false
+        if storage.construction_job_toggle[surface_index] == nil then
+            storage.construction_job_toggle[surface_index] = true
+        end
+        if storage.rebuild_job_toggle[surface_index] == nil then
+            storage.rebuild_job_toggle[surface_index] = true
+        end
+        if storage.deconstruction_job_toggle[surface_index] == nil then
+            storage.deconstruction_job_toggle[surface_index] = true
+        end
+        if storage.upgrade_job_toggle[surface_index] == nil then
+            storage.upgrade_job_toggle[surface_index] = true
+        end
+        if storage.repair_job_toggle[surface_index] == nil then
+            storage.repair_job_toggle[surface_index] = true
+        end
+        if storage.destroy_job_toggle[surface_index] == nil then
+            storage.destroy_job_toggle[surface_index] = false
+        end
+        if storage.zone_restriction_job_toggle[surface_index] == nil then
+            storage.zone_restriction_job_toggle[surface_index] = false
+        end
         storage.ammo_name[surface_index] = storage.ammo_name[surface_index] or init_ammo_name
         storage.ammo_count[surface_index] = storage.ammo_count[surface_index] or 0
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[surface_index] or 50
@@ -291,7 +286,13 @@ local init = function()
     -- This applies to all paths as the pathfinder is generic
 end
 
-script.on_init(init)
+script.on_init(function()
+    if game.player and game.player.force.technologies["spidertron"].researched then
+        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+    end
+    init()
+end)
+
 script.on_configuration_changed(init)
 
 --===========================================================================--
@@ -299,6 +300,16 @@ script.on_configuration_changed(init)
 --===========================================================================--
 
 local ev = defines.events
+
+-- script.on_event(ev.on_player_used_spidertron_remote, function(event)
+-- end)
+
+script.on_event(ev.on_research_finished, function(event)
+    local research = event.research
+    if research.name == "spidertron" then
+        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+    end
+end)
 
 script.on_event(ev.on_lua_shortcut, function (event)
     local name = event.prototype_name
@@ -356,6 +367,7 @@ script.on_event(ev.on_surface_created, function(event)
     storage.upgrade_job_toggle[surface_index] = true
     storage.repair_job_toggle[surface_index] = true
     storage.destroy_job_toggle[surface_index] = false
+    storage.zone_restriction_job_toggle[surface_index] = false
     storage.ammo_name[surface_index] = storage.ammo_name[1]
     storage.ammo_count[surface_index] = 0
     storage.desired_robot_count[surface_index] = 50
@@ -382,6 +394,7 @@ script.on_event(ev.on_surface_deleted, function(event)
     storage.upgrade_job_toggle[surface_index] = nil
     storage.repair_job_toggle[surface_index] = nil
     storage.destroy_job_toggle[surface_index] = nil
+    storage.zone_restriction_job_toggle[surface_index] = nil
     storage.ammo_name[surface_index] = nil
     storage.ammo_count[surface_index] = nil
     storage.desired_robot_count[surface_index] = nil

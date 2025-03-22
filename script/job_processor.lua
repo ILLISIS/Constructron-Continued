@@ -55,18 +55,27 @@ job_proc.process_queue = function(surface_index, job_type, job_class)
     local job_start_delay = storage.job_start_delay
     for _, chunk in pairs(storage[job_type .. '_queue'][surface_index]) do
         if ((game.tick - chunk.last_update_tick) > job_start_delay) then
-            local worker = job.get_worker(surface_index)
-            if not (worker and worker.valid) then break end
-            storage.job_index = storage.job_index + 1
-            storage.jobs[storage.job_index] = job_class.new(storage.job_index, surface_index, job_type, worker)
-            -- add robots to job
-            local robot_item = storage.desired_robot_name[surface_index]
-            storage.jobs[storage.job_index]["required_items"][robot_item.name] = {
-                [robot_item.quality] = storage.desired_robot_count[surface_index]
-            }
-            storage.jobs[storage.job_index]:get_chunk()
-            if not storage.horde_mode then
-                storage.jobs[storage.job_index]:find_chunks_in_proximity()
+            if job.find_chunk_entities(chunk, job_type) then
+                -- find a worker to perform the prospective job
+                local worker = job.get_worker(surface_index)
+                if not (worker and worker.valid) then break end
+                -- create job
+                storage.job_index = storage.job_index + 1
+                storage.jobs[storage.job_index] = job_class.new(storage.job_index, surface_index, job_type, worker)
+                -- add robots as a required item to complete the job
+                local robot_item = storage.desired_robot_name[surface_index]
+                storage.jobs[storage.job_index]["required_items"][robot_item.name] = {
+                    [robot_item.quality] = storage.desired_robot_count[surface_index]
+                }
+                -- claim the chunk by the job
+                storage.jobs[storage.job_index]:claim_chunk(chunk)
+                -- claim other chunks in proximity the claimed chunk
+                if not storage.horde_mode then
+                    storage.jobs[storage.job_index]:claim_chunks_in_proximity()
+                end
+            else
+                -- clear the chunk from the queue
+                storage[job_type .. "_queue"][surface_index][chunk.key] = nil
             end
         end
     end

@@ -1,8 +1,52 @@
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
-local job_proc = require("script/job_processor")
 
 local entity_proc = {}
+
+--- Processes entity positions into chunks
+---@param entity LuaEntity
+---@param queue table
+---@param entity_surface_index uint
+---@param from_tool boolean?
+entity_proc.create_chunk = function(entity, queue, entity_surface_index, from_tool)
+    local entity_pos = entity.position
+    local entity_pos_x = entity_pos.x
+    local entity_pos_y = entity_pos.y
+    local chunkx = math.floor(entity_pos_x / 80) -- dividing by 80 as that is the size of 4 roboports
+    local chunky = math.floor(entity_pos_y / 80) -- dividing by 80 as that is the size of 4 roboports
+    local key = (chunkx + 12500) * 25000 + (chunky + 12500) -- add 12500 to make sure the key is always positive
+    local chunk = queue[key]
+    if not chunk then -- initialize a new chunk
+        chunk = {
+            key = key,
+            surface_index = entity_surface_index,
+            last_update_tick = game.tick,
+            minimum = {
+                x = entity_pos_x,
+                y = entity_pos_y
+            },
+            maximum = {
+                x = entity_pos_x,
+                y = entity_pos_y
+            },
+            from_tool = from_tool or false
+        }
+    else -- update existing queued chunk
+        if entity_pos_x < chunk['minimum'].x then
+            chunk['minimum'].x = entity_pos_x -- expand minimum chunk area x axis
+        elseif entity_pos_x > chunk['maximum'].x then
+            chunk['maximum'].x = entity_pos_x -- expand maximum chunk area x axis
+        end
+        if entity_pos_y < chunk['minimum'].y then
+            chunk['minimum'].y = entity_pos_y -- expand minimum chunk area y axis
+        elseif entity_pos_y > chunk['maximum'].y then
+            chunk['maximum'].y = entity_pos_y -- expand maximum chunk area y axis
+        end
+        chunk.last_update_tick = game.tick
+        chunk.from_tool = from_tool or false -- deconstruction from tool raises the event which creates a chunk
+    end
+    queue[key] = chunk
+end
 
 -------------------------------------------------------------------------------
 --  Event handlers
@@ -75,12 +119,9 @@ local entity_types = {
 ---| EventData.script_raised_built
 entity_proc.on_built_entity = function(event)
     local entity = event.entity
-    local entity_type = entity.type
     local surface_index = entity.surface.index
-    if storage.construction_job_toggle[surface_index] and entity_types[entity_type] then
-        storage.construction_index = storage.construction_index + 1
-        storage.construction_entities[storage.construction_index] = entity
-        storage.entity_proc_trigger = true -- there is something to do start processing
+    if storage.construction_job_toggle[surface_index] and entity_types[entity.type] then
+        entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index)
     elseif storage.constructron_names[entity.name] then -- register constructron
         entity_proc.new_ctron_built(entity, surface_index)
     elseif storage.station_names[entity.name] then -- register service station
@@ -116,50 +157,37 @@ script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
 
 -- for entities that die and need rebuilding
 script.on_event(ev.on_post_entity_died, function(event)
-    local entity = event.ghost
-    if entity and entity.valid and storage.rebuild_job_toggle[entity.surface.index] and (entity.type == 'entity-ghost') and (entity.force.name == "player") then
-        storage.construction_index = storage.construction_index + 1
-        storage.construction_entities[storage.construction_index] = entity
-        storage.entity_proc_trigger = true -- there is something to do start processing
+    local ghost_entity = event.ghost ---@cast ghost_entity -nil
+    if not (ghost_entity and ghost_entity.valid) then return end
+    if not ghost_entity.force.name == "player" then return end
+    local surface_index = ghost_entity.surface.index
+    if storage.rebuild_job_toggle[surface_index] and (ghost_entity.type == 'entity-ghost') then
+        entity_proc.create_chunk(ghost_entity, storage.construction_queue[surface_index], surface_index)
     end
 end)
 
 -- for entity deconstruction
 script.on_event(ev.on_marked_for_deconstruction, function(event)
     local entity = event.entity
-    if not storage.deconstruction_job_toggle[entity.surface.index] or not entity then return end
-    storage.deconstruction_index = storage.deconstruction_index + 1
-    storage.entity_proc_trigger = true -- there is something to do start processing
-    local force_name = entity.force.name
-    if force_name == "player" or force_name == "neutral" then
-        storage.deconstruction_entities[storage.deconstruction_index] = entity
-    end
+    local surface_index = entity.surface.index
+    if not storage.deconstruction_job_toggle[surface_index] or not entity then return end
+    entity_proc.create_chunk(entity, storage.deconstruction_queue[surface_index], surface_index)
 end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 
 -- for entity upgrade
 script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
-    if not storage.upgrade_job_toggle[entity.surface.index] or not entity or not entity.force.name == "player" then return end
-    storage.upgrade_index = storage.upgrade_index + 1
-    storage.upgrade_entities[storage.upgrade_index] = entity
-    storage.entity_proc_trigger = true -- there is something to do start processing
+    local surface_index = entity.surface.index
+    if not storage.upgrade_job_toggle[surface_index] or not entity or not entity.force.name == "player" then return end
+    entity_proc.create_chunk(entity, storage.upgrade_queue[surface_index], surface_index)
 end)
 
 -- for entity repair
 script.on_event(ev.on_entity_damaged, function(event)
     local entity = event.entity
+    local surface_index = entity.surface.index
     if not storage.repair_job_toggle[entity.surface.index] then return end
-    local force = entity.force.name
-    local entity_pos = entity.position
-    local key = entity.surface.index .. ',' .. entity_pos.x .. ',' .. entity_pos.y
-    if (force == "player") then
-        if not storage.repair_entities[key] then
-            storage.repair_entities[key] = entity
-            storage.entity_proc_trigger = true -- there is something to do start processing
-        end
-    elseif force == "player" and storage.repair_entities[key] and event.final_health == 0 then
-        storage.repair_entities[key] = nil
-    end
+    entity_proc.create_chunk(entity, storage.repair_queue[surface_index], surface_index)
 end,
 {
     {filter = "final-health", comparison = ">", value = 0, mode = "and"},
@@ -313,25 +341,9 @@ script.on_event(ev.script_raised_destroy, entity_proc.on_object_destroyed, {
 script.on_event(ev.on_sector_scanned, function(event)
     local surface = event.radar.surface
     if not storage.destroy_job_toggle[surface.index] then return end
-    local enemies = surface.find_entities_filtered({
-        force = {"enemy"},
-        area = event.area,
-        is_military_target = true,
-        type = {"unit-spawner", "turret"}
-    })
-    if not next(enemies) then return end
-    local enemies_list = {}
-    for _, enemy in pairs(enemies) do
-        if not enemies_list[enemy.unit_number] then
-            enemies_list[enemy.unit_number] = enemy
-            enemies_list = entity_proc.recursive_enemy_search(enemy, enemies_list)
-        end
-    end
-    for _, entity in pairs(enemies_list) do
-        storage.destroy_index = storage.destroy_index + 1
-        storage.destroy_entities[storage.destroy_index] = entity
-        storage.entity_proc_trigger = true
-    end
+    local entity_surface_index = surface.index
+    local fake_entity = {position = event.area["left_top"]}
+    entity_proc.create_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
 end)
 
 -- left click
@@ -339,12 +351,16 @@ script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
     for _, entity in pairs(event.entities) do
         if entity and entity.valid then
+            local entity_surface_index = entity.surface.index
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                storage.construction_index = storage.construction_index + 1
-                storage.construction_entities[storage.construction_index] = entity
-                storage.entity_proc_trigger = true -- there is something to do start processing
+                entity_proc.create_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
+    end
+    for _, entity in pairs(event.surface.find_entities_filtered{area=event.area, type='item-request-proxy'}) do
+        storage.construction_index = storage.construction_index + 1
+        storage.construction_entities[storage.construction_index] = entity
+        storage.entity_proc_trigger = true -- there is something to do start processing
     end
 end)
 
@@ -355,10 +371,9 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
         if entity and entity.valid then
             local force_name = entity.force.name
             if force_name == "player" or force_name == "neutral" then
-                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index])
-                storage.deconstruction_entities[storage.deconstruction_index] = entity
-                storage.deconstruction_index = storage.deconstruction_index + 1
-                storage.entity_proc_trigger = true -- there is something to do start processing
+                local entity_surface_index = entity.surface.index
+                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index], entity_surface_index)
+                entity_proc.create_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -370,9 +385,8 @@ script.on_event(ev.on_player_alt_reverse_selected_area, function(event)
     for _, entity in pairs(event.entities) do
         if entity and entity.valid then
             if entity.force.name == "enemy" then
-                storage.destroy_index = storage.destroy_index + 1
-                storage.destroy_entities[storage.destroy_index] = entity
-                storage.entity_proc_trigger = true  -- there is something to do start processing
+                local entity_surface_index = entity.surface_index
+                entity_proc.create_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index, true)
             end
         end
     end
@@ -381,90 +395,6 @@ end)
 -------------------------------------------------------------------------------
 --  Entity processing
 -------------------------------------------------------------------------------
-
----@param build_type string
----@param entities table
----@param queue EntityQueue
-entity_proc.add_entities_to_chunks = function(build_type, entities, queue) -- build_type: deconstruction, construction, upgrade, repair, destroy
-    local entity_counter = storage.entities_per_second
-    for entity_key, entity in pairs(entities) do
-        if entity.valid then
-            entity_proc.process_entity(build_type, queue, entity)
-        end
-        entities[entity_key] = nil -- clear entity from entity queue
-        entity_counter = entity_counter - 1
-        if entity_counter <= 0 then
-            if storage.debug_toggle then
-                for index, _ in pairs(queue) do
-                    for _, chunk in pairs(queue[index]) do
-                        debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, chunk.surface, "red", false, 15)
-                    end
-                end
-            end
-            return
-        end
-    end
-end
-
----@param build_type string
----@param queue EntityQueue
----@param entity LuaEntity
-entity_proc.process_entity = function(build_type, queue, entity)
-    required_items, trash_items = entity_proc[build_type](entity)
-    if not (required_items and trash_items) then return end
-    entity_proc.process_chunk(queue, entity, required_items, trash_items)
-end
-
----@param queue EntityQueue
----@param entity LuaEntity
----@param required_items table
----@param trash_items table
-entity_proc.process_chunk = function(queue, entity, required_items, trash_items)
-    local entity_pos = entity.position
-    local entity_pos_y = entity_pos.y
-    local entity_pos_x = entity_pos.x
-    local entity_surface = entity.surface.index
-    local chunk = {
-        y = (math.floor((entity_pos_y) / 80)),
-        x = (math.floor((entity_pos_x) / 80))
-    }
-    local key = chunk.y .. ',' .. chunk.x
-    -- local queue_surface_key = queue[entity_surface][chunk.y][chunk.x] -- TODO: Optimization candidate
-    local queue_surface_key = queue[entity_surface][key]
-    if not queue_surface_key then -- initialize a new chunk
-        queue_surface_key = {
-            key = key,
-            last_update_tick = game.tick,
-            surface = entity_surface,
-            area = util_func.get_area_from_chunk(chunk),
-            minimum = {
-                x = entity_pos_x,
-                y = entity_pos_y
-            },
-            maximum = {
-                x = entity_pos_x,
-                y = entity_pos_y
-            },
-            required_items = required_items or {},
-            trash_items = trash_items or {}
-        }
-    else -- add to existing queued chunk
-        if entity_pos_x < queue_surface_key['minimum'].x then
-            queue_surface_key['minimum'].x = entity_pos_x -- expand chunk area
-        elseif entity_pos_x > queue_surface_key['maximum'].x then
-            queue_surface_key['maximum'].x = entity_pos_x -- expand chunk area
-        end
-        if entity_pos_y < queue_surface_key['minimum'].y then
-            queue_surface_key['minimum'].y = entity_pos_y -- expand chunk area
-        elseif entity_pos_y > queue_surface_key['maximum'].y then
-            queue_surface_key['maximum'].y = entity_pos_y -- expand chunk area
-        end
-        queue_surface_key['required_items'] = util_func.combine_tables({queue_surface_key['required_items'], required_items})
-        queue_surface_key['trash_items'] = util_func.combine_tables({queue_surface_key['trash_items'], trash_items})
-        queue_surface_key.last_update_tick = game.tick
-    end
-    queue[entity_surface][key] = queue_surface_key -- update global chunk queue
-end
 
 ---@param entity LuaEntity
 entity_proc.deconstruction = function(entity)
@@ -635,7 +565,7 @@ end
 ---@param enemy LuaEntity
 ---@param enemies_list table<uint32, LuaEntity>
 ---@return table<uint32, LuaEntity>
-entity_proc.recursive_enemy_search = function(enemy, enemies_list)
+entity_proc.recursive_enemy_search = function(enemy, enemies_list, chunk)
     local enemy_pos = enemy.position
     local search = enemy.surface.find_entities_filtered({
         force = {"enemy"},
@@ -654,8 +584,22 @@ entity_proc.recursive_enemy_search = function(enemy, enemies_list)
     })
     for _, entity in pairs(search) do
         if not enemies_list[entity.unit_number] then
+            -- update chunk area
+            local entity_pos = entity.position
+            local entity_pos_x = entity_pos.x
+            local entity_pos_y = entity_pos.y
+            if entity_pos_x < chunk['minimum'].x then
+                chunk['minimum'].x = entity_pos_x -- expand minimum chunk area x axis
+            elseif entity_pos_x > chunk['maximum'].x then
+                chunk['maximum'].x = entity_pos_x -- expand maximum chunk area x axis
+            end
+            if entity_pos_y < chunk['minimum'].y then
+                chunk['minimum'].y = entity_pos_y -- expand minimum chunk area y axis
+            elseif entity_pos_y > chunk['maximum'].y then
+                chunk['maximum'].y = entity_pos_y -- expand maximum chunk area y axis
+            end
             enemies_list[entity.unit_number] = entity
-            enemies_list = entity_proc.recursive_enemy_search(entity, enemies_list)
+            enemies_list = entity_proc.recursive_enemy_search(entity, enemies_list, chunk)
         end
     end
     return enemies_list

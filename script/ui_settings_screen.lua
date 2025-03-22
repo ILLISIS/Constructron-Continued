@@ -54,7 +54,11 @@ local toggle_settings = {
     ["destroy"] = {
         label = {"ctron_gui_locale.settings_destroy_jobs_label"},
         tooltip = {"ctron_gui_locale.settings_destroy_jobs_tooltip"}
-    }
+    },
+    ["zone_restriction"] = {
+        label = {"ctron_gui_locale.settings_zone_restriction_label"},
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"}
+    },
 }
 
 --===========================================================================--
@@ -187,26 +191,6 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
-    -- entities per second
-    global_settings_table.add{
-        type = "label",
-        caption = {"ctron_gui_locale.settings_entities_per_second_label"},
-        style = "ctron_settings_label_style"
-    }
-    global_settings_table.add{
-        type = "textfield",
-        text = storage.entities_per_second,
-        style = "ctron_settings_textfield_style",
-        tooltip = {"ctron_gui_locale.settings_entities_per_second_tooltip"},
-        numeric = true,
-        allow_negative = false,
-        allow_decimal = true,
-        tags = {
-            mod = "constructron",
-            on_gui_text_changed = "change_entities_per_second"
-        }
-    }
-
     -- horde mode
     global_settings_table.add{
         type = "label",
@@ -285,6 +269,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_robot_count_label"},
+        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -333,6 +318,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         settings_table.add{
             type = "label",
             caption = setting_params.label,
+            tooltip = setting_params.tooltip,
             style = "ctron_settings_label_style"
         }
         settings_table.add{
@@ -353,6 +339,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_ammo_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -372,6 +359,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_ammo_count_label"},
+        tooltip = {"ctron_gui_locale.settings_ammo_count_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -393,6 +381,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_jobs_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
@@ -412,6 +401,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
     settings_table.add{
         type = "label",
         caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_tool_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{

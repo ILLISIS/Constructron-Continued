@@ -1,6 +1,7 @@
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
 local pathfinder = require("script/pathfinder")
+local entity_proc = require("entity_processor")
 
 -- class for jobs
 local job = {} ---@class job
@@ -99,24 +100,120 @@ job.check_equipment = function(constructron)
     return true
 end
 
--- idea for mass entity handling
--- local function get_upgrade_quality(target, chunk)
---     local inventory = game.create_inventory.insert({name = "blueprint"})
---     inventory[1].create_blueprint{
---         surface = 1,
---         force = "player",
---         area = {chunk.minimum, chunk.maximum},
---     }
+local find_entities = {
+    ["construction"] = function(chunk, surface_index)
+        local entities = game.surfaces[surface_index].find_entities_filtered{
+            area = { chunk.minimum, chunk.maximum },
+            force = "player",
+            type = {"entity-ghost", "tile-ghost", "item-request-proxy"},
+        }
+        return entities
+    end,
+    ["deconstruction"] = function(chunk, surface_index)
+        local entities = game.surfaces[surface_index].find_entities_filtered{
+            area = { chunk.minimum, chunk.maximum },
+            force = { "player", "neutral" },
+            to_be_deconstructed = true,
+        }
+        return entities
+    end,
+    ["upgrade"] = function(chunk, surface_index)
+        local entities = game.surfaces[surface_index].find_entities_filtered{
+            area = { chunk.minimum, chunk.maximum },
+            force = "player",
+            to_be_upgraded = true,
+        }
+        return entities
+    end,
+    ["repair"] = function(chunk, surface_index)
+        local entities = {}
+        local prospect_entities = game.surfaces[surface_index].find_entities_filtered{
+            area = { chunk.minimum, chunk.maximum },
+            force = "player",
+        }
+        for _, entity in pairs(prospect_entities) do
+            local health_ratio = entity.get_health_ratio()
+            if health_ratio and (health_ratio < 1) then
+                table.insert(entities, entity)
+            end
+        end
+        return entities
+    end,
+    ["destroy"] = function(chunk, surface_index)
+        local entities = game.surfaces[surface_index].find_entities_filtered{
+            area = { chunk.minimum, {chunk.maximum.x + 32, chunk.maximum.y + 32 } },
+            force = "enemy",
+            is_military_target = true,
+            type = { "unit-spawner", "turret" },
+        }
+        if not next(entities) then return entities end
+        local entity_list = {}
+        -- start the actual chunk area
+        local _, first_entity = next(entities) ---@cast first_entity -nil
+        chunk.maximum = first_entity.position
+        chunk.minimum = first_entity.position
+        -- iterate through entities found
+        for _, entity in pairs(entities) do
+            local unit_number = entity.unit_number ---@cast unit_number -nil
+            if not entity_list[unit_number] then
+                -- update chunk area
+                local entity_pos = entity.position
+                local entity_pos_x = entity_pos.x
+                local entity_pos_y = entity_pos.y
+                if entity_pos_x < chunk['minimum'].x then
+                    chunk['minimum'].x = entity_pos_x -- expand minimum chunk area x axis
+                elseif entity_pos_x > chunk['maximum'].x then
+                    chunk['maximum'].x = entity_pos_x -- expand maximum chunk area x axis
+                end
+                if entity_pos_y < chunk['minimum'].y then
+                    chunk['minimum'].y = entity_pos_y -- expand minimum chunk area y axis
+                elseif entity_pos_y > chunk['maximum'].y then
+                    chunk['maximum'].y = entity_pos_y -- expand maximum chunk area y axis
+                end
+                entity_list[unit_number] = entity
+                entity_list = entity_proc.recursive_enemy_search(entity, entity_list, chunk)
+                storage.destroy_queue[surface_index][chunk.key] = chunk
+            end
+        end
+        return entity_list
+    end,
+}
 
---     local blueprint_entities = inventory[1].get_blueprint_entities() or {}
---     assert(#blueprint_entities == 1, 'time to check for name and position.')
+function job:check_roboport_coverage(entity)
+    local networks = entity.surface.find_logistic_networks_by_construction_area(entity.position, game.players[1].force)
+    if next(networks) then return true end
+    return false
+end
 
---     inventory.destroy()
---     return blueprint_entities[1].quality -- string
--- end
+function job.find_chunk_entities(chunk, job_type)
+    if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
+        chunk.minimum.x = chunk.minimum.x - 1
+        chunk.minimum.y = chunk.minimum.y - 1
+        chunk.maximum.x = chunk.maximum.x + 1
+        chunk.maximum.y = chunk.maximum.y + 1
+    end
+    local entities = find_entities[job_type](chunk, chunk.surface_index)
+    if not next(entities) then
+        return false
+    end
+    local chunk_required_items = {}
+    local chunk_trash_items = {}
+    if job_type ~= "destroy" then
+        for _, entity in pairs(entities) do
+            if not chunk.from_tool and storage.zone_restriction_job_toggle and job:check_roboport_coverage(entity) then
+                return
+            end
+            local entity_required_items, entity_trash_items = entity_proc[job_type](entity)
+            chunk_required_items = util_func.combine_tables { chunk_required_items, entity_required_items }
+            chunk_trash_items = util_func.combine_tables { chunk_trash_items, entity_trash_items }
+        end
+    end
+    chunk.required_items, chunk.trash_items = chunk_required_items, chunk_trash_items
+    return true
+end
 
-function job:get_chunk()
-    local chunk_key, chunk = next(storage[self.job_type .. "_queue"][self.surface_index])
+function job:claim_chunk(chunk)
+    local chunk_key = chunk.key
     -- calculate empty slots
     self.empty_slot_count = self.worker_inventory.count_empty_stacks()
     chunk.midpoint = { x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2) }
@@ -160,26 +257,30 @@ function job:include_more_chunks(chunk_params, origin_chunk)
     local job_start_delay = storage.job_start_delay
     for _, chunk in pairs(chunk_params.chunks) do
         if ((game.tick - chunk.last_update_tick) > job_start_delay) then
-            local chunk_midpoint = { x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2) }
-            if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
+            if job.find_chunk_entities(chunk, chunk_params.job_type) then
+                local chunk_midpoint = { x = ((chunk.minimum.x + chunk.maximum.x) / 2), y = ((chunk.minimum.y + chunk.maximum.y) / 2) }
                 chunk.midpoint = chunk_midpoint
-                local merged_items = util_func.combine_tables { chunk_params.required_items, chunk.required_items }
-                local merged_trash = util_func.combine_tables { chunk_params.trash_items, chunk.trash_items }
-                local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables { merged_items, merged_trash })
-                if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
-                    table.insert(chunk_params.used_chunks, chunk)
-                    chunk_params.required_items = merged_items
-                    chunk_params.trash_items = merged_trash
-                    storage[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
-                    return self:include_more_chunks(chunk_params, chunk)
+                if (util_func.distance_between(origin_chunk.midpoint, chunk_midpoint) < 160) then -- seek to include chunk in job
+                    local merged_items = util_func.combine_tables { chunk_params.required_items, chunk.required_items }
+                    local merged_trash = util_func.combine_tables { chunk_params.trash_items, chunk.trash_items }
+                    local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables { merged_items, merged_trash })
+                    if total_required_slots < chunk_params.empty_slot_count then -- include chunk in the job
+                        table.insert(chunk_params.used_chunks, chunk)
+                        chunk_params.required_items = merged_items
+                        chunk_params.trash_items = merged_trash
+                        storage[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
+                        return self:include_more_chunks(chunk_params, chunk) -- recursive call to include more chunks
+                    end
                 end
+            else
+                storage[chunk_params.job_type .. "_queue"][chunk_params.surface_index][chunk.key] = nil
             end
         end
     end
     return chunk_params.used_chunks, chunk_params.required_items
 end
 
-function job:find_chunks_in_proximity()
+function job:claim_chunks_in_proximity()
     -- merge chunks in proximity to each other into one job
     local _, origin_chunk = next(self.chunks)
     local chunk_params = {
@@ -463,17 +564,14 @@ function job:check_chunks()
                     type = { "unit-spawner", "turret" }
                 }
             end
-            local surface = game.surfaces[chunk.surface]
+            local surface = game.surfaces[self.surface_index]
             debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, surface, color, true, 600)
             local entities = surface.find_entities_filtered(entity_filter) or {}
             if next(entities) then
                 debug_lib.DebugLog('added ' .. #entities .. ' entity for ' .. self.job_type .. '.')
                 for _, entity in ipairs(entities) do
-                    storage[self.job_type .. '_index'] = storage[self.job_type .. '_index'] + 1
-                    storage[self.job_type .. '_entities'][storage[self.job_type .. '_index']] = entity
+                    entity_proc.create_chunk(entity, storage[self.job_type .. '_queue'][self.surface_index], self.surface_index)
                 end
-                storage[self.job_type .. '_tick'] = game.tick
-                storage.entity_proc_trigger = true -- there is something to do start processing
             end
         end
     end
