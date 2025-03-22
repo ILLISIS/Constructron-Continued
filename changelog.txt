@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.1.0
+Date: 2025-03-22
+  Features:
+    - Added the ability to disable jobs from being performed within roboport range.
+  Bugfixes:
+    - Fixed a crash when modded entities did not match their item name during upgrade jobs.
+    - Fixed an issue that caused settings to revert when save configuration changes, such as a mod was updated or added / removed.
+    - Fixed entities from being processed immediately into a chunk and subsequently a job.
+  Changes:
+    - Added a message when Spidertron research completes to further expose tips and tricks information pages to the player.
+    - Added the ability to satisfy module requests via Construction jobs created with the selection tool.
+    - Deprecated Entities_Per_Second setting
+    - Enhanced the settings tooltips to display on the label now as well as the actual setting.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.19
 Date: 2025-01-18
   Changes:
