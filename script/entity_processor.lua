@@ -186,7 +186,8 @@ end)
 script.on_event(ev.on_entity_damaged, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
-    if not storage.repair_job_toggle[entity.surface.index] then return end
+    if not storage.repair_job_toggle[surface_index] then return end
+    if entity.force.name ~= "player" then return end
     entity_proc.create_chunk(entity, storage.repair_queue[surface_index], surface_index)
 end,
 {
