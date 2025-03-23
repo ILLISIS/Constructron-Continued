@@ -349,18 +349,16 @@ end)
 -- left click
 script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
+    local surface_index = event.surface.index
     for _, entity in pairs(event.entities) do
         if entity and entity.valid then
-            local entity_surface_index = entity.surface.index
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                entity_proc.create_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
+                entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
             end
         end
     end
     for _, entity in pairs(event.surface.find_entities_filtered{area=event.area, type='item-request-proxy'}) do
-        storage.construction_index = storage.construction_index + 1
-        storage.construction_entities[storage.construction_index] = entity
-        storage.entity_proc_trigger = true -- there is something to do start processing
+        entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
     end
 end)
 
