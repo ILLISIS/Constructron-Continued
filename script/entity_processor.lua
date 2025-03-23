@@ -191,6 +191,7 @@ script.on_event(ev.on_entity_damaged, function(event)
     entity_proc.create_chunk(entity, storage.repair_queue[surface_index], surface_index)
 end,
 {
+    {filter = "name", name = "captive-biter-spawner", invert = true, mode = "and"},
     {filter = "final-health", comparison = ">", value = 0, mode = "and"},
     {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
     {filter = "vehicle", invert = true, mode = "and"},
