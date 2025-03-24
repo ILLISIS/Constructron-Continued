@@ -922,18 +922,35 @@ function job:inventory_check(item_request_list)
     return item_request_list
 end
 
+--- Checks the ammunition count for the worker and updates the job state accordingly.
+--- @return boolean True if the ammunition count is sufficient, false otherwise.
 function job:check_ammo_count()
+    -- Retrieve the expected ammo count from storage for the current surface index.
     local ammo_count = storage.ammo_count[self.surface_index]
+    
+    -- If the expected ammo count is zero or less, return true (no need to check further).
     if ammo_count <= 0 then return true end
+    
+    -- Retrieve the current ammunition contents from the worker's ammo slots.
     local ammunition = util_func.convert_to_item_list(self.worker_ammo_slots.get_contents())
+    
+    -- Retrieve the expected ammo's name and quality from storage for the current surface index.
     local ammo = storage.ammo_name[self.surface_index]
     local ammo_name = ammo.name
     local ammo_quality = ammo.quality
-    -- retreat when at 25% of ammo
+    
+    -- Check if the current ammo count is more than 25% of the expected ammo count.
+    -- If the ammo count is less than or equal to 25%, update the job state to "starting" and return false.
     if not (ammunition and ammunition[ammo_name] and (ammunition[ammo_name][ammo_quality] > (math.ceil(ammo_count * 25 / 100)))) then
-        self.state = "starting"
-        return false
+        -- Additional check in worker inventory for extra ammo
+        local inventory_ammo = util_func.convert_to_item_list(self.worker_inventory.get_contents())
+        if not (inventory_ammo and inventory_ammo[ammo_name] and (inventory_ammo[ammo_name][ammo_quality] > (math.ceil(ammo_count * 25 / 100)))) then
+            self.state = "starting"
+            return false
+        end
     end
+    
+    -- If the ammunition count is sufficient, return true.
     return true
 end
 

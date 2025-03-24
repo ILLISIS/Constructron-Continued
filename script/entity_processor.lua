@@ -186,10 +186,12 @@ end)
 script.on_event(ev.on_entity_damaged, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
-    if not storage.repair_job_toggle[entity.surface.index] then return end
+    if not storage.repair_job_toggle[surface_index] then return end
+    if entity.force.name ~= "player" then return end
     entity_proc.create_chunk(entity, storage.repair_queue[surface_index], surface_index)
 end,
 {
+    {filter = "name", name = "captive-biter-spawner", invert = true, mode = "and"},
     {filter = "final-health", comparison = ">", value = 0, mode = "and"},
     {filter = "robot-with-logistics-interface", invert = true, mode = "and"},
     {filter = "vehicle", invert = true, mode = "and"},
@@ -349,18 +351,16 @@ end)
 -- left click
 script.on_event(ev.on_player_selected_area, function(event)
     if event.item ~= "ctron-selection-tool" then return end
+    local surface_index = event.surface.index
     for _, entity in pairs(event.entities) do
         if entity and entity.valid then
-            local entity_surface_index = entity.surface.index
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
-                entity_proc.create_chunk(entity, storage.construction_queue[entity_surface_index], entity_surface_index, true)
+                entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
             end
         end
     end
     for _, entity in pairs(event.surface.find_entities_filtered{area=event.area, type='item-request-proxy'}) do
-        storage.construction_index = storage.construction_index + 1
-        storage.construction_entities[storage.construction_index] = entity
-        storage.entity_proc_trigger = true -- there is something to do start processing
+        entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
     end
 end)
 
