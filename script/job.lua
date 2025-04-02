@@ -28,7 +28,8 @@ function job.new(job_index, surface_index, job_type, worker)
     instance.last_position = {}        -- used to check if the worker is moving
     instance.last_distance = 0         -- used to check if the worker is moving
     instance.mobility_tick = nil       -- used to delay mobility checks
-    instance.last_robot_positions = {} -- used to check that robots are active and not stuck
+    instance.last_robot_orientations = {} -- used to check that robots are active and not stuck
+    instance.robot_inactivity_counter = 0 -- used to check that robots are active and not stuck
     instance.job_status = {"ctron_status.new"}        -- used to display the current job status in the UI
     -- job flags
     instance.landfill_job = false      -- used to determine if the job should expect landfill
@@ -433,30 +434,38 @@ function job:request_items(item_list)
 end
 
 function job:check_robot_activity(construction_robots)
-    local last_robot_positions = self.last_robot_positions
+    self.last_robot_orientations = self.last_robot_orientations or {}
     local robot_has_moved = false
     for _, robot in pairs(construction_robots) do
-        local previous_position = last_robot_positions[robot.unit_number]
-        local current_position = robot.position
-        if previous_position ~= nil then
-            local position_variance = math.sqrt((current_position.x - previous_position.x) ^ 2 + (current_position.y - previous_position.y) ^ 2)
-            if position_variance > 0.1 then -- has the robot moved?
-                robot_has_moved = true
-                self.last_robot_positions[robot.unit_number] = current_position
-                break
-            else
-                for _, bot in pairs(construction_robots) do
-                    self.last_robot_positions[bot.unit_number] = bot.position
-                end
-                break
-            end
-        else
-            self.last_robot_positions[robot.unit_number] = current_position
+        local previous_orientation = self.last_robot_orientations[robot.unit_number]
+        local current_orientation = robot.orientation
+        -- Initial orientation update
+        if not previous_orientation then
+            self.last_robot_orientations[robot.unit_number] = current_orientation
             robot_has_moved = true
+            self.robot_inactivity_counter = 0
+            break
+        end
+        -- has the robot moved?
+        if previous_orientation ~= current_orientation then
+            robot_has_moved = true
+            self.last_robot_orientations[robot.unit_number] = current_orientation
+            self.robot_inactivity_counter = 0
             break
         end
     end
-    return robot_has_moved
+    -- If no robot has moved, update the orientations for all robots
+    if not robot_has_moved then
+        self.robot_inactivity_counter = self.robot_inactivity_counter + 1
+        -- count the numebr of times the robots have been inactive and return false if it exceeds 4
+        if self.robot_inactivity_counter > 4 then
+            return false
+        end
+        for _, robot in pairs(construction_robots) do
+            self.last_robot_orientations[robot.unit_number] = robot.orientation
+        end
+    end
+    return true
 end
 
 function job:validate_worker()
@@ -1085,7 +1094,7 @@ function job:in_progress()
     if next(construction_robots) then -- are robots deployed?
         if not self:check_robot_activity(construction_robots) then -- are robots active?
             if (logistic_cell.charging_robot_count == 0) then
-                self.last_robot_positions = {}
+                self.last_robot_orientations = {}
                 table.remove(self.task_positions, 1)
             end
         end
