@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.22
+Date: 2025-04-02
+  Bugfixes:
+    - Fixed an issue that caused Constructrons to leave the job area prematurely along with their active robots.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.21
 Date: 2025-03-24
   Bugfixes:
