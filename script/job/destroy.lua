@@ -150,7 +150,7 @@ function destroy_job:in_progress()
     if next(construction_robots) then -- are robots deployed?
         if not self:check_robot_activity(construction_robots) then -- are robots active?
             if (logistic_cell.charging_robot_count == 0) then
-                self.last_robot_positions = {}
+                self.last_robot_orientations = {}
                 table.remove(self.task_positions, 1)
             end
         end
