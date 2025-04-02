@@ -187,29 +187,37 @@ function job:check_roboport_coverage(entity)
 end
 
 function job.find_chunk_entities(chunk, job_type)
+    -- Expand chunk boundaries slightly if they are minimal
     if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
         chunk.minimum.x = chunk.minimum.x - 1
         chunk.minimum.y = chunk.minimum.y - 1
         chunk.maximum.x = chunk.maximum.x + 1
         chunk.maximum.y = chunk.maximum.y + 1
     end
+    -- Find entities within the chunk based on the job type
     local entities = find_entities[job_type](chunk, chunk.surface_index)
     if not next(entities) then
+        -- Return false if no entities are found
         return false
     end
     local chunk_required_items = {}
     local chunk_trash_items = {}
+    -- Process entities if the job type is not 'destroy'
     if job_type ~= "destroy" then
         for _, entity in pairs(entities) do
-            if not chunk.from_tool and storage.zone_restriction_job_toggle and job:check_roboport_coverage(entity) then
+            if not chunk.from_tool and storage.zone_restriction_job_toggle[chunk.surface_index] and job:check_roboport_coverage(entity) then
                 return
             end
+            -- Get required and trash items for the entity
             local entity_required_items, entity_trash_items = entity_proc[job_type](entity)
+            -- Combine the entity's items with the chunk's item list
             chunk_required_items = util_func.combine_tables { chunk_required_items, entity_required_items }
             chunk_trash_items = util_func.combine_tables { chunk_trash_items, entity_trash_items }
         end
     end
+    -- setting the combined list on the chunk
     chunk.required_items, chunk.trash_items = chunk_required_items, chunk_trash_items
+    -- Return true indicating entities were processed
     return true
 end
 
