@@ -909,34 +909,27 @@ end
 function job:inventory_check(item_request_list)
     local inventory_items = util_func.convert_to_item_list(self.worker_inventory.get_contents()) -- spider inventory contents
     local ammunition = util_func.convert_to_item_list(self.worker_ammo_slots.get_contents()) -- ammo inventory contents
-    for item_name, value in pairs(inventory_items) do
-        for quality, count in pairs(value) do
-            if not self.required_items[item_name] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            elseif not self.required_items[item_name][quality] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            end
-        end
-    end
-    -- check ammo slots for unwanted items
-    for item_name, value in pairs(ammunition) do
-        for quality, count in pairs(value) do
-            if not self.required_items[item_name] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            elseif not self.required_items[item_name][quality] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            end
-        end
-    end
+
+    self:update_item_request_list(inventory_items, item_request_list)
+    self:update_item_request_list(ammunition, item_request_list)
     return item_request_list
+end
+
+--- Function to update item_request_list
+---@param source_items LuaInventory
+---@param item_request_list table
+function job:update_item_request_list(source_items, item_request_list)
+    for item_name, value in pairs(source_items) do
+        for quality, count in pairs(value) do
+            if not self.required_items[item_name] then
+                item_request_list[item_name] = item_request_list[item_name] or {}
+                item_request_list[item_name][quality] = 0
+            elseif not self.required_items[item_name][quality] then
+                item_request_list[item_name] = item_request_list[item_name] or {}
+                item_request_list[item_name][quality] = 0
+            end
+        end
+    end
 end
 
 --- Checks the ammunition count for the worker and updates the job state accordingly.
