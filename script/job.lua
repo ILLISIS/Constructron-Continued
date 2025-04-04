@@ -809,9 +809,8 @@ function job:clear_items()
         local item_request = {}
         for item, value in pairs(inventory_items) do
             for quality, count in pairs(value) do
-                item_request[item] = {
-                    [quality] = 0
-                }
+                item_request[item] = item_request[item] or {}
+                item_request[item][quality] = 0
             end
         end
         if self:check_for_queued_jobs() then
