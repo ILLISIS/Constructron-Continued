@@ -142,7 +142,7 @@ end
 --===========================================================================--
 
 function gui_settings.buildSettingsContent(player, surface, frame)
-    local surface_index = game.surfaces[storage.user_interface[player.index].settings_ui.elements["surface_selector"].selected_index].index
+    local surface_index = surface.index
 
     -- global settings
 
