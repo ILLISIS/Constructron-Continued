@@ -443,34 +443,27 @@ end
 
 function job:check_robot_activity(construction_robots)
     self.last_robot_orientations = self.last_robot_orientations or {}
-    local robot_has_moved = false
+    local moved_robot_count = 0
+    -- check if any robots have moved
     for _, robot in pairs(construction_robots) do
         local previous_orientation = self.last_robot_orientations[robot.unit_number]
         local current_orientation = robot.orientation
-        -- Initial orientation update
-        if not previous_orientation then
-            self.last_robot_orientations[robot.unit_number] = current_orientation
-            robot_has_moved = true
-            self.robot_inactivity_counter = 0
-            break
-        end
         -- has the robot moved?
-        if previous_orientation ~= current_orientation then
-            robot_has_moved = true
+        if not previous_orientation then
+            -- Initial orientation update
             self.last_robot_orientations[robot.unit_number] = current_orientation
-            self.robot_inactivity_counter = 0
-            break
+            moved_robot_count = moved_robot_count + 1
+        elseif previous_orientation ~= current_orientation then -- has the robot moved?
+            moved_robot_count = moved_robot_count + 1
+            self.last_robot_orientations[robot.unit_number] = current_orientation
         end
     end
-    -- If no robot has moved, update the orientations for all robots
-    if not robot_has_moved then
+    -- If no robot has moved, delay the final determination that robots are inactive by 4 iterations
+    if moved_robot_count == 0 then
         self.robot_inactivity_counter = self.robot_inactivity_counter + 1
-        -- count the numebr of times the robots have been inactive and return false if it exceeds 4
         if self.robot_inactivity_counter > 4 then
+            self.robot_inactivity_counter = 0
             return false
-        end
-        for _, robot in pairs(construction_robots) do
-            self.last_robot_orientations[robot.unit_number] = robot.orientation
         end
     end
     return true
