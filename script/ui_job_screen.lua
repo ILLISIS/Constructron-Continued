@@ -230,6 +230,7 @@ function gui_job.buildJobContent(player, frame, job)
         name = "ctron_inventory_scroll_pane",
         direction = "vertical"
     }
+    inventory_scroll_pane.style.maximal_height = 400
 
     -- label
     inventory_scroll_pane.add{

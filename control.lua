@@ -174,7 +174,7 @@ local ensure_storages = function()
         storage.debug_toggle = false
     end
     if storage.horde_mode == nil then
-        storage.horde_mode = true
+        storage.horde_mode = false
     end
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do

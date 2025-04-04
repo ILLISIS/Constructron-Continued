@@ -187,29 +187,37 @@ function job:check_roboport_coverage(entity)
 end
 
 function job.find_chunk_entities(chunk, job_type)
+    -- Expand chunk boundaries slightly if they are minimal
     if (chunk.minimum.x == chunk.maximum.x) and (chunk.minimum.y == chunk.maximum.y) then
         chunk.minimum.x = chunk.minimum.x - 1
         chunk.minimum.y = chunk.minimum.y - 1
         chunk.maximum.x = chunk.maximum.x + 1
         chunk.maximum.y = chunk.maximum.y + 1
     end
+    -- Find entities within the chunk based on the job type
     local entities = find_entities[job_type](chunk, chunk.surface_index)
     if not next(entities) then
+        -- Return false if no entities are found
         return false
     end
     local chunk_required_items = {}
     local chunk_trash_items = {}
+    -- Process entities if the job type is not 'destroy'
     if job_type ~= "destroy" then
         for _, entity in pairs(entities) do
-            if not chunk.from_tool and storage.zone_restriction_job_toggle and job:check_roboport_coverage(entity) then
+            if not chunk.from_tool and storage.zone_restriction_job_toggle[chunk.surface_index] and job:check_roboport_coverage(entity) then
                 return
             end
+            -- Get required and trash items for the entity
             local entity_required_items, entity_trash_items = entity_proc[job_type](entity)
+            -- Combine the entity's items with the chunk's item list
             chunk_required_items = util_func.combine_tables { chunk_required_items, entity_required_items }
             chunk_trash_items = util_func.combine_tables { chunk_trash_items, entity_trash_items }
         end
     end
+    -- setting the combined list on the chunk
     chunk.required_items, chunk.trash_items = chunk_required_items, chunk_trash_items
+    -- Return true indicating entities were processed
     return true
 end
 
@@ -435,34 +443,27 @@ end
 
 function job:check_robot_activity(construction_robots)
     self.last_robot_orientations = self.last_robot_orientations or {}
-    local robot_has_moved = false
+    local moved_robot_count = 0
+    -- check if any robots have moved
     for _, robot in pairs(construction_robots) do
         local previous_orientation = self.last_robot_orientations[robot.unit_number]
         local current_orientation = robot.orientation
-        -- Initial orientation update
-        if not previous_orientation then
-            self.last_robot_orientations[robot.unit_number] = current_orientation
-            robot_has_moved = true
-            self.robot_inactivity_counter = 0
-            break
-        end
         -- has the robot moved?
-        if previous_orientation ~= current_orientation then
-            robot_has_moved = true
+        if not previous_orientation then
+            -- Initial orientation update
             self.last_robot_orientations[robot.unit_number] = current_orientation
-            self.robot_inactivity_counter = 0
-            break
+            moved_robot_count = moved_robot_count + 1
+        elseif previous_orientation ~= current_orientation then -- has the robot moved?
+            moved_robot_count = moved_robot_count + 1
+            self.last_robot_orientations[robot.unit_number] = current_orientation
         end
     end
-    -- If no robot has moved, update the orientations for all robots
-    if not robot_has_moved then
+    -- If no robot has moved, delay the final determination that robots are inactive by 4 iterations
+    if moved_robot_count == 0 then
         self.robot_inactivity_counter = self.robot_inactivity_counter + 1
-        -- count the numebr of times the robots have been inactive and return false if it exceeds 4
         if self.robot_inactivity_counter > 4 then
+            self.robot_inactivity_counter = 0
             return false
-        end
-        for _, robot in pairs(construction_robots) do
-            self.last_robot_orientations[robot.unit_number] = robot.orientation
         end
     end
     return true
@@ -801,9 +802,8 @@ function job:clear_items()
         local item_request = {}
         for item, value in pairs(inventory_items) do
             for quality, count in pairs(value) do
-                item_request[item] = {
-                    [quality] = 0
-                }
+                item_request[item] = item_request[item] or {}
+                item_request[item][quality] = 0
             end
         end
         if self:check_for_queued_jobs() then
@@ -901,34 +901,27 @@ end
 function job:inventory_check(item_request_list)
     local inventory_items = util_func.convert_to_item_list(self.worker_inventory.get_contents()) -- spider inventory contents
     local ammunition = util_func.convert_to_item_list(self.worker_ammo_slots.get_contents()) -- ammo inventory contents
-    for item_name, value in pairs(inventory_items) do
-        for quality, count in pairs(value) do
-            if not self.required_items[item_name] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            elseif not self.required_items[item_name][quality] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            end
-        end
-    end
-    -- check ammo slots for unwanted items
-    for item_name, value in pairs(ammunition) do
-        for quality, count in pairs(value) do
-            if not self.required_items[item_name] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            elseif not self.required_items[item_name][quality] then
-                item_request_list[item_name] = {
-                    [quality] = 0
-                }
-            end
-        end
-    end
+
+    self:update_item_request_list(inventory_items, item_request_list)
+    self:update_item_request_list(ammunition, item_request_list)
     return item_request_list
+end
+
+--- Function to update item_request_list
+---@param source_items LuaInventory
+---@param item_request_list table
+function job:update_item_request_list(source_items, item_request_list)
+    for item_name, value in pairs(source_items) do
+        for quality, count in pairs(value) do
+            if not self.required_items[item_name] then
+                item_request_list[item_name] = item_request_list[item_name] or {}
+                item_request_list[item_name][quality] = 0
+            elseif not self.required_items[item_name][quality] then
+                item_request_list[item_name] = item_request_list[item_name] or {}
+                item_request_list[item_name][quality] = 0
+            end
+        end
+    end
 end
 
 --- Checks the ammunition count for the worker and updates the job state accordingly.

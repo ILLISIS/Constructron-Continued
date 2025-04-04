@@ -4,7 +4,7 @@ local debug_lib = require("script/debug_lib")
 local entity_proc = {}
 
 --- Processes entity positions into chunks
----@param entity LuaEntity
+---@param entity LuaEntity|LuaTile
 ---@param queue table
 ---@param entity_surface_index uint
 ---@param from_tool boolean?
@@ -372,10 +372,17 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
             local force_name = entity.force.name
             if force_name == "player" or force_name == "neutral" then
                 local entity_surface_index = entity.surface.index
-                entity.order_deconstruction(game.players[event.player_index].force, game.players[event.player_index], entity_surface_index)
+                local player = game.players[event.player_index]
+                entity.order_deconstruction(player.force, player)
                 entity_proc.create_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
             end
         end
+    end
+    for _, tile in pairs(event.tiles) do
+        local tile_surface_index = tile.surface.index
+        local player = game.players[event.player_index]
+        tile.order_deconstruction(player.force, player)
+        entity_proc.create_chunk(tile, storage.deconstruction_queue[tile_surface_index], tile_surface_index, true)
     end
 end)
 

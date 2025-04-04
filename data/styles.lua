@@ -264,7 +264,7 @@ styles.ctron_job_inner_frame_style = {
     type = "frame_style",
     parent = "inside_deep_frame",
     height = 770,
-    width = 700,
+    width = 720,
     top_padding = 0,
 }
 
