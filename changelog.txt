@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.25
+Date: 2025-04-06
+  Bugfixes:
+    - Fixed a crash related to horde_mode when a new surface was created. [#267](https://github.com/ILLISIS/Constructron-Continued/issues/267)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.24
 Date: 2025-04-06
   Features:
