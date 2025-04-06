@@ -20,8 +20,9 @@ local vertical_alignment = {
 
 ---@param message LocalisedString
 ---@param entity LuaEntity
----@param offset float
----@param ttl uint
+---@param offset float?
+---@param ttl uint?
+---@param color string?
 me.VisualDebugText = function(message, entity, offset, ttl, color)
     if storage.debug_toggle then
         rendering.draw_text {
