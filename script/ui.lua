@@ -695,7 +695,8 @@ function gui_handlers.toggle_debug_mode(player, element)
 end
 
 function gui_handlers.toggle_horde_mode(player, element)
-    storage.horde_mode = not storage.horde_mode
+    local setting_surface = element.tags.setting_surface
+    storage.horde_mode[setting_surface] = not storage.horde_mode[setting_surface]
 end
 
 function gui_handlers.change_job_start_delay(player, element)
@@ -736,6 +737,7 @@ function gui_handlers.apply_settings_template(player, element)
     local current_surface = element.tags.setting_surface
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
+        storage.horde_mode[surface_index] = storage.horde_mode[current_surface]
         storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[current_surface]
         storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[current_surface]
         storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[current_surface]

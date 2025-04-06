@@ -134,7 +134,7 @@
 ---@field spider_remote_toggle boolean
 ---@field ammo_name string
 ---@field ammo_count uint
----@field horde_mode boolean
+---@field horde_mode table
 --- UI
 --- @field user_interface table<uint, any?>
 

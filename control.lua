@@ -85,6 +85,7 @@ local ensure_storages = function()
     storage.available_ctron_count = storage.available_ctron_count or {}
     storage.stations_count = storage.stations_count or {}
     -- settings
+    storage.horde_mode = storage.horde_mode or {}
     storage.construction_job_toggle = storage.construction_job_toggle or {}
     storage.rebuild_job_toggle = storage.rebuild_job_toggle or {}
     storage.deconstruction_job_toggle = storage.deconstruction_job_toggle or {}
@@ -167,13 +168,13 @@ local ensure_storages = function()
     if storage.debug_toggle == nil then
         storage.debug_toggle = false
     end
-    if storage.horde_mode == nil then
-        storage.horde_mode = false
-    end
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
         -- per surface settings
         local surface_index = surface.index
+        if storage.horde_mode[surface_index] == nil then
+            storage.horde_mode = false
+        end
         if storage.construction_job_toggle[surface_index] == nil then
             storage.construction_job_toggle[surface_index] = true
         end
