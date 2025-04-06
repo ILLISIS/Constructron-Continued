@@ -191,23 +191,6 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
-    -- horde mode
-    global_settings_table.add{
-        type = "label",
-        caption = {"ctron_gui_locale.settings_horde_mode_label"},
-        style = "ctron_settings_label_style"
-    }
-    global_settings_table.add{
-        type = "checkbox",
-        name = "ctron_horde_toggle",
-        state = storage.horde_mode,
-        tooltip = {"ctron_gui_locale.settings_horde_mode_tooltip"},
-        tags = {
-            mod = "constructron",
-            on_gui_checked_state_changed = "toggle_horde_mode"
-        }
-    }
-
     -- per surface settings
 
     frame.add{
@@ -263,6 +246,24 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         name = "ctron_surface_settings_table",
         style = "ctron_settings_table_style",
         column_count = 2,
+    }
+
+    -- horde mode
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_horde_mode_label"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "checkbox",
+        name = "ctron_horde_toggle",
+        state = storage.horde_mode[surface_index],
+        tooltip = {"ctron_gui_locale.settings_horde_mode_tooltip"},
+        tags = {
+            mod = "constructron",
+            on_gui_checked_state_changed = "toggle_horde_mode",
+            setting_surface = surface_index
+        }
     }
 
     -- robot count

@@ -373,8 +373,8 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
             if force_name == "player" or force_name == "neutral" then
                 local entity_surface_index = entity.surface.index
                 local player = game.players[event.player_index]
-                entity.order_deconstruction(player.force, player)
                 entity_proc.create_chunk(entity, storage.deconstruction_queue[entity_surface_index], entity_surface_index, true)
+                entity.order_deconstruction(player.force, player)
             end
         end
     end

@@ -228,7 +228,7 @@ function gui_handlers.gui_event(event)
     local event_handler = gui_handlers[action_name]
     if not event_handler then return end
     -- call to gui_handlers.event_name function
-    event_handler(player, element)
+    event_handler(player, element, event.control)
 end
 
 function gui_handlers.update_ui_windows()
@@ -521,45 +521,70 @@ function gui_handlers.ctron_map_view(player, element)
     gui_handlers.resize_gui(player)
 end
 
-function gui_handlers.ctron_cancel_job(player, element)
-    local job = storage.jobs[element.tags.job_index]
-    if not job then
+function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
+    local selected_job = storage.jobs[element.tags.job_index]
+    if not selected_job then
         player.print({"ctron_warnings.job_no_exist"}) -- TODO: refactor this functionality
         return
     end
-    if job.state ~= "finishing" then
-        -- handle job cancellation
-        job.state = "finishing"
-        if job.worker then
-            job.worker.autopilot_destination = nil
+
+    local job_list = {}
+    if ctrl_clicked then
+        for _, iterated_job in pairs(storage.jobs) do
+            local type_check = (iterated_job.job_type == selected_job.job_type)
+            local surface_check = (iterated_job.surface_index == selected_job.surface_index)
+            local state_check = (iterated_job.state ~= "finishing")
+            if type_check and surface_check and state_check then
+                table.insert(job_list, iterated_job)
+            end
         end
-        if job.job_type == "cargo" then
-            local station_unit_number = job.destination_station.unit_number
-            for _, request in pairs(storage.station_requests[station_unit_number]) do
-                local requested_item = request.name
-                for item, value in pairs(job.required_items) do
-                    for quality, item_count in pairs(value) do
-                        if requested_item == item and request.quality == quality then
-                            request.in_transit_count = request.in_transit_count - item_count
-                            break
+    else
+        job_list = { [1] = selected_job }
+    end
+
+    -- Make sure GUI elements exist before starting the loop
+    local ui = storage.user_interface[player.index]
+    local main_window = player.gui.screen.ctron_main_window
+    local main_ui = ui and ui.main_ui
+    local in_progress = main_ui and main_ui.elements["in_progress_section"]
+    local finishing = main_ui and main_ui.elements["finishing_section"]
+
+    for _, job in pairs(job_list) do
+        if job.state ~= "finishing" then
+            -- handle job cancellation
+            job.state = "finishing"
+            if job.worker then
+                job.worker.autopilot_destination = nil
+            end
+            if job.job_type == "cargo" then
+                local station_unit_number = job.destination_station.unit_number
+                for _, request in pairs(storage.station_requests[station_unit_number]) do
+                    local requested_item = request.name
+                    for item, value in pairs(job.required_items) do
+                        for quality, item_count in pairs(value) do
+                            if requested_item == item and request.quality == quality then
+                                request.in_transit_count = request.in_transit_count - item_count
+                                break
+                            end
                         end
                     end
                 end
             end
+            for _, chunk in pairs(job.chunks) do
+                chunk.skip_chunk_checks = true
+            end
+        else
+            player.print({"ctron_warnings.job_finished"}) -- TODO: refactor this functionality
         end
-        -- set skip chunk checks
-        for _, chunk in pairs(job.chunks) do
-            chunk.skip_chunk_checks = true
+        -- Update UI per job
+        if main_window and not element.tags.job_screen and in_progress and finishing then
+            gui_main.create_job_card(job, finishing)
+            local job_card = in_progress["ctron_" .. job.job_type .. "_card_" .. job.job_index]
+            if job_card then
+                job_card.destroy()
+            end
+            gui_main.empty_section_check(in_progress)
         end
-        -- update gui
-        if not player.gui.screen.ctron_main_window then return end
-        gui_main.create_job_card(job, storage.user_interface[player.index].main_ui.elements["finishing_section"])
-        if element.tags.job_screen then return end
-        local card_name = element.parent.parent.name
-        storage.user_interface[player.index].main_ui.elements["in_progress_section"][card_name].destroy()
-        gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["in_progress_section"])
-    else
-        player.print({"ctron_warnings.job_finished"}) -- TODO: refactor this functionality
     end
 end
 
@@ -583,11 +608,18 @@ function gui_handlers.close_job_window(player)
     end
 end
 
-function gui_handlers.ctron_cancel_chunk(player, element)
+function gui_handlers.ctron_cancel_chunk(player, element, ctrl_clicked)
     local job_type = element.tags.job_type
     local surface_index = element.tags.surface_index
-    storage[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
-    element.parent.parent.destroy()
+    if ctrl_clicked then
+        storage[job_type .. '_queue'][surface_index] = {}
+        for _, child in pairs(storage.user_interface[player.index].main_ui.elements["pending_section"].children) do
+            child.destroy()
+        end
+    else
+        storage[job_type .. '_queue'][surface_index][element.tags.chunk_key] = nil
+        element.parent.parent.destroy()
+    end
     gui_main.empty_section_check(storage.user_interface[player.index].main_ui.elements["pending_section"])
 end
 
@@ -625,11 +657,25 @@ function gui_handlers.toggle_job_setting(player, element)
     local setting = element.tags.setting
     local setting_surface = element.tags.setting_surface
     storage[setting .. "_job_toggle"][setting_surface] = not storage[setting .. "_job_toggle"][setting_surface]
+    -- update job state to prematurely finish jobs in progress
+    for _, job in pairs(storage.jobs) do
+        if (job.surface_index == setting_surface) and (job.job_type == setting) then
+            job.worker.autopilot_destination = nil
+            job.state = "finishing"
+        end
+    end
+    -- remove pending chunks
+    storage[setting .. "_queue"][setting_surface] = {}
 end
 
 function gui_handlers.change_robot_count(player, element)
     local setting_surface = element.tags.setting_surface
-    storage.desired_robot_count[setting_surface] = (tonumber(element.text) or 50)
+    local count = (tonumber(element.text) or 50)
+    if count > 10000 then
+        player.print("Specified robot count too high, count reset to 50.")
+        count = 50
+    end
+    storage.desired_robot_count[setting_surface] = count
 end
 
 function gui_handlers.select_new_robot(player, element)
@@ -667,7 +713,12 @@ end
 
 function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
-    storage.ammo_count[setting_surface] = (tonumber(element.text) or 0)
+    local count = (tonumber(element.text) or 50)
+    if count > 10000 then
+        player.print("Specified ammo count too high, count reset to 0.")
+        count = 0
+    end
+    storage.ammo_count[setting_surface] = count
 end
 
 function gui_handlers.selected_new_repair_tool(player, element)
@@ -685,7 +736,8 @@ function gui_handlers.toggle_debug_mode(player, element)
 end
 
 function gui_handlers.toggle_horde_mode(player, element)
-    storage.horde_mode = not storage.horde_mode
+    local setting_surface = element.tags.setting_surface
+    storage.horde_mode[setting_surface] = not storage.horde_mode[setting_surface]
 end
 
 function gui_handlers.change_job_start_delay(player, element)
@@ -726,6 +778,7 @@ function gui_handlers.apply_settings_template(player, element)
     local current_surface = element.tags.setting_surface
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
+        storage.horde_mode[surface_index] = storage.horde_mode[current_surface]
         storage.construction_job_toggle[surface_index] = storage.construction_job_toggle[current_surface]
         storage.rebuild_job_toggle[surface_index] = storage.rebuild_job_toggle[current_surface]
         storage.deconstruction_job_toggle[surface_index] = storage.deconstruction_job_toggle[current_surface]

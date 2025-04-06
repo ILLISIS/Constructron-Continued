@@ -85,6 +85,7 @@ local ensure_storages = function()
     storage.available_ctron_count = storage.available_ctron_count or {}
     storage.stations_count = storage.stations_count or {}
     -- settings
+    storage.horde_mode = storage.horde_mode or {}
     storage.construction_job_toggle = storage.construction_job_toggle or {}
     storage.rebuild_job_toggle = storage.rebuild_job_toggle or {}
     storage.deconstruction_job_toggle = storage.deconstruction_job_toggle or {}
@@ -124,48 +125,42 @@ local ensure_storages = function()
         }
     end
     -- ammunition setup
+    storage.ammo_name = storage.ammo_name or {}
     local init_ammo_name
-    if storage.ammo_name == nil or not prototypes.item[storage.ammo_name[1]] then
-        storage.ammo_name = {}
-        if prototypes.item["rocket"] then
-            init_ammo_name = { name = "rocket", quality = "normal" }
-        else
-            -- get ammo prototypes
-            local ammo_prototypes = prototypes.get_item_filtered{{filter = "type", type = "ammo"}} -- TODO: check if can be filtered further in future API versions.
-            -- iterate through ammo prototypes to find rocket ammo
-            for _, ammo in pairs(ammo_prototypes) do
-                if ammo.ammo_category.name == "rocket" then -- check if this is rocket type ammo
-                    init_ammo_name = { name = ammo.name, quality = "normal" } -- set the variable to be used in the surface loop
-                    break
-                end
+    if prototypes.item["rocket"] then
+        init_ammo_name = { name = "rocket", quality = "normal" }
+    else
+        -- get ammo prototypes
+        local ammo_prototypes = prototypes.get_item_filtered{{filter = "type", type = "ammo"}} -- TODO: check if can be filtered further in future API versions.
+        -- iterate through ammo prototypes to find rocket ammo
+        for _, ammo in pairs(ammo_prototypes) do
+            if ammo.ammo_category.name == "rocket" then -- check if this is rocket type ammo
+                init_ammo_name = { name = ammo.name, quality = "normal" } -- set the variable to be used in the surface loop
+                break
             end
         end
     end
     storage.ammo_count = storage.ammo_count or {}
+    -- robot setup
     storage.desired_robot_count = storage.desired_robot_count or {}
-    -- robot name
+    storage.desired_robot_name = storage.desired_robot_name or {}
     local init_robot_name
-    if storage.desired_robot_name == nil or not prototypes.item[storage.desired_robot_name[1]] then
-        storage.desired_robot_name = {}
-        if prototypes.item["construction-robot"] then
-            init_robot_name = { name = "construction-robot", quality = "normal" }
-        else
-            local valid_robots = prototypes.get_entity_filtered{{filter = "type", type = "construction-robot"}}
-            local valid_robot_name = util_func.firstoflct(valid_robots)
-            init_robot_name = { name = valid_robot_name, quality = "normal" }
-        end
+    if prototypes.item["construction-robot"] then
+        init_robot_name = { name = "construction-robot", quality = "normal" }
+    else
+        local valid_robots = prototypes.get_entity_filtered{{filter = "type", type = "construction-robot"}}
+        local valid_robot_name = util_func.firstoflct(valid_robots)
+        init_robot_name = { name = valid_robot_name, quality = "normal" }
     end
     -- repair tool
+    storage.repair_tool_name = storage.repair_tool_name or {}
     local init_repair_tool_name
-    if storage.repair_tool_name == nil or not prototypes.item[storage.repair_tool_name[1]] then
-        storage.repair_tool_name = {}
-        if prototypes.item["repair-pack"] then
-            init_repair_tool_name = { name = "repair-pack", quality = "normal" }
-        else
-            local valid_repair_tools = prototypes.get_item_filtered{{filter = "name", name = "repair-pack"}} -- TODO: check if can be filtered further in future API versions.
-            local valid_repair_tool_name = util_func.firstoflct(valid_repair_tools)
-            init_repair_tool_name = { name = valid_repair_tool_name, quality = "normal" }
-        end
+    if prototypes.item["repair-pack"] then
+        init_repair_tool_name = { name = "repair-pack", quality = "normal" }
+    else
+        local valid_repair_tools = prototypes.get_item_filtered{{filter = "name", name = "repair-pack"}} -- TODO: check if can be filtered further in future API versions.
+        local valid_repair_tool_name = util_func.firstoflct(valid_repair_tools)
+        init_repair_tool_name = { name = valid_repair_tool_name, quality = "normal" }
     end
     -- non surface specific settings
     storage.job_start_delay = storage.job_start_delay or 300 -- five seconds
@@ -173,13 +168,13 @@ local ensure_storages = function()
     if storage.debug_toggle == nil then
         storage.debug_toggle = false
     end
-    if storage.horde_mode == nil then
-        storage.horde_mode = false
-    end
     -- set per surface setting values
     for _, surface in pairs(game.surfaces) do
         -- per surface settings
         local surface_index = surface.index
+        if storage.horde_mode[surface_index] == nil then
+            storage.horde_mode = false
+        end
         if storage.construction_job_toggle[surface_index] == nil then
             storage.construction_job_toggle[surface_index] = true
         end

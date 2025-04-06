@@ -70,7 +70,7 @@ job_proc.process_queue = function(surface_index, job_type, job_class)
                 -- claim the chunk by the job
                 storage.jobs[storage.job_index]:claim_chunk(chunk)
                 -- claim other chunks in proximity the claimed chunk
-                if not storage.horde_mode then
+                if not storage.horde_mode[surface_index] then
                     storage.jobs[storage.job_index]:claim_chunks_in_proximity()
                 end
             else

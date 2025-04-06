@@ -252,7 +252,7 @@ function pathfinder:findpath()
                     end
                 else
                     -- these are already processed blocks/tiles
-                    -- debug_lib.VisualDebugCircle(neighbor, self.surface, "charcoal", 0.5, 150)
+                    -- debug_lib.VisualDebugCircle(neighbor, self.surface, "gray", 0.5, 150)
                 end
             end
         end
