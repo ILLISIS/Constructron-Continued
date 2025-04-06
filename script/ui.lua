@@ -629,7 +629,12 @@ end
 
 function gui_handlers.change_robot_count(player, element)
     local setting_surface = element.tags.setting_surface
-    storage.desired_robot_count[setting_surface] = (tonumber(element.text) or 50)
+    local count = (tonumber(element.text) or 50)
+    if count > 10000 then
+        player.print("Specified robot count too high, count reset to 50.")
+        count = 50
+    end
+    storage.desired_robot_count[setting_surface] = count
 end
 
 function gui_handlers.select_new_robot(player, element)
@@ -667,7 +672,12 @@ end
 
 function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
-    storage.ammo_count[setting_surface] = (tonumber(element.text) or 0)
+    local count = (tonumber(element.text) or 50)
+    if count > 10000 then
+        player.print("Specified ammo count too high, count reset to 0.")
+        count = 0
+    end
+    storage.ammo_count[setting_surface] = count
 end
 
 function gui_handlers.selected_new_repair_tool(player, element)
