@@ -345,6 +345,7 @@ end)
 
 script.on_event(ev.on_surface_created, function(event)
     local surface_index = event.surface_index
+    storage.horde_mode[surface_index] = false
     storage.construction_queue[surface_index] = {}
     storage.deconstruction_queue[surface_index] = {}
     storage.upgrade_queue[surface_index] = {}
@@ -372,6 +373,7 @@ end)
 
 script.on_event(ev.on_surface_deleted, function(event)
     local surface_index = event.surface_index
+    storage.horde_mode[surface_index] = nil
     storage.construction_queue[surface_index] = nil
     storage.deconstruction_queue[surface_index] = nil
     storage.upgrade_queue[surface_index] = nil
