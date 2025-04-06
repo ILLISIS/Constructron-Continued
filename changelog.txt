@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.24
+Date: 2025-04-06
+  Features:
+    - Added the ability to cancel all jobs or chunks of a certain type in the UI by CTRL clicking the cancel button.
+    - Disabling a job type in the settings now removes all pending jobs and sets in progress jobs to finish prematurely.
+    - Horde mode can now be enabled / disabled per surface.
+  Bugfixes:
+    - Fixed a crash / hang that occured when robot count was set rediculously high. Additionally, set a maximum ammo count limit.
+    - Fixed a crash when a ghost was deconstructed using the selection tool.
+    - Fixed an issue that caused robot, ammo and repair tool selections to be reset when game configuration changes.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.23
 Date: 2025-04-04
   Bugfixes:
