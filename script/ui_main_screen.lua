@@ -567,6 +567,7 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
         card_flow.add{
             type = "button",
             caption = {"ctron_gui_locale.job_cancel_button"},
+            tooltip = {"ctron_gui_locale.job_cancel_button_tooltip"},
             style = "ctron_frame_button_style",
             tags = {
                 mod = "constructron",
