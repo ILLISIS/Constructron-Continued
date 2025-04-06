@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.23
+Date: 2025-04-04
+  Bugfixes:
+    - Fixed an issue that caused different qualities of the same item not to be cleared from the Constructrons inventory before and after jobs.
+    - Fixed an issue that caused settings to be set on the wrong surface.
+    - Fixed an issue that caused tiles not to be ordered for deconstruction when using the selection tool.
+    - Fixed an issue when determining robot activity would take a long time.
+    - Fixed and issue that caused entities to be ignored within construction range when the zone restriction setting was disabled.
+    - Fixed large inventory display bloating in the job details screen.
+    - Horde mode was incorrectly set to default to enabled.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.22
 Date: 2025-04-02
   Bugfixes:
