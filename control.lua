@@ -173,7 +173,7 @@ local ensure_storages = function()
         -- per surface settings
         local surface_index = surface.index
         if storage.horde_mode[surface_index] == nil then
-            storage.horde_mode = false
+            storage.horde_mode[surface_index] = false
         end
         if storage.construction_job_toggle[surface_index] == nil then
             storage.construction_job_toggle[surface_index] = true
@@ -345,7 +345,6 @@ end)
 
 script.on_event(ev.on_surface_created, function(event)
     local surface_index = event.surface_index
-    storage.horde_mode[surface_index] = false
     storage.construction_queue[surface_index] = {}
     storage.deconstruction_queue[surface_index] = {}
     storage.upgrade_queue[surface_index] = {}
@@ -357,6 +356,7 @@ script.on_event(ev.on_surface_created, function(event)
     storage.stations_count[surface_index] = 0
 
     -- per surface settings
+    storage.horde_mode[surface_index] = false
     storage.construction_job_toggle[surface_index] = true
     storage.rebuild_job_toggle[surface_index] = true
     storage.deconstruction_job_toggle[surface_index] = true
@@ -373,7 +373,6 @@ end)
 
 script.on_event(ev.on_surface_deleted, function(event)
     local surface_index = event.surface_index
-    storage.horde_mode[surface_index] = nil
     storage.construction_queue[surface_index] = nil
     storage.deconstruction_queue[surface_index] = nil
     storage.upgrade_queue[surface_index] = nil
@@ -385,6 +384,7 @@ script.on_event(ev.on_surface_deleted, function(event)
     storage.stations_count[surface_index] = nil
 
     -- per surface settings
+    storage.horde_mode[surface_index] = nil
     storage.construction_job_toggle[surface_index] = nil
     storage.rebuild_job_toggle[surface_index] = nil
     storage.deconstruction_job_toggle[surface_index] = nil
