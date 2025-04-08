@@ -669,6 +669,11 @@ function gui_handlers.toggle_job_setting(player, element)
     storage[setting .. "_queue"][setting_surface] = {}
 end
 
+function gui_handlers.toggle_zone_restriction(player, element)
+    local setting_surface = element.tags.setting_surface
+    storage["zone_restriction_job_toggle"][setting_surface] = not storage["zone_restriction_job_toggle"][setting_surface]
+end
+
 function gui_handlers.change_robot_count(player, element)
     local setting_surface = element.tags.setting_surface
     local count = (tonumber(element.text) or 50)

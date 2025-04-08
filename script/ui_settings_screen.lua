@@ -55,10 +55,6 @@ local toggle_settings = {
         label = {"ctron_gui_locale.settings_destroy_jobs_label"},
         tooltip = {"ctron_gui_locale.settings_destroy_jobs_tooltip"}
     },
-    ["zone_restriction"] = {
-        label = {"ctron_gui_locale.settings_zone_restriction_label"},
-        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"}
-    },
 }
 
 --===========================================================================--
@@ -335,6 +331,26 @@ function gui_settings.buildSettingsContent(player, surface, frame)
             }
         }
     end
+
+    -- zone restrictions
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_zone_restriction_label"},
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "checkbox",
+        name = "ctron_zone_restriction_toggle",
+        state = storage["zone_restriction_job_toggle"][surface_index],
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        tags = {
+            mod = "constructron",
+            on_gui_checked_state_changed = "toggle_zone_restriction",
+            setting = "ctron_zone_restriction_toggle",
+            setting_surface = surface_index
+        }
+    }
 
     -- ammo selection
     settings_table.add{
