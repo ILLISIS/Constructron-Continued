@@ -573,17 +573,17 @@ function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
             for _, chunk in pairs(job.chunks) do
                 chunk.skip_chunk_checks = true
             end
+            -- Update UI
+            if main_window and element and element.valid and not element.tags.job_screen and in_progress and finishing then
+                gui_main.create_job_card(job, finishing)
+                local job_card = in_progress["ctron_" .. job.job_type .. "_card_" .. job.job_index]
+                if job_card then
+                    job_card.destroy()
+                end
+                gui_main.empty_section_check(in_progress)
+            end
         else
             player.print({"ctron_warnings.job_finished"}) -- TODO: refactor this functionality
-        end
-        -- Update UI per job
-        if main_window and not element.tags.job_screen and in_progress and finishing then
-            gui_main.create_job_card(job, finishing)
-            local job_card = in_progress["ctron_" .. job.job_type .. "_card_" .. job.job_index]
-            if job_card then
-                job_card.destroy()
-            end
-            gui_main.empty_section_check(in_progress)
         end
     end
 end
