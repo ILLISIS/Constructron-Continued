@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.28
+Date: 2025-04-08
+  Bugfixes:
+    - Fixed a crash in the UI when jobs were CTRL clicked that were already in a finishing state.
+    - Fixed a crash when rebuild jobs were toggled in the settings UI.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.27
 Date: 2025-04-07
   Bugfixes:
