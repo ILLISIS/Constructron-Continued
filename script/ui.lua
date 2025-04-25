@@ -1091,6 +1091,10 @@ end
 
 function gui_handlers.paste_station_requests(player, element)
     storage.station_requests[element.tags.station_unit_number] = table.deepcopy(storage.user_interface[player.index]["settings_export"])
+    -- reset in_transit count on all requests for the new station
+    for _, request in pairs(storage.station_requests[element.tags.station_unit_number]) do
+        request.in_transit_count = 0
+    end
     player.gui.screen.ctron_cargo_window.destroy()
     gui_cargo.buildCargoGui(player, player.surface)
 end
