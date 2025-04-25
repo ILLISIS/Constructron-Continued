@@ -29,7 +29,7 @@ function cargo_job.prospect_cargo_jobs()
         if not station.logistic_network then goto continue end
         local items_to_fullfill = {}
         for id, request in pairs(requests) do
-            local current_count = station.logistic_network.get_item_count(request.name)
+            local current_count = station.logistic_network.get_item_count(request)
             if not ((current_count + request.in_transit_count) > request.min) then
                 items_to_fullfill[request.name] = { [request.quality] = request.max }
                 storage.station_requests[station.unit_number][id].in_transit_count = request.max
