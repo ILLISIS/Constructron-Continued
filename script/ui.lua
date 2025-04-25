@@ -680,6 +680,8 @@ function gui_handlers.toggle_job_setting(player, element)
     local setting_surface = element.tags.setting_surface
     storage[setting .. "_job_toggle"][setting_surface] = not storage[setting .. "_job_toggle"][setting_surface]
     if setting == "rebuild" then return end
+    -- if toggling to true, do not cancel jobs
+    if storage[setting .. "_job_toggle"][setting_surface] then return end
     -- update job state to prematurely finish jobs in progress
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == setting_surface) and (job.job_type == setting) then
