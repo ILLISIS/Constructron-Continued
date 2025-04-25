@@ -1,4 +1,19 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.30
+Date: 2025-04-25
+  Gui:
+    - Added job delay timer on pending chunks.
+    - Logistics views now display what is left to be delivered instead of the total amount.
+  Bugfixes:
+    - Fixed a bug that led to incorrect in_transit_count for cargo jobs when copying and pasting, which could prevent job creation.
+    - Fixed a crash during cargo jobs when the station ran out of power.
+    - Fixed alignment issues on the job details screen.
+    - Fixed an issue during cargo job prospecting where item quality was not being checked, preventing job creation.
+    - Fixed collision masks with extremely large buildings.
+    - Toggling jobs to enabled no longer cancels all jobs of that type.
+  Changes:
+    - Improved find_non_colliding_position logic.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.29
 Date: 2025-04-09
   Bugfixes:
