@@ -137,7 +137,7 @@ for _, type in pairs(types) do
       if (width>7 and height>4) or (height>7 and width>4) then
         -- log("Entity '" .. name .. "' is larger than 7x7 tiles. Size: " .. width .. "x" .. height)
         local add = false
-        for _, mask in pairs(prototype.collision_mask.layers) do
+        for mask, _ in pairs(prototype.collision_mask.layers) do
           if masks[mask] ~= nil then
             add = true
           end
