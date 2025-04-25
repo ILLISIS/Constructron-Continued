@@ -376,6 +376,8 @@ function gui_job.build_trash_display(worker, trash_table)
 end
 
 function gui_job.build_logistic_display(worker, logistic_table)
+    local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+    assert(inventory, "Worker inventory is nil")
     -- get worker logistic requests
     local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
@@ -388,7 +390,7 @@ function gui_job.build_logistic_display(worker, logistic_table)
         if section.filters[i] and section.filters[i].value then
             local slot = section.filters[i]
             local slot_item = slot.value
-            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, slot.max or slot.min, nil, worker)
+            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, ((slot.max or slot.min) - inventory.get_item_count(slot_item)), nil, worker)
         else
             logistic_table.add{
                 type = "sprite-button",

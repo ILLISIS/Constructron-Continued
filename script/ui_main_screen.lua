@@ -703,6 +703,8 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
             local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
             local section = logistic_point.get_section(1)
             local flag = false
+            local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+            assert(inventory, "Worker inventory is nil")
             for i = 1, #section.filters do
                 local slot = section.filters[i]
                 if slot.value then
@@ -710,10 +712,10 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
                     local quality = slot.value.quality
                     flag = true
                     if logistics_requests[item_name] and logistics_requests[item_name][quality] then
-                        logistics_requests[item_name][quality] = logistics_requests[item_name][quality] + slot.max
+                        logistics_requests[item_name][quality] = logistics_requests[item_name][quality] + ((slot.max or slot.min)- inventory.get_item_count({name = item_name, quality = quality}))
                     else
                         logistics_requests[item_name] = {
-                            [quality] = (slot.max or slot.min)
+                            [quality] = ((slot.max or slot.min) - inventory.get_item_count({name = item_name, quality = quality}))
                         }
                     end
                 end
