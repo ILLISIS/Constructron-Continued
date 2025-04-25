@@ -29,7 +29,7 @@ function cargo_job.prospect_cargo_jobs()
         if not station.logistic_network then goto continue end
         local items_to_fullfill = {}
         for id, request in pairs(requests) do
-            local current_count = station.logistic_network.get_item_count(request.name)
+            local current_count = station.logistic_network.get_item_count(request)
             if not ((current_count + request.in_transit_count) > request.min) then
                 items_to_fullfill[request.name] = { [request.quality] = request.max }
                 storage.station_requests[station.unit_number][id].in_transit_count = request.max
@@ -186,6 +186,10 @@ function cargo_job:in_progress()
         if not self:check_trash() then
             local trash_items = util_func.convert_to_item_list(self.worker_trash_inventory.get_contents())
             local logistic_network = self.destination_station.logistic_network
+            if not logistic_network then
+                debug_lib.VisualDebugText({"ctron_status.no_station_power"}, worker, -0.5, 1.4)
+                return
+            end
             if (logistic_network.all_logistic_robots <= 0) then
                 debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, worker, -0.5, 3)
                 return

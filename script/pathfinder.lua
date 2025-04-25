@@ -323,21 +323,19 @@ end
 function pathfinder.find_non_colliding_position(job, position) -- find a position to stand / walk to
     local new_position
     local params = {
+        {size = 5, radius = 5},
+        {size = 5, radius = 12},
         {size = 1, radius = 5},
-        {size = 1, radius = 8},
         {size = 1, radius = 12},
-        {size = 1, radius = 16},
-        {size = 1, radius = 64},
         }
     for _, param in pairs(params) do
         new_position = job.worker.surface.find_non_colliding_position("constructron_pathing_proxy_" .. param.size, position, param.radius, non_colliding_position_accuracy, false)
-        if new_position then break end
-    end
-    if new_position then
-        if job then -- update the job for condition check
-            job.task_positions[1] = new_position
+        if new_position ~= nil then
+            if job then -- update the job for condition check
+                job.task_positions[1] = { y = math.floor(new_position.y), x = math.floor(new_position.x) }
+            end
+            return new_position -- return for the new request
         end
-        return new_position -- return for the new request
     end
 end
 

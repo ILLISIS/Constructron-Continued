@@ -225,24 +225,24 @@ function gui_job.buildJobContent(player, frame, job)
     gui_job.build_ammo_display(worker, storage.user_interface[player.index].job_ui.elements["ammo_table"])
 
     -- inventory display
-    local inventory_scroll_pane = right_pane.add{
-        type = "scroll-pane",
-        name = "ctron_inventory_scroll_pane",
-        direction = "vertical"
-    }
-    inventory_scroll_pane.style.maximal_height = 400
-
     -- label
-    inventory_scroll_pane.add{
+    right_pane.add{
         type = "label",
         name = "ctron_inventory_label",
         caption = {"ctron_gui_locale.job_worker_inventory_label"},
     }
 
+    local inventory_scroll_pane = right_pane.add{
+        type = "scroll-pane",
+        name = "ctron_inventory_scroll_pane",
+        direction = "vertical"
+    }
+    inventory_scroll_pane.style.maximal_height = 320
+
     storage.user_interface[player.index].job_ui.elements["inventory_table"] = inventory_scroll_pane.add{
         type = "table",
         name = "ctron_inventory_table",
-        style = "ctron_inventory_table_style",
+        style = "slot_table",
         column_count = 10,
     }
 
@@ -256,23 +256,24 @@ function gui_job.buildJobContent(player, frame, job)
     }
 
     -- trash display
-    local trash_scroll_pane = right_pane.add{
-        type = "scroll-pane",
-        name = "ctron_trash_scroll_pane",
-        direction = "vertical"
-    }
-
     -- label
-    trash_scroll_pane.add{
+    right_pane.add{
         type = "label",
         name = "ctron_trash_label",
         caption = {"ctron_gui_locale.job_worker_logistic_trash_label"},
     }
 
+    local trash_scroll_pane = right_pane.add{
+        type = "scroll-pane",
+        name = "ctron_trash_scroll_pane",
+        direction = "vertical"
+    }
+    trash_scroll_pane.style.minimal_height = 80
+
     storage.user_interface[player.index].job_ui.elements["trash_table"] = trash_scroll_pane.add{
         type = "table",
         name = "ctron_trash_table",
-        style = "ctron_trash_table_style",
+        style = "slot_table",
         column_count = 10,
     }
 
@@ -286,30 +287,24 @@ function gui_job.buildJobContent(player, frame, job)
     }
 
     -- logistics display
-    local logistic_scroll_pane = right_pane.add{
-        type = "scroll-pane",
-        name = "ctron_logistic_scroll_pane",
-        direction = "vertical"
-    }
-
     -- label
-    logistic_scroll_pane.add{
+    right_pane.add{
         type = "label",
         name = "ctron_logistic_label",
         caption = {"ctron_gui_locale.job_worker_logistic_requests_label"},
     }
 
-    local logistic_inner_frame = logistic_scroll_pane.add{
-        type = "frame",
-        name = "ctron_logistic_inner_frame",
-        style = "inside_deep_frame",
-        direction = "vertical"
+    local logistic_scroll_pane = right_pane.add{
+        type = "scroll-pane",
+        name = "ctron_logistic_scroll_pane",
+        direction = "vertical",
+        style = "deep_slots_scroll_pane"
     }
 
-    storage.user_interface[player.index].job_ui.elements["logistic_table"] = logistic_inner_frame.add{
+    storage.user_interface[player.index].job_ui.elements["logistic_table"] = logistic_scroll_pane.add{
         type = "table",
         name = "ctron_logistic_table",
-        style = "ctron_logistic_table_style",
+        style = "filter_slot_table",
         column_count = 10,
     }
 
@@ -381,6 +376,8 @@ function gui_job.build_trash_display(worker, trash_table)
 end
 
 function gui_job.build_logistic_display(worker, logistic_table)
+    local inventory = worker.get_inventory(defines.inventory.spider_trunk)
+    assert(inventory, "Worker inventory is nil")
     -- get worker logistic requests
     local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
@@ -393,7 +390,7 @@ function gui_job.build_logistic_display(worker, logistic_table)
         if section.filters[i] and section.filters[i].value then
             local slot = section.filters[i]
             local slot_item = slot.value
-            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, slot.max, nil, worker)
+            gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, ((slot.max or slot.min) - inventory.get_item_count(slot_item)), nil, worker)
         else
             logistic_table.add{
                 type = "sprite-button",
@@ -445,6 +442,7 @@ function gui_job.build_button(parent, name, item, quality, count, style, worker)
     }
     flow.style.height = 33
     flow.style.width = 33
+    flow.style.horizontally_stretchable = false
     -- add label to flow
     local ew = flow.add{
         type = "empty-widget",

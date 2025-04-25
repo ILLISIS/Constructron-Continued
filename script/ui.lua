@@ -305,8 +305,10 @@ function gui_handlers.update_main_gui(player)
     end
     gui_main.empty_section_check(in_progress_section)
     gui_main.empty_section_check(finishing_section)
-    -- pending section
+
+    -- pending section ----------------------------------------------------------------------------------------------------
     local pending_section = main_ui_elements.pending_section
+    -- Initialize a table to categorize pending section cards based on job types
     local pending_section_cards = {
         ["construction"] = {},
         ["deconstruction"] = {},
@@ -315,24 +317,44 @@ function gui_handlers.update_main_gui(player)
         ["destroy"] = {},
         ["cargo"] = {}
     }
+    -- Iterate over all child elements in the pending section
     for _, card in pairs(pending_section.children) do
+        -- Check if the card is not marked as "no_jobs"
         if not card.tags["no_jobs"] then
+            -- Store the card in the appropriate job type and chunk key
             pending_section_cards[card.tags.job_type][card.tags.chunk_key] = card
         end
     end
-    for job_type, _ in pairs(pending_section_cards) do
+    -- Iterate over the job types and their respective cards
+    for job_type, cards in pairs(pending_section_cards) do
+        -- Retrieve the job queue for the current job type and surface index
         local queue = storage[job_type .. "_queue"][surface_index]
+        -- Iterate over the chunks in the queue
         for chunk_key, chunk in pairs(queue) do
+            -- Check if a card for this chunk key does not already exist
             if not pending_section_cards[job_type][chunk_key] then
+                -- Create a new card for the chunk and add it to the pending section
                 gui_main.create_chunk_card(chunk, surface_index, pending_section, job_type)
             else
+                -- Update the status of the existing card
+                if chunk.last_update_tick then
+                    local status_caption = {"ctron_gui_locale.job_status"}
+                    local time = (chunk.last_update_tick + storage.job_start_delay) - game.tick
+                    if time > 1 then
+                        status_caption = {"ctron_gui_locale.chunk_delay", (math.floor(time / 60))}
+                    end
+                    pending_section_cards[job_type][chunk_key].children[1].children[2].caption = status_caption
+                end
+                -- Remove the card from the cache if it exists in the job queue
                 pending_section_cards[job_type][chunk_key] = nil
             end
         end
+        -- Destroy leftover cards that are still in the cache
         for _, card in pairs(pending_section_cards[job_type]) do
             card.destroy()
         end
     end
+    -- Check if the pending section is empty and update its UI if necessary
     gui_main.empty_section_check(pending_section)
 end
 
@@ -658,6 +680,8 @@ function gui_handlers.toggle_job_setting(player, element)
     local setting_surface = element.tags.setting_surface
     storage[setting .. "_job_toggle"][setting_surface] = not storage[setting .. "_job_toggle"][setting_surface]
     if setting == "rebuild" then return end
+    -- if toggling to true, do not cancel jobs
+    if storage[setting .. "_job_toggle"][setting_surface] then return end
     -- update job state to prematurely finish jobs in progress
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == setting_surface) and (job.job_type == setting) then
@@ -1069,6 +1093,10 @@ end
 
 function gui_handlers.paste_station_requests(player, element)
     storage.station_requests[element.tags.station_unit_number] = table.deepcopy(storage.user_interface[player.index]["settings_export"])
+    -- reset in_transit count on all requests for the new station
+    for _, request in pairs(storage.station_requests[element.tags.station_unit_number]) do
+        request.in_transit_count = 0
+    end
     player.gui.screen.ctron_cargo_window.destroy()
     gui_cargo.buildCargoGui(player, player.surface)
 end
