@@ -534,9 +534,16 @@ function gui_main.create_chunk_card(chunk, surface_index, section, job_type)
     }
 
     -- status label
+    local status_caption = {"ctron_gui_locale.job_status"}
+    if chunk.last_update_tick then
+        local time = (chunk.last_update_tick + storage.job_start_delay) - game.tick
+        if time > 1 then
+            status_caption = {"ctron_gui_locale.chunk_delay", (math.floor(time / 60))}
+        end
+    end
     local status_label = card_flow.add{
         type = "label",
-        caption = {"ctron_gui_locale.job_status"}
+        caption = status_caption
     }
     status_label.style.left_padding = 10
 
