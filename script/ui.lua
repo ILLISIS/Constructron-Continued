@@ -1127,6 +1127,7 @@ function gui_handlers.on_gui_hover_job(player, element)
     }
     local cam = inner_frame.add{
         type = "camera",
+        surface_index = job.surface_index,
         position = position,
         zoom = 0.30
     }
@@ -1158,6 +1159,7 @@ function gui_handlers.on_gui_hover_chunk(player, element)
     }
     local cam = inner_frame.add{
         type = "camera",
+        surface_index = surface_index,
         position = chunk_midpoint,
         zoom = 0.30
     }
