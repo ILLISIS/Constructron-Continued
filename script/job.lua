@@ -896,6 +896,35 @@ function job:calculate_task_positions()
     end
 end
 
+--- Orders the task positions based on their distance to a reference point
+function job:order_task_positions()
+    local reference_point = self.worker.position
+    table.sort(self.task_positions, function(a, b)
+        local distance_a = math.sqrt((a.x - reference_point.x)^2 + (a.y - reference_point.y)^2)
+        local distance_b = math.sqrt((b.x - reference_point.x)^2 + (b.y - reference_point.y)^2)
+        return distance_a < distance_b
+    end)
+    -- visual text to display task order
+    for i, task_position in ipairs(self.task_positions) do
+        rendering.draw_text {
+            text = i,
+            target = task_position,
+            filled = true,
+            scale = 8,
+            surface = game.surfaces[1],
+            time_to_live = 3600,
+            vertical_alignment = "middle",
+            alignment = "center",
+            color = {
+                r = 255,
+                g = 255,
+                b = 255,
+                a = 255
+            }
+        }
+    end
+end
+
 ---@param item_request_list table
 ---@return table
 function job:inventory_check(item_request_list)
@@ -984,6 +1013,8 @@ end
 function job:setup()
     -- calculate task positions
     self:calculate_task_positions()
+    -- order tasks
+    self:order_task_positions()
     -- request ammo
     self:request_ammo()
     -- check if landfilling
