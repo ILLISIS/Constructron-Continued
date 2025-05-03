@@ -843,7 +843,7 @@ function job:clear_items()
                 end
             end
             -- check if other station networks can store items
-            local surface_stations = util_func.get_service_stations(self.surface_index)
+            local surface_stations = util_func.get_service_stations(surface_index)
             for _, station in pairs(surface_stations) do
                 if station.logistic_network then
                     for item_name, value in pairs(trash_items) do
@@ -1160,7 +1160,7 @@ function job:finishing()
     debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
-function job:deffered()
+function job:deferred()
     -- TODO: you know what to do
 end
 
