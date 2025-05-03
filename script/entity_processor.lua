@@ -1,5 +1,6 @@
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
+local gui_job = require("script/ui_job_screen")
 
 local entity_proc = {}
 
@@ -383,6 +384,29 @@ script.on_event(ev.on_player_reverse_selected_area, function(event)
         local player = game.players[event.player_index]
         tile.order_deconstruction(player.force, player)
         entity_proc.create_chunk(tile, storage.deconstruction_queue[tile_surface_index], tile_surface_index, true)
+    end
+end)
+
+-- shift left click
+script.on_event(ev.on_player_alt_selected_area, function (event)
+    if event.item ~= "ctron-selection-tool" then return end
+    local player = game.players[event.player_index]
+    for _, entity in pairs(event.entities) do
+        if entity and entity.valid and entity.name == "constructron" then
+            for _, job in pairs(storage.jobs) do
+                if job.worker.unit_number == entity.unit_number then
+                    if not player.gui.screen.ctron_job_window then
+                        gui_job.buildJobGui(player, job)
+                        player.opened = player.gui.screen.ctron_job_window
+                    else
+                        player.gui.screen.ctron_job_window.destroy()
+                        gui_job.buildJobGui(player, job)
+                        player.opened = player.gui.screen.ctron_job_window
+                    end
+                    break
+                end
+            end
+        end
     end
 end)
 
