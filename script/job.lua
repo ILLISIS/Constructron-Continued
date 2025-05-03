@@ -890,7 +890,6 @@ function job:calculate_task_positions()
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
         local positions = util_func.calculate_construct_positions({ chunk.minimum, chunk.maximum }, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance for roboport range
         for _, position in ipairs(positions) do
-            debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
             table.insert(self.task_positions, position)
         end
     end
@@ -905,6 +904,7 @@ function job:order_task_positions()
         return distance_a < distance_b
     end)
     -- visual text to display task order
+    if not storage.debug_toggle then return end
     for i, task_position in ipairs(self.task_positions) do
         rendering.draw_text {
             text = i,
