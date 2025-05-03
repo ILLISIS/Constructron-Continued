@@ -797,6 +797,7 @@ end
 
 function job:clear_items()
     local worker = self.worker ---@cast worker -nil
+    local surface_index = self.surface_index
     if not (self.sub_state == "items_requested") then
         local inventory_items = util_func.convert_to_item_list(self.worker_inventory.get_contents())
         local item_request = {}
@@ -806,8 +807,11 @@ function job:clear_items()
                 item_request[item][quality] = 0
             end
         end
+        -- refill ammunition
+        item_request[storage.ammo_name[surface_index].name] = {[storage.ammo_name[surface_index].quality] = storage.ammo_count[surface_index]}
+        -- leave robots in inventroy if there is a job queued
         if self:check_for_queued_jobs() then
-            local robot = storage.desired_robot_name[self.surface_index]
+            local robot = storage.desired_robot_name[surface_index]
             if item_request[robot.name] and item_request[robot.name][robot.quality] then
                 item_request[robot.name][robot.quality] = nil
             end
@@ -839,7 +843,7 @@ function job:clear_items()
                 end
             end
             -- check if other station networks can store items
-            local surface_stations = util_func.get_service_stations(self.surface_index)
+            local surface_stations = util_func.get_service_stations(surface_index)
             for _, station in pairs(surface_stations) do
                 if station.logistic_network then
                     for item_name, value in pairs(trash_items) do
@@ -890,9 +894,38 @@ function job:calculate_task_positions()
         debug_lib.draw_rectangle(chunk.minimum, chunk.maximum, self.surface_index, "yellow", false, 3600)
         local positions = util_func.calculate_construct_positions({ chunk.minimum, chunk.maximum }, worker.logistic_cell.construction_radius * 0.95) -- 5% tolerance for roboport range
         for _, position in ipairs(positions) do
-            debug_lib.VisualDebugCircle(position, self.surface_index, "yellow", 0.5, 3600)
             table.insert(self.task_positions, position)
         end
+    end
+end
+
+--- Orders the task positions based on their distance to a reference point
+function job:order_task_positions()
+    local reference_point = self.worker.position
+    table.sort(self.task_positions, function(a, b)
+        local distance_a = math.sqrt((a.x - reference_point.x)^2 + (a.y - reference_point.y)^2)
+        local distance_b = math.sqrt((b.x - reference_point.x)^2 + (b.y - reference_point.y)^2)
+        return distance_a < distance_b
+    end)
+    -- visual text to display task order
+    if not storage.debug_toggle then return end
+    for i, task_position in ipairs(self.task_positions) do
+        rendering.draw_text {
+            text = i,
+            target = task_position,
+            filled = true,
+            scale = 8,
+            surface = game.surfaces[1],
+            time_to_live = 3600,
+            vertical_alignment = "middle",
+            alignment = "center",
+            color = {
+                r = 255,
+                g = 255,
+                b = 255,
+                a = 255
+            }
+        }
     end
 end
 
@@ -984,6 +1017,8 @@ end
 function job:setup()
     -- calculate task positions
     self:calculate_task_positions()
+    -- order tasks
+    self:order_task_positions()
     -- request ammo
     self:request_ammo()
     -- check if landfilling
@@ -1125,7 +1160,7 @@ function job:finishing()
     debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
-function job:deffered()
+function job:deferred()
     -- TODO: you know what to do
 end
 

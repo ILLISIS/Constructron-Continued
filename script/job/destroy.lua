@@ -13,10 +13,11 @@ function destroy_job.new(job_index, surface_index, job_type, worker)
     return self
 end
 
-
 function destroy_job:setup()
     -- calculate task positions
     self:calculate_task_positions()
+    -- order tasks
+    self:order_task_positions()
     -- request ammo
     self:request_ammo()
     -- enable_logistics_while_moving for destroy jobs

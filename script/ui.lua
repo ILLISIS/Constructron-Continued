@@ -193,6 +193,8 @@ script.on_event(defines.events.on_gui_closed, function(event)
     local player = game.players[event.player_index]
     if event.element and event.element.name == "ctron_main_window" then
         gui_handlers.close_main_window(player)
+    elseif event.element and event.element.name == "ctron_job_window" then
+        gui_handlers.close_job_window(player)
     elseif event.entity and storage.constructron_names[event.entity.name] then
         if player.gui.relative.ctron_worker_frame then
             player.gui.relative.ctron_worker_frame.destroy()
@@ -1127,6 +1129,7 @@ function gui_handlers.on_gui_hover_job(player, element)
     }
     local cam = inner_frame.add{
         type = "camera",
+        surface_index = job.surface_index,
         position = position,
         zoom = 0.30
     }
@@ -1158,6 +1161,7 @@ function gui_handlers.on_gui_hover_chunk(player, element)
     }
     local cam = inner_frame.add{
         type = "camera",
+        surface_index = surface_index,
         position = chunk_midpoint,
         zoom = 0.30
     }

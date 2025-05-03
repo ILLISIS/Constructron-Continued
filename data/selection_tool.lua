@@ -20,7 +20,9 @@ data:extend(
             alt_select = {
                 border_color = { r = 1, g = 1, b = 1 },
                 cursor_box_type = "entity",
-                mode = { "nothing" }
+                mode = { "controllable" },
+                entity_filters = { "constructron" },
+                entity_filter_mode = "whitelist",
             },
 
             -- control shift left click
