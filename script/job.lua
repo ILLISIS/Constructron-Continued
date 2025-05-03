@@ -797,6 +797,7 @@ end
 
 function job:clear_items()
     local worker = self.worker ---@cast worker -nil
+    local surface_index = self.surface_index
     if not (self.sub_state == "items_requested") then
         local inventory_items = util_func.convert_to_item_list(self.worker_inventory.get_contents())
         local item_request = {}
@@ -806,8 +807,11 @@ function job:clear_items()
                 item_request[item][quality] = 0
             end
         end
+        -- refill ammunition
+        item_request[storage.ammo_name[surface_index].name] = {[storage.ammo_name[surface_index].quality] = storage.ammo_count[surface_index]}
+        -- leave robots in inventroy if there is a job queued
         if self:check_for_queued_jobs() then
-            local robot = storage.desired_robot_name[self.surface_index]
+            local robot = storage.desired_robot_name[surface_index]
             if item_request[robot.name] and item_request[robot.name][robot.quality] then
                 item_request[robot.name][robot.quality] = nil
             end
