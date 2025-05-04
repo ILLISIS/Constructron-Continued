@@ -283,7 +283,7 @@ end
 
 script.on_init(function()
     if game.player and game.player.force.technologies["spidertron"].researched then
-        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+        game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use! [tip=spidertron-automation]")
     end
     init()
 end)
