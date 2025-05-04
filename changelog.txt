@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.31
+Date: 2025-05-03
+  Features:
+    - Support for Krastorio 2 (2.0 base game)
+    - The ctron-selection tool can now (Shift + left click) select constructrons and bring up their active job screen. Very useful for when they are on the run and hard to click!
+  Bugfixes:
+    - Fixed an issue that caused the location camera to display the surface the player was viewing instead of the surface the job was on.
+  Changes:
+    - Ammo is no longer completely emptied at the end of a job if more than the ammo inventory can hold is requested.
+    - Task positions are now numbered instead of represented as a circle.
+    - Task positions are now ordered closest to furtherest away from the starting area.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.30
 Date: 2025-04-25
   Gui:
