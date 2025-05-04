@@ -687,7 +687,9 @@ function gui_handlers.toggle_job_setting(player, element)
     -- update job state to prematurely finish jobs in progress
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == setting_surface) and (job.job_type == setting) then
-            job.worker.autopilot_destination = nil
+            if job.worker and job.worker.valid then
+                job.worker.autopilot_destination = nil
+            end
             job.state = "finishing"
         end
     end
