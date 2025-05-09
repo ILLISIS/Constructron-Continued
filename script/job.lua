@@ -380,9 +380,10 @@ function job:replace_roboports(old_eq, new_eq)
 end
 
 function job:disable_roboports(size) -- doesn't really disable them, it sets the size of that cell
+    if not self.roboports_enabled then return end
+    self.roboports_enabled = false
     local grid = self.worker.grid
     if not grid then return end
-    self.roboports_enabled = false
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" and not (eq.prototype.logistic_parameters.construction_radius == size) then
             if not string.find(eq.name, "%-reduced%-" .. size) then
@@ -393,9 +394,10 @@ function job:disable_roboports(size) -- doesn't really disable them, it sets the
 end
 
 function job:enable_roboports() -- doesn't really enable roboports, it resets the equipment back to the original
+    if self.roboports_enabled then return end
+    self.roboports_enabled = true
     local grid = self.worker.grid
     if not grid then return end
-    self.roboports_enabled = true
     for _, eq in next, grid.equipment do
         if eq.type == "roboport-equipment" then
             self:replace_roboports(eq, eq.prototype.take_result.name)
@@ -474,7 +476,7 @@ function job:validate_worker()
         return true
     else
         local surface_index = self.surface_index
-        self.worker = job.get_worker(surface_index)
+        self.worker = job.get_worker(surface_index) ---@type LuaEntity|nil
         if self.worker and self.worker.valid then
             -- lock constructron
             util_func.set_constructron_status(self.worker, 'busy', true)
@@ -614,26 +616,41 @@ function job:validate_logisitics()
     return true
 end
 
--- this function checks if the worker is in the correct position
+-- This function checks if the worker is in the correct position relative to a target position
+---@param position MapPosition.0
+---@param distance uint
+---@return boolean
 function job:position_check(position, distance)
+    -- Retrieve the worker associated with this job
     local worker = self.worker ---@cast worker -nil
+    -- Calculate the distance from the worker's current position to the target position
     local distance_from_pos = util_func.distance_between(worker.position, position)
+    -- Check if the distance from the target position exceeds the allowed distance
     if distance_from_pos > distance then
+        -- Log a message indicating that the worker is moving to the target position
         debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
+        -- Update the job status to indicate the worker is moving
         self.job_status = {"ctron_status.moving_to_pos"}
+        -- If the worker does not have an autopilot destination set
         if not worker.autopilot_destination then
+            -- If there is no path request in progress, initiate movement to the target position
             if not self.path_request_id then
                 self:move_to_position(position)
             end
         else
+            -- If the worker has an autopilot destination, check if it is still mobile
             if not self:mobility_check() then
+                -- Log a message indicating that the worker is stuck
                 debug_lib.VisualDebugText({"ctron_status.stuck"}, worker, -2, 1)
+                -- Clear the autopilot destination and last distance if stuck
                 worker.autopilot_destination = nil
                 self.last_distance = nil
             end
         end
+        -- Return false indicating the worker is not in the correct position
         return false
     end
+    -- Return true indicating the worker is in the correct position
     return true
 end
 
@@ -962,18 +979,14 @@ end
 function job:check_ammo_count()
     -- Retrieve the expected ammo count from storage for the current surface index.
     local ammo_count = storage.ammo_count[self.surface_index]
-    
     -- If the expected ammo count is zero or less, return true (no need to check further).
     if ammo_count <= 0 then return true end
-    
     -- Retrieve the current ammunition contents from the worker's ammo slots.
     local ammunition = util_func.convert_to_item_list(self.worker_ammo_slots.get_contents())
-    
     -- Retrieve the expected ammo's name and quality from storage for the current surface index.
     local ammo = storage.ammo_name[self.surface_index]
     local ammo_name = ammo.name
     local ammo_quality = ammo.quality
-    
     -- Check if the current ammo count is more than 25% of the expected ammo count.
     -- If the ammo count is less than or equal to 25%, update the job state to "starting" and return false.
     if not (ammunition and ammunition[ammo_name] and (ammunition[ammo_name][ammo_quality] > (math.ceil(ammo_count * 25 / 100)))) then
@@ -984,7 +997,6 @@ function job:check_ammo_count()
             return false
         end
     end
-    
     -- If the ammunition count is sufficient, return true.
     return true
 end
@@ -1113,8 +1125,8 @@ function job:in_progress()
 
     debug_lib.VisualDebugText({"ctron_status.job_type_" .. self.job_type}, worker, -1, 1)
     self.job_status = {"ctron_status.job_type_" .. self.job_type}
-
-    if not self.roboports_enabled then -- enable full roboport range (applies to landfil jobs)
+    -- enable full roboport range (applies to landfil jobs)
+    if not self.roboports_enabled then
         self:enable_roboports()
         return
     end
@@ -1135,9 +1147,8 @@ function job:finishing()
     local worker = self.worker ---@cast worker -nil
     worker.enable_logistics_while_moving = false
     if not self:position_check(self.station.position, 10) then return end
-    if not self.roboports_enabled then -- enable full roboport range (due to landfil jobs disabling them)
-        self:enable_roboports()
-    end
+    -- enable full roboport range (due to landfil jobs disabling them)
+    self:enable_roboports()
     -- clear items
     if not self:clear_items() then return end
     -- clear logistic requests
