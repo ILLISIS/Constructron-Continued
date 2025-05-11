@@ -12,14 +12,15 @@
 ---@alias ConstructronStatus
 ---| "busy"
 
----@alias JobType
+---@alias JobTypes
 ---| "deconstruct"
 ---| "construct"
 ---| "upgrade"
 ---| "repair"
 ---| "destroy"
+---| "minion"
+---| "cargo"
 ---| "utility"
----| "logistic"
 
 -- [CLASSES]
 
@@ -43,7 +44,8 @@
 ---@field trash_items ItemCounts
 
 ---@class job
----@field job_class JobType?
+---@field job_index uint
+---@field job_type JobTypes
 ---@field index uint
 ---@field landfill_job boolean?
 ---@field attempt uint
@@ -51,6 +53,16 @@
 ---@field path_requestid uint
 ---@field robot_positions table
 ---@field worker LuaEntity
+---@field primary_job table
+---@field surface_index uint
+---@field minion_job_index uint
+---@field task_positions table
+---@field chunks table<uint, Chunk>
+---@field pathfinding boolean?
+---@field custom_path table?
+---@field considered_spawners table
+---@field minion_jobs table
+---@field safe_positions table
 
 ---@class RegisteredEntity
 ---@field name string
@@ -109,7 +121,6 @@
 ---@field queue_proc_trigger boolean
 ---@field job_proc_trigger boolean
 --- JOBS
----@field job_index uint
 ---@field jobs table<any, any>?
 --- CONSTRUCTRONS & SERVICESTATIONS
 ---@field constructrons table<uint, LuaEntity>

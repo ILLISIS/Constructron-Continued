@@ -1,6 +1,5 @@
 local job = require("script/job")
 local util_func = require("script/utility_functions")
-local debug_lib = require("script/debug_lib")
 
 -- sub class for utility jobs (set as _ENV as it is used in multiple files)
 utility_job = setmetatable({}, job_metatable) ---@class utility_job : job
@@ -55,98 +54,5 @@ function utility_job:robot_collection()
         end
     end
 end
-
--- function utility_job:vassal_new()
---     -- set default ammo request
---     if storage.ammo_count[self.surface_index] > 0 and (worker.name ~= "constructron-rocket-powered") then
---         self.required_items[storage.ammo_name[self.surface_index]] = storage.ammo_count[self.surface_index]
---     end
---     self.required_items[storage.repair_tool_name[self.surface_index]] = storage.desired_robot_count[self.surface_index] * 4
---     -- state change
---     self.state = "starting"
--- end
-
--- function utility_job:vassal_starting()
---     -- Am I in the correct position?
---     if not self:position_check(self.station.position, 10) then return end
---     -- Is the logistic network ready?
---     local logistic_network = self.station.logistic_network
---     if logistic_network.all_logistic_robots == 0 then
---         debug_lib.VisualDebugText({"ctron_status.no_logi_robots"}, self.worker, -0.5, 3)
---         return
---     end
---     -- request items / check inventory
---     local inventory = worker.get_inventory(defines.inventory.spider_trunk) ---@cast inventory -nil -- spider inventory
---     local inventory_items = inventory.get_contents() -- spider inventory contents
---     local ammo_slots = worker.get_inventory(defines.inventory.spider_ammo) ---@cast ammo_slots -nil -- ammo inventory
---     local ammunition = ammo_slots.get_contents() -- ammo inventory contents
---     local current_items = job_proc.combine_tables({inventory_items, ammunition})
---     if not (self.sub_state == "items_requested") then
---         local item_request_list = table.deepcopy(self.required_items)
---         -- check inventory for unwanted items
---         for item, _ in pairs(current_items) do
---             if not self.required_items[item] then
---                 item_request_list[item] = 0
---             end
---         end
---         -- check ammo slots for unwanted items
---         for item, _ in pairs(ammunition) do
---             if item ~= storage.ammo_name[self.surface_index] then
---                 item_request_list[item] = 0
---             end
---         end
---         item_request_list = self:check_items_are_allowed(item_request_list)
---         self:request_items(item_request_list)
---         self.sub_state = "items_requested"
---         self.request_tick = game.tick
---         return
---     else
---         --populate current requests
---         local current_requests = self:list_item_requests()
---         -- check if requested items have been delivered
---         if not self:check_item_requests(current_requests, current_items) then
---             -- station roaming
---             local ticks = (game.tick - self.request_tick)
---             if not (ticks > 900) then return end
---             if self:check_requests(current_requests) then return end
---             self:roam_stations(current_requests)
---             return
---         end
---         -- check trash has been taken
---         if not self:check_trash() then
---             -- IDEA: roam if unable to dump trash
---             return
---         end
---     end
---     -- divide ammo evenly between slots
---     self:balance_ammunition(ammo_slots, ammunition)
---     -- update job state
---     self.sub_state = nil
---     self.request_tick = nil
---     self.state = "in_progress"
--- end
-
--- function utility_job:vassal_in_progress()
---     -- check health
---     if not self:check_health() then
---         -- self.primary_job.vassal_job[self.] = nil -- TODO: finish. remove vassal job from primary job
---         return
---     end
---     -- TODO: move ammo check here
---     if not self.primary_job.worker then
---         self.state = "finishing" -- IDEA: TODO: assign util to primary?
---         return
---     end
---     local distance_from_pos = util_func.distance_between(worker.position, self.primary_job.worker.position)
---     if distance_from_pos > 32 then
---         self:position_check(self.primary_job.worker.position, 5)
---     else
---         if worker.autopilot_destination then
---             return
---         else
---             worker.follow_target = self.primary_job.worker
---         end
---     end
--- end
 
 return utility_job

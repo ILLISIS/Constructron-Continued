@@ -262,27 +262,6 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
-    -- robot count
-    settings_table.add{
-        type = "label",
-        caption = {"ctron_gui_locale.settings_robot_count_label"},
-        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
-        style = "ctron_settings_label_style"
-    }
-    settings_table.add{
-        type = "textfield",
-        text = storage.desired_robot_count[surface_index],
-        style = "ctron_settings_textfield_style",
-        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
-        numeric = true,
-        allow_negative = false,
-        allow_decimal = false,
-        tags = {
-            mod = "constructron",
-            on_gui_text_changed = "change_robot_count",
-            setting_surface = surface_index
-        }
-    }
     -- robot selection
     settings_table.add{
         type = "label",
@@ -310,6 +289,48 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
+    -- robot count
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_robot_count_label"},
+        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "textfield",
+        text = storage.desired_robot_count[surface_index],
+        style = "ctron_settings_textfield_style",
+        tooltip = {"ctron_gui_locale.settings_robot_count_tooltip"},
+        numeric = true,
+        allow_negative = false,
+        allow_decimal = false,
+        tags = {
+            mod = "constructron",
+            on_gui_text_changed = "change_robot_count",
+            setting_surface = surface_index
+        }
+    }
+
+    -- zone restrictions
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_zone_restriction_label"},
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "checkbox",
+        name = "ctron_zone_restriction_toggle",
+        state = storage["zone_restriction_job_toggle"][surface_index],
+        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        tags = {
+            mod = "constructron",
+            on_gui_checked_state_changed = "toggle_zone_restriction",
+            setting = "ctron_zone_restriction_toggle",
+            setting_surface = surface_index
+        }
+    }
+
     -- job toggles
     for setting_name, setting_params in pairs(toggle_settings) do
         settings_table.add{
@@ -332,22 +353,42 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     end
 
-    -- zone restrictions
+    -- repair job toggle
     settings_table.add{
         type = "label",
-        caption = {"ctron_gui_locale.settings_zone_restriction_label"},
-        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        caption = {"ctron_gui_locale.settings_repair_jobs_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
         type = "checkbox",
-        name = "ctron_zone_restriction_toggle",
-        state = storage["zone_restriction_job_toggle"][surface_index],
-        tooltip = {"ctron_gui_locale.settings_zone_restriction_tooltip"},
+        name = "ctron_repair_toggle",
+        state = storage.repair_job_toggle[surface_index],
+        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
         tags = {
             mod = "constructron",
-            on_gui_checked_state_changed = "toggle_zone_restriction",
-            setting = "ctron_zone_restriction_toggle",
+            on_gui_checked_state_changed = "toggle_job_setting",
+            setting = "repair",
+            setting_surface = surface_index
+        }
+    }
+
+    -- repair tool selection
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_repair_tool_selection_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "choose-elem-button",
+        -- style = "",
+        elem_type = "item-with-quality",
+        ["item-with-quality"] = storage.repair_tool_name[surface_index],
+        elem_filters = {{filter = "name", name = "repair-pack"}},
+        tags = {
+            mod = "constructron",
+            on_gui_elem_changed = "selected_new_repair_tool",
             setting_surface = surface_index
         }
     }
@@ -394,42 +435,87 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         }
     }
 
-    -- repair job toggle
+    -- atomic ammo selection
     settings_table.add{
         type = "label",
-        caption = {"ctron_gui_locale.settings_repair_jobs_label"},
-        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
-        style = "ctron_settings_label_style"
-    }
-    settings_table.add{
-        type = "checkbox",
-        name = "ctron_repair_toggle",
-        state = storage.repair_job_toggle[surface_index],
-        tooltip = {"ctron_gui_locale.settings_repair_jobs_tooltip"},
-        tags = {
-            mod = "constructron",
-            on_gui_checked_state_changed = "toggle_job_setting",
-            setting = "repair",
-            setting_surface = surface_index
-        }
-    }
-
-    -- repair tool selection
-    settings_table.add{
-        type = "label",
-        caption = {"ctron_gui_locale.settings_repair_tool_selection_label"},
-        tooltip = {"ctron_gui_locale.settings_repair_tool_selection_tooltip"},
+        caption = {"ctron_gui_locale.settings_atomic_selection_label"},
+        tooltip = {"ctron_gui_locale.settings_atomic_selection_tooltip"},
         style = "ctron_settings_label_style"
     }
     settings_table.add{
         type = "choose-elem-button",
-        -- style = "",
+        name = "ctron_atomic_select",
         elem_type = "item-with-quality",
-        ["item-with-quality"] = storage.repair_tool_name[surface_index],
-        elem_filters = {{filter = "name", name = "repair-pack"}},
+        ["item-with-quality"] = storage.atomic_ammo_name[surface_index],
+        elem_filters = {{filter = "type", type = "ammo"}},
         tags = {
             mod = "constructron",
-            on_gui_elem_changed = "selected_new_repair_tool",
+            on_gui_elem_changed = "selected_new_atomic_ammo",
+            setting_surface = surface_index
+        }
+    }
+
+    -- atomic ammo count
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_atomic_count_label"},
+        tooltip = {"ctron_gui_locale.settings_atomic_count_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "textfield",
+        text = storage.atomic_ammo_count[surface_index],
+        style = "ctron_settings_textfield_style",
+        tooltip = {"ctron_gui_locale.settings_atomic_count_tooltip"},
+        numeric = true,
+        allow_negative = false,
+        allow_decimal = false,
+        tags = {
+            mod = "constructron",
+            on_gui_text_changed = "change_atomic_ammo_count",
+            setting_surface = surface_index
+        }
+    }
+    -- minimum cluster size
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_min_cluster_size_label"},
+        tooltip = {"ctron_gui_locale.settings_min_cluster_size_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "textfield",
+        text = storage.destroy_min_cluster_size[surface_index],
+        style = "ctron_settings_textfield_style",
+        tooltip = {"ctron_gui_locale.settings_min_cluster_size_tooltip"},
+        numeric = true,
+        allow_negative = false,
+        allow_decimal = false,
+        tags = {
+            mod = "constructron",
+            on_gui_text_changed = "change_min_cluster_size",
+            setting_surface = surface_index
+        }
+    }
+
+    -- minion count
+    settings_table.add{
+        type = "label",
+        caption = {"ctron_gui_locale.settings_minion_count_label"},
+        tooltip = {"ctron_gui_locale.settings_minion_count_tooltip"},
+        style = "ctron_settings_label_style"
+    }
+    settings_table.add{
+        type = "textfield",
+        text = storage.minion_count[surface_index],
+        style = "ctron_settings_textfield_style",
+        tooltip = {"ctron_gui_locale.settings_minion_count_tooltip"},
+        numeric = true,
+        allow_negative = false,
+        allow_decimal = false,
+        tags = {
+            mod = "constructron",
+            on_gui_text_changed = "change_minion_count",
             setting_surface = surface_index
         }
     }

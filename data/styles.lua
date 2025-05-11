@@ -202,7 +202,7 @@ styles.ctron_settings_inner_frame_style = {
     type = "frame_style",
     parent = "entity_frame",
     height = 770,
-    minimal_width = 412,
+    minimal_width = 432,
     padding = 0
 }
 
@@ -215,7 +215,7 @@ styles.ctron_settings_scroll_style = {
 styles.ctron_settings_table_style = {
     type = "table_style",
     parent = "table",
-    minimal_width = 400,
+    minimal_width = 420,
     horizontal_spacing = 0,
     vertical_spacing = 0,
 }
@@ -223,7 +223,7 @@ styles.ctron_settings_table_style = {
 styles.ctron_settings_label_style = {
     type = "label_style",
     parent = "frame_title",
-    width = 200,
+    width = 220,
     horizontal_align = "right",
     right_padding = 20
 }

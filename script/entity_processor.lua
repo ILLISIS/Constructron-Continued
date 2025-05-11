@@ -345,8 +345,15 @@ script.on_event(ev.on_sector_scanned, function(event)
     local surface = event.radar.surface
     if not storage.destroy_job_toggle[surface.index] then return end
     local entity_surface_index = surface.index
-    local fake_entity = {position = event.area["left_top"]}
-    entity_proc.create_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+    local entities = game.surfaces[entity_surface_index].find_entities_filtered{
+        area = event.area,
+        force = "enemy",
+        type = { "unit-spawner", "turret" },
+    }
+    if not next(entities) then return end
+    for _, entity in pairs(entities) do
+        entity_proc.create_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+    end
 end)
 
 -- left click
@@ -602,23 +609,30 @@ entity_proc.recursive_enemy_search = function(enemy, enemies_list, chunk)
         force = {"enemy"},
         area = {
             left_top = {
-                x = enemy_pos.x - 5,
-                y = enemy_pos.y - 5
+                x = enemy_pos.x - 8,
+                y = enemy_pos.y - 8
             },
             right_bottom = {
-                x = enemy_pos.x + 5,
-                y = enemy_pos.y + 5
+                x = enemy_pos.x + 8,
+                y = enemy_pos.y + 8
             }
         },
-        is_military_target = true,
         type = {"unit-spawner", "turret"}
     })
     for _, entity in pairs(search) do
         if not enemies_list[entity.unit_number] then
-            -- update chunk area
+            -- check if the entity is in the same chunk
             local entity_pos = entity.position
             local entity_pos_x = entity_pos.x
             local entity_pos_y = entity_pos.y
+            local chunkx = math.floor(entity_pos_x / 80) -- dividing by 80 as that is the size of 4 roboports
+            local chunky = math.floor(entity_pos_y / 80) -- dividing by 80 as that is the size of 4 roboports
+            local key = (chunkx + 12500) * 25000 + (chunky + 12500) -- add 12500 to make sure the key is always positive
+            if chunk.key ~= key and storage.destroy_queue[entity.surface_index][key] then
+                -- remove chunk from queue (merge the chunk)
+                storage.destroy_queue[entity.surface_index][key] = nil
+            end
+            -- update chunk area
             if entity_pos_x < chunk['minimum'].x then
                 chunk['minimum'].x = entity_pos_x -- expand minimum chunk area x axis
             elseif entity_pos_x > chunk['maximum'].x then

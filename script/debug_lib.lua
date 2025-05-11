@@ -44,7 +44,7 @@ me.VisualDebugText = function(message, entity, offset, ttl, color)
 end
 
 ---@param position MapPosition
----@param surface LuaSurface
+---@param surface LuaSurface|uint
 ---@param color string
 ---@param radius integer
 ---@param ttl uint
