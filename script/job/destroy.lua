@@ -186,17 +186,105 @@ function destroy_job:finishing()
     debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
-function destroy_job:specific_action()
-    local worker = self.worker
+
+local threat_weights = {
+    -- nauvis enemies
+    ["small-biter"] = 0.1,
+    ["medium-biter"] = 0.5,
+    ["big-biter"] = 1,
+    ["behemoth-biter"] = 2,
+
+    ["small-spitter"] = 0.5,
+    ["medium-spitter"] = 1,
+    ["big-spitter"] = 2,
+    ["behemoth-spitter"] = 3,
+
+    ["small-worm-turret"] = 1,
+    ["medium-worm-turret"] = 2,
+    ["big-worm-turret"] = 4,
+    ["behemoth-worm-turret"] = 6,
+
+    ["biter-spawner"] = 0.5,
+    ["spitter-spawner"] = 0.5,
+
+    -- Gleba enemies
+    ["small-wriggler-pentapod"] = 1,
+    ["medium-wriggler-pentapod"] = 1.5,
+    ["big-wriggler-pentapod"] = 2,
+
+    ["small-wriggler-pentapod-premature"] = 1,
+    ["medium-wriggler-pentapod-premature"] = 1.5,
+    ["big-wriggler-pentapod-premature"] = 2,
+
+    ["small-strafer-pentapod"] = 4,
+    ["medium-strafer-pentapod"] = 7,
+    ["big-strafer-pentapod"] = 10,
+
+    ["small-stomper-pentapod"] = 5,
+    ["medium-stomper-pentapod"] = 10,
+    ["big-stomper-pentapod"] = 15,
+
+    ["gleba-spawner-small"] = 0.5,
+    ["gleba-spawner"] = 0.5,
+
+    -- Vulcanus enemies
+    ["small-demolisher"] = 1000,
+    ["medium-demolisher"] = 1000,
+    ["big-demolisher"] = 1000
+}
+
+function destroy_job:determine_threat_level()
+    -- Retrieve the worker associated with this job
+    local worker = self.worker ---@cast worker -nil
+    -- Get the health percentage of the worker (0 to 1)
+    local healthperc = worker.get_health_ratio()
+    -- Initialize the base threat modifier
+    local threat_modifier = storage.global_threat_modifier
+    -- Calculate the adjusted threat modifier based on health and minion jobs
+    -- The threat modifier increases as health decreases and decreases with more minion jobs
+    -- The minimum threat modifier is 0.1
+    threat_modifier = threat_modifier + math.max((threat_modifier + ((1 - healthperc) * 2) - (table_size(self.minion_jobs) * 0.05)), 0.1)
+    -- Find enemy entities within a radius of 64 around the worker's position
     local entities = worker.surface.find_entities_filtered {
         position = worker.position,
-        radius = 32,
-        force = {"enemy"},
-        is_military_target = true
-    } -- only detects entities in range
-    if not next(entities) then
-        table.remove(self.task_positions, 1)
+        radius = self.gun_range + 4,  -- Use the gun range of the worker
+        force = {"enemy"},  -- Only consider entities that belong to the enemy force
+        is_military_target = true  -- Only consider entities that are military targets
+    }
+    -- Initialize the threat factor based on nearby enemy entities
+    local threat_factor = 0
+    -- Loop through each enemy entity found
+    for _, entity in pairs(entities) do
+        -- If the entity has a defined threat weight, add it to the threat factor
+        if threat_weights[entity.name] then
+            threat_factor = threat_factor + threat_weights[entity.name]
+        else
+            -- If the entity is not known, increase the threat factor by a base amount
+            threat_factor = threat_factor + 1
+        end
     end
+    -- Calculate the final threat level by multiplying the threat factor by the adjusted threat modifier
+    local threat_level = (threat_factor * threat_modifier)
+    -- Visual debug output to display the calculated threat level
+    -- debug_lib.VisualDebugText("" .. threat_level .. "", worker, -0.5, 1)
+    -- rendering.draw_text {
+    --     text = threat_level,
+    --     target = worker.position,
+    --     filled = true,
+    --     scale = 8,
+    --     surface = worker.surface,
+    --     time_to_live = 75,
+    --     vertical_alignment = "middle",
+    --     alignment = "center",
+    --     color = {
+    --         r = 255,
+    --         g = 255,
+    --         b = 255,
+    --         a = 255
+    --     }
+    -- }
+    -- Return the calculated threat level
+    return threat_level
 end
 
 return destroy_job
