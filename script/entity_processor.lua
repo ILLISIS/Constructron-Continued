@@ -609,15 +609,14 @@ entity_proc.recursive_enemy_search = function(enemy, enemies_list, chunk)
         force = {"enemy"},
         area = {
             left_top = {
-                x = enemy_pos.x - 5,
-                y = enemy_pos.y - 5
+                x = enemy_pos.x - 8,
+                y = enemy_pos.y - 8
             },
             right_bottom = {
-                x = enemy_pos.x + 5,
-                y = enemy_pos.y + 5
+                x = enemy_pos.x + 8,
+                y = enemy_pos.y + 8
             }
         },
-        is_military_target = true,
         type = {"unit-spawner", "turret"}
     })
     for _, entity in pairs(search) do

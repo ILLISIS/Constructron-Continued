@@ -142,9 +142,8 @@ local find_entities = {
     end,
     ["destroy"] = function(chunk, surface_index)
         local entities = game.surfaces[surface_index].find_entities_filtered{
-            area = { chunk.minimum, {chunk.maximum.x + 32, chunk.maximum.y + 32 } },
+            area = { chunk.minimum, chunk.maximum },
             force = "enemy",
-            is_military_target = true,
             type = { "unit-spawner", "turret" },
         }
         if not next(entities) then return entities end
@@ -627,8 +626,6 @@ function job:position_check(position, distance)
     local distance_from_pos = util_func.distance_between(worker.position, position)
     -- Check if the distance from the target position exceeds the allowed distance
     if distance_from_pos > distance then
-        -- Log a message indicating that the worker is moving to the target position
-        debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
         -- Update the job status to indicate the worker is moving
         self.job_status = {"ctron_status.moving_to_pos"}
         -- If the worker does not have an autopilot destination set
@@ -638,9 +635,9 @@ function job:position_check(position, distance)
                 self:move_to_position(position)
             end
         else
+            debug_lib.VisualDebugText({"ctron_status.moving_to_pos"}, worker, -1, 1)
             -- If the worker has an autopilot destination, check if it is still mobile
             if not self:mobility_check() then
-                -- Log a message indicating that the worker is stuck
                 debug_lib.VisualDebugText({"ctron_status.stuck"}, worker, -2, 1)
                 -- Clear the autopilot destination and last distance if stuck
                 worker.autopilot_destination = nil
@@ -724,10 +721,12 @@ end
 function job:balance_ammunition()
     local ammunition = util_func.convert_to_item_list(self.worker_ammo_slots.get_contents()) -- ammo inventory contents
     if not next(ammunition) then return end
-    -- if not ammunition[storage.ammo_name[self.surface_index]] then return end
+    -- check for foreign ammo in the ammo inventory    
+    self:move_foreign_ammo_to_inventory(ammunition)
     local ammo_name, value = next(ammunition)
+    ---@cast ammo_name -nil
+    ---@cast value -nil
     local quality, ammo_count = next(value)
-    -- local ammo_count = ammunition[ammo_name][quality]
     local ammo_slots = self.worker_ammo_slots ---@cast ammo_slots -nil
     local ammo_per_slot = math.ceil(ammo_count / #ammo_slots)
     for i = 1, #ammo_slots do
@@ -735,6 +734,25 @@ function job:balance_ammunition()
         if slot then
             slot.clear()
             slot.set_stack({ name = ammo_name, quality = quality, count = ammo_per_slot })
+        end
+    end
+end
+
+-- this function moves any foreign ammo to the workers inventory
+---@param ammunition table
+function job:move_foreign_ammo_to_inventory(ammunition)
+    for item_name, quality in pairs(ammunition) do
+        for quality, count in pairs(quality) do
+            if item_name ~= storage.ammo_name[self.surface_index].name then
+                -- remove from ammo inventory 
+                self.worker_ammo_slots.remove({ name = item_name, quality = quality, count = count })
+                ammunition[item_name][quality] = nil
+                if not next(ammunition[item_name]) then
+                    ammunition[item_name] = nil
+                end
+                -- add to inventory
+                self.worker_inventory.insert({ name = item_name, quality = quality, count = count })
+            end
         end
     end
 end

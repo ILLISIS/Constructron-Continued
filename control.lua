@@ -62,6 +62,8 @@ local ensure_storages = function()
     --
     storage.station_requests = storage.station_requests or {}
     --
+    storage.global_threat_modifier = storage.global_threat_modifier or 1.6
+    --
     storage.construction_index = storage.construction_index or 0
     storage.deconstruction_index = storage.deconstruction_index or 0
     storage.upgrade_index = storage.upgrade_index or 0
@@ -93,6 +95,8 @@ local ensure_storages = function()
     storage.repair_job_toggle = storage.repair_job_toggle or {}
     storage.destroy_job_toggle = storage.destroy_job_toggle or {}
     storage.zone_restriction_job_toggle = storage.zone_restriction_job_toggle or {}
+    storage.destroy_min_cluster_size = storage.destroy_min_cluster_size or {}
+    storage.minion_count = storage.minion_count or {}
     -- job_types
     storage.job_types = {
         "deconstruction",
@@ -141,6 +145,23 @@ local ensure_storages = function()
         end
     end
     storage.ammo_count = storage.ammo_count or {}
+    -- atomic ammo setup
+    storage.atomic_ammo_name = storage.atomic_ammo_name or {}
+    local init_atomic_name
+    if prototypes.item["atomic-bomb"] then
+        init_atomic_name = { name = "atomic-bomb", quality = "normal" }
+    else
+        -- get atomic ammo prototypes
+        local atomic_ammo_prototypes = prototypes.get_item_filtered{{filter = "type", type = "ammo"}} -- TODO: check if can be filtered further in future API versions.
+        -- iterate through atomic ammo prototypes to find atomic ammo
+        for _, ammo in pairs(atomic_ammo_prototypes) do
+            if ammo.ammo_category.name == "rocket" then -- check if this is atomic type ammo
+                init_atomic_name = { name = ammo.name, quality = "normal" } -- set the variable to be used in the surface loop
+                break
+            end
+        end
+    end
+    storage.atomic_ammo_count = storage.atomic_ammo_count or {}
     -- robot setup
     storage.desired_robot_count = storage.desired_robot_count or {}
     storage.desired_robot_name = storage.desired_robot_name or {}
@@ -198,6 +219,10 @@ local ensure_storages = function()
         end
         storage.ammo_name[surface_index] = storage.ammo_name[surface_index] or init_ammo_name
         storage.ammo_count[surface_index] = storage.ammo_count[surface_index] or 0
+        storage.atomic_ammo_name[surface_index] = storage.atomic_ammo_name[surface_index] or init_atomic_name
+        storage.atomic_ammo_count[surface_index] = storage.atomic_ammo_count[surface_index] or 0
+        storage.minion_count[surface_index] = storage.minion_count[surface_index] or 1
+        storage.destroy_min_cluster_size[surface_index] = storage.destroy_min_cluster_size[surface_index] or 8
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[surface_index] or 50
         storage.desired_robot_name[surface_index] = storage.desired_robot_name[surface_index] or init_robot_name
         storage.repair_tool_name[surface_index] = storage.repair_tool_name[surface_index] or init_repair_tool_name
@@ -299,10 +324,41 @@ local ev = defines.events
 -- script.on_event(ev.on_player_used_spidertron_remote, function(event)
 -- end)
 
-script.on_event(ev.on_research_finished, function(event)
-    local research = event.research
-    if research.name == "spidertron" then
+local research_handlers = {
+    ["stronger-explosives-3"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.1)
+    end,
+    ["stronger-explosives-4"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.1)
+    end,
+    ["stronger-explosives-5"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.1)
+    end,
+    ["stronger-explosives-6"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.1)
+    end,
+    ["weapon-shooting-speed-3"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.2)
+    end,
+    ["weapon-shooting-speed-4"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.2)
+    end,
+    ["weapon-shooting-speed-5"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.2)
+    end,
+    ["weapon-shooting-speed-6"] = function()
+        storage.global_threat_modifier = math.max(0.4, storage.global_threat_modifier - 0.2)
+    end,
+    ["spidertron"] = function()
         game.print("Welcome to [item=constructron]! Please see the games tips and tricks for more information about Constructrons use!")
+    end,
+}
+
+script.on_event(ev.on_research_finished, function(event)
+    local research_name = event.research.name
+    local handler = research_handlers[research_name]
+    if handler then
+        handler()
     end
 end)
 
@@ -366,6 +422,10 @@ script.on_event(ev.on_surface_created, function(event)
     storage.zone_restriction_job_toggle[surface_index] = false
     storage.ammo_name[surface_index] = storage.ammo_name[1]
     storage.ammo_count[surface_index] = 0
+    storage.atomic_ammo_name[surface_index] = storage.atomic_ammo_name[1]
+    storage.atomic_ammo_count[surface_index] = 0
+    storage.destroy_min_cluster_size[surface_index] = 8
+    storage.minion_count[surface_index] = 1
     storage.desired_robot_count[surface_index] = 50
     storage.desired_robot_name[surface_index] = storage.desired_robot_name[1]
     storage.repair_tool_name[surface_index] = storage.repair_tool_name[1]
@@ -394,6 +454,10 @@ script.on_event(ev.on_surface_deleted, function(event)
     storage.zone_restriction_job_toggle[surface_index] = nil
     storage.ammo_name[surface_index] = nil
     storage.ammo_count[surface_index] = nil
+    storage.atomic_ammo_name[surface_index] = nil
+    storage.atomic_ammo_count[surface_index] = nil
+    storage.destroy_min_cluster_size[surface_index] = nil
+    storage.minion_count[surface_index] = nil
     storage.desired_robot_count[surface_index] = nil
     storage.desired_robot_name[surface_index] = nil
     storage.repair_tool_name[surface_index] = nil

@@ -241,7 +241,8 @@ local inprogress_job_states = {
     ["setup"] = true,
     ["starting"] = true,
     ["in_progress"] = true,
-    ["robot_collection"] = true
+    ["robot_collection"] = true,
+    ["repairing"] = true
 }
 
 local job_types = {
@@ -250,7 +251,8 @@ local job_types = {
     "upgrade",
     "repair",
     "destroy",
-    "cargo"
+    "cargo",
+    -- "minion" -- has no chunks
 }
 
 local job_colors = {
@@ -430,12 +432,15 @@ function gui_main.create_job_card(job, section)
     label_bg.style.color = job_colors[job_type]
     label_bg.style.width = 180
     label_bg.style.bar_width = 30 -- bar thickness
-    label_bg.add{
+    job_label = label_bg.add{
         type = "label",
         name = "ctron_job_type_label",
         caption = {"ctron_gui_locale.job_card_" .. job_type .. "_name"},
         style = "ctron_job_type_label_style"
     }
+    if job_type == "utility" or job_type == "minion" then
+        job_label.style.font_color = color_lib.colors.black
+    end
 
     -- status label
     local status_label = card_flow.add{

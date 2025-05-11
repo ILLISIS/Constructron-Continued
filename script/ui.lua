@@ -594,6 +594,11 @@ function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
                     end
                 end
             end
+            if job.job_type == "minion" then
+                if job.primary_job then
+                    job.primary_job.minion_jobs[job.job_index] = nil
+                end
+            end
             for _, chunk in pairs(job.chunks) do
                 chunk.skip_chunk_checks = true
             end
@@ -753,6 +758,64 @@ function gui_handlers.change_ammo_count(player, element)
         count = 0
     end
     storage.ammo_count[setting_surface] = count
+end
+
+function gui_handlers.selected_new_atomic_ammo(player, element)
+    local setting_surface = element.tags.setting_surface
+    -- validate selection -- TODO: check if choose-elem-button can be filtered further in future API versions.
+    if not element.elem_value then
+        element.elem_value = storage.atomic_ammo_name[setting_surface]
+    end
+    if not (prototypes.item[element.elem_value.name].ammo_category.name == "atomic-bomb") then
+        element.elem_value = storage.atomic_ammo_name[setting_surface]
+        player.print({"ctron_warnings.invalid_ammo"})
+        return
+    end
+    -- update existing jobs with new ammo selection
+    for _, job in pairs(storage.jobs) do
+        if (job.surface_index == setting_surface) then
+            if job.required_items[storage.atomic_ammo_name[setting_surface].name] then
+                -- remove old ammo from job
+                job.required_items[storage.atomic_ammo_name[setting_surface].name] = nil
+                -- add new ammo to job
+                job.required_items[element.elem_value.name] = {
+                    [element.elem_value.quality] = storage.atomic_ammo_count[setting_surface]
+                }
+            end
+        end
+    end
+    -- change setting
+    storage.atomic_ammo_name[setting_surface] = element.elem_value
+end
+
+function gui_handlers.change_atomic_ammo_count(player, element)
+    local setting_surface = element.tags.setting_surface
+    local count = (tonumber(element.text) or 0)
+    if count > 1000 then
+        player.print("Specified atomic ammo count too high, count reset to 0.")
+        count = 0
+    end
+    storage.atomic_ammo_count[setting_surface] = count
+end
+
+function gui_handlers.change_min_cluster_size(player, element)
+    local setting_surface = element.tags.setting_surface
+    local count = (tonumber(element.text) or 1)
+    if count > 100 then
+        player.print("Specified cluster size is too high, count reset to 8.")
+        count = 8
+    end
+    storage.destroy_min_cluster_size[setting_surface] = count
+end
+
+function gui_handlers.change_minion_count(player, element)
+    local setting_surface = element.tags.setting_surface
+    local count = (tonumber(element.text) or 0)
+    if count > 100 then
+        player.print("Specified Minion count too high, count reset to 0.")
+        count = 0
+    end
+    storage.minion_count[setting_surface] = count
 end
 
 function gui_handlers.selected_new_repair_tool(player, element)

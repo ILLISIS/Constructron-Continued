@@ -18,9 +18,9 @@
 ---| "upgrade"
 ---| "repair"
 ---| "destroy"
+---| "minion"
 ---| "cargo"
 ---| "utility"
----| "logistic"
 
 -- [CLASSES]
 
@@ -53,11 +53,16 @@
 ---@field path_requestid uint
 ---@field robot_positions table
 ---@field worker LuaEntity
+---@field primary_job table
 ---@field surface_index uint
+---@field minion_job_index uint
 ---@field task_positions table
 ---@field chunks table<uint, Chunk>
 ---@field pathfinding boolean?
 ---@field custom_path table?
+---@field considered_spawners table
+---@field minion_jobs table
+---@field safe_positions table
 
 ---@class RegisteredEntity
 ---@field name string
