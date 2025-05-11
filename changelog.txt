@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.32
+Date: 2025-05-11
+  Features:
+    - [MAJOR] Atomic capabilities
+    - [MAJOR] Attack evasion
+    - [MAJOR] Minion jobs
+    - [MAJOR] Threat detection
+  Bugfixes:
+    - Fixed a crash when a job type was toggled and a worker was invalid.
+    - Fixed an issue where Destroy chunks would encroach on each other leading to duplicated tasks.
+  Changes:
+    - Radar scanning no longer creates Destroy job chunks.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.31
 Date: 2025-05-03
   Features:
