@@ -345,8 +345,15 @@ script.on_event(ev.on_sector_scanned, function(event)
     local surface = event.radar.surface
     if not storage.destroy_job_toggle[surface.index] then return end
     local entity_surface_index = surface.index
-    local fake_entity = {position = event.area["left_top"]}
-    entity_proc.create_chunk(fake_entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+    local entities = game.surfaces[entity_surface_index].find_entities_filtered{
+        area = event.area,
+        force = "enemy",
+        type = { "unit-spawner", "turret" },
+    }
+    if not next(entities) then return end
+    for _, entity in pairs(entities) do
+        entity_proc.create_chunk(entity, storage.destroy_queue[entity_surface_index], entity_surface_index)
+    end
 end)
 
 -- left click
