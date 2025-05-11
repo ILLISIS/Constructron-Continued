@@ -622,10 +622,18 @@ entity_proc.recursive_enemy_search = function(enemy, enemies_list, chunk)
     })
     for _, entity in pairs(search) do
         if not enemies_list[entity.unit_number] then
-            -- update chunk area
+            -- check if the entity is in the same chunk
             local entity_pos = entity.position
             local entity_pos_x = entity_pos.x
             local entity_pos_y = entity_pos.y
+            local chunkx = math.floor(entity_pos_x / 80) -- dividing by 80 as that is the size of 4 roboports
+            local chunky = math.floor(entity_pos_y / 80) -- dividing by 80 as that is the size of 4 roboports
+            local key = (chunkx + 12500) * 25000 + (chunky + 12500) -- add 12500 to make sure the key is always positive
+            if chunk.key ~= key and storage.destroy_queue[entity.surface_index][key] then
+                -- remove chunk from queue (merge the chunk)
+                storage.destroy_queue[entity.surface_index][key] = nil
+            end
+            -- update chunk area
             if entity_pos_x < chunk['minimum'].x then
                 chunk['minimum'].x = entity_pos_x -- expand minimum chunk area x axis
             elseif entity_pos_x > chunk['maximum'].x then
