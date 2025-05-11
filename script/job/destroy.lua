@@ -186,6 +186,13 @@ function destroy_job:finishing()
     debug_lib.VisualDebugText({"ctron_status.job_complete"}, worker, -1, 1)
 end
 
+function destroy_job:perform_evasion()
+    local worker = self.worker ---@cast worker -nil
+    local spots = generate_waypoints(worker.position, 4, 7)
+    for _, spot in ipairs(spots) do
+        worker.add_autopilot_destination(spot)
+    end
+end
 
 local threat_weights = {
     -- nauvis enemies
