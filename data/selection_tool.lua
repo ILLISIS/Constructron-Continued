@@ -43,7 +43,7 @@ data:extend(
             alt_reverse_select = {
                 border_color = { r = 0, g = 0, b = 0 }, -- black
                 cursor_box_type = "entity",
-                mode = { "enemy" },
+                mode = { "is-military-target", "enemy" },
                 entity_type_filters = { "unit-spawner", "turret" },
             },
         }
