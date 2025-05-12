@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.33
+Date: 2025-05-12
+  Bugfixes:
+    - Fixed ctron-selection-tool not being able to select through fog of war.
+  Translation:
+    - Updated Polish translations from Crowdin.
+    - Updated Russian translations from Crowdin.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.32
 Date: 2025-05-11
   Features:
