@@ -115,7 +115,7 @@ function destroy_job:in_progress()
                     if #surounding_entities > storage.destroy_min_cluster_size[self.surface_index] then
                         -- check distance between worker and target is more than minimum safe distance
                         local distance_from_pos = util_func.distance_between(worker.position, entity.position)
-                        if distance_from_pos > 36 then
+                        if distance_from_pos > 20 then -- radius of atomic bomb blast and some safety built in
                             -- deduct ammo from the workers inventory
                             local bomb = storage.atomic_ammo_name[self.surface_index]
                             self.worker_inventory.remove({name = bomb.name, quality = bomb.quality, count = 1})
