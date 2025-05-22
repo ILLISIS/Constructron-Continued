@@ -19,6 +19,14 @@ function destroy_job.new(job_index, surface_index, job_type, worker)
     return self
 end
 
+local gun_range = {
+    ["normal"] = 36,
+    ["uncommon"] = 39.6,
+    ["rare"] = 43.2,
+    ["epic"] = 46.8,
+    ["legendary"] = 54
+}
+
 function destroy_job:setup()
     -- summon minions to help
     for i = 1, (storage.minion_count[self.surface_index] - table_size(self.minion_jobs)) do
@@ -48,9 +56,8 @@ function destroy_job:setup()
     -- reqest repair tool
     local repair_tool = storage.repair_tool_name[self.surface_index]
     self.required_items[repair_tool.name] = { [repair_tool.quality] = 16}
-    if self.worker.prototype.indexed_guns[1] then
-        self.gun_range = self.worker.prototype.indexed_guns[1].attack_parameters.range
-    end
+    -- set the gun range based on the workers quality
+    self.gun_range = gun_range[self.worker.quality.name]
     -- disable roboports
     self:disable_roboports(0)
     -- state change
