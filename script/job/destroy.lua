@@ -116,11 +116,12 @@ function destroy_job:in_progress()
                         -- check distance between worker and target is more than minimum safe distance
                         local distance_from_pos = util_func.distance_between(worker.position, entity.position)
                         if distance_from_pos > 20 then -- radius of atomic bomb blast and some safety built in
+                            -- show_radius(entity.position, 17.5, self.surface_index)
                             -- deduct ammo from the workers inventory
                             local bomb = storage.atomic_ammo_name[self.surface_index]
                             self.worker_inventory.remove({name = bomb.name, quality = bomb.quality, count = 1})
                             self:launch_nuke(entity, surounding_entities)
-                            break
+                            return
                         end
                     else
                         -- mark as considered target to avoid rechecks
@@ -398,13 +399,11 @@ function destroy_job:launch_nuke(target, surounding_entities)
 end
 
 -- used during debugging to draw a the radius
--- function show_radius(ctron)
---     if not (ctron and ctron.valid) then return end
---     local radius = 55
---     local min = {x = (ctron.position.x - radius), y = (ctron.position.y - radius)}
---     local max = {x = (ctron.position.x + radius), y = (ctron.position.y + radius)}
---     debug_lib.draw_rectangle(min, max, ctron.surface, "blue", false, 30)
--- end
+function show_radius(position, radius, surface)
+    local min = {x = (position.x - radius), y = (position.y - radius)}
+    local max = {x = (position.x + radius), y = (position.y + radius)}
+    debug_lib.draw_rectangle(min, max, surface, "blue", false, 90)
+end
 
 local threat_weights = {
     -- nauvis enemies
