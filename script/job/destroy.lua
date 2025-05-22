@@ -389,8 +389,8 @@ function destroy_job:launch_nuke(target, surounding_entities)
         speed = 0.4,
         force = worker.force
     }
-    -- stop moving to avoid entering the explosion radius
-    worker.autopilot_destination = nil
+    -- move to safe position to avoid entering the explosion radius
+    worker.autopilot_destination = self.safe_positions[#self.safe_positions]
     -- mark surounding_entities as considered targets to avoid double ups
     self.considered_spawners[target.unit_number] = true
     for _, neighbour_entity in pairs(surounding_entities) do
