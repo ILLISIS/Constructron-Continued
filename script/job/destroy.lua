@@ -107,7 +107,7 @@ function destroy_job:in_progress()
                     -- find clustered spawners
                     local surounding_entities = entity.surface.find_entities_filtered {
                         position = entity.position,
-                        radius = 35, -- default area of effect size of atomic-bomb
+                        radius = 17.5, -- default area of effect radius of atomic-bomb
                         force = {"enemy"},
                         type = { "unit-spawner" }
                     }
