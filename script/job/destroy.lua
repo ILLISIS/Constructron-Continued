@@ -377,12 +377,17 @@ function destroy_job:check_minion_status(minionjob)
     return true
 end
 
+-- WUBE did some dumb shit and mismatched the item name and entity name
+local ammo_table = {
+    ["atomic-bomb"] = "atomic-rocket"
+}
+
 function destroy_job:launch_nuke(target, surounding_entities)
     local worker = self.worker ---@cast worker -nil
     local bomb = storage.atomic_ammo_name[self.surface_index]
     -- spawn atomic rocket
     worker.surface.create_entity {
-        name = bomb.name,
+        name = ammo_table[bomb.name] or bomb.name,
         quality = bomb.quality,
         position = worker.position,
         target = target.position,
