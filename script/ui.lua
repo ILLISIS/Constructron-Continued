@@ -766,7 +766,7 @@ function gui_handlers.selected_new_atomic_ammo(player, element)
     if not element.elem_value then
         element.elem_value = storage.atomic_ammo_name[setting_surface]
     end
-    if not (prototypes.item[element.elem_value.name].ammo_category.name == "atomic-bomb") then
+    if not (prototypes.item[element.elem_value.name].ammo_category.name == "rocket") then
         element.elem_value = storage.atomic_ammo_name[setting_surface]
         player.print({"ctron_warnings.invalid_ammo"})
         return

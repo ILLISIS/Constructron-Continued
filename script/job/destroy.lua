@@ -19,6 +19,14 @@ function destroy_job.new(job_index, surface_index, job_type, worker)
     return self
 end
 
+local gun_range = {
+    ["normal"] = 36,
+    ["uncommon"] = 39.6,
+    ["rare"] = 43.2,
+    ["epic"] = 46.8,
+    ["legendary"] = 54
+}
+
 function destroy_job:setup()
     -- summon minions to help
     for i = 1, (storage.minion_count[self.surface_index] - table_size(self.minion_jobs)) do
@@ -48,9 +56,8 @@ function destroy_job:setup()
     -- reqest repair tool
     local repair_tool = storage.repair_tool_name[self.surface_index]
     self.required_items[repair_tool.name] = { [repair_tool.quality] = 16}
-    if self.worker.prototype.indexed_guns[1] then
-        self.gun_range = self.worker.prototype.indexed_guns[1].attack_parameters.range
-    end
+    -- set the gun range based on the workers quality
+    self.gun_range = gun_range[self.worker.quality.name]
     -- disable roboports
     self:disable_roboports(0)
     -- state change
@@ -100,7 +107,7 @@ function destroy_job:in_progress()
                     -- find clustered spawners
                     local surounding_entities = entity.surface.find_entities_filtered {
                         position = entity.position,
-                        radius = 35, -- default area of effect size of atomic-bomb
+                        radius = 17.5, -- default area of effect radius of atomic-bomb
                         force = {"enemy"},
                         type = { "unit-spawner" }
                     }
@@ -108,12 +115,13 @@ function destroy_job:in_progress()
                     if #surounding_entities > storage.destroy_min_cluster_size[self.surface_index] then
                         -- check distance between worker and target is more than minimum safe distance
                         local distance_from_pos = util_func.distance_between(worker.position, entity.position)
-                        if distance_from_pos > 36 then
+                        if distance_from_pos > 20 then -- radius of atomic bomb blast and some safety built in
+                            -- show_radius(entity.position, 17.5, self.surface_index)
                             -- deduct ammo from the workers inventory
                             local bomb = storage.atomic_ammo_name[self.surface_index]
                             self.worker_inventory.remove({name = bomb.name, quality = bomb.quality, count = 1})
                             self:launch_nuke(entity, surounding_entities)
-                            break
+                            return
                         end
                     else
                         -- mark as considered target to avoid rechecks
@@ -369,20 +377,25 @@ function destroy_job:check_minion_status(minionjob)
     return true
 end
 
+-- WUBE did some dumb shit and mismatched the item name and entity name
+local ammo_table = {
+    ["atomic-bomb"] = "atomic-rocket"
+}
+
 function destroy_job:launch_nuke(target, surounding_entities)
     local worker = self.worker ---@cast worker -nil
     local bomb = storage.atomic_ammo_name[self.surface_index]
     -- spawn atomic rocket
     worker.surface.create_entity {
-        name = bomb.name,
+        name = ammo_table[bomb.name] or bomb.name,
         quality = bomb.quality,
         position = worker.position,
         target = target.position,
         speed = 0.4,
         force = worker.force
     }
-    -- stop moving to avoid entering the explosion radius
-    worker.autopilot_destination = nil
+    -- move to safe position to avoid entering the explosion radius
+    worker.autopilot_destination = self.safe_positions[#self.safe_positions]
     -- mark surounding_entities as considered targets to avoid double ups
     self.considered_spawners[target.unit_number] = true
     for _, neighbour_entity in pairs(surounding_entities) do
@@ -391,13 +404,11 @@ function destroy_job:launch_nuke(target, surounding_entities)
 end
 
 -- used during debugging to draw a the radius
--- function show_radius(ctron)
---     if not (ctron and ctron.valid) then return end
---     local radius = 55
---     local min = {x = (ctron.position.x - radius), y = (ctron.position.y - radius)}
---     local max = {x = (ctron.position.x + radius), y = (ctron.position.y + radius)}
---     debug_lib.draw_rectangle(min, max, ctron.surface, "blue", false, 30)
--- end
+function show_radius(position, radius, surface)
+    local min = {x = (position.x - radius), y = (position.y - radius)}
+    local max = {x = (position.x + radius), y = (position.y + radius)}
+    debug_lib.draw_rectangle(min, max, surface, "blue", false, 90)
+end
 
 local threat_weights = {
     -- nauvis enemies
