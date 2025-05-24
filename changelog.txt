@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.34
+Date: 2025-05-24
+  Bugfixes:
+    - Fixed an issue that caused atomic strikes not to work during Destroy jobs.
+    - Fixed an issue that caused the incorrect range to be used on uncommon+ quality Constructrons when considering atomic targets.
+    - Fixed atomic ammo selection issue in the Constructron settings GUI.
+    - Fixed incorrectly set diameter instead of radius when considering neighbour enemies during atomic target consideration.
+  Changes:
+    - Constructrons will now retreat to a safe position upon launching and atomic strike to escape the blast zone.
+    - Reduced the minimum safe distance from atomic targets.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.33
 Date: 2025-05-12
   Bugfixes:
