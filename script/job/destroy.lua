@@ -422,10 +422,10 @@ local threat_weights = {
     ["big-spitter"] = 2,
     ["behemoth-spitter"] = 3,
 
-    ["small-worm-turret"] = 1,
-    ["medium-worm-turret"] = 2,
-    ["big-worm-turret"] = 4,
-    ["behemoth-worm-turret"] = 6,
+    ["small-worm-turret"] = 0.1,
+    ["medium-worm-turret"] = 0.5,
+    ["big-worm-turret"] = 1,
+    ["behemoth-worm-turret"] = 2,
 
     ["biter-spawner"] = 0.5,
     ["spitter-spawner"] = 0.5,
