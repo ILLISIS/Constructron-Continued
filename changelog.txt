@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.35
+Date: 2025-09-26
+  Features:
+    - Initial compatibility with Krastorio2 for 2.0.
+    - Initial compatibility with Space Exploration v0.7
+---------------------------------------------------------------------------------------------------
 Version: 2.0.34
 Date: 2025-05-24
   Bugfixes:
