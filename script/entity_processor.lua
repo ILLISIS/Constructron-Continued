@@ -401,7 +401,7 @@ script.on_event(ev.on_player_alt_selected_area, function (event)
     for _, entity in pairs(event.entities) do
         if entity and entity.valid and entity.name == "constructron" then
             for _, job in pairs(storage.jobs) do
-                if job.worker.unit_number == entity.unit_number then
+                if job.worker and job.worker.unit_number == entity.unit_number then
                     if not player.gui.screen.ctron_job_window then
                         gui_job.buildJobGui(player, job)
                         player.opened = player.gui.screen.ctron_job_window

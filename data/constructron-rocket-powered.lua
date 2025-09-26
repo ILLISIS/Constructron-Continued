@@ -1,70 +1,53 @@
-local lib_spider = require("data/lib/lib_spider")
 
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- Entity
 -------------------------------------------------------------------------------
 
-local spidertron_definition = {
+local args = {
     name = "constructron-rocket-powered",
-    guns = {},
     scale = 1,
-    leg_scale = 0,
-    legs = {
-        {
-            block = {1},
-            angle = 0,
-            length = 1
-        }
-    },
-    collision_mask = {"colliding-with-tiles-only", "ground-tile", "water-tile"}
+    leg_scale = 1,
+    leg_movement_speed = 1,
+    leg_thickness = 1,
 }
-local constructron = lib_spider.create_spidertron(spidertron_definition)
-constructron.se_allow_in_space = true
+
+local spider_leg = {
+	type = "spider-leg",
+	name = "constructron-rocket-powered-leg",
+	localised_name = {"entity-name.spidertron-leg"},
+	collision_box = {{-0.1, -0.1}, {0.1, 0.1}},
+	selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+	icon = "__base__/graphics/icons/spidertron.png",
+	collision_mask = { layers = { } },
+	target_position_randomisation_distance = 0.25,
+	minimal_step_size = 4,
+	stretch_force_scalar = 1,
+	knee_height = 2.5,
+	knee_distance_factor = 0.4,
+	initial_movement_speed = 100,
+	movement_acceleration = 100,
+	max_health = 100,
+	base_position_selection_distance = 6,
+	movement_based_position_selection_distance = 4,
+	selectable_in_game = false,
+	alert_when_damaged = false,
+}
+data:extend({spider_leg})
+
+create_spidertron(args)
+
+-- remove legs from the spidertron entity
+local spidertron = data.raw["spider-vehicle"]["constructron-rocket-powered"]
+spidertron.spider_engine.legs = { 	-- 1
+	leg = "constructron-rocket-powered-leg",
+	mount_position = {0, -1},
+	ground_position = {0, -1},
+	walking_group = 1,
+}
 
 if mods["Krastorio2"] then
-    constructron.equipment_grid = "kr-spidertron-equipment-grid"
+    spidertron.equipment_grid = "kr-spidertron-equipment-grid"
 end
-
---Rocket flames
--- local layers = constructron.graphics_set.base_animation.layers
--- for _, layer in pairs(layers) do
---     layer.repeat_count = 8
---     layer.hr_version.repeat_count = 8
--- end
--- table.insert(
---     layers,
---     1,
---     {
---         filename = "__base__/graphics/entity/rocket-silo/10-jet-flame.png",
---         priority = "medium",
---         blend_mode = "additive",
---         draw_as_glow = true,
---         width = 87,
---         height = 128,
---         frame_count = 8,
---         line_length = 8,
---         animation_speed = 0.5,
---         scale = 1.25,
---         shift = util.by_pixel(-0.5, 55),
---         direction_count = 1,
---         hr_version = {
---             filename = "__base__/graphics/entity/rocket-silo/hr-10-jet-flame.png",
---             priority = "medium",
---             blend_mode = "additive",
---             draw_as_glow = true,
---             width = 172,
---             height = 256,
---             frame_count = 8,
---             line_length = 8,
---             animation_speed = 0.5,
---             scale = 1.25 / 2,
---             shift = util.by_pixel(-1, 80),
---             direction_count = 1
---         }
---     }
--- )
-
-local leg_entities = lib_spider.create_spidertron_legs(spidertron_definition)
 
 -------------------------------------------------------------------------------
 -- Item
@@ -97,22 +80,14 @@ local constructron_recipe = {
     name = "constructron-rocket-powered",
     enabled = false,
     ingredients = {
-        {type = "item", name = "constructron", amount = 1},
-        {type = "item", name = "jetpack-1", amount = 4}
+        {type = "item", name = "spidertron", amount = 1},
+		{type = "item", name = "jetpack-1", amount = 4},
     },
     results = {
-        {type = "item", name = "constructron-rocket-powered", amount = 1}
+        {type = "item", name = "constructron-rocket-powered", amount = 1},
     },
     energy = 1
 }
-
-local ctron_rocket_powered = {constructron, constructron_item}
-table.insert(ctron_rocket_powered, constructron_recipe)
-
-for _, leg in pairs(leg_entities) do
-    leg.se_allow_in_space = true
-    table.insert(ctron_rocket_powered, leg)
-end
 
 -------------------------------------------------------------------------------
 -- Technology
@@ -129,4 +104,5 @@ table.insert(
 -- Extend
 -------------------------------------------------------------------------------
 
-data:extend(ctron_rocket_powered)
+data:extend({constructron_item})
+data:extend({constructron_recipe})
