@@ -904,7 +904,7 @@ function job:clear_items()
 end
 
 function job:request_ammo()
-    if storage.ammo_count[self.surface_index] > 0 and (self.worker.name ~= "constructron-rocket-powered") then
+    if storage.ammo_count[self.surface_index] > 0 then
         local ammo = storage.ammo_name[self.surface_index]
         self.required_items[ammo.name] = { [ammo.quality] = storage.ammo_count[self.surface_index] }
     end

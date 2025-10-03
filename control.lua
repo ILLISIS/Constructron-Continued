@@ -261,6 +261,7 @@ local ensure_storages = function()
     -- allowed_items overrides as item/entities do not match what is mined (this is particularly for cargo jobs)
     storage.allowed_items["raw-fish"] = true
     storage.allowed_items["wood"] = true
+    storage.allowed_items["depleted-uranium-fuel-cell"] = true -- https://discord.com/channels/943829001284235295/1407149730370420797
     -- build required_items cache (used in add_entities_to_chunks)
     storage.items_to_place_cache = {}
     for name, v in pairs(prototypes.entity) do
