@@ -371,8 +371,9 @@ function job:replace_roboports(old_eq, new_eq)
     if not grid then return end
     local grid_pos = old_eq.position
     local eq_energy = old_eq.energy
+    local quality = old_eq.quality.name
     grid.take { position = old_eq.position }
-    local new_set = grid.put { name = new_eq, position = grid_pos }
+    local new_set = grid.put { name = new_eq, quality = quality, position = grid_pos }
     if new_set then
         new_set.energy = eq_energy
     end
