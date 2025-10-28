@@ -723,6 +723,7 @@ function job:balance_ammunition()
     if not next(ammunition) then return end
     -- check for foreign ammo in the ammo inventory    
     self:move_foreign_ammo_to_inventory(ammunition)
+    if not next(ammunition) then return end --  what to do if ammo inventory is empty?
     local ammo_name, value = next(ammunition)
     ---@cast ammo_name -nil
     ---@cast value -nil
