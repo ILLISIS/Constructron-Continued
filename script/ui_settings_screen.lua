@@ -385,7 +385,7 @@ function gui_settings.buildSettingsContent(player, surface, frame)
         -- style = "",
         elem_type = "item-with-quality",
         ["item-with-quality"] = storage.repair_tool_name[surface_index],
-        elem_filters = {{filter = "name", name = "repair-pack"}},
+        elem_filters = {{filter = "type", type = "repair-tool"}},
         tags = {
             mod = "constructron",
             on_gui_elem_changed = "selected_new_repair_tool",

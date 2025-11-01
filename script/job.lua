@@ -371,8 +371,9 @@ function job:replace_roboports(old_eq, new_eq)
     if not grid then return end
     local grid_pos = old_eq.position
     local eq_energy = old_eq.energy
+    local quality = old_eq.quality.name
     grid.take { position = old_eq.position }
-    local new_set = grid.put { name = new_eq, position = grid_pos }
+    local new_set = grid.put { name = new_eq, quality = quality, position = grid_pos }
     if new_set then
         new_set.energy = eq_energy
     end
@@ -723,6 +724,7 @@ function job:balance_ammunition()
     if not next(ammunition) then return end
     -- check for foreign ammo in the ammo inventory    
     self:move_foreign_ammo_to_inventory(ammunition)
+    if not next(ammunition) then return end --  what to do if ammo inventory is empty?
     local ammo_name, value = next(ammunition)
     ---@cast ammo_name -nil
     ---@cast value -nil
