@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.38
+Date: 2025-11-01
+  Bugfixes:
+    - Fixed a crash that occured when ammo balancing ran and there was no ammo in the slots.
+    - Fixed an issue that caused robot port quality not to be preserved when enabling/disabling.
+    - Fixed the inability to select different repair tools in the settings UI.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.37
 Date: 2025-10-03
   Bugfixes:
