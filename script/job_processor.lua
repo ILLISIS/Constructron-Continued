@@ -44,6 +44,7 @@ local job_types = {
     ["destroy"] = destroy_job
 }
 
+---@param surface_index uint
 job_proc.process_queues = function(surface_index)
     if not (storage.available_ctron_count[surface_index] > 0) then return end
     for job_type, job_class in pairs(job_types) do
@@ -51,6 +52,10 @@ job_proc.process_queues = function(surface_index)
     end
 end
 
+--- Process a single job queue
+---@param surface_index uint
+---@param job_type string
+---@param job_class job
 job_proc.process_queue = function(surface_index, job_type, job_class)
     local job_start_delay = storage.job_start_delay
     for _, chunk in pairs(storage[job_type .. '_queue'][surface_index]) do

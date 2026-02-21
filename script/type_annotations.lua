@@ -5,7 +5,7 @@
 
 ---@alias Area BoundingBox
 
----@alias ItemCounts table<string, integer>
+---@alias ItemCounts table<string, table<string, integer>>
 
 ---@alias EntityQueue table<uint, table<string, Chunk>>
 
@@ -42,6 +42,7 @@
 ---@field merged boolean?
 ---@field required_items ItemCounts
 ---@field trash_items ItemCounts
+---@field skip_chunk_checks boolean?
 
 ---@class job
 ---@field job_index uint
@@ -63,6 +64,7 @@
 ---@field considered_spawners table
 ---@field minion_jobs table
 ---@field safe_positions table
+---@field vassal_jobs job
 
 ---@class RegisteredEntity
 ---@field name string
@@ -150,5 +152,5 @@
 --- @field user_interface table<uint, any?>
 
 -- set type of global (this will never get executed, only intellisense will see this)
----@type Global
-__Constructron_Continued__global = {}
+-- ---@type Global
+-- __Constructron_Continued__global = {}

@@ -71,7 +71,7 @@ local color_table = {
 }
 
 ---@param constructron LuaEntity
----@param job_type "idle" | "construction" | "deconstruction" | "destroy" | "upgrade" | "repair" | "utility" | "cargo" | "minion"
+---@param job_type JobTypes | "idle"
 me.paint_constructron = function(constructron, job_type)
     if not (constructron and constructron.valid) then return end
     local color = color_table[job_type]

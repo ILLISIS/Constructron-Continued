@@ -418,7 +418,7 @@ end
 function job:request_items(item_list)
     self.job_status = {"ctron_status.requesting_items"}
     local slot = 1
-    local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local logistic_point = self.worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     -- disable trash unrequested
     if logistic_point.trash_not_requested then
@@ -443,6 +443,8 @@ function job:request_items(item_list)
     end
 end
 
+---@param construction_robots table<LuaEntity>
+---@return boolean
 function job:check_robot_activity(construction_robots)
     self.last_robot_orientations = self.last_robot_orientations or {}
     local moved_robot_count = 0
@@ -471,6 +473,7 @@ function job:check_robot_activity(construction_robots)
     return true
 end
 
+---@return boolean
 function job:validate_worker()
     if self.worker and self.worker.valid then
         return true
@@ -489,10 +492,9 @@ function job:validate_worker()
             self.worker_inventory = self.worker.get_inventory(defines.inventory.spider_trunk)
             self.worker_ammo_slots = self.worker.get_inventory(defines.inventory.spider_ammo)
             self.worker_trash_inventory = self.worker.get_inventory(defines.inventory.spider_trash)
-        else
-            return false
         end
     end
+    return false
 end
 
 function job:validate_station()
@@ -608,7 +610,7 @@ function job:validate_logisitics()
         self.worker_logistic_network = self.worker_logistic_cell.logistic_network
     end
     -- validate that there is a logisitic section available, if not create one
-    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local logistic_point = worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     if not section then
         logistic_point.add_section()
@@ -672,7 +674,7 @@ end
 -- this function lists the current item requests of the worker
 function job:list_item_requests()
     local worker = self.worker ---@cast worker -nil
-    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local logistic_point = worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     return section.filters or {}
 end
@@ -681,7 +683,7 @@ end
 ---@return boolean
 function job:check_item_request_fulfillment()
     local worker = self.worker ---@cast worker -nil
-    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local logistic_point = worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     local is_fulfilled = true
     local inventory_items = util_func.convert_to_item_list(self.worker_inventory.get_contents()) -- spider inventory contents
@@ -1081,7 +1083,7 @@ function job:starting()
         return
     else
         -- check if there are any items being delivered
-        local requester_point = worker.get_logistic_point(0) ---@cast requester_point -nil
+        local requester_point = worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast requester_point -nil
         if next(requester_point.targeted_items_deliver) then return end
         -- check if requested items have been delivered
         if not self:check_item_request_fulfillment() then
@@ -1136,6 +1138,7 @@ function job:in_progress()
 
     -- Am I in the correct position?
     local _, task_position = next(self.task_positions)
+    ---@cast task_position MapPosition
     if not self:position_check(task_position, 3) then return end
 
     --===========================================================================--
@@ -1172,7 +1175,7 @@ function job:finishing()
     -- clear items
     if not self:clear_items() then return end
     -- clear logistic requests
-    local logistic_point = self.worker.get_logistic_point(0) ---@cast logistic_point -nil
+    local logistic_point = self.worker.get_logistic_point(defines.logistic_member_index.spidertron_requester) ---@cast logistic_point -nil
     local section = logistic_point.get_section(1)
     section.filters = {}
     -- randomize idle position around station
