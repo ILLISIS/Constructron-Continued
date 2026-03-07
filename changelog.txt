@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.40
+Date: 2026-03-07
+  Features:
+    - Selection tool left click now finds entities to be upgraded.
+  Bugfixes:
+    - Destroy jobs now move the Constructron to a safe distance if it is within the atomic blast radius.
+  Changes:
+    - Job processor now allows destroy jobs to consume minions before assigning more destroy jobs.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.39
 Date: 2025-11-08
   Locale:
