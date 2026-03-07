@@ -78,6 +78,9 @@ job_proc.process_queue = function(surface_index, job_type, job_class)
                 if not storage.horde_mode[surface_index] then
                     storage.jobs[storage.job_index]:claim_chunks_in_proximity()
                 end
+                if job_type == "destroy" then
+                    break -- to allow minion assignment
+                end
             else
                 -- clear the chunk from the queue
                 storage[job_type .. "_queue"][surface_index][chunk.key] = nil
