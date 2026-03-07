@@ -13,7 +13,7 @@ data:extend(
             select = {
                 border_color = { r = 0, g = 0, b = 0.5 }, -- blue
                 cursor_box_type = "entity",
-                mode = { "entity-ghost", "tile-ghost" }
+                mode = { "any-entity", "tile-ghost", "same-force" }
             },
 
             -- shift left click
