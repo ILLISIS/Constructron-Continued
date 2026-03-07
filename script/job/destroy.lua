@@ -121,6 +121,10 @@ function destroy_job:in_progress()
                             local bomb = storage.atomic_ammo_name[self.surface_index]
                             self.worker_inventory.remove({name = bomb.name, quality = bomb.quality, count = 1})
                             self:launch_nuke(entity, surounding_entities)
+                            if distance_from_pos < 36 then
+                                -- move to safe position to avoid entering the explosion radius
+                                worker.autopilot_destination = self.safe_positions[#self.safe_positions]
+                            end
                             return
                         end
                     else
