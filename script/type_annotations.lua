@@ -3,9 +3,7 @@
 
 -- [ALIASES]
 
----@alias Area BoundingBox
-
----@alias ItemCounts table<string, integer>
+---@alias ItemCounts table<string, table<string, integer>>
 
 ---@alias EntityQueue table<uint, table<string, Chunk>>
 
@@ -32,7 +30,6 @@
 ---@field initial_target MapPosition?
 
 ---@class Chunk
----@field area Area
 ---@field key string
 ---@field surface uint
 ---@field last_update_tick uint
@@ -42,6 +39,7 @@
 ---@field merged boolean?
 ---@field required_items ItemCounts
 ---@field trash_items ItemCounts
+---@field skip_chunk_checks boolean?
 
 ---@class job
 ---@field job_index uint
@@ -63,6 +61,7 @@
 ---@field considered_spawners table
 ---@field minion_jobs table
 ---@field safe_positions table
+---@field vassal_jobs job
 
 ---@class RegisteredEntity
 ---@field name string
@@ -141,7 +140,6 @@
 ---@field desired_robot_name string
 ---@field repair_tool_name string
 ---@field construction_mat_alert uint
----@field entities_per_second uint
 ---@field spider_remote_toggle boolean
 ---@field ammo_name string
 ---@field ammo_count uint
@@ -150,5 +148,5 @@
 --- @field user_interface table<uint, any?>
 
 -- set type of global (this will never get executed, only intellisense will see this)
----@type Global
-__Constructron_Continued__global = {}
+-- ---@type Global
+-- __Constructron_Continued__global = {}

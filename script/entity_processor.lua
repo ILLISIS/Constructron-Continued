@@ -364,11 +364,10 @@ script.on_event(ev.on_player_selected_area, function(event)
         if entity and entity.valid then
             if entity.type == 'entity-ghost' or entity.type == 'tile-ghost' or entity.type == 'item-request-proxy' then
                 entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
+            elseif entity.to_be_upgraded() then
+                entity_proc.create_chunk(entity, storage.upgrade_queue[surface_index], surface_index, true)
             end
         end
-    end
-    for _, entity in pairs(event.surface.find_entities_filtered{area=event.area, type='item-request-proxy'}) do
-        entity_proc.create_chunk(entity, storage.construction_queue[surface_index], surface_index, true)
     end
 end)
 
@@ -452,7 +451,7 @@ entity_proc.deconstruction = function(entity)
         storage.entity_inventory_cache[entity_name] = {}
         local max_index = entity.get_max_inventory_index()
         for i = 1, max_index do
-            local inventory = entity.get_inventory(i)
+            local inventory = entity.get_inventory(i --[[@as defines.inventory]])
             if (inventory ~= nil) then
                 table.insert(storage.entity_inventory_cache[entity_name], i) -- add inventory defines index to cache against the entity
             end
