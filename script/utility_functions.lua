@@ -143,7 +143,7 @@ me.position_from_chunk = function(chunk_index)
 end
 
 ---@param chunk_index ChunkPosition
----@return Area
+---@return BoundingBox
 me.get_area_from_chunk = function(chunk_index)
     local area = {{
         y = chunk_index.y * 80,
@@ -157,7 +157,7 @@ end
 
 ---@param position MapPosition
 ---@param range number
----@return Area
+---@return BoundingBox
 me.get_area_from_position = function(position, range)
     local area = {{
         y = (position.y) - range,
@@ -169,7 +169,7 @@ me.get_area_from_position = function(position, range)
     return area
 end
 
----@param area Area
+---@param area BoundingBox
 ---@param radius float
 ---@return MapPosition[]
 me.calculate_construct_positions = function(area, radius)

@@ -452,7 +452,7 @@ entity_proc.deconstruction = function(entity)
         storage.entity_inventory_cache[entity_name] = {}
         local max_index = entity.get_max_inventory_index()
         for i = 1, max_index do
-            local inventory = entity.get_inventory(i)
+            local inventory = entity.get_inventory(i --[[@as defines.inventory]])
             if (inventory ~= nil) then
                 table.insert(storage.entity_inventory_cache[entity_name], i) -- add inventory defines index to cache against the entity
             end

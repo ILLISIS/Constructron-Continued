@@ -3,8 +3,6 @@
 
 -- [ALIASES]
 
----@alias Area BoundingBox
-
 ---@alias ItemCounts table<string, table<string, integer>>
 
 ---@alias EntityQueue table<uint, table<string, Chunk>>
@@ -32,7 +30,6 @@
 ---@field initial_target MapPosition?
 
 ---@class Chunk
----@field area Area
 ---@field key string
 ---@field surface uint
 ---@field last_update_tick uint
@@ -143,7 +140,6 @@
 ---@field desired_robot_name string
 ---@field repair_tool_name string
 ---@field construction_mat_alert uint
----@field entities_per_second uint
 ---@field spider_remote_toggle boolean
 ---@field ammo_name string
 ---@field ammo_count uint
