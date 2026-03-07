@@ -185,7 +185,6 @@ local ensure_storages = function()
     end
     -- non surface specific settings
     storage.job_start_delay = storage.job_start_delay or 300 -- five seconds
-    storage.entities_per_second = storage.entities_per_second or 1000
     if storage.debug_toggle == nil then
         storage.debug_toggle = false
     end
@@ -384,6 +383,7 @@ script.on_event(ev.on_lua_shortcut, function (event)
     end
 end)
 
+---@param event EventData.on_custom_input
 script.on_event("ctron-get-selection-tool", function (event)
     local name = event.input_name
     if name ~= "ctron-get-selection-tool" then return end
