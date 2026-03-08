@@ -41,6 +41,29 @@ end))
 
 local ensure_storages = function()
     storage.constructron_names = storage.constructron_names or { ["constructron"] = true, ["constructron-rocket-powered"] = true}
+    storage.flying_constructrons = storage.flying_constructrons or { ["constructron-rocket-powered"] = true }
+    
+    -- Dynamically add custom constructron if configured
+    local custom_bases_string = settings.startup["custom-constructron-base"].value
+    if custom_bases_string and custom_bases_string ~= "" then
+        for custom_base_name in string.gmatch(custom_bases_string, '([^,]+)') do
+            custom_base_name = custom_base_name:match("^%s*(.-)%s*$") -- Trim whitespace
+            if custom_base_name and custom_base_name ~= "" then
+                local custom_ctron_name = custom_base_name .. "-constructron"
+                storage.constructron_names[custom_ctron_name] = true
+                
+                -- Check if this custom constructron flies (no water collision)
+                local proto = prototypes.entity[custom_ctron_name]
+                if proto then
+                    local layers = proto.collision_mask and (proto.collision_mask.layers or proto.collision_mask) or {}
+                    if not layers["water_tile"] then
+                        storage.flying_constructrons[custom_ctron_name] = true
+                    end
+                end
+            end
+        end
+    end
+
     storage.station_names = storage.station_names or { ["service_station"] = true }
     --
     storage.registered_entities = storage.registered_entities or {}
@@ -320,9 +343,6 @@ script.on_configuration_changed(init)
 --===========================================================================--
 
 local ev = defines.events
-
--- script.on_event(ev.on_player_used_spidertron_remote, function(event)
--- end)
 
 local research_handlers = {
     ["stronger-explosives-3"] = function()

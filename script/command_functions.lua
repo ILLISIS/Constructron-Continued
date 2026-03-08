@@ -162,10 +162,44 @@ me.reacquire_stations = function()
     end
 end
 
-local ctron_entities = { "constructron", "constructron-rocket-powered" }
-if not prototypes.entity["constructron-rocket-powered"] then
-    ctron_entities = {"constructron"}
-end
+ local ctron_entities = setmetatable({}, {
+        __pairs = function()
+            local list = {}
+            if storage and storage.constructron_names then
+                for name in pairs(storage.constructron_names) do
+                    if prototypes.entity[name] then table.insert(list, name) end
+                end
+            end
+            return pairs(list)
+        end,
+        __ipairs = function()
+            local list = {}
+            if storage and storage.constructron_names then
+                for name in pairs(storage.constructron_names) do
+                    if prototypes.entity[name] then table.insert(list, name) end
+                end
+            end
+            return ipairs(list)
+        end,
+        __index = function(_, key)
+            local list = {}
+            if storage and storage.constructron_names then
+                for name in pairs(storage.constructron_names) do
+                    if prototypes.entity[name] then table.insert(list, name) end
+                end
+            end
+            return list[key]
+        end,
+        __len = function()
+            local list = {}
+            if storage and storage.constructron_names then
+                for name in pairs(storage.constructron_names) do
+                    if prototypes.entity[name] then table.insert(list, name) end
+                end
+            end
+            return #list
+        end
+    })
 
 me.reacquire_ctrons = function()
     for _, surface in pairs(game.surfaces) do

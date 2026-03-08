@@ -310,12 +310,12 @@ function job:claim_chunks_in_proximity()
 end
 
 function job:move_to_position(position)
-    local worker = self.worker
+    local worker = self.worker ---@cast worker -nil
     if not worker or not worker.valid then return end
     local distance = util_func.distance_between(worker.position, position)
     worker.grid.inhibit_movement_bonus = (distance < 32)
 
-    if worker.name == "constructron-rocket-powered" then
+    if storage.flying_constructrons[worker.name] then
         pathfinder.set_autopilot(worker, { { position = position, needs_destroy_to_reach = false } })
         return
     end
