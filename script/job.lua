@@ -792,7 +792,7 @@ end
 ---@param current_requests table
 ---@return boolean
 function job:check_roaming_candidate(station, current_items, current_requests)
-    if not station and station.valid then return false end
+    if not (station and station.valid) then return false end
     local station_logistic_network = station.logistic_network
     if not station_logistic_network then return false end
     for request_name, value in pairs(current_requests) do
