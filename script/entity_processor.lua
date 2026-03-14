@@ -251,7 +251,7 @@ end,
 script.on_event(ev.script_raised_teleported, function(event)
     local entity = event.entity
     local surface_index = entity.surface_index
-    if not (surface_index == event.old_surface_index) then return end
+    if surface_index == event.old_surface_index then return end
     if storage.constructron_names[entity.name] then
         util_func.paint_constructron(entity, 'idle')
         storage.constructrons_count[event.old_surface_index] = math.max((storage.constructrons_count[event.old_surface_index] - 1), 0) -- update constructron count on old surface
