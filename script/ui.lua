@@ -753,11 +753,18 @@ end
 function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
     local count = (tonumber(element.text) or 50)
-    if count > 10000 then
+    if count > 8000 then
         player.print("Specified ammo count too high, count reset to 0.")
         count = 0
     end
     storage.ammo_count[setting_surface] = count
+    -- update existing jobs with new ammo count
+    local ammo = storage.ammo_name[setting_surface]
+    for _, job in pairs(storage.jobs) do
+        if job.surface_index == setting_surface then
+            job.required_items[ammo.name] = { [ammo.quality] = count }
+        end
+    end
 end
 
 function gui_handlers.selected_new_atomic_ammo(player, element)
@@ -885,6 +892,10 @@ function gui_handlers.apply_settings_template(player, element)
         storage.zone_restriction_job_toggle[surface_index] = storage.zone_restriction_job_toggle[current_surface]
         storage.ammo_name[surface_index] = storage.ammo_name[current_surface]
         storage.ammo_count[surface_index] = storage.ammo_count[current_surface]
+        storage.atomic_ammo_name[surface_index] = storage.atomic_ammo_name[current_surface]
+        storage.atomic_ammo_count[surface_index] = storage.atomic_ammo_count[current_surface]
+        storage.minion_count[surface_index] = storage.minion_count[current_surface]
+        storage.destroy_min_cluster_size[surface_index] = storage.destroy_min_cluster_size[current_surface]
         storage.desired_robot_count[surface_index] = storage.desired_robot_count[current_surface]
         storage.desired_robot_name[surface_index] = storage.desired_robot_name[current_surface]
         storage.repair_tool_name[surface_index] = storage.repair_tool_name[current_surface]
@@ -1101,10 +1112,6 @@ function gui_handlers.confirm_cargo(player, element)
         -- validate input
         if min >= max then
             player.print({"ctron_warnings.min_value"})
-            return
-        end
-        if max <= min then
-            player.print({"ctron_warnings.max_value"})
             return
         end
         storage.station_requests[station_unit_number][slot_number] = {

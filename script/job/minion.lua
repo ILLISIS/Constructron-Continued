@@ -121,7 +121,7 @@ end
 function minion_job:repairing()
     local worker = self.worker ---@cast worker -nil
     -- check if the leader is alive
-    if not self.primary_job and self.primary_job.worker then
+    if not (self.primary_job and self.primary_job.worker) then
         self.state = "finishing" -- IDEA: assign util to primary?
         return
     end
