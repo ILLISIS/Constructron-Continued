@@ -255,28 +255,28 @@ script.on_event(ev.script_raised_teleported, function(event)
     if storage.constructron_names[entity.name] then
         util_func.paint_constructron(entity, 'idle')
         storage.constructrons_count[event.old_surface_index] = math.max((storage.constructrons_count[event.old_surface_index] - 1), 0) -- update constructron count on old surface
-        storage.constructrons_count[entity.surface_index] = storage.constructrons_count[entity.surface_index] + 1 -- update constructron count on new surface
+        storage.constructrons_count[surface_index] = storage.constructrons_count[surface_index] + 1 -- update constructron count on new surface
         if not storage.constructron_statuses[entity.unit_number]["busy"] then -- if constructron is not busy
             storage.available_ctron_count[event.old_surface_index] = math.max((storage.available_ctron_count[event.old_surface_index] - 1), 0) -- update available constructron count on old surface
         end
         storage.constructron_statuses[entity.unit_number] = { busy = false } -- set constructron status
-        storage.available_ctron_count[entity.surface_index] = storage.available_ctron_count[entity.surface_index] + 1 -- update available constructron count on new surface
-        util_func.update_ctron_combinator_signals(entity.surface_index)
+        storage.available_ctron_count[surface_index] = storage.available_ctron_count[surface_index] + 1 -- update available constructron count on new surface
+        util_func.update_ctron_combinator_signals(surface_index)
         for _, job in pairs(storage.jobs) do
-            if (job.worker.unit_number == entity.unit_number) then
+            if job.worker and (job.worker.unit_number == entity.unit_number) then
                 -- remove worker from job
                 job.worker = nil
             end
         end
         -- configure surface management
-        if (storage.stations_count[entity.surface_index] > 0) then
+        if (storage.stations_count[surface_index] > 0) then
             storage.managed_surfaces[surface_index] = entity.surface.name
         end
     elseif storage.station_names[entity.name] then
         storage.stations_count[event.old_surface_index] = storage.stations_count[event.old_surface_index] - 1
-        storage.stations_count[entity.surface_index] = storage.stations_count[event.old_surface_index] + 1
+        storage.stations_count[surface_index] = storage.stations_count[surface_index] + 1
         -- configure surface management
-        if (storage.constructrons_count[entity.surface_index] > 0) then
+        if (storage.constructrons_count[surface_index] > 0) then
             storage.managed_surfaces[surface_index] = entity.surface.name
         end
     elseif entity.name == "ctron-combinator" then
