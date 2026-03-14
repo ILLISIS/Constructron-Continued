@@ -181,7 +181,7 @@ function destroy_job:in_progress()
                     self.safe_positions[#self.safe_positions] = nil
                     if #self.safe_positions == 0 then
                         -- if there are no more safe positions, go to the station
-                        self.safe_positions[#self.safe_positions] = self.station.position
+                        self.safe_positions[1] = self.station.position
                     end
                     -- go to a further away safe position
                     worker.autopilot_destination = self.safe_positions[#self.safe_positions]
@@ -194,7 +194,7 @@ function destroy_job:in_progress()
                     self.safe_positions[#self.safe_positions] = nil
                     if #self.safe_positions == 0 then
                         -- if there are no more safe positions, go to the station
-                        self.safe_positions[#self.safe_positions] = self.station.position
+                        self.safe_positions[1] = self.station.position
                     end
                     -- go to a further away safe position
                     worker.autopilot_destination = self.safe_positions[#self.safe_positions]
@@ -305,6 +305,9 @@ function destroy_job:repairing()
     local worker = self.worker ---@cast worker -nil
     if (threat_level > 50) then
         self.safe_positions[#self.safe_positions] = nil
+        if #self.safe_positions == 0 then
+            self.safe_positions[1] = self.station.position
+        end
         worker.autopilot_destination = self.safe_positions[#self.safe_positions]
         -- debug_lib.VisualDebugCircle(self.safe_positions[#self.safe_positions], self.surface_index, "black", 2, 60)
     else
