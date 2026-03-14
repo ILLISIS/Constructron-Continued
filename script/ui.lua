@@ -753,11 +753,18 @@ end
 function gui_handlers.change_ammo_count(player, element)
     local setting_surface = element.tags.setting_surface
     local count = (tonumber(element.text) or 50)
-    if count > 10000 then
+    if count > 8000 then
         player.print("Specified ammo count too high, count reset to 0.")
         count = 0
     end
     storage.ammo_count[setting_surface] = count
+    -- update existing jobs with new ammo count
+    local ammo = storage.ammo_name[setting_surface]
+    for _, job in pairs(storage.jobs) do
+        if job.surface_index == setting_surface then
+            job.required_items[ammo.name] = { [ammo.quality] = count }
+        end
+    end
 end
 
 function gui_handlers.selected_new_atomic_ammo(player, element)
