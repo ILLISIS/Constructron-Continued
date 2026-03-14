@@ -1103,10 +1103,6 @@ function gui_handlers.confirm_cargo(player, element)
             player.print({"ctron_warnings.min_value"})
             return
         end
-        if max <= min then
-            player.print({"ctron_warnings.max_value"})
-            return
-        end
         storage.station_requests[station_unit_number][slot_number] = {
             name = item,
             quality = quality,
