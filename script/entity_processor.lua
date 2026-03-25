@@ -324,7 +324,7 @@ entity_proc.on_object_destroyed = function(event)
         -- cargo requests
         storage.station_requests[event.useful_id] = nil
     elseif removed_entity.name == "ctron-combinator" then
-        if storage.stations_count[surface_index] > 0 then
+        if (storage.stations_count[surface_index] or 0) > 0 then
             local _, new_station = next(util_func.get_service_stations(surface_index))
             if not new_station then return end
             util_func.setup_station_combinator(new_station)
