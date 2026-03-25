@@ -1,3 +1,8 @@
+if script.active_mods["universal_edges"] then
+    log("[Spidertron Automation] Mod logic disabled due to Universal Edges mod presence")
+    return
+end
+
 local util_func = require("script/utility_functions")
 local cmd = require("script/command_functions")
 local entity_proc = require("script/entity_processor")
