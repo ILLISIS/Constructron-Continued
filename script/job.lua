@@ -480,6 +480,7 @@ function job:validate_worker()
     else
         if self.state == "finishing" then
             storage.jobs[self.job_index] = nil
+            return false
         end
         local surface_index = self.surface_index
         self.worker = job.get_worker(surface_index) ---@type LuaEntity|nil
