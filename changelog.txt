@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.42
+Date: 2026-04-25
+  Features:
+    - Enabled for Clusterio plugin support.
+  Bugfixes:
+    - Fixed a crash when a surface was removed which had a Station present.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.41
 Date: 2026-03-14
   Bugfixes:
