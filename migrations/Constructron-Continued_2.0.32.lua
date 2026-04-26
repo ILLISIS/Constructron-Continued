@@ -1,4 +1,4 @@
-for job_index, job in pairs(storage.jobs) do
+for job_index, job in pairs(storage.jobs or {}) do
     if job.job_type == "destroy" then
         if job.worker and job.worker.valid then
             if job.worker.prototype.indexed_guns[1] then
@@ -50,10 +50,10 @@ for research_name, handler in pairs(research_handlers) do
     end
 end
 
-storage.destroy_min_cluster_size = {}
-storage.atomic_ammo_name = {}
-storage.atomic_ammo_count = {}
-storage.minion_count = {}
+storage.destroy_min_cluster_size = storage.destroy_min_cluster_size or {}
+storage.atomic_ammo_name = storage.atomic_ammo_name or {}
+storage.atomic_ammo_count = storage.atomic_ammo_count or {}
+storage.minion_count = storage.minion_count or {}
 
 local init_atomic_name
 if prototypes.item["atomic-bomb"] then
