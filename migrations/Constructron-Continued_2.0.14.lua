@@ -1,5 +1,5 @@
 -- set landfill type on existing jobs
-for _, job in pairs(storage.jobs) do
+for _, job in pairs(storage.jobs or {}) do
     if job.landfill_job then
         job.landfill_type = "landfill"
     end

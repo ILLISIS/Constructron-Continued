@@ -1,9 +1,9 @@
 
 
 -- for each job get worker logistic sections and set filter to {}
-for _, job in pairs(storage.jobs) do
+for _, job in pairs(storage.jobs or {}) do
     -- change quality of each required item to "normal"
-    for _, value in pairs(job.required_items) do
+    for _, value in pairs(job.required_items or {}) do
         for quality, count in pairs(value) do
             if quality == "quality-unknown" then
                 value["normal"] = count

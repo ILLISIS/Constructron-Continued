@@ -1,5 +1,5 @@
 --for each job, set the robot_inactivity_counter to 0
-for _, job in pairs(storage.jobs) do
+for _, job in pairs(storage.jobs or {}) do
     job.robot_inactivity_counter = 0
 end
 

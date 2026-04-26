@@ -7,9 +7,10 @@ local job_types = {
 }
 
 for job_type, job_class in pairs(job_types) do
+    local queue = storage[job_type .. '_queue'] or {}
     for _, surface in pairs(game.surfaces) do
         local surface_index = surface.index
-        for _, chunk in pairs(storage[job_type .. '_queue'][surface_index]) do
+        for _, chunk in pairs(queue[surface_index] or {}) do
             if chunk.surface then
                 chunk.surface_index = chunk.surface
                 chunk.surface = nil
