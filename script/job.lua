@@ -1186,7 +1186,8 @@ function job:finishing()
     util_func.set_constructron_status(worker, 'busy', false)
     -- change selected constructron colour
     util_func.paint_constructron(worker, 'idle')
-
+    -- clear autopilot_destination (for minion jobs)
+    worker.autopilot_destination = nil
     -- release vassals
     for _, vassal_job in pairs((self.vassal_jobs or {})) do
         vassal_job.state = "finishing"
