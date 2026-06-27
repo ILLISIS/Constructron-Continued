@@ -38,7 +38,7 @@ function cargo_job.prospect_cargo_jobs()
         if not next(items_to_fullfill) then goto continue end
         -- top up all items at the station
         for id, request in pairs(requests) do
-            local current_count = station.logistic_network.get_item_count(request.name)
+            local current_count = station.logistic_network.get_item_count(request)
             if ((current_count + request.in_transit_count) < request.max) then
                 if not (items_to_fullfill[request.name] and items_to_fullfill[request.name][request.quality]) then -- ignore if already in the list
                     local total = request.max - current_count - request.in_transit_count
@@ -152,7 +152,7 @@ function cargo_job:setup()
                 storage.cargo_queue[self.surface_index][storage.cargo_index] = {
                     index = storage.cargo_index,
                     station = self.destination_station,
-                    items = self.required_items
+                    items = table.deepcopy(self.required_items)
                 }
             end
             cargo_job.process_cargo_job_queue(self.surface_index)
