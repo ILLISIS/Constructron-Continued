@@ -1,7 +1,7 @@
 local util_func = require("script/utility_functions")
 local debug_lib = require("script/debug_lib")
 local pathfinder = require("script/pathfinder")
-local entity_proc = require("entity_processor")
+local entity_proc = require("script/entity_processor")
 
 -- class for jobs
 local job = {} ---@class job
