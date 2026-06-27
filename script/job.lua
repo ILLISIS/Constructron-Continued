@@ -772,7 +772,7 @@ function job:check_items_are_available()
     local logistic_network = self.station.logistic_network
     for request_name, value in pairs(current_requests) do
         for quality, count in pairs(value) do
-            if logistic_network.can_satisfy_request({name = request_name, quality = quality}, count, true) then
+            if count > 0 and logistic_network.can_satisfy_request({name = request_name, quality = quality}, count, true) then
                 return true
             end
         end
@@ -801,11 +801,9 @@ function job:check_roaming_candidate(station, current_items, current_requests)
     if not station_logistic_network then return false end
     for request_name, value in pairs(current_requests) do
         for quality, count in pairs(value) do
-            local needed_count = count
-            if current_items[request_name] and current_items[request_name][quality] then
-                needed_count = count - current_items[request_name][quality]
-            end
-            if station_logistic_network.can_satisfy_request({name = request_name, quality = quality}, needed_count, true) then
+            local held = (current_items[request_name] and current_items[request_name][quality]) or 0
+            local needed_count = count - held
+            if needed_count > 0 and station_logistic_network.can_satisfy_request({name = request_name, quality = quality}, needed_count, true) then
                 debug_lib.VisualDebugText({"ctron_status.trying_diff_station"}, self.worker, 0, 5)
                 self.sub_state = nil
                 self.station = station
