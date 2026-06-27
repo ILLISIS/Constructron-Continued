@@ -227,7 +227,7 @@ function cargo_job:deliver_items()
         for item, value in pairs(self.required_items) do
             for quality, count in pairs(value) do
                 if (request.name == item) and (request.quality == quality) then
-                    request.in_transit_count = request.in_transit_count - count
+                    request.in_transit_count = math.max(0, request.in_transit_count - count)
                     section.set_slot(slot, {
                         value = {
                             name = item,
