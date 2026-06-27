@@ -388,7 +388,7 @@ script.on_event(ev.on_lua_shortcut, function (event)
     end
 end)
 
----@param event EventData.on_custom_input
+---@param event EventData.CustomInputEvent
 script.on_event("ctron-get-selection-tool", function (event)
     local name = event.input_name
     if name ~= "ctron-get-selection-tool" then return end
