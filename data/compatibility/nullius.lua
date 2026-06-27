@@ -17,10 +17,10 @@ ctron_recipe.order = ctron_item.order
 station_recipe.order = station_item.order
 
 ctron_recipe.ingredients = {
-    { "nullius-mecha", 1 }
+    { type = "item", name = "nullius-mecha", amount = 1 }
 }
 station_recipe.ingredients = {
-    { "nullius-hangar-3", 1 }
+    { type = "item", name = "nullius-hangar-3", amount = 1 }
 }
 
 local tech = data.raw.technology["nullius-personal-transportation-4"]
