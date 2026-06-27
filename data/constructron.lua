@@ -43,6 +43,7 @@ local constructron_recipe = {
     type = "recipe",
     name = "constructron",
     enabled = false,
+    categories = { "crafting" },
     ingredients = {
         {type = "item", name = "spidertron", amount = 1}
     },

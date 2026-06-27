@@ -173,6 +173,7 @@ local template_entity = {
   icon_mipmaps = 0,
   flags = {"placeable-neutral", "not-on-map"},
   order = "z",
+  hidden = true,
   max_health = 1,
   render_layer = "object",
   collision_mask = pathing_collision_mask,

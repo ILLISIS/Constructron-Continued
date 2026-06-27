@@ -82,6 +82,7 @@ local service_station_recipe = {
     type = "recipe",
     name = "service_station",
     enabled = false,
+	categories = { "crafting" },
     ingredients = {
       {type = "item", name = "roboport", amount = 1}
     },
