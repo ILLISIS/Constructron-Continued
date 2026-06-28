@@ -273,7 +273,7 @@ script.on_event(ev.script_raised_teleported, function(event)
             storage.managed_surfaces[surface_index] = entity.surface.name
         end
     elseif storage.station_names[entity.name] then
-        storage.stations_count[event.old_surface_index] = storage.stations_count[event.old_surface_index] - 1
+        storage.stations_count[event.old_surface_index] = math.max((storage.stations_count[event.old_surface_index] or 0) - 1, 0)
         storage.stations_count[surface_index] = storage.stations_count[surface_index] + 1
         -- configure surface management
         if (storage.constructrons_count[surface_index] > 0) then
@@ -314,7 +314,7 @@ entity_proc.on_object_destroyed = function(event)
         util_func.update_ctron_combinator_signals(removed_entity.surface)
     elseif storage.station_names[removed_entity.name] then
         if game.surfaces[surface_index] then
-            storage.stations_count[surface_index] = storage.stations_count[surface_index] - 1
+            storage.stations_count[surface_index] = math.max((storage.stations_count[surface_index] or 0) - 1, 0)
         end
         storage.service_stations[event.useful_id] = nil
         -- surface management
