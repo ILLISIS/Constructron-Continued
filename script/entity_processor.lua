@@ -330,6 +330,11 @@ entity_proc.on_object_destroyed = function(event)
             util_func.setup_station_combinator(new_station)
         end
     end
+    for _, job in pairs(storage.jobs) do
+        if job.worker and job.worker.valid == false then job.worker = nil end
+        if job.station and job.station.valid == false then job.station = nil end
+        if job.destination_station and job.destination_station.valid == false then job.destination_station = nil end
+    end
     storage.registered_entities[event.registration_number] = nil
 end
 
