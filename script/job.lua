@@ -180,7 +180,7 @@ local find_entities = {
 }
 
 function job:check_roboport_coverage(entity)
-    local networks = entity.surface.find_logistic_networks_by_construction_area(entity.position, game.players[1].force)
+    local networks = entity.surface.find_logistic_networks_by_construction_area(entity.position, game.forces["player"])
     if next(networks) then return true end
     return false
 end
