@@ -228,7 +228,7 @@ function job:claim_chunk(chunk)
     -- check for chunk overload
     local total_required_slots = util_func.calculate_required_inventory_slot_count(util_func.combine_tables { self.required_items, chunk.required_items, chunk.trash_items })
     if total_required_slots > self.empty_slot_count then
-        local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items and trash
+        local divisor = math.ceil(total_required_slots / math.max(1, self.empty_slot_count - 5)) -- minus 5 slots to account for rounding up of items and trash
         for item, value in pairs(chunk.required_items) do
             for quality, count in pairs(value) do
                 chunk.required_items[item] = {
