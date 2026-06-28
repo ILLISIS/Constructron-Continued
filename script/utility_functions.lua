@@ -388,13 +388,13 @@ me.string_split = function(to_split, sep)
     return values
 end
 
--- this function is used to get the first value of a LuaCustomTable
+-- returns the first key of a LuaCustomTable (e.g. the prototype name from a name-indexed prototype table)
 -- https://discord.com/channels/139677590393716737/306402592265732098/1279094347052220447
 ---@generic K,V
 ---@param lct LuaCustomTable<K,V>
----@return V
+---@return K
 me.firstoflct = function(lct)
-    for key, value in pairs(lct) do
+    for key, _ in pairs(lct) do
         return key
     end
 end

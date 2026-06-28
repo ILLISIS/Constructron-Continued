@@ -160,7 +160,7 @@ script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
 script.on_event(ev.on_post_entity_died, function(event)
     local ghost_entity = event.ghost ---@cast ghost_entity -nil
     if not (ghost_entity and ghost_entity.valid) then return end
-    if not ghost_entity.force.name == "player" then return end
+    if ghost_entity.force.name ~= "player" then return end
     local surface_index = ghost_entity.surface.index
     if storage.rebuild_job_toggle[surface_index] and (ghost_entity.type == 'entity-ghost') then
         entity_proc.create_chunk(ghost_entity, storage.construction_queue[surface_index], surface_index)
@@ -179,7 +179,7 @@ end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
-    if not storage.upgrade_job_toggle[surface_index] or not entity or not entity.force.name == "player" then return end
+    if not storage.upgrade_job_toggle[surface_index] or entity.force.name ~= "player" then return end
     entity_proc.create_chunk(entity, storage.upgrade_queue[surface_index], surface_index)
 end)
 
@@ -273,7 +273,7 @@ script.on_event(ev.script_raised_teleported, function(event)
             storage.managed_surfaces[surface_index] = entity.surface.name
         end
     elseif storage.station_names[entity.name] then
-        storage.stations_count[event.old_surface_index] = storage.stations_count[event.old_surface_index] - 1
+        storage.stations_count[event.old_surface_index] = math.max((storage.stations_count[event.old_surface_index] or 0) - 1, 0)
         storage.stations_count[surface_index] = storage.stations_count[surface_index] + 1
         -- configure surface management
         if (storage.constructrons_count[surface_index] > 0) then
@@ -314,7 +314,7 @@ entity_proc.on_object_destroyed = function(event)
         util_func.update_ctron_combinator_signals(removed_entity.surface)
     elseif storage.station_names[removed_entity.name] then
         if game.surfaces[surface_index] then
-            storage.stations_count[surface_index] = storage.stations_count[surface_index] - 1
+            storage.stations_count[surface_index] = math.max((storage.stations_count[surface_index] or 0) - 1, 0)
         end
         storage.service_stations[event.useful_id] = nil
         -- surface management
@@ -329,6 +329,11 @@ entity_proc.on_object_destroyed = function(event)
             if not new_station then return end
             util_func.setup_station_combinator(new_station)
         end
+    end
+    for _, job in pairs(storage.jobs) do
+        if job.worker and job.worker.valid == false then job.worker = nil end
+        if job.station and job.station.valid == false then job.station = nil end
+        if job.destination_station and job.destination_station.valid == false then job.destination_station = nil end
     end
     storage.registered_entities[event.registration_number] = nil
 end

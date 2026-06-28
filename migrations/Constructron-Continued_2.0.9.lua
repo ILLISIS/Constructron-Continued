@@ -11,7 +11,7 @@ for _, job in pairs(storage.jobs or {}) do
             end
         end
     end
-    local logistic_point = job.worker.get_logistic_point(0)
+    local logistic_point = job.worker and job.worker.valid and job.worker.get_logistic_point(0)
     if logistic_point then
         local section = logistic_point.get_section(1)
         if section then

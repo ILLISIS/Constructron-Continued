@@ -85,7 +85,7 @@ function minion_job:in_progress()
     self.job_status = "Following leader"
     local worker = self.worker ---@cast worker -nil
     -- check if the leader is alive and job is still valid
-    if not storage.jobs[self.primary_job.job_index] or not self.primary_job.worker then
+    if not storage.jobs[self.primary_job.job_index] or not (self.primary_job.worker and self.primary_job.worker.valid) then
         self.state = "finishing" -- IDEA: assign util to primary?
         worker.autopilot_destination = nil
         return

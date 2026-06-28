@@ -57,7 +57,7 @@ function destroy_job:setup()
     local repair_tool = storage.repair_tool_name[self.surface_index]
     self.required_items[repair_tool.name] = { [repair_tool.quality] = 16}
     -- set the gun range based on the workers quality
-    self.gun_range = gun_range[self.worker.quality.name]
+    self.gun_range = gun_range[self.worker.quality.name] or 36
     -- disable roboports
     self:disable_roboports(0)
     -- state change

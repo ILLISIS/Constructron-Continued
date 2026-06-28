@@ -7,7 +7,7 @@
   "description": "A spidertron that automatically moves, constructs, upgrades and/or deconstructs entities of any size, anywhere on the map with items from your logistic network for the ultimate fire and forget automation experience and unmatched scaling potential.",
   "factorio_version": "2.0",
   "dependencies": [
-    "base >= 1.1.77",
+    "base >= 2.0.0",
     "! Constructron",
     "(?) space-exploration",
     "(?) Krastorio2",

@@ -366,7 +366,7 @@ function gui_handlers.update_job_gui(player)
     local job = storage.jobs[job_window.tags.job_index]
     if not job then return end
     local job_worker = job.worker
-    if not job_worker then return end -- TODO: refactor this behavior
+    if not (job_worker and job_worker.valid) then return end
     local job_ui_elements = storage.user_interface[player.index].job_ui.elements
 
     -- update worker_minimap
@@ -375,7 +375,7 @@ function gui_handlers.update_job_gui(player)
     worker_minimap.entity = job_worker
 
     -- update job_minimap
-    job_ui_elements["job_minimap"].position = (job.task_positions[1] or job.station.position or job_worker.position)
+    job_ui_elements["job_minimap"].position = (job.task_positions[1] or (job.station and job.station.valid and job.station.position) or job_worker.position)
 
     -- update job stats
     job_ui_elements["job_tasks_stat_label"].caption = {"ctron_gui_locale.job_job_stat_tasks_label", (#job.task_positions or "0")}
@@ -500,7 +500,13 @@ function gui_handlers.ctron_locate_job(player, element)
     end
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
-    local position = (chunk.midpoint or job.station.position or job.worker.position)
+    local station_position = job.station and job.station.valid and job.station.position
+    local worker_position = job.worker and job.worker.valid and job.worker.position
+    local position = (chunk.midpoint or station_position or worker_position)
+    if not position then
+        player.print({"ctron_warnings.job_no_exist"})
+        return
+    end
     player.set_controller{ type = defines.controllers.remote, position = position, surface = job.surface_index }
     -- move UI for visibility
     gui_handlers.resize_gui(player)
@@ -526,16 +532,21 @@ end
 function gui_handlers.ctron_map_view(player, element)
     local job = storage.jobs[element.tags.job_index]
     if not job then return end
+    -- worker/station may be nil or invalid if the entity was removed while the job was active
+    local worker = (job.worker and job.worker.valid) and job.worker or nil
     if element.tags.follow_entity then
-        player.set_controller{ type = defines.controllers.remote, surface = job.worker.surface}
-        player.centered_on = job.worker
+        if not worker then return end
+        player.set_controller{ type = defines.controllers.remote, surface = worker.surface}
+        player.centered_on = worker
     else
         local current_task = 1
         if #job.task_positions > 1 then
             current_task = math.random(1, #job.task_positions)
         end
-        local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
-        player.set_controller{ type = defines.controllers.remote, position = position, surface = job.worker.surface }
+        local station_position = job.station and job.station.valid and job.station.position
+        local position = (job.task_positions[current_task] or station_position or (worker and worker.position))
+        if not position then return end
+        player.set_controller{ type = defines.controllers.remote, position = position, surface = (worker and worker.surface) or job.surface_index }
         -- draw chunks
         for _, chunk_to_draw in pairs(job.chunks) do
             debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 120)
@@ -577,18 +588,23 @@ function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
         if job.state ~= "finishing" then
             -- handle job cancellation
             job.state = "finishing"
-            if job.worker then
+            if job.worker and job.worker.valid then
                 job.worker.autopilot_destination = nil
             end
-            if job.job_type == "cargo" then
-                local station_unit_number = job.destination_station.unit_number
-                for _, request in pairs(storage.station_requests[station_unit_number]) do
-                    local requested_item = request.name
-                    for item, value in pairs(job.required_items) do
-                        for quality, item_count in pairs(value) do
-                            if requested_item == item and request.quality == quality then
-                                request.in_transit_count = request.in_transit_count - item_count
-                                break
+            if job.job_type == "cargo" and job.sub_state ~= "unloading_items" then
+                if job.destination_station and job.destination_station.valid then
+                    local station_unit_number = job.destination_station.unit_number
+                    local station_requests = storage.station_requests[station_unit_number]
+                    if station_requests then
+                        for _, request in pairs(station_requests) do
+                            local requested_item = request.name
+                            for item, value in pairs(job.required_items) do
+                                for quality, item_count in pairs(value) do
+                                    if requested_item == item and request.quality == quality then
+                                        request.in_transit_count = math.max(0, request.in_transit_count - item_count)
+                                        break
+                                    end
+                                end
                             end
                         end
                     end
@@ -981,6 +997,7 @@ function gui_handlers.open_cargo_window(player, element)
             return
         end
         local station = storage.service_stations[element.tags.station_unit_number]
+        if not (station and station.valid) then return end
         gui_cargo.buildCargoGui(player, game.surfaces[station.surface.name])
         gui_handlers.cargo_hide_stations(player, element)
     else
@@ -1064,7 +1081,7 @@ function gui_handlers.on_gui_elem_changed(player, element)
         local request = storage.station_requests[station_unit_number][slot_number]
         -- check if item is already requested
         for k, v in pairs(element.parent.children) do
-            if v.elem_value and v.elem_value == item and v.name ~= element.name then
+            if v.elem_value and v.elem_value.name == item and v.elem_value.quality == quality and v.name ~= element.name then
                 element.elem_value = nil
                 element.style = "ctron_slot_button"
                 player.print({"ctron_warnings.item_already_requested"})
@@ -1166,7 +1183,12 @@ function gui_handlers.copy_station_requests(player, element)
 end
 
 function gui_handlers.paste_station_requests(player, element)
-    storage.station_requests[element.tags.station_unit_number] = table.deepcopy(storage.user_interface[player.index]["settings_export"])
+    local settings_export = storage.user_interface[player.index]["settings_export"]
+    if not settings_export then
+        player.print({"ctron_warnings.no_requests_copied"})
+        return
+    end
+    storage.station_requests[element.tags.station_unit_number] = table.deepcopy(settings_export)
     -- reset in_transit count on all requests for the new station
     for _, request in pairs(storage.station_requests[element.tags.station_unit_number]) do
         request.in_transit_count = 0
@@ -1180,8 +1202,10 @@ function gui_handlers.on_gui_hover_job(player, element)
     if not job then return end
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
-    local destination_station = job.destination_station or {}
-    local position = (chunk.midpoint or destination_station.position or job.task_positions[1] or job.worker.position)
+    local destination_station = job.destination_station
+    local station_position = destination_station and destination_station.valid and destination_station.position
+    local worker_position = job.worker and job.worker.valid and job.worker.position
+    local position = (chunk.midpoint or station_position or job.task_positions[1] or worker_position)
     if not position then return end
     if player.gui.screen.ctron_hover_frame then
         player.gui.screen.ctron_hover_frame.destroy()

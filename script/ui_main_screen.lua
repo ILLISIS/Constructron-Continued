@@ -432,7 +432,7 @@ function gui_main.create_job_card(job, section)
     label_bg.style.color = job_colors[job_type]
     label_bg.style.width = 180
     label_bg.style.bar_width = 30 -- bar thickness
-    job_label = label_bg.add{
+    local job_label = label_bg.add{
         type = "label",
         name = "ctron_job_type_label",
         caption = {"ctron_gui_locale.job_card_" .. job_type .. "_name"},
@@ -705,13 +705,14 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == surface_index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker
-            local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
-            local section = logistic_point.get_section(1)
+            local logistic_point = worker.get_logistic_point(0)
+            local section = logistic_point and logistic_point.get_section(1)
+            local filters = section and section.filters or {}
             local flag = false
             local inventory = worker.get_inventory(defines.inventory.spider_trunk)
             assert(inventory, "Worker inventory is nil")
-            for i = 1, #section.filters do
-                local slot = section.filters[i]
+            for i = 1, #filters do
+                local slot = filters[i]
                 if slot.value then
                     local item_name = slot.value.name
                     local quality = slot.value.quality
@@ -749,8 +750,10 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         column_count = 10,
     }
 
+    local request_count = 0
     for item, value in pairs(logistics_requests) do
         for quality, count in pairs(value) do
+            request_count = request_count + 1
             local button = logistic_table.add{
                 type = "choose-elem-button",
                 elem_type = "item-with-quality",
@@ -790,7 +793,6 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         end
     end
 
-    local request_count = #logistics_requests or 1
     -- Round up to the nearest 10
     local logistic_slot_count = math.ceil(request_count / 10) * 10
     if request_count == logistic_slot_count then

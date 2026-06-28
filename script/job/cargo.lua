@@ -38,7 +38,7 @@ function cargo_job.prospect_cargo_jobs()
         if not next(items_to_fullfill) then goto continue end
         -- top up all items at the station
         for id, request in pairs(requests) do
-            local current_count = station.logistic_network.get_item_count(request.name)
+            local current_count = station.logistic_network.get_item_count(request)
             if ((current_count + request.in_transit_count) < request.max) then
                 if not (items_to_fullfill[request.name] and items_to_fullfill[request.name][request.quality]) then -- ignore if already in the list
                     local total = request.max - current_count - request.in_transit_count
@@ -140,7 +140,7 @@ function cargo_job:setup()
     local total_required_slots = util_func.calculate_required_inventory_slot_count(self.required_items)
     if total_required_slots > self.empty_slot_count then
         -- job will not fit in one constructron, split the job to use multiple constructrons
-        local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 1))
+        local divisor = math.ceil(total_required_slots / math.max(1, self.empty_slot_count - 1))
         for item, value in pairs(self.required_items) do
             for quality, count in pairs(value) do
                 self.required_items[item][quality] = math.ceil(count / divisor)
@@ -152,7 +152,7 @@ function cargo_job:setup()
                 storage.cargo_queue[self.surface_index][storage.cargo_index] = {
                     index = storage.cargo_index,
                     station = self.destination_station,
-                    items = self.required_items
+                    items = table.deepcopy(self.required_items)
                 }
             end
             cargo_job.process_cargo_job_queue(self.surface_index)
@@ -227,7 +227,7 @@ function cargo_job:deliver_items()
         for item, value in pairs(self.required_items) do
             for quality, count in pairs(value) do
                 if (request.name == item) and (request.quality == quality) then
-                    request.in_transit_count = request.in_transit_count - count
+                    request.in_transit_count = math.max(0, request.in_transit_count - count)
                     section.set_slot(slot, {
                         value = {
                             name = item,
