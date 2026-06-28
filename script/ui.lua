@@ -1081,7 +1081,7 @@ function gui_handlers.on_gui_elem_changed(player, element)
         local request = storage.station_requests[station_unit_number][slot_number]
         -- check if item is already requested
         for k, v in pairs(element.parent.children) do
-            if v.elem_value and v.elem_value == item and v.name ~= element.name then
+            if v.elem_value and v.elem_value.name == item and v.elem_value.quality == quality and v.name ~= element.name then
                 element.elem_value = nil
                 element.style = "ctron_slot_button"
                 player.print({"ctron_warnings.item_already_requested"})
