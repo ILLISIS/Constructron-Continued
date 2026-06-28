@@ -160,7 +160,7 @@ script.on_event(ev.on_robot_built_entity, entity_proc.on_built_entity, {
 script.on_event(ev.on_post_entity_died, function(event)
     local ghost_entity = event.ghost ---@cast ghost_entity -nil
     if not (ghost_entity and ghost_entity.valid) then return end
-    if not ghost_entity.force.name == "player" then return end
+    if ghost_entity.force.name ~= "player" then return end
     local surface_index = ghost_entity.surface.index
     if storage.rebuild_job_toggle[surface_index] and (ghost_entity.type == 'entity-ghost') then
         entity_proc.create_chunk(ghost_entity, storage.construction_queue[surface_index], surface_index)
@@ -179,7 +179,7 @@ end, {{filter = "type", type = "fish", invert = true, mode = "or"}})
 script.on_event(ev.on_marked_for_upgrade, function(event)
     local entity = event.entity
     local surface_index = entity.surface.index
-    if not storage.upgrade_job_toggle[surface_index] or not entity or not entity.force.name == "player" then return end
+    if not storage.upgrade_job_toggle[surface_index] or entity.force.name ~= "player" then return end
     entity_proc.create_chunk(entity, storage.upgrade_queue[surface_index], surface_index)
 end)
 
