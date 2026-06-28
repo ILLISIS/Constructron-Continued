@@ -366,7 +366,7 @@ function gui_handlers.update_job_gui(player)
     local job = storage.jobs[job_window.tags.job_index]
     if not job then return end
     local job_worker = job.worker
-    if not job_worker then return end -- TODO: refactor this behavior
+    if not (job_worker and job_worker.valid) then return end
     local job_ui_elements = storage.user_interface[player.index].job_ui.elements
 
     -- update worker_minimap
@@ -375,7 +375,7 @@ function gui_handlers.update_job_gui(player)
     worker_minimap.entity = job_worker
 
     -- update job_minimap
-    job_ui_elements["job_minimap"].position = (job.task_positions[1] or job.station.position or job_worker.position)
+    job_ui_elements["job_minimap"].position = (job.task_positions[1] or (job.station and job.station.valid and job.station.position) or job_worker.position)
 
     -- update job stats
     job_ui_elements["job_tasks_stat_label"].caption = {"ctron_gui_locale.job_job_stat_tasks_label", (#job.task_positions or "0")}
