@@ -992,6 +992,7 @@ function gui_handlers.open_cargo_window(player, element)
             return
         end
         local station = storage.service_stations[element.tags.station_unit_number]
+        if not (station and station.valid) then return end
         gui_cargo.buildCargoGui(player, game.surfaces[station.surface.name])
         gui_handlers.cargo_hide_stations(player, element)
     else

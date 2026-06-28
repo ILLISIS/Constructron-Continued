@@ -9,10 +9,8 @@ station_item.order = "nullius-z" .. station_item.order
 
 local ctron_recipe = data.raw.recipe["constructron"]
 local station_recipe = data.raw.recipe["service_station"]
----@diagnostic disable-next-line: inject-field
-ctron_recipe.category = "huge-crafting"
----@diagnostic disable-next-line: inject-field
-station_recipe.category = "large-crafting"
+ctron_recipe.categories = { "huge-crafting" }
+station_recipe.categories = { "large-crafting" }
 ctron_recipe.order = ctron_item.order
 station_recipe.order = station_item.order
 
