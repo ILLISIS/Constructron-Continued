@@ -5,7 +5,6 @@ data:extend(
             name = "ctron-selection-tool",
             icons = {{ icon = "__Constructron-Continued__/graphics/icon_texture.png", icon_size = 128, mipmap_count = 2 }},
             hidden = true,
-            always_include_tiles = true,
             skip_fog_of_war = false,
             stack_size = 1,
             flags = { "only-in-cursor", "not-stackable", "spawnable" },
