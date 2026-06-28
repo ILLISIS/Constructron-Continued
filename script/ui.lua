@@ -500,7 +500,13 @@ function gui_handlers.ctron_locate_job(player, element)
     end
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
-    local position = (chunk.midpoint or job.station.position or job.worker.position)
+    local station_position = job.station and job.station.valid and job.station.position
+    local worker_position = job.worker and job.worker.valid and job.worker.position
+    local position = (chunk.midpoint or station_position or worker_position)
+    if not position then
+        player.print({"ctron_warnings.job_no_exist"})
+        return
+    end
     player.set_controller{ type = defines.controllers.remote, position = position, surface = job.surface_index }
     -- move UI for visibility
     gui_handlers.resize_gui(player)
