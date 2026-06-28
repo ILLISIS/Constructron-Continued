@@ -54,6 +54,10 @@ end
 script.on_event(defines.events.on_script_path_request_finished, (function(event)
     local job = storage.pathfinder_requests[event.id]
     if not job or not job.worker or not job.worker.valid then return end
+    if job.path_request_id ~= event.id then -- a newer request superseded this one; ignore the stale result
+        storage.pathfinder_requests[event.id] = nil
+        return
+    end
     local path = event.path
     if event.try_again_later then
         -- COMMENT: job should handle itself
