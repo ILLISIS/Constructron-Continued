@@ -581,14 +581,19 @@ function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
                 job.worker.autopilot_destination = nil
             end
             if job.job_type == "cargo" and job.sub_state ~= "unloading_items" then
-                local station_unit_number = job.destination_station.unit_number
-                for _, request in pairs(storage.station_requests[station_unit_number]) do
-                    local requested_item = request.name
-                    for item, value in pairs(job.required_items) do
-                        for quality, item_count in pairs(value) do
-                            if requested_item == item and request.quality == quality then
-                                request.in_transit_count = math.max(0, request.in_transit_count - item_count)
-                                break
+                if job.destination_station and job.destination_station.valid then
+                    local station_unit_number = job.destination_station.unit_number
+                    local station_requests = storage.station_requests[station_unit_number]
+                    if station_requests then
+                        for _, request in pairs(station_requests) do
+                            local requested_item = request.name
+                            for item, value in pairs(job.required_items) do
+                                for quality, item_count in pairs(value) do
+                                    if requested_item == item and request.quality == quality then
+                                        request.in_transit_count = math.max(0, request.in_transit_count - item_count)
+                                        break
+                                    end
+                                end
                             end
                         end
                     end
