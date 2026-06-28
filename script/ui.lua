@@ -1185,8 +1185,10 @@ function gui_handlers.on_gui_hover_job(player, element)
     if not job then return end
     local _, chunk = next(job.chunks)
     chunk = chunk or {}
-    local destination_station = job.destination_station or {}
-    local position = (chunk.midpoint or destination_station.position or job.task_positions[1] or job.worker.position)
+    local destination_station = job.destination_station
+    local station_position = destination_station and destination_station.valid and destination_station.position
+    local worker_position = job.worker and job.worker.valid and job.worker.position
+    local position = (chunk.midpoint or station_position or job.task_positions[1] or worker_position)
     if not position then return end
     if player.gui.screen.ctron_hover_frame then
         player.gui.screen.ctron_hover_frame.destroy()
