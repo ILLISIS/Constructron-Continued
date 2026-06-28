@@ -588,7 +588,7 @@ function gui_handlers.ctron_cancel_job(player, element, ctrl_clicked)
         if job.state ~= "finishing" then
             -- handle job cancellation
             job.state = "finishing"
-            if job.worker then
+            if job.worker and job.worker.valid then
                 job.worker.autopilot_destination = nil
             end
             if job.job_type == "cargo" and job.sub_state ~= "unloading_items" then
