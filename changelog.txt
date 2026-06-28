@@ -1,4 +1,33 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.44
+Date: 2026-06-28
+  Bugfixes:
+    - Avoid a nil comparison when held ammo quality differs from the requested quality
+    - Cargo request item count now respects quality, and queue entries are deep-copied.
+    - Clamp the chunk-split divisor to avoid corrupt item counts when few inventory slots are free
+    - Clear invalid worker/station references on destroy and guard minion and cargo-window access
+    - Correct duplicate cargo-request detection so the same item and quality can't be requested twice
+    - Count logistic requests correctly so the request grid is padded to the right size
+    - Destroy jobs fall back to the default gun range for unknown quality tiers
+    - Fixed a crash that could occur after clicking the job locate button whilst entities were invalid.
+    - Fixed a crash that occurred when attempting to cancel a Cargo job through the UI.
+    - Fixed a crash when hovering on the ui locate button whilst the destination entity was invalid.
+    - Fixed a crash when station cargo settings were pasted without any being copied first.
+    - Fixed a potential divide by zero crash in Cargo jobs.
+    - Guard against a missing upgrade target in upgrade jobs
+    - Guard worker validity in the 2.0.9 migration to avoid a load-time crash
+    - Guarded a potential crash in the UI when the worker was invalid.
+    - Harden job and main GUIs against invalid workers, stations and missing logistic sections
+    - Ignore superseded pathfinder results so a stale path can't overwrite a newer one
+    - Minion jobs now clear their autopilot_destination upon job completion.
+    - Prevent station counts from going negative on teleport or removal
+    - Prevented in_transit_count from going negative on delivery or cancel.
+    - Query the player force when checking roboport construction coverage
+    - Rebuild and upgrade jobs no longer act on entities of non-player forces
+    - Skip logistic network checks for zero-count requests.
+  Changes:
+    - Annotation/comment cleanups and scope a leaked job_label local
+---------------------------------------------------------------------------------------------------
 Version: 2.0.43
 Date: 2026-04-26
   Bugfixes:
