@@ -1011,12 +1011,13 @@ function job:check_ammo_count()
     local ammo = storage.ammo_name[self.surface_index]
     local ammo_name = ammo.name
     local ammo_quality = ammo.quality
-    -- Check if the current ammo count is more than 25% of the expected ammo count.
-    -- If the ammo count is less than or equal to 25%, update the job state to "starting" and return false.
-    if not (ammunition and ammunition[ammo_name] and (ammunition[ammo_name][ammo_quality] > (math.ceil(ammo_count * 25 / 100)))) then
-        -- Additional check in worker inventory for extra ammo
+    -- start a restock if less than 25% of the expected ammo is present, in either the slots or the trunk
+    local threshold = math.ceil(ammo_count * 25 / 100)
+    local ammo_in_slots = ammunition[ammo_name] and ammunition[ammo_name][ammo_quality]
+    if not (ammo_in_slots and ammo_in_slots > threshold) then
         local inventory_ammo = util_func.convert_to_item_list(self.worker_inventory.get_contents())
-        if not (inventory_ammo and inventory_ammo[ammo_name] and (inventory_ammo[ammo_name][ammo_quality] > (math.ceil(ammo_count * 25 / 100)))) then
+        local ammo_in_inventory = inventory_ammo[ammo_name] and inventory_ammo[ammo_name][ammo_quality]
+        if not (ammo_in_inventory and ammo_in_inventory > threshold) then
             self.state = "starting"
             return false
         end
