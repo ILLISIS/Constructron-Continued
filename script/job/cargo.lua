@@ -140,7 +140,7 @@ function cargo_job:setup()
     local total_required_slots = util_func.calculate_required_inventory_slot_count(self.required_items)
     if total_required_slots > self.empty_slot_count then
         -- job will not fit in one constructron, split the job to use multiple constructrons
-        local divisor = math.ceil(total_required_slots / (self.empty_slot_count - 1))
+        local divisor = math.ceil(total_required_slots / math.max(1, self.empty_slot_count - 1))
         for item, value in pairs(self.required_items) do
             for quality, count in pairs(value) do
                 self.required_items[item][quality] = math.ceil(count / divisor)
