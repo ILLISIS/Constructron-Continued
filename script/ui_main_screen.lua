@@ -749,8 +749,10 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         column_count = 10,
     }
 
+    local request_count = 0
     for item, value in pairs(logistics_requests) do
         for quality, count in pairs(value) do
+            request_count = request_count + 1
             local button = logistic_table.add{
                 type = "choose-elem-button",
                 elem_type = "item-with-quality",
@@ -790,7 +792,6 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
         end
     end
 
-    local request_count = #logistics_requests or 1
     -- Round up to the nearest 10
     local logistic_slot_count = math.ceil(request_count / 10) * 10
     if request_count == logistic_slot_count then
