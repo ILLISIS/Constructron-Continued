@@ -532,16 +532,21 @@ end
 function gui_handlers.ctron_map_view(player, element)
     local job = storage.jobs[element.tags.job_index]
     if not job then return end
+    -- worker/station may be nil or invalid if the entity was removed while the job was active
+    local worker = (job.worker and job.worker.valid) and job.worker or nil
     if element.tags.follow_entity then
-        player.set_controller{ type = defines.controllers.remote, surface = job.worker.surface}
-        player.centered_on = job.worker
+        if not worker then return end
+        player.set_controller{ type = defines.controllers.remote, surface = worker.surface}
+        player.centered_on = worker
     else
         local current_task = 1
         if #job.task_positions > 1 then
             current_task = math.random(1, #job.task_positions)
         end
-        local position = (job.task_positions[current_task] or job.station.position or job.worker.position)
-        player.set_controller{ type = defines.controllers.remote, position = position, surface = job.worker.surface }
+        local station_position = job.station and job.station.valid and job.station.position
+        local position = (job.task_positions[current_task] or station_position or (worker and worker.position))
+        if not position then return end
+        player.set_controller{ type = defines.controllers.remote, position = position, surface = (worker and worker.surface) or job.surface_index }
         -- draw chunks
         for _, chunk_to_draw in pairs(job.chunks) do
             debug_lib.draw_rectangle(chunk_to_draw.minimum, chunk_to_draw.maximum, job.surface_index, job_colors[job.job_type], true, 120)
