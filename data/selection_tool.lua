@@ -37,7 +37,7 @@ data:extend(
             reverse_select = {
                 border_color = { r = 1 }, -- red
                 cursor_box_type = "entity",
-                mode = { "deconstruct", "items", "trees", "any-tile"  }
+                mode = { "any-entity", "any-tile", "deconstruct" }
             },
 
             -- shift right click
