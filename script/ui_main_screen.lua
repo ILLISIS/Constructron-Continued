@@ -432,7 +432,7 @@ function gui_main.create_job_card(job, section)
     label_bg.style.color = job_colors[job_type]
     label_bg.style.width = 180
     label_bg.style.bar_width = 30 -- bar thickness
-    job_label = label_bg.add{
+    local job_label = label_bg.add{
         type = "label",
         name = "ctron_job_type_label",
         caption = {"ctron_gui_locale.job_card_" .. job_type .. "_name"},

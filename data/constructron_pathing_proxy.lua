@@ -133,7 +133,7 @@ for _, type in pairs(types) do
       local collision_box = prototype.collision_box
       local width = collision_box[2][1] - collision_box[1][1]
       local height = collision_box[2][2] - collision_box[1][2]
-      -- Check if entity is larger than 7x7 tiles
+      -- large entities: >7 tiles in one dimension and >4 in the other
       if (width>7 and height>4) or (height>7 and width>4) then
         -- log("Entity '" .. name .. "' is larger than 7x7 tiles. Size: " .. width .. "x" .. height)
         local add = false
