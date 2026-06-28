@@ -156,7 +156,7 @@ function gui_job.buildJobContent(player, frame, job)
             follow_entity = true
         }
     }
-    storage.user_interface[player.index].job_ui.elements["worker_minimap"].entity = job.worker
+    storage.user_interface[player.index].job_ui.elements["worker_minimap"].entity = (job.worker and job.worker.valid) and job.worker or nil
 
     left_pane.add{
         type = "line",
@@ -186,7 +186,7 @@ function gui_job.buildJobContent(player, frame, job)
         tooltip = {"ctron_gui_locale.job_job_minimap_tooltip"},
         zoom = 2,
         surface_index = job.surface_index,
-        position = (job.task_positions[1] or job.station.position or job.worker.position),
+        position = (job.task_positions[1] or (job.station and job.station.valid and job.station.position) or (job.worker and job.worker.valid and job.worker.position)),
         tags = {
             mod = "constructron",
             on_gui_click = "ctron_map_view",
@@ -379,16 +379,17 @@ function gui_job.build_logistic_display(worker, logistic_table)
     local inventory = worker.get_inventory(defines.inventory.spider_trunk)
     assert(inventory, "Worker inventory is nil")
     -- get worker logistic requests
-    local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
-    local section = logistic_point.get_section(1)
-    local slot_count = #(section.filters or {})
+    local logistic_point = worker.get_logistic_point(0)
+    local section = logistic_point and logistic_point.get_section(1)
+    local filters = section and section.filters or {}
+    local slot_count = #filters
     -- Ensure the value is at least 10
     local min_slot_count = math.max(slot_count, 10)
     -- Round up to the nearest 20
     local logistic_request_count = math.ceil(min_slot_count / 20) * 20
     for i = 1, logistic_request_count do
-        if section.filters[i] and section.filters[i].value then
-            local slot = section.filters[i]
+        if filters[i] and filters[i].value then
+            local slot = filters[i]
             local slot_item = slot.value
             gui_job.build_button(logistic_table, "ctron_logistic_button_" .. i, slot_item.name, slot_item.quality, ((slot.max or slot.min) - inventory.get_item_count(slot_item)), nil, worker)
         else

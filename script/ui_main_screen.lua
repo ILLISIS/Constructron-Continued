@@ -705,13 +705,14 @@ function gui_main.BuildLogisticsContent(player, surface_index, logistics_window)
     for _, job in pairs(storage.jobs) do
         if (job.surface_index == surface_index) and job.state == "starting" and job.worker and job.worker.valid then
             local worker = job.worker
-            local logistic_point = worker.get_logistic_point(0) ---@cast logistic_point -nil
-            local section = logistic_point.get_section(1)
+            local logistic_point = worker.get_logistic_point(0)
+            local section = logistic_point and logistic_point.get_section(1)
+            local filters = section and section.filters or {}
             local flag = false
             local inventory = worker.get_inventory(defines.inventory.spider_trunk)
             assert(inventory, "Worker inventory is nil")
-            for i = 1, #section.filters do
-                local slot = section.filters[i]
+            for i = 1, #filters do
+                local slot = filters[i]
                 if slot.value then
                     local item_name = slot.value.name
                     local quality = slot.value.quality
