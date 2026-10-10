@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.1.1
+Date: 2026-10-10
+  Compatibility:
+    - Universal Edges v2's border barrier (ue-barrier) no longer blocks Constructron pathing near world edges
+---------------------------------------------------------------------------------------------------
 Version: 2.1.0
 Date: 2026-06-28
   Features:
